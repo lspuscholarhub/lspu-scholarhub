@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}LSPU ScholarHub{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+  <!-- CSRF token for AJAX requests -->
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  {% block head %}{% endblock %}
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+<!-- ════════════════════════════════════════════════════════════
+     NAVBAR
+════════════════════════════════════════════════════════════ -->
+<nav class="navbar navbar-expand-lg navbar-dark"
+     style="background:linear-gradient(135deg,#1a3a6b 0%,#0d6efd 100%);
+            box-shadow:0 2px 10px rgba(0,0,0,.2);">
+  <div class="container-fluid px-4">
+
+    <!-- Brand -->
+    {% if session.get('user_type') in ('admin', 'staff') %}
+    <span class="navbar-brand d-flex align-items-center gap-2 fw-bold me-4" style="cursor:default;">
+      <img src="{{ url_for('static', filename='images/lspu-logo.png') }}" alt="LSPU" style="height:32px;width:32px;object-fit:contain;">
+      <span>LSPU <span class="text-warning">ScholarHub</span></span>
+    </span>
+    {% else %}
+    <a class="navbar-brand d-flex align-items-center gap-2 fw-bold me-4"
+       href="{{ url_for('main.index') }}">
+      <img src="{{ url_for('static', filename='images/lspu-logo.png') }}" alt="LSPU" style="height:32px;width:32px;object-fit:contain;">
+      <span>LSPU <span class="text-warning">ScholarHub</span></span>
+    </a>
+    {% endif %}
+
+    <button class="navbar-toggler border-0" type="button"
+            data-bs-toggle="collapse" data-bs-target="#mainNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="mainNav">
+
+      <!-- ══ LEFT NAV ══════════════════════════════════════════ -->
+      <ul class="navbar-nav me-auto align-items-lg-center gap-lg-1">
+
+        {# ── PUBLIC / STUDENT: show Home, Scholarships, AI Assistant ── #}
+        {% if not session.get('user_type') %}
+        {# Guest users only — show Home, Scholarships, AI Assistant #}
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('main.index') }}">
+            <i class="bi bi-house me-1"></i>Home
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('scholarship.list_scholarships') }}">
+            <i class="bi bi-search me-1"></i>Scholarships
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('chatbot.chatbot_page') }}">
+            <i class="bi bi-robot me-1"></i>AI Assistant
+          </a>
+        </li>
+        {% endif %}
+
+        {# ── ADMIN NAV — spread across top bar ── #}
+        {% if session.get('user_type') == 'admin' %}
+
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('admin.dashboard') }}">
+            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+          </a>
+        </li>
+
+        {# Manage dropdown #}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+            <i class="bi bi-grid me-1"></i>Manage
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{{ url_for('admin.manage_scholarships') }}">
+              <i class="bi bi-mortarboard me-2 text-primary"></i>Scholarships</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('admin.manage_applications') }}">
+              <i class="bi bi-file-earmark-text me-2 text-info"></i>Applications</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('admin.manage_batches') }}">
+              <i class="bi bi-collection me-2 text-success"></i>Batches</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{{ url_for('admin.manage_users') }}">
+              <i class="bi bi-people me-2 text-warning"></i>Users</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('admin.manage_staff') }}">
+              <i class="bi bi-person-badge me-2 text-secondary"></i>Staff</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{{ url_for('admin.audit_log') }}">
+              <i class="bi bi-journal-text me-2 text-info"></i>Audit Log</a></li>
+          </ul>
+        </li>
+
+        {# Students dropdown #}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+            <i class="bi bi-people me-1"></i>Students
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{{ url_for('admin.student_directory') }}">
+              <i class="bi bi-person-lines-fill me-2 text-primary"></i>Student Directory</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('admin.import_page') }}">
+              <i class="bi bi-cloud-upload me-2 text-success"></i>Bulk Import</a></li>
+          </ul>
+        </li>
+
+        {# Reports & Notifications #}
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('admin.monitoring') }}">
+            <i class="bi bi-activity me-1"></i>Monitoring
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('admin.reports') }}">
+            <i class="bi bi-graph-up me-1"></i>Reports
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('admin.manage_notifications') }}">
+            <i class="bi bi-bell me-1"></i>Notifications
+          </a>
+        </li>
+
+        {% endif %}
+
+        {# ── STAFF NAV — spread across top bar ── #}
+        {% if session.get('user_type') == 'staff' %}
+
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('staff.dashboard') }}">
+            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('staff.review_applications') }}">
+            <i class="bi bi-file-earmark-check me-1"></i>Applications
+          </a>
+        </li>
+
+        {# Scholarships dropdown — full management #}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+            <i class="bi bi-mortarboard me-1"></i>Scholarships
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{{ url_for('staff.manage_scholarships') }}">
+              <i class="bi bi-list-ul me-2 text-primary"></i>Manage Scholarships</a></li>
+          </ul>
+        </li>
+
+        {# Students dropdown #}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+            <i class="bi bi-people me-1"></i>Students
+          </a>
+          <ul class="dropdown-menu">
+            <li><a class="dropdown-item" href="{{ url_for('staff.student_directory') }}">
+              <i class="bi bi-person-lines-fill me-2 text-primary"></i>Student Directory</a></li>
+            <li><a class="dropdown-item" href="{{ url_for('staff.import_page') }}">
+              <i class="bi bi-cloud-upload me-2 text-success"></i>Bulk Import</a></li>
+          </ul>
+        </li>
+
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('staff.monitoring') }}">
+            <i class="bi bi-activity me-1"></i>Monitoring
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('staff.reports') }}">
+            <i class="bi bi-graph-up me-1"></i>Reports
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('staff.notifications') }}">
+            <i class="bi bi-bell me-1"></i>Notifications
+          </a>
+        </li>
+
+        {% endif %}
+
+        {# ── STUDENT NAV ── #}
+        {% if session.get('user_type') == 'student' %}
+
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('student.dashboard') }}">
+            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('chatbot.chatbot_page') }}">
+            <i class="bi bi-robot me-1"></i>AI Assistant
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('student.my_applications') }}">
+            <i class="bi bi-file-earmark-text me-1"></i>My Applications
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('student.documents') }}">
+            <i class="bi bi-folder me-1"></i>Documents
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('student.notifications') }}">
+            <i class="bi bi-bell me-1"></i>Notifications
+          </a>
+        </li>
+
+        {% endif %}
+
+      </ul>
+
+      <!-- ══ RIGHT NAV ═════════════════════════════════════════ -->
+      <ul class="navbar-nav align-items-lg-center gap-lg-1">
+
+        {% if session.get('user_id') %}
+
+        {# Role pill #}
+        {% if session.get('user_type') == 'admin' %}
+          <li class="nav-item d-none d-lg-flex align-items-center me-1">
+            <span class="badge bg-danger px-2 py-1" style="font-size:.68rem;">Admin</span>
+          </li>
+        {% elif session.get('user_type') == 'staff' %}
+          <li class="nav-item d-none d-lg-flex align-items-center me-1">
+            <span class="badge bg-warning text-dark px-2 py-1" style="font-size:.68rem;">Staff</span>
+          </li>
+        {% endif %}
+
+        {# User dropdown #}
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle d-flex align-items-center gap-2"
+             href="#" data-bs-toggle="dropdown">
+            <i class="bi bi-person-circle fs-5"></i>
+            <span class="d-none d-lg-inline small">{{ session.get('username') }}</span>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end" style="min-width:170px;">
+            <li class="px-3 pt-2 pb-1">
+              <div class="fw-semibold small">{{ session.get('username') }}</div>
+              <div class="text-muted" style="font-size:.72rem;">
+                {{ session.get('user_type', '')|title }}
+              </div>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+              <i class="bi bi-person me-2"></i>My Profile</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">
+              <i class="bi bi-box-arrow-right me-2"></i>Logout</a></li>
+          </ul>
+        </li>
+
+        {% else %}
+
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('auth.login') }}">
+            <i class="bi bi-box-arrow-in-right me-1"></i>Login
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="btn btn-warning btn-sm fw-semibold px-3 ms-1"
+             href="{{ url_for('auth.register') }}"
+             style="border-radius:20px;font-size:.85rem;">
+            <i class="bi bi-person-plus me-1"></i>Register
+          </a>
+        </li>
+
+        {% endif %}
+      </ul>
+
+    </div>
+  </div>
+</nav>
+
+<!-- ── Toast notifications (flash messages) ────────────────────────────────── -->
+<div class="position-fixed top-0 end-0 p-3" style="z-index:9999;margin-top:65px;">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+      <div class="toast show align-items-center border-0 mb-2 shadow-lg"
+           role="alert" aria-live="assertive" aria-atomic="true"
+           data-bs-autohide="true" data-bs-delay="5000"
+           style="border-radius:12px;min-width:320px;max-width:420px;
+                  background:#fff;border-left:4px solid
+                  {% if category == 'error' or category == 'danger' %}#dc3545
+                  {% elif category == 'success' %}#198754
+                  {% elif category == 'warning' %}#fd7e14
+                  {% else %}#0d6efd{% endif %} !important;">
+        <div class="d-flex align-items-start p-3">
+          <div class="me-3 mt-1">
+            {% if category == 'error' or category == 'danger' %}
+              <i class="bi bi-x-circle-fill text-danger fs-5"></i>
+            {% elif category == 'success' %}
+              <i class="bi bi-check-circle-fill text-success fs-5"></i>
+            {% elif category == 'warning' %}
+              <i class="bi bi-exclamation-triangle-fill text-warning fs-5"></i>
+            {% else %}
+              <i class="bi bi-info-circle-fill text-primary fs-5"></i>
+            {% endif %}
+          </div>
+          <div class="flex-grow-1 small" style="line-height:1.4;">
+            {{ message|safe }}
+          </div>
+          <button type="button" class="btn-close ms-2" data-bs-dismiss="toast"
+                  style="font-size:.6rem;"></button>
+        </div>
+      </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+</div>
+
+<!-- ── Main content ───────────────────────────────────────────────────────── -->
+<main class="flex-grow-1">
+  {% block content %}{% endblock %}
+</main>
+
+<!-- ── Footer ────────────────────────────────────────────────────────────── -->
+<footer class="mt-0" style="background:#1a3a6b;color:#e2e8f0;">
+  <div class="container py-4">
+    <div class="row align-items-center">
+      <div class="col-md-5 mb-3 mb-md-0">
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <img src="{{ url_for('static', filename='images/lspu-logo.png') }}" alt="LSPU" style="height:28px;width:28px;object-fit:contain;">
+          <span class="fw-bold">LSPU ScholarHub</span>
+        </div>
+        <p class="small mb-0 opacity-75">
+          AI-Enabled Scholarship Management and Monitoring System<br>
+          Laguna State Polytechnic University
+        </p>
+      </div>
+      <div class="col-md-4 mb-3 mb-md-0">
+        <p class="small mb-1 opacity-75">
+          <i class="bi bi-geo-alt me-1 text-warning"></i>
+          Student Affairs Building, 2nd Floor, LSPU Sta. Cruz
+        </p>
+        <p class="small mb-1 opacity-75">
+          <i class="bi bi-envelope me-1 text-warning"></i>
+          scholarships@lspu.edu.ph
+        </p>
+        <p class="small mb-0 opacity-75">
+          <i class="bi bi-telephone me-1 text-warning"></i>
+          (049) 576-1234 &nbsp;|&nbsp; Mon–Fri, 8AM–5PM
+        </p>
+      </div>
+      <div class="col-md-3 text-md-end">
+        <a href="{{ url_for('scholarship.list_scholarships') }}"
+           class="btn btn-outline-light btn-sm mb-2 me-1">
+          <i class="bi bi-search me-1"></i>Scholarships
+        </a>
+        <a href="{{ url_for('chatbot.chatbot_page') }}"
+           class="btn btn-warning btn-sm mb-2">
+          <i class="bi bi-robot me-1"></i>AI Assistant
+        </a>
+      </div>
+    </div>
+    <hr style="border-color:rgba(255,255,255,.15);margin:16px 0 12px;">
+    <p class="text-center small mb-0 opacity-50">
+      &copy; {{ now.year }} Laguna State Polytechnic University. All rights reserved.
+    </p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+<!-- ── Global auto-filter: GET forms with class "auto-filter" submit on change/input ── -->
+<script>
+(function () {
+  // Debounce helper
+  function debounce(fn, ms) {
+    let t;
+    return function () { clearTimeout(t); t = setTimeout(fn, ms); };
+  }
+
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('form.auto-filter').forEach(function (form) {
+      // Selects: submit immediately on change
+      form.querySelectorAll('select').forEach(function (sel) {
+        sel.addEventListener('change', function () { form.submit(); });
+      });
+      // Text inputs: submit after 400 ms of no typing
+      form.querySelectorAll('input[type="text"], input[type="search"]').forEach(function (inp) {
+        inp.addEventListener('input', debounce(function () { form.submit(); }, 400));
+      });
+    });
+  });
+})();
+</script>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

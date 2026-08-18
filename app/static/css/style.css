@@ -1,0 +1,358 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   LSPU ScholarHub — Professional UI System
+   Bootstrap 5.1.3 Enhancement Layer
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Design Tokens ────────────────────────────────────────────────────────── */
+:root {
+  /* Primary palette */
+  --sh-primary:     #1a3a6b;
+  --sh-primary-light: #e8f0fe;
+  --sh-accent:      #0d6efd;
+  --sh-success:     #198754;
+  --sh-success-light: #d1f2e0;
+  --sh-warning:     #fd7e14;
+  --sh-warning-light: #fff3e0;
+  --sh-danger:      #dc3545;
+  --sh-danger-light: #fde8e8;
+  --sh-info:        #0dcaf0;
+  --sh-info-light:  #e0f7fa;
+
+  /* Neutrals */
+  --sh-gray-50:     #f9fafb;
+  --sh-gray-100:    #f3f4f6;
+  --sh-gray-200:    #e5e7eb;
+  --sh-gray-300:    #d1d5db;
+  --sh-gray-500:    #6b7280;
+  --sh-gray-700:    #374151;
+  --sh-gray-900:    #111827;
+
+  /* Spacing & Radius */
+  --sh-radius-sm:   8px;
+  --sh-radius-md:   12px;
+  --sh-radius-lg:   16px;
+  --sh-radius-xl:   20px;
+  --sh-shadow-sm:   0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --sh-shadow-md:   0 4px 12px rgba(0,0,0,.08);
+  --sh-shadow-lg:   0 8px 25px rgba(0,0,0,.1);
+
+  /* Typography */
+  --sh-font:        'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ── Base ─────────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--sh-font);
+  background: var(--sh-gray-50);
+  color: var(--sh-gray-700);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Cards — the building block of every page ─────────────────────────────── */
+.card {
+  border: 1px solid var(--sh-gray-200);
+  border-radius: var(--sh-radius-lg);
+  box-shadow: var(--sh-shadow-sm);
+  transition: transform .15s ease, box-shadow .15s ease;
+}
+.card:hover {
+  box-shadow: var(--sh-shadow-md);
+}
+.card-header {
+  background: #fff;
+  border-bottom: 1px solid var(--sh-gray-200);
+  border-radius: var(--sh-radius-lg) var(--sh-radius-lg) 0 0 !important;
+  padding: 1rem 1.25rem;
+}
+.card-body { padding: 1.25rem; }
+
+/* ── Buttons ──────────────────────────────────────────────────────────────── */
+.btn {
+  border-radius: var(--sh-radius-sm);
+  font-weight: 600;
+  font-size: .875rem;
+  padding: .5rem 1rem;
+  transition: all .15s ease;
+  letter-spacing: .01em;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: translateY(0); }
+.btn-primary {
+  background: var(--sh-accent);
+  border-color: var(--sh-accent);
+}
+.btn-primary:hover { background: #0b5ed7; border-color: #0b5ed7; }
+.btn-outline-primary { border-color: var(--sh-accent); color: var(--sh-accent); }
+.btn-outline-primary:hover { background: var(--sh-primary-light); border-color: var(--sh-accent); color: var(--sh-accent); }
+.btn-lg { padding: .65rem 1.5rem; font-size: .95rem; border-radius: var(--sh-radius-md); }
+.btn-sm { padding: .3rem .7rem; font-size: .78rem; border-radius: 6px; }
+
+/* ── Forms ────────────────────────────────────────────────────────────────── */
+.form-control, .form-select {
+  border-radius: var(--sh-radius-sm);
+  border: 1px solid var(--sh-gray-300);
+  font-size: .875rem;
+  padding: .55rem .85rem;
+  transition: border-color .15s, box-shadow .15s;
+}
+.form-control:focus, .form-select:focus {
+  border-color: var(--sh-accent);
+  box-shadow: 0 0 0 3px rgba(13,110,253,.12);
+}
+.form-label {
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--sh-gray-700);
+  margin-bottom: .35rem;
+}
+.form-text { font-size: .75rem; color: var(--sh-gray-500); }
+
+/* ── Tables ───────────────────────────────────────────────────────────────── */
+.table {
+  font-size: .85rem;
+  --bs-table-hover-bg: var(--sh-gray-50);
+}
+.table thead th {
+  font-size: .75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--sh-gray-500);
+  border-bottom: 2px solid var(--sh-gray-200);
+  padding: .75rem 1rem;
+  white-space: nowrap;
+}
+.table tbody td {
+  padding: .7rem 1rem;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--sh-gray-100);
+}
+.table-responsive { border-radius: var(--sh-radius-md); }
+
+/* ── Badges ───────────────────────────────────────────────────────────────── */
+.badge {
+  font-weight: 600;
+  font-size: .72rem;
+  padding: .35em .65em;
+  border-radius: 6px;
+  letter-spacing: .02em;
+}
+
+/* ── Alerts ───────────────────────────────────────────────────────────────── */
+.alert {
+  border-radius: var(--sh-radius-md);
+  border: none;
+  font-size: .875rem;
+}
+
+/* ── Modals ───────────────────────────────────────────────────────────────── */
+.modal-content {
+  border: none;
+  border-radius: var(--sh-radius-lg);
+  box-shadow: var(--sh-shadow-lg);
+}
+.modal-header {
+  border-bottom: 1px solid var(--sh-gray-200);
+  padding: 1.25rem 1.5rem;
+}
+.modal-body { padding: 1.5rem; }
+.modal-footer { border-top: 1px solid var(--sh-gray-200); padding: 1rem 1.5rem; }
+
+/* ── Navbar ───────────────────────────────────────────────────────────────── */
+.navbar { min-height: 60px; }
+.navbar .nav-link {
+  font-size: .84rem;
+  font-weight: 500;
+  padding: .5rem .85rem;
+  border-radius: var(--sh-radius-sm);
+  transition: background .15s;
+}
+.navbar .nav-link:hover,
+.navbar .nav-link.active { background: rgba(255,255,255,.12); }
+.navbar .dropdown-menu {
+  border: 1px solid var(--sh-gray-200);
+  border-radius: var(--sh-radius-md);
+  box-shadow: var(--sh-shadow-md);
+  padding: .5rem;
+  min-width: 200px;
+}
+.navbar .dropdown-item {
+  border-radius: 6px;
+  font-size: .84rem;
+  padding: .5rem .85rem;
+  font-weight: 500;
+}
+.navbar .dropdown-item:hover { background: var(--sh-primary-light); color: var(--sh-accent); }
+
+/* ── Pagination ───────────────────────────────────────────────────────────── */
+.pagination .page-link {
+  border-radius: 6px;
+  margin: 0 2px;
+  font-size: .82rem;
+  font-weight: 500;
+  border: 1px solid var(--sh-gray-200);
+}
+.pagination .page-item.active .page-link {
+  background: var(--sh-accent);
+  border-color: var(--sh-accent);
+}
+
+/* ── List Groups ──────────────────────────────────────────────────────────── */
+.list-group-item {
+  border-color: var(--sh-gray-100);
+  padding: .85rem 1.25rem;
+}
+
+/* ── Progress Bars ────────────────────────────────────────────────────────── */
+.progress {
+  border-radius: 20px;
+  height: 8px;
+  background: var(--sh-gray-100);
+}
+.progress-bar { border-radius: 20px; }
+
+/* ── Stat Cards (used on dashboards) ──────────────────────────────────────── */
+.stat-card {
+  border: none;
+  border-radius: var(--sh-radius-lg);
+  transition: transform .15s, box-shadow .15s;
+}
+.stat-card:hover { transform: translateY(-3px); box-shadow: var(--sh-shadow-lg); }
+.stat-card .stat-icon {
+  width: 48px; height: 48px; border-radius: var(--sh-radius-md);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem;
+}
+.stat-card .stat-value { font-size: 1.7rem; font-weight: 800; line-height: 1.1; }
+.stat-card .stat-label {
+  font-size: .72rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .04em;
+  color: var(--sh-gray-500);
+}
+
+/* ── Quick Action Buttons ─────────────────────────────────────────────────── */
+.quick-action-btn {
+  border-radius: var(--sh-radius-md);
+  padding: 1rem .75rem;
+  border: 1px solid var(--sh-gray-200);
+  transition: all .15s;
+  text-decoration: none;
+  color: var(--sh-gray-700);
+  background: #fff;
+}
+.quick-action-btn:hover {
+  border-color: var(--sh-accent);
+  background: var(--sh-primary-light);
+  color: var(--sh-accent);
+  transform: translateY(-2px);
+  box-shadow: var(--sh-shadow-sm);
+}
+.quick-action-btn i { font-size: 1.5rem; }
+
+/* ── Period Badge ─────────────────────────────────────────────────────────── */
+.period-badge {
+  background: linear-gradient(135deg, var(--sh-primary), var(--sh-accent));
+  color: #fff;
+  border-radius: var(--sh-radius-sm);
+  padding: .5rem 1rem;
+  font-size: .8rem;
+  font-weight: 600;
+}
+
+/* ── Filter Cards ─────────────────────────────────────────────────────────── */
+.filter-card {
+  background: #fff;
+  border: 1px solid var(--sh-gray-200);
+  border-radius: var(--sh-radius-lg);
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.25rem;
+}
+
+/* ── Status Timeline (student applications) ───────────────────────────────── */
+.status-timeline .step-circle {
+  width: 30px; height: 30px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .75rem;
+}
+
+/* ── Scholarship Cards ────────────────────────────────────────────────────── */
+.scholarship-card {
+  border-left: 4px solid var(--sh-accent);
+  border-radius: var(--sh-radius-md);
+  margin-bottom: 1rem;
+}
+.scholarship-card:hover {
+  border-left-color: var(--sh-primary);
+}
+
+/* ── Footer ───────────────────────────────────────────────────────────────── */
+footer { margin-top: auto; }
+
+/* ── Hero Section (homepage) ──────────────────────────────────────────────── */
+.hero-section {
+  background: linear-gradient(135deg, var(--sh-primary) 0%, var(--sh-accent) 100%);
+  border-radius: 0 0 2rem 2rem;
+}
+.hero-section .display-4 { font-weight: 800; line-height: 1.15; }
+
+/* ── Feature Cards (homepage) ─────────────────────────────────────────────── */
+.features .card { border: none; }
+.features .card:hover { transform: translateY(-4px); }
+.feature-icon {
+  width: 72px; height: 72px; margin: 0 auto;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: var(--sh-radius-md);
+  background: var(--sh-primary-light);
+}
+
+/* ── Animations ───────────────────────────────────────────────────────────── */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-in-up { animation: fadeInUp .5s ease-out; }
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .hero-section .display-4 { font-size: 1.8rem; }
+  .stat-card .stat-value { font-size: 1.4rem; }
+  .stat-card .stat-icon { width: 40px; height: 40px; font-size: 1.1rem; }
+  .quick-action-btn { padding: .75rem .5rem; }
+  .quick-action-btn i { font-size: 1.2rem; }
+  .table { font-size: .8rem; }
+  .table thead th { font-size: .7rem; padding: .5rem .6rem; }
+  .table tbody td { padding: .5rem .6rem; }
+  .card-body { padding: 1rem; }
+  .modal-body { padding: 1rem; }
+  .btn { font-size: .82rem; padding: .4rem .8rem; }
+}
+
+@media (max-width: 576px) {
+  .container-fluid { padding-left: .75rem; padding-right: .75rem; }
+  .stat-card .stat-value { font-size: 1.2rem; }
+  .period-badge { font-size: .72rem; padding: .4rem .75rem; }
+}
+
+/* ── Utility: border-left colors (legacy compat) ──────────────────────────── */
+.border-left-primary { border-left: .25rem solid var(--sh-accent) !important; }
+.border-left-success { border-left: .25rem solid var(--sh-success) !important; }
+.border-left-warning { border-left: .25rem solid var(--sh-warning) !important; }
+.border-left-info    { border-left: .25rem solid var(--sh-info) !important; }
+.border-left-danger  { border-left: .25rem solid var(--sh-danger) !important; }
+.border-left-secondary { border-left: .25rem solid var(--sh-gray-500) !important; }
+
+/* ── Loading Spinner ──────────────────────────────────────────────────────── */
+.spinner {
+  border: 3px solid var(--sh-gray-200);
+  border-left: 3px solid var(--sh-accent);
+  border-radius: 50%;
+  width: 36px; height: 36px;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Scrollbar (subtle) ───────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: var(--sh-gray-50); }
+::-webkit-scrollbar-thumb { background: var(--sh-gray-300); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--sh-gray-500); }

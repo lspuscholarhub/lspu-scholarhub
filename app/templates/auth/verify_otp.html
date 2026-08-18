@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block title %}Verify Your Email - LSPU ScholarHub{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+      <div class="card shadow border-0" style="border-radius:12px;">
+        <div class="card-body p-4 p-md-5">
+
+          <!-- Header -->
+          <div class="text-center mb-4">
+            <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex
+                        align-items-center justify-content-center mb-3"
+                 style="width:72px;height:72px;">
+              <i class="bi bi-shield-lock-fill text-primary" style="font-size:2rem;"></i>
+            </div>
+            <h2 class="fw-bold mb-1">Verify Your Email</h2>
+            <p class="text-muted small mb-0">
+              We sent a 6-digit verification code to
+            </p>
+            <p class="fw-semibold text-primary">{{ email }}</p>
+          </div>
+
+          <!-- Countdown timer -->
+          <div class="text-center mb-4">
+            <div class="d-inline-flex align-items-center gap-2 bg-warning bg-opacity-10
+                        border border-warning rounded-pill px-3 py-2">
+              <i class="bi bi-clock text-warning"></i>
+              <span class="small fw-semibold text-warning">
+                Code expires in <span id="countdown">--:--</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- OTP form -->
+          <form method="POST" id="otpForm">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="mb-4">
+              <label class="form-label fw-semibold text-center d-block">
+                Enter 6-Digit Code
+              </label>
+
+              <!-- 6 individual digit boxes -->
+              <div class="d-flex justify-content-center gap-2 mb-2" id="otpBoxes">
+                {% for i in range(6) %}
+                <input type="text"
+                       class="form-control otp-box text-center fw-bold fs-4"
+                       maxlength="1"
+                       inputmode="numeric"
+                       pattern="[0-9]"
+                       autocomplete="off"
+                       style="width:52px;height:60px;border-radius:10px;
+                              border:2px solid #dee2e6;">
+                {% endfor %}
+              </div>
+
+              <!-- Hidden field that holds the combined OTP -->
+              <input type="hidden" name="otp" id="otpHidden">
+            </div>
+
+            <div class="d-grid mb-3">
+              <button type="submit" class="btn btn-primary btn-lg fw-semibold"
+                      id="verifyBtn" disabled>
+                <i class="bi bi-check-circle me-2"></i>Verify & Create Account
+              </button>
+            </div>
+          </form>
+
+          <!-- Resend -->
+          <div class="text-center">
+            <p class="text-muted small mb-2">Didn't receive the code?</p>
+            <form method="POST" action="{{ url_for('auth.resend_otp') }}" class="d-inline">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+              <button type="submit" class="btn btn-outline-secondary btn-sm"
+                      id="resendBtn">
+                <i class="bi bi-arrow-clockwise me-1"></i>Resend Code
+              </button>
+            </form>
+          </div>
+
+          <div class="text-center mt-3">
+            <a href="{{ url_for('auth.register') }}"
+               class="text-muted small text-decoration-none">
+              <i class="bi bi-arrow-left me-1"></i>Back to Registration
+            </a>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  'use strict';
+
+  const boxes     = document.querySelectorAll('.otp-box');
+  const hidden    = document.getElementById('otpHidden');
+  const verifyBtn = document.getElementById('verifyBtn');
+  const countdown = document.getElementById('countdown');
+
+  // ── OTP box navigation ────────────────────────────────────────────────────
+  boxes.forEach((box, idx) => {
+
+    box.addEventListener('input', function () {
+      // Only allow digits
+      this.value = this.value.replace(/\D/g, '').slice(-1);
+
+      // Move to next box
+      if (this.value && idx < boxes.length - 1) {
+        boxes[idx + 1].focus();
+      }
+
+      updateHidden();
+    });
+
+    box.addEventListener('keydown', function (e) {
+      // Backspace: clear current and move back
+      if (e.key === 'Backspace' && !this.value && idx > 0) {
+        boxes[idx - 1].value = '';
+        boxes[idx - 1].focus();
+        updateHidden();
+      }
+      // Allow paste
+      if (e.key === 'v' && (e.ctrlKey || e.metaKey)) return;
+    });
+
+    box.addEventListener('paste', function (e) {
+      e.preventDefault();
+      const pasted = (e.clipboardData || window.clipboardData)
+                       .getData('text').replace(/\D/g, '').slice(0, 6);
+      pasted.split('').forEach((ch, i) => {
+        if (boxes[i]) boxes[i].value = ch;
+      });
+      if (boxes[Math.min(pasted.length, 5)]) {
+        boxes[Math.min(pasted.length, 5)].focus();
+      }
+      updateHidden();
+    });
+
+    // Highlight on focus
+    box.addEventListener('focus', function () {
+      this.style.borderColor = '#0d6efd';
+      this.style.boxShadow   = '0 0 0 .2rem rgba(13,110,253,.25)';
+    });
+    box.addEventListener('blur', function () {
+      this.style.borderColor = this.value ? '#0d6efd' : '#dee2e6';
+      this.style.boxShadow   = 'none';
+    });
+  });
+
+  function updateHidden() {
+    const otp = Array.from(boxes).map(b => b.value).join('');
+    hidden.value    = otp;
+    verifyBtn.disabled = otp.length < 6;
+  }
+
+  // Auto-focus first box
+  boxes[0].focus();
+
+  // ── Countdown timer ───────────────────────────────────────────────────────
+  const expiresAt = new Date('{{ expires.isoformat() }}Z');   // UTC
+
+  function updateCountdown() {
+    const now  = new Date();
+    const diff = Math.max(0, Math.floor((expiresAt - now) / 1000));
+    const m    = String(Math.floor(diff / 60)).padStart(2, '0');
+    const s    = String(diff % 60).padStart(2, '0');
+    countdown.textContent = `${m}:${s}`;
+
+    if (diff === 0) {
+      countdown.textContent = 'Expired';
+      countdown.closest('.d-inline-flex').classList.replace('border-warning', 'border-danger');
+      countdown.classList.replace('text-warning', 'text-danger');
+      verifyBtn.disabled = true;
+      verifyBtn.textContent = 'Code Expired — Please Resend';
+    }
+  }
+
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
+
+  // ── Loading state on submit ───────────────────────────────────────────────
+  document.getElementById('otpForm').addEventListener('submit', function () {
+    verifyBtn.disabled  = true;
+    verifyBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Verifying…';
+  });
+
+})();
+</script>
+
+<style>
+.otp-box::-webkit-outer-spin-button,
+.otp-box::-webkit-inner-spin-button { -webkit-appearance: none; }
+.otp-box { -moz-appearance: textfield; }
+</style>
+{% endblock %}

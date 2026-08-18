@@ -1,0 +1,39 @@
+# Environment / secrets
+.env
+.env.backup
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+venv/
+env/
+.venv/
+
+# Uploaded files (stored locally, not in git)
+app/static/uploads/
+
+# Logs
+logs/
+*.log
+
+# Database migration temp files
+add_*.py
+
+# IDE
+.vscode/settings.json
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

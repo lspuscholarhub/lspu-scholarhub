@@ -1,0 +1,300 @@
+{% extends "base.html" %}
+{% block title %}Notifications - Staff{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3">Send Notifications</h1>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#sendModal">
+      <i class="bi bi-send"></i> New Notification
+    </button>
+  </div>
+
+  <div class="card shadow">
+    <div class="card-header py-3"><h6 class="m-0 fw-bold text-primary">Recent Notifications Sent</h6></div>
+    <div class="card-body p-0">
+      {% if recent %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr><th>Title</th><th>Recipient</th><th>Type</th><th>Sent</th><th>Read</th></tr>
+          </thead>
+          <tbody>
+            {% for n in recent %}
+            <tr>
+              <td>
+                <strong>{{ n.title }}</strong><br>
+                <small class="text-muted">{{ n.message[:60] }}…</small>
+              </td>
+              <td class="small">{{ n.recipient.get_full_name() }}</td>
+              <td><span class="badge bg-secondary small">
+                {{ n.notification_type.value.replace('_',' ')|title }}
+              </span></td>
+              <td class="small">{{ n.sent_at.strftime('%b %d, %Y %H:%M') }}</td>
+              <td>
+                {% if n.is_read %}<span class="badge bg-success">Read</span>
+                {% else %}<span class="badge bg-warning text-dark">Unread</span>{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-5 text-muted">
+        <i class="bi bi-bell-slash display-4"></i>
+        <p class="mt-3">No notifications sent yet.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Send Modal -->
+<div class="modal fade" id="sendModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-send me-2"></i>Send Notification</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('staff.send_notification') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-body">
+
+          <!-- Recipient Type -->
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Send To *</label>
+            <select class="form-select" name="recipient_type" id="recipientType" onchange="handleGroupChange(this.value)">
+              <option value="multiple">Select Students</option>
+              <option value="course">By Course / Program</option>
+              <option value="year">By Year Level</option>
+              <option value="gender">By Gender</option>
+              <option value="scholarship">By Scholarship</option>
+              <option value="at_risk">At-Risk Students (GWA &gt; 3.00)</option>
+            </select>
+          </div>
+
+          <!-- Group sub-filter -->
+          <div class="mb-2 d-none" id="groupSubFilter">
+            <div class="d-none" id="sub_course">
+              <label class="form-label small fw-semibold">Course / Program</label>
+              <select class="form-select mb-2" name="group_course" id="sel_course" onchange="filterByGroup('course',this.value)">
+                <option value="">— choose —</option>
+                {% for c in courses %}<option value="{{ c }}">{{ c }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="d-none" id="sub_year">
+              <label class="form-label small fw-semibold">Year Level</label>
+              <select class="form-select mb-2" name="group_year" id="sel_year" onchange="filterByGroup('year',this.value)">
+                <option value="">— choose —</option>
+                {% for y in year_levels %}<option value="{{ y }}">{{ y }}</option>{% endfor %}
+              </select>
+            </div>
+            <div class="d-none" id="sub_gender">
+              <label class="form-label small fw-semibold">Gender</label>
+              <select class="form-select mb-2" name="group_gender" id="sel_gender" onchange="filterByGroup('gender',this.value)">
+                <option value="">— choose —</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+              </select>
+            </div>
+            <div class="d-none" id="sub_scholarship">
+              <label class="form-label small fw-semibold">Scholarship Program</label>
+              <select class="form-select mb-2" name="group_scholarship" id="sel_scholarship" onchange="filterByGroup('scholarship',this.value)">
+                <option value="">— choose —</option>
+                {% for sch in scholarships %}<option value="{{ sch.id }}">{{ sch.title }}</option>{% endfor %}
+              </select>
+            </div>
+          </div>
+
+          <!-- Unified student list -->
+          <div class="mb-3" id="studentListPanel">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <label class="form-label fw-semibold mb-0">Students
+                <span class="badge bg-primary ms-1" id="selectedCount">0 selected</span>
+              </label>
+              <div class="d-flex gap-2">
+                <button type="button" class="btn btn-link btn-sm p-0 text-primary" onclick="selectAllVisible()">Select all</button>
+                <span class="text-muted small">|</span>
+                <button type="button" class="btn btn-link btn-sm p-0 text-secondary" onclick="clearAll()">Clear</button>
+              </div>
+            </div>
+            <div class="input-group mb-2" id="searchRow">
+              <input type="text" class="form-control form-control-sm"
+                     id="studentSearchBox"
+                     placeholder="Search by name or student ID…"
+                     autocomplete="off"
+                     oninput="notifSearch(this.value)"
+                     onkeydown="if(event.key==='Enter'){event.preventDefault();}">
+              <button type="button" class="btn btn-outline-secondary btn-sm"
+                      onclick="document.getElementById('studentSearchBox').value='';notifSearch('');">
+                <i class="bi bi-x"></i>
+              </button>
+            </div>
+            <div class="border rounded" style="max-height:200px;overflow-y:auto;background:#fafafa;">
+              <div class="px-3 py-2 border-bottom bg-white sticky-top">
+                <span class="small text-muted" id="listCountLabel">{{ students|length }} students</span>
+              </div>
+              <div id="studentCheckboxList" class="px-2 py-1">
+                {% for s in students %}
+                <div class="student-item align-items-center gap-2 py-1 px-2 rounded"
+                     data-name="{{ s.get_full_name()|lower }}"
+                     data-id="{{ s.student_id|lower }}"
+                     data-course="{{ s.course|lower if s.course else '' }}"
+                     data-year="{{ s.year_level|lower if s.year_level else '' }}"
+                     data-gender="{{ s.gender|lower if s.gender else '' }}"
+                     data-gwa="{{ s.gwa if s.gwa else '' }}"
+                     style="cursor:pointer;display:flex;" onclick="toggleCheck({{ s.id }})">
+                  <input class="form-check-input flex-shrink-0 student-checkbox" type="checkbox"
+                         name="recipient_ids" value="{{ s.id }}"
+                         id="chk_{{ s.id }}" onchange="updateCount()" onclick="event.stopPropagation()">
+                  <label class="mb-0 small w-100" for="chk_{{ s.id }}" style="cursor:pointer;">
+                    <span class="fw-semibold">{{ s.get_full_name() }}</span>
+                    <span class="text-muted ms-1">{{ s.student_id }}</span>
+                    {% if s.course %}<span class="text-muted ms-1">· {{ s.course[:30] }}</span>{% endif %}
+                    {% if s.year_level %}<span class="text-muted ms-1">· {{ s.year_level }}</span>{% endif %}
+                  </label>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+
+          <hr class="my-3">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Title *</label>
+            <input type="text" class="form-control" name="title" placeholder="e.g. Important Scholarship Reminder" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Message *</label>
+            <textarea class="form-control" name="message" rows="4"
+                      placeholder="Write your notification message here…" required></textarea>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="send_sms" id="sendSms">
+            <label class="form-check-label" for="sendSms">
+              Also send as SMS
+              <span class="text-muted small">(sent to students with a phone number saved)</span>
+            </label>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-send me-1"></i>Send</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+{% block scripts %}
+<script>
+var SCHOLARSHIP_STUDENTS = {
+  {% for sch in scholarships %}
+  "{{ sch.id }}": [{% for app in sch.applications if app.status.value == 'approved' %}{{ app.applicant_id }}{% if not loop.last %},{% endif %}{% endfor %}]{% if not loop.last %},{% endif %}
+  {% endfor %}
+};
+
+function handleGroupChange(type) {
+  var subs = ['course','year','gender','scholarship'];
+  subs.forEach(function(s){ document.getElementById('sub_' + s).classList.add('d-none'); });
+  var groupPanel = document.getElementById('groupSubFilter');
+  var searchRow  = document.getElementById('searchRow');
+
+  if (type === 'multiple') {
+    groupPanel.classList.add('d-none');
+    searchRow.classList.remove('d-none');
+    document.getElementById('studentSearchBox').value = '';
+    showAllItems(); clearAll();
+  } else if (type === 'at_risk') {
+    groupPanel.classList.add('d-none');
+    searchRow.classList.add('d-none');
+    filterItems(function(item) {
+      var gwa = parseFloat(item.getAttribute('data-gwa') || '0');
+      return gwa > 3.00;
+    });
+  } else {
+    groupPanel.classList.remove('d-none');
+    searchRow.classList.add('d-none');
+    document.getElementById('sub_' + type).classList.remove('d-none');
+    showAllItems(); clearAll(); updateListCount();
+  }
+}
+
+function filterByGroup(type, val) {
+  clearAll();
+  if (!val) { showAllItems(); updateListCount(); return; }
+  filterItems(function(item) {
+    if (type === 'course')      return item.getAttribute('data-course') === val.toLowerCase();
+    if (type === 'year')        return item.getAttribute('data-year')   === val.toLowerCase();
+    if (type === 'gender')      return item.getAttribute('data-gender') === val.toLowerCase();
+    if (type === 'scholarship') {
+      var ids = SCHOLARSHIP_STUDENTS[val] || [];
+      var itemId = parseInt(item.querySelector('.student-checkbox').value);
+      return ids.indexOf(itemId) !== -1;
+    }
+    return true;
+  });
+}
+
+function filterItems(matchFn) {
+  var items = document.getElementById('studentCheckboxList').getElementsByClassName('student-item');
+  for (var i = 0; i < items.length; i++) {
+    items[i].style.display = matchFn(items[i]) ? 'flex' : 'none';
+  }
+  updateListCount();
+}
+
+function showAllItems() {
+  var items = document.getElementById('studentCheckboxList').getElementsByClassName('student-item');
+  for (var i = 0; i < items.length; i++) { items[i].style.display = 'flex'; }
+  updateListCount();
+}
+
+function updateListCount() {
+  var items = document.getElementById('studentCheckboxList').getElementsByClassName('student-item');
+  var v = 0;
+  for (var i = 0; i < items.length; i++) { if (items[i].style.display !== 'none') v++; }
+  document.getElementById('listCountLabel').textContent = v + ' student(s)';
+}
+
+function notifSearch(val) {
+  var q = val.trim().toLowerCase();
+  var items = document.getElementById('studentCheckboxList').getElementsByClassName('student-item');
+  for (var i = 0; i < items.length; i++) {
+    var name = items[i].getAttribute('data-name') || '';
+    var sid  = items[i].getAttribute('data-id')   || '';
+    items[i].style.display = (!q || name.indexOf(q) !== -1 || sid.indexOf(q) !== -1) ? 'flex' : 'none';
+  }
+  updateListCount();
+}
+
+function updateCount() {
+  var n = document.querySelectorAll('.student-checkbox:checked').length;
+  document.getElementById('selectedCount').textContent = n + ' selected';
+}
+
+function toggleCheck(id) {
+  var item = document.getElementById('chk_' + id).closest('.student-item');
+  if (item.style.display === 'none') return;
+  var cb = document.getElementById('chk_' + id);
+  cb.checked = !cb.checked;
+  updateCount();
+}
+
+function selectAllVisible() {
+  var items = document.getElementById('studentCheckboxList').getElementsByClassName('student-item');
+  for (var i = 0; i < items.length; i++) {
+    if (items[i].style.display !== 'none') items[i].querySelector('.student-checkbox').checked = true;
+  }
+  updateCount();
+}
+
+function clearAll() {
+  document.querySelectorAll('.student-checkbox').forEach(function(cb){ cb.checked = false; });
+  updateCount();
+}
+</script>
+{% endblock %}
+{% endblock %}

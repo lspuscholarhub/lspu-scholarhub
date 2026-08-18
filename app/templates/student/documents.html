@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% block title %}Documents - Student{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3">My Documents</h1>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+      <i class="bi bi-cloud-upload"></i> Upload Document
+    </button>
+  </div>
+
+  <!-- Stats -->
+  <div class="row mb-4">
+    <div class="col-md-4"><div class="card shadow text-center py-3">
+      <h2 class="text-success mb-0">{{ verified }}</h2><small class="text-muted">Verified</small>
+    </div></div>
+    <div class="col-md-4"><div class="card shadow text-center py-3">
+      <h2 class="text-warning mb-0">{{ pending_v }}</h2><small class="text-muted">Pending Verification</small>
+    </div></div>
+    <div class="col-md-4"><div class="card shadow text-center py-3">
+      <h2 class="text-info mb-0">
+        {% if total_size < 1048576 %}{{ (total_size/1024)|round(1) }} KB
+        {% else %}{{ (total_size/1048576)|round(1) }} MB{% endif %}
+      </h2><small class="text-muted">Total Size</small>
+    </div></div>
+  </div>
+
+  <div class="card shadow">
+    <div class="card-body">
+      {% if documents %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle">
+          <thead class="table-light">
+            <tr><th>Document</th><th>Uploaded</th><th>Size</th><th>Status</th><th>Actions</th></tr>
+          </thead>
+          <tbody>
+            {% for doc in documents %}
+            <tr>
+              <td>
+                <i class="{{ doc.icon_class }} me-2"></i>
+                <strong>{{ doc.original_filename }}</strong>
+                {% if doc.description %}<br><small class="text-muted">{{ doc.description }}</small>{% endif %}
+              </td>
+              <td class="small">{{ doc.uploaded_at.strftime('%b %d, %Y') }}</td>
+              <td class="small">{{ doc.file_size_display }}</td>
+              <td>
+                {% if doc.is_verified %}
+                  <span class="badge bg-success">Verified</span>
+                {% else %}
+                  <span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Pending</span>
+                {% endif %}
+              </td>
+              <td>
+                <a href="{{ url_for('student.view_document', doc_id=doc.id) }}"
+                   class="btn btn-sm btn-outline-primary" target="_blank">
+                  <i class="bi bi-eye me-1"></i>View
+                </a>
+                <a href="{{ url_for('student.download_document', doc_id=doc.id) }}"
+                   class="btn btn-sm btn-outline-secondary">
+                  <i class="bi bi-download me-1"></i>Download
+                </a>
+                <form method="POST"
+                      action="{{ url_for('student.delete_document', doc_id=doc.id) }}"
+                      class="d-inline"
+                      onsubmit="return confirm('Delete this document?')">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+                  <button class="btn btn-sm btn-outline-danger">Delete</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-5">
+        <i class="bi bi-folder2-open display-4 text-muted"></i>
+        <p class="mt-3 text-muted">No documents uploaded yet.</p>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#uploadModal">
+          Upload Your First Document
+        </button>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal fade" id="uploadModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Upload Document</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('student.upload_document') }}" enctype="multipart/form-data">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">File *</label>
+            <input type="file" class="form-control" name="document_file"
+                   accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required>
+            <div class="form-text">PDF, DOC, DOCX, JPG, PNG — max 5 MB</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Description (optional)</label>
+            <textarea class="form-control" name="document_description" rows="2"
+                      placeholder="e.g. Transcript of Records, Good Moral Certificate…"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Upload</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% block title %}Staff Dashboard - LSPU ScholarHub{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+      <h1 class="h3 fw-bold mb-1">Staff Dashboard</h1>
+      <p class="text-muted small mb-0">Scholarship management overview</p>
+    </div>
+    {% if current_period %}
+    <div class="period-badge d-flex align-items-center gap-2">
+      <i class="bi bi-calendar3"></i>
+      <span>{{ current_period.display_name }}</span>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Primary Metrics -->
+  <div class="row g-3 mb-4">
+    {% set metrics = [
+      ('Pending Review',  to_review,       '#fd7e14', '#fff3e0', 'bi-clock-fill'),
+      ('Reviewed Today',  reviewed_today,  '#198754', '#d1f2e0', 'bi-check-circle-fill'),
+      ('Active Scholars', active_students, '#0d6efd', '#e8f0fe', 'bi-people-fill'),
+      ('Approved',        approved_count,  '#198754', '#d1f2e0', 'bi-award-fill'),
+      ('At Risk',         at_risk_count,   '#dc3545', '#fde8e8', 'bi-exclamation-triangle-fill'),
+      ('Open Batches',    active_batches,  '#6f42c1', '#ede8f5', 'bi-collection-fill'),
+    ] %}
+    {% for label, value, color, bg, icon in metrics %}
+    <div class="col-xl-2 col-md-4 col-6">
+      <div class="card stat-card shadow-sm h-100">
+        <div class="card-body p-3">
+          <div class="d-flex align-items-center gap-3">
+            <div class="stat-icon" style="background:{{ bg }};color:{{ color }};">
+              <i class="bi {{ icon }}"></i>
+            </div>
+            <div>
+              <div class="stat-value" style="color:{{ color }};">{{ value }}</div>
+              <div class="stat-label">{{ label }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Fund Summary + Gender -->
+  <div class="row g-3 mb-4">
+    <div class="col-lg-4">
+      <div class="card stat-card shadow-sm h-100" style="background:linear-gradient(135deg,#1a3a6b,#0d6efd);">
+        <div class="card-body p-4 text-white">
+          <div class="stat-label" style="color:rgba(255,255,255,.7);">Total Funds Disbursed</div>
+          <div class="stat-value mt-1" style="color:#fff;">₱{{ "{:,.0f}".format(total_funds) }}</div>
+          <div class="small mt-2" style="color:rgba(255,255,255,.6);">{{ active_batches }} active batch(es)</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card stat-card shadow-sm h-100">
+        <div class="card-body p-4">
+          <div class="stat-label mb-3">Gender Breakdown</div>
+          <div class="d-flex align-items-center gap-4">
+            <div class="text-center">
+              <div class="stat-icon mx-auto mb-2" style="background:#e8f0fe;color:#0d6efd;"><i class="bi bi-gender-male"></i></div>
+              <div class="fw-bold fs-5 text-primary">{{ male_students }}</div>
+              <div class="small text-muted">Male</div>
+            </div>
+            <div class="text-center">
+              <div class="stat-icon mx-auto mb-2" style="background:#fce4ec;color:#e91e63;"><i class="bi bi-gender-female"></i></div>
+              <div class="fw-bold fs-5" style="color:#e91e63;">{{ female_students }}</div>
+              <div class="small text-muted">Female</div>
+            </div>
+            <div class="text-center flex-grow-1">
+              <div class="stat-icon mx-auto mb-2" style="background:#f3f4f6;color:#6b7280;"><i class="bi bi-people"></i></div>
+              <div class="fw-bold fs-5">{{ active_students }}</div>
+              <div class="small text-muted">Total</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-4">
+      <div class="card stat-card shadow-sm h-100">
+        <div class="card-body p-4">
+          <div class="stat-label mb-3">Quick Actions</div>
+          <div class="d-grid gap-2">
+            <a href="{{ url_for('staff.review_applications') }}" class="btn btn-primary btn-sm">
+              <i class="bi bi-file-earmark-check me-2"></i>Review Applications
+            </a>
+            <a href="{{ url_for('staff.manage_batches') }}" class="btn btn-outline-success btn-sm">
+              <i class="bi bi-collection me-2"></i>Manage Batches
+            </a>
+            <a href="{{ url_for('staff.monitoring') }}" class="btn btn-outline-warning btn-sm">
+              <i class="bi bi-activity me-2"></i>Monitoring
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pending + Recent -->
+  <div class="row g-3 mb-4">
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 h-100" style="border-radius:var(--sh-radius-lg);">
+        <div class="card-header bg-white border-0 pt-4 pb-0 px-4 d-flex justify-content-between align-items-center">
+          <h6 class="fw-bold mb-0"><i class="bi bi-clock text-warning me-2"></i>Pending Review</h6>
+          <a href="{{ url_for('staff.review_applications', status='pending') }}" class="btn btn-sm btn-outline-primary">View All</a>
+        </div>
+        <div class="card-body p-0 px-2">
+          {% if pending_apps %}
+          <div class="list-group list-group-flush">
+            {% for app in pending_apps %}
+            <div class="list-group-item border-0 px-3 py-3">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <div class="fw-semibold small">{{ app.applicant.get_full_name() }}</div>
+                  <div class="text-muted" style="font-size:.75rem;">{{ app.scholarship.title[:35] }} · {{ app.submitted_at.strftime('%b %d') }}</div>
+                </div>
+                <span class="badge bg-warning text-dark" style="border-radius:6px;"><i class="bi bi-clock me-1"></i>Pending</span>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="text-center py-4 text-muted small"><i class="bi bi-check-circle display-6 d-block mb-2 text-success"></i>All caught up!</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 h-100" style="border-radius:var(--sh-radius-lg);">
+        <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
+          <h6 class="fw-bold mb-0"><i class="bi bi-lightning text-info me-2"></i>Recent Activity</h6>
+        </div>
+        <div class="card-body p-0 px-2">
+          {% if recent_activity %}
+          <div class="list-group list-group-flush">
+            {% for app in recent_activity %}
+            <div class="list-group-item border-0 px-3 py-3">
+              <div class="d-flex justify-content-between align-items-center">
+                <div>
+                  <div class="fw-semibold small">{{ app.applicant.get_full_name() }}</div>
+                  <div class="text-muted" style="font-size:.75rem;">{{ app.scholarship.title[:35] }}</div>
+                </div>
+                {% set sv = app.status.value %}
+                {% if sv=='approved' %}<span class="badge bg-success" style="border-radius:6px;">Approved</span>
+                {% elif sv=='rejected' %}<span class="badge bg-danger" style="border-radius:6px;">Rejected</span>
+                {% elif sv=='under_review' %}<span class="badge bg-info text-dark" style="border-radius:6px;">Review</span>
+                {% else %}<span class="badge bg-warning text-dark" style="border-radius:6px;">Pending</span>{% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="text-center py-4 text-muted small">No recent activity.</div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ TOP PERFORMING STUDENTS ══════════════════════════════════════════════ -->
+  <div class="row g-3 mb-4">
+    <div class="col-12">
+      <div class="card shadow-sm border-0" style="border-radius:var(--sh-radius-lg);">
+        <div class="card-header bg-white border-0 pt-4 pb-0 px-4 d-flex justify-content-between align-items-center">
+          <h6 class="fw-bold text-dark mb-0">Top Performing Students</h6>
+          <a href="{{ url_for('staff.student_directory') }}" class="btn btn-sm btn-outline-primary" style="border-radius:8px;">View All</a>
+        </div>
+        <div class="card-body p-0">
+          {% if top_performers %}
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th style="width:50px;">#</th>
+                  <th>Student</th>
+                  <th>Student ID</th>
+                  <th>Course</th>
+                  <th>Year</th>
+                  <th>GWA</th>
+                  <th>Standing</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for student in top_performers %}
+                <tr>
+                  <td>
+                    <span class="fw-bold text-muted">{{ loop.index }}</span>
+                  </td>
+                  <td>
+                    <div class="fw-semibold">{{ student.get_full_name() }}</div>
+                  </td>
+                  <td><code class="text-primary">{{ student.student_id }}</code></td>
+                  <td><span class="small">{{ student.course[:40] if student.course else '—' }}{% if student.course and student.course|length > 40 %}…{% endif %}</span></td>
+                  <td>{{ student.year_level or '—' }}</td>
+                  <td><span class="fw-bold text-success">{{ "%.2f"|format(student.gwa) }}</span></td>
+                  <td>
+                    {% if student.gwa <= 1.25 %}<span class="badge bg-success">Excellent</span>
+                    {% elif student.gwa <= 1.75 %}<span class="badge bg-info text-dark">Very Satisfactory</span>
+                    {% elif student.gwa <= 2.25 %}<span class="badge bg-primary">Satisfactory</span>
+                    {% elif student.gwa <= 2.75 %}<span class="badge bg-secondary">Fairly Satisfactory</span>
+                    {% elif student.gwa <= 3.00 %}<span class="badge bg-warning text-dark">Passed</span>
+                    {% else %}<span class="badge bg-danger">At Risk</span>{% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="text-center py-4 text-muted">
+            <i class="bi bi-mortarboard display-6 d-block mb-2"></i>
+            <p class="small">No GWA data available yet.</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,94 @@
+"""
+Batch Service — handles auto-assignment of approved scholars to batches.
+
+When a student is approved, this service:
+1. Finds the scholarship they applied to
+2. Looks for an open batch for that scholarship in the current semester
+3. If no open batch exists, creates one automatically
+4. Assigns the student to that batch
+"""
+import logging
+from datetime import datetime
+from app import db
+
+logger = logging.getLogger(__name__)
+
+
+def auto_assign_to_batch(application):
+    """
+    Automatically assign an approved application to the appropriate batch.
+    Creates a new batch if none exists for the scholarship + current period.
+
+    Args:
+        application: ScholarshipApplication object (must be approved)
+
+    Returns:
+        The ScholarshipBatch the application was assigned to, or None on failure.
+    """
+    from app.models import AcademicPeriod, ScholarshipBatch
+    from app.models.scholarship import ApplicationStatus
+
+    if application.status != ApplicationStatus.APPROVED:
+        return None
+
+    try:
+        # Get current academic period
+        current_period = AcademicPeriod.get_current()
+        if not current_period:
+            logger.warning('No current academic period set — cannot auto-assign batch.')
+            return None
+
+        scholarship = application.scholarship
+
+        # Find an open batch for this scholarship in the current period
+        batch = ScholarshipBatch.query.filter_by(
+            scholarship_id=scholarship.id,
+            academic_period_id=current_period.id,
+            status='open',
+        ).order_by(ScholarshipBatch.batch_number.desc()).first()
+
+        # If no open batch exists, create one
+        if not batch:
+            batch_name, batch_number = ScholarshipBatch.suggest_next_batch_name(
+                scholarship.id, current_period.id
+            )
+            batch = ScholarshipBatch(
+                scholarship_id=scholarship.id,
+                academic_period_id=current_period.id,
+                batch_name=batch_name,
+                batch_number=batch_number,
+                amount_per_scholar=scholarship.award_amount,
+                status='open',
+            )
+            db.session.add(batch)
+            db.session.flush()  # get batch.id
+            logger.info(f'Auto-created batch "{batch_name}" for {scholarship.title}')
+
+        # Assign the application to this batch
+        application.batch_id = batch.id
+        application.academic_period_id = current_period.id
+        application.amount_received = batch.amount_per_scholar
+
+        # Recalculate batch totals
+        batch.recalculate_totals()
+
+        return batch
+
+    except Exception as e:
+        logger.error(f'Auto-batch assignment failed: {e}')
+        return None
+
+
+def auto_assign_multiple(applications):
+    """
+    Auto-assign multiple approved applications to batches.
+    Groups by scholarship so each scholarship gets its own batch.
+
+    Returns dict: {scholarship_title: batch_name}
+    """
+    results = {}
+    for app in applications:
+        batch = auto_assign_to_batch(app)
+        if batch:
+            results[app.scholarship.title] = batch.batch_name
+    return results

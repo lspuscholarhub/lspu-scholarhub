@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+{% block title %}Bulk Import Students - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <h1 class="h3 mb-4">Bulk Student Import</h1>
+
+  <div class="row g-4">
+
+    <!-- Upload card -->
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="m-0 fw-bold text-primary">
+            <i class="bi bi-cloud-upload me-2"></i>Upload Excel / CSV File
+          </h6>
+        </div>
+        <div class="card-body">
+          <form method="POST" action="{{ url_for('admin.import_students') }}"
+                enctype="multipart/form-data" id="importForm">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+
+            <!-- Drop zone -->
+            <div id="dropZone"
+                 class="border border-2 border-dashed rounded-3 text-center p-5 mb-4"
+                 style="border-color:#0d6efd !important; cursor:pointer; background:#f8f9ff;">
+              <i class="bi bi-file-earmark-spreadsheet display-4 text-primary mb-3"></i>
+              <p class="fw-semibold mb-1">Drag & drop your file here</p>
+              <p class="text-muted small mb-3">or click to browse</p>
+              <input type="file" id="import_file" name="import_file"
+                     accept=".xlsx,.xls,.csv" class="d-none" required>
+              <button type="button" class="btn btn-outline-primary"
+                      onclick="document.getElementById('import_file').click()">
+                <i class="bi bi-folder2-open me-2"></i>Choose File
+              </button>
+              <p id="fileName" class="mt-3 text-success fw-semibold d-none"></p>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg w-100" id="importBtn" disabled>
+              <i class="bi bi-upload me-2"></i>Import & Send Credentials
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Results -->
+      {% if inserted is defined %}
+      <div class="card border-0 shadow-sm mt-4">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="m-0 fw-bold">Import Results</h6>
+        </div>
+        <div class="card-body">
+          <div class="row text-center g-3 mb-3">
+            <div class="col-6">
+              <div class="bg-success bg-opacity-10 rounded p-3">
+                <div class="h3 text-success mb-0">{{ inserted }}</div>
+                <small class="text-muted">Imported Successfully</small>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="bg-warning bg-opacity-10 rounded p-3">
+                <div class="h3 text-warning mb-0">{{ skipped }}</div>
+                <small class="text-muted">Skipped / Errors</small>
+              </div>
+            </div>
+          </div>
+          {% if import_errors %}
+          <div class="alert alert-warning py-2 px-3 mb-0">
+            <p class="fw-semibold small mb-2">
+              <i class="bi bi-exclamation-triangle me-1"></i>Issues found:
+            </p>
+            <ul class="mb-0 small">
+              {% for err in import_errors %}
+              <li>{{ err }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Instructions -->
+    <div class="col-lg-5">
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="m-0 fw-bold text-primary">
+            <i class="bi bi-info-circle me-2"></i>How It Works
+          </h6>
+        </div>
+        <div class="card-body">
+          <ol class="small mb-0">
+            <li class="mb-2">Prepare your Excel or CSV file with the required columns.</li>
+            <li class="mb-2">Upload the file using the form on the left.</li>
+            <li class="mb-2">The system validates each row for duplicates and format errors.</li>
+            <li class="mb-2">Valid rows are inserted as student accounts instantly.</li>
+            <li class="mb-0">Each student receives an email with their login credentials automatically.</li>
+          </ol>
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-bottom py-3">
+          <h6 class="m-0 fw-bold text-primary">
+            <i class="bi bi-table me-2"></i>Required Columns
+          </h6>
+        </div>
+        <div class="card-body p-0">
+          <table class="table table-sm mb-0">
+            <thead class="table-light">
+              <tr><th>Column Name</th><th>Required</th><th>Example</th></tr>
+            </thead>
+            <tbody class="small">
+              <tr><td><code>student_id</code></td><td><span class="badge bg-danger">Yes</span></td><td>0123-1740</td></tr>
+              <tr><td><code>first_name</code></td><td><span class="badge bg-danger">Yes</span></td><td>Juan</td></tr>
+              <tr><td><code>last_name</code></td><td><span class="badge bg-danger">Yes</span></td><td>Dela Cruz</td></tr>
+              <tr><td><code>middle_name</code></td><td><span class="badge bg-secondary">Optional</span></td><td>Santos</td></tr>
+              <tr><td><code>email</code></td><td><span class="badge bg-danger">Yes</span></td><td>juan@email.com</td></tr>
+              <tr><td><code>year_level</code></td><td><span class="badge bg-danger">Yes</span></td><td>3rd Year</td></tr>
+              <tr><td><code>course</code></td><td><span class="badge bg-secondary">Optional</span></td><td>Bachelor of Science in Information Technology</td></tr>
+              <tr><td><code>phone_number</code></td><td><span class="badge bg-secondary">Optional</span></td><td>09123456789</td></tr>
+              <tr><td><code>gender</code></td><td><span class="badge bg-secondary">Optional</span></td><td>Male / Female</td></tr>
+              <tr><td><code>town</code></td><td><span class="badge bg-secondary">Optional</span></td><td>Santa Cruz</td></tr>
+              <tr><td><code>province</code></td><td><span class="badge bg-secondary">Optional</span></td><td>Laguna</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Download template -->
+      <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-4">
+          <i class="bi bi-file-earmark-excel text-success display-5 mb-2"></i>
+          <p class="small text-muted mb-3">
+            Download the template file to ensure your data is formatted correctly.
+          </p>
+          <a href="{{ url_for('admin.download_import_template') }}"
+             class="btn btn-outline-success">
+            <i class="bi bi-download me-2"></i>Download Template (.xlsx)
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  const input    = document.getElementById('import_file');
+  const btn      = document.getElementById('importBtn');
+  const fileName = document.getElementById('fileName');
+  const dropZone = document.getElementById('dropZone');
+
+  input.addEventListener('change', function () {
+    if (this.files[0]) {
+      fileName.textContent = '✓ ' + this.files[0].name;
+      fileName.classList.remove('d-none');
+      btn.disabled = false;
+    }
+  });
+
+  // Drag and drop
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.style.background = '#e8f0fe'; });
+  dropZone.addEventListener('dragleave', () => { dropZone.style.background = '#f8f9ff'; });
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.style.background = '#f8f9ff';
+    const file = e.dataTransfer.files[0];
+    if (file) {
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      input.files = dt.files;
+      input.dispatchEvent(new Event('change'));
+    }
+  });
+
+  // Loading state
+  document.getElementById('importForm').addEventListener('submit', function () {
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Importing…';
+  });
+})();
+</script>
+{% endblock %}

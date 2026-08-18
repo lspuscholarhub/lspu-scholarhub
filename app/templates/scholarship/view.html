@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}{{ scholarship.title }} - LSPU ScholarHub{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row">
+    <div class="col-lg-8 mx-auto">
+      <div class="card shadow">
+        <div class="card-body p-4">
+
+          <!-- Header -->
+          <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+            <h1 class="card-title h3 mb-0">{{ scholarship.title }}</h1>
+            <div class="text-end">
+              {% if scholarship.status.value == 'active' %}
+                <span class="badge bg-success fs-6">Active</span>
+              {% elif scholarship.status.value == 'closed' %}
+                <span class="badge bg-secondary fs-6">Closed</span>
+              {% else %}
+                <span class="badge bg-warning text-dark fs-6">{{ scholarship.status.value|title }}</span>
+              {% endif %}
+              <div class="mt-1 small text-muted">
+                Deadline: {{ scholarship.application_deadline.strftime('%b %d, %Y') }}
+              </div>
+            </div>
+          </div>
+
+          <!-- Overview -->
+          <div class="row mb-4">
+            <div class="col-md-8">
+              <p class="lead">{{ scholarship.description }}</p>
+            </div>
+            <div class="col-md-4">
+              <div class="card bg-light text-center">
+                <div class="card-body">
+                  {% if scholarship.award_amount %}
+                    <h4 class="text-primary">₱{{ "{:,.0f}".format(scholarship.award_amount) }}</h4>
+                  {% else %}
+                    <h4 class="text-primary">TBA</h4>
+                  {% endif %}
+                  <p class="mb-0 small">award amount</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick stats -->
+          <div class="row mb-4 text-center">
+            <div class="col-6 col-md-3">
+              <h5 class="text-primary">
+                {{ scholarship.current_applicants or 0 }}{% if scholarship.max_applicants %}/{{ scholarship.max_applicants }}{% endif %}
+              </h5>
+              <small class="text-muted">Slots Filled</small>
+            </div>
+            <div class="col-6 col-md-3">
+              <h5 class="text-success">{{ fill_pct }}%</h5>
+              <small class="text-muted">Filled</small>
+            </div>
+            <div class="col-6 col-md-3">
+              {% if days_left >= 0 %}
+                <h5 class="text-info">{{ days_left }} days</h5>
+              {% else %}
+                <h5 class="text-danger">Expired</h5>
+              {% endif %}
+              <small class="text-muted">Time Left</small>
+            </div>
+            <div class="col-6 col-md-3">
+              {% if fill_pct >= 80 %}
+                <h5 class="text-danger">High</h5>
+              {% elif fill_pct >= 50 %}
+                <h5 class="text-warning">Medium</h5>
+              {% else %}
+                <h5 class="text-success">Low</h5>
+              {% endif %}
+              <small class="text-muted">Competition</small>
+            </div>
+          </div>
+
+          <!-- Benefits -->
+          <div class="mb-4">
+            <h4>Benefits</h4>
+            <p>{{ scholarship.benefits }}</p>
+          </div>
+
+          <!-- Eligibility -->
+          <div class="mb-4">
+            <h4>Eligibility Criteria</h4>
+            <p>{{ scholarship.eligibility_criteria }}</p>
+          </div>
+
+          <!-- Required Documents -->
+          <div class="mb-4">
+            <h4>Required Documents</h4>
+            <ul class="list-group">
+              <li class="list-group-item d-flex justify-content-between">
+                <span><i class="bi bi-file-earmark-pdf text-danger me-2"></i>Transcript of Records</span>
+                <span class="badge bg-danger">Required</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between">
+                <span><i class="bi bi-file-earmark-pdf text-danger me-2"></i>Certificate of Good Moral</span>
+                <span class="badge bg-danger">Required</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between">
+                <span><i class="bi bi-file-earmark-text text-danger me-2"></i>Application Essay (300 words)</span>
+                <span class="badge bg-danger">Required</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between">
+                <span><i class="bi bi-file-earmark-pdf text-warning me-2"></i>Birth Certificate</span>
+                <span class="badge bg-warning text-dark">Optional</span>
+              </li>
+              <li class="list-group-item d-flex justify-content-between">
+                <span><i class="bi bi-file-earmark-pdf text-warning me-2"></i>Academic Awards/Certificates</span>
+                <span class="badge bg-warning text-dark">Optional</span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Actions -->
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <a href="{{ url_for('scholarship.list_scholarships') }}" class="btn btn-outline-secondary">
+              <i class="bi bi-arrow-left"></i> Back
+            </a>
+            <div>
+              {% if session.get('user_type') == 'student' %}
+                {% if already_applied %}
+                  <span class="btn btn-secondary disabled">Already Applied</span>
+                {% elif can_reapply %}
+                  {% if scholarship.is_application_open() %}
+                    <a href="{{ url_for('scholarship.apply_scholarship', scholarship_id=scholarship.id) }}"
+                       class="btn btn-warning btn-lg">
+                      <i class="bi bi-arrow-repeat me-1"></i>Re-apply
+                    </a>
+                    <div class="mt-2">
+                      <small class="text-muted">
+                        <i class="bi bi-info-circle me-1"></i>
+                        You previously withdrew your application. You may re-apply.
+                      </small>
+                    </div>
+                  {% else %}
+                    <span class="btn btn-secondary disabled">Applications Closed</span>
+                  {% endif %}
+                {% elif not session.get('is_verified') %}
+                  <div>
+                    <span class="btn btn-secondary disabled">
+                      <i class="bi bi-lock me-1"></i>Apply Now
+                    </span>
+                    <div class="mt-2">
+                      <small class="text-warning fw-semibold">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        Your account is not yet verified. Please contact the
+                        scholarship office or ask an admin to verify your account.
+                      </small>
+                    </div>
+                  </div>
+                {% elif scholarship.is_application_open() %}
+                  <a href="{{ url_for('scholarship.apply_scholarship', scholarship_id=scholarship.id) }}"
+                     class="btn btn-primary btn-lg">
+                    <i class="bi bi-send"></i> Apply Now
+                  </a>
+                {% else %}
+                  <span class="btn btn-secondary disabled">Applications Closed</span>
+                {% endif %}
+              {% elif not session.get('user_id') %}
+                <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg">Login to Apply</a>
+              {% endif %}
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,495 @@
+{% extends "base.html" %}
+{% block title %}Student Registration - LSPU ScholarHub{% endblock %}
+
+{# Shorthand for restoring form values after OCR error #}
+{% set fd = form_data %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-8 col-lg-7">
+      <div class="card shadow border-0" style="border-radius:12px;">
+        <div class="card-body p-4 p-md-5">
+
+          <!-- Header -->
+          <div class="text-center mb-4">
+            <img src="{{ url_for('static', filename='images/lspu-logo.png') }}" alt="LSPU"
+                 style="height:64px;width:64px;object-fit:contain;" class="mb-3">
+            <h2 class="fw-bold mb-1">Student Registration</h2>
+            <p class="text-muted small">
+              Create your LSPU ScholarHub account. Your login credentials
+              will be sent to your email automatically.
+            </p>
+          </div>
+
+          <form method="POST" enctype="multipart/form-data" id="registerForm" novalidate>
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+
+            <!-- Name row -->
+            <div class="row g-3 mb-3">
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="first_name"
+                       value="{{ fd.first_name if fd else '' }}"
+                       placeholder="e.g. Juan" required autocomplete="given-name">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Middle Name <span class="text-muted fw-normal small">(optional)</span></label>
+                <input type="text" class="form-control" name="middle_name"
+                       value="{{ fd.middle_name if fd else '' }}"
+                       placeholder="e.g. Santos" autocomplete="additional-name">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="last_name"
+                       value="{{ fd.last_name if fd else '' }}"
+                       placeholder="e.g. Dela Cruz" required autocomplete="family-name">
+              </div>
+            </div>
+
+            <!-- Email -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Email Address <span class="text-danger">*</span></label>
+              <input type="email" class="form-control" name="email" id="emailInput"
+                     value="{{ fd.email if fd else '' }}"
+                     placeholder="your_email@gmail.com" required autocomplete="email">
+              <div class="form-text">Your login credentials will be sent here.</div>
+            </div>
+
+            <!-- Student ID + Phone row -->
+            <div class="row g-3 mb-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Student ID <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="student_id" id="studentIdInput"
+                       value="{{ fd.student_id if fd else '' }}"
+                       placeholder="e.g. 2024-1234" required
+                       pattern="[0-9]{4}-[0-9]{4}" maxlength="9" inputmode="numeric">
+                <div class="form-text">Format: <strong>XXXX-XXXX</strong></div>
+                <div class="invalid-feedback" id="studentIdError"></div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Phone Number <span class="text-danger">*</span></label>
+                <input type="tel" class="form-control" name="phone_number" id="phoneInput"
+                       value="{{ fd.phone_number if fd else '' }}"
+                       placeholder="09XXXXXXXXX" required
+                       pattern="[0-9]{11}" maxlength="11" inputmode="numeric">
+                <div class="form-text">11-digit Philippine mobile number</div>
+                <div class="invalid-feedback" id="phoneError"></div>
+              </div>
+            </div>
+
+            <!-- Gender + Location row -->
+            <div class="row g-3 mb-3">
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Gender</label>
+                <select class="form-select" name="gender">
+                  <option value="">— Select —</option>
+                  {% set sel_gender = fd.gender if fd else '' %}
+                  <option value="Male" {% if sel_gender=='Male' %}selected{% endif %}>Male</option>
+                  <option value="Female" {% if sel_gender=='Female' %}selected{% endif %}>Female</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Town / Municipality</label>
+                <input type="text" class="form-control" name="town"
+                       value="{{ fd.town if fd else '' }}"
+                       placeholder="e.g. Santa Cruz">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Province</label>
+                <input type="text" class="form-control" name="province"
+                       value="{{ fd.province if fd else '' }}"
+                       placeholder="e.g. Laguna">
+              </div>
+            </div>
+
+            <!-- Course -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Course / Program <span class="text-danger">*</span></label>
+              <select class="form-select" name="course" required>
+                <option value="">— Select Course / Program —</option>
+                {% set sel_course = fd.course if fd else '' %}
+
+                <optgroup label="College of Education">
+                  {% for c in [
+                    'Bachelor of Secondary Education major in English',
+                    'Bachelor of Secondary Education major in Filipino',
+                    'Bachelor of Secondary Education major in Social Science',
+                    'Bachelor of Secondary Education major in Mathematics',
+                    'Bachelor of Secondary Education major in Science',
+                    'Bachelor of Elementary Education',
+                    'Bachelor of Physical Education',
+                    'Bachelor of Technical-Vocational Teacher Education',
+                    'Bachelor of Technology and Livelihood Education',
+                  ] %}
+                  <option value="{{ c }}" {% if sel_course==c %}selected{% endif %}>{{ c }}</option>
+                  {% endfor %}
+                </optgroup>
+
+                <optgroup label="College of Arts and Sciences">
+                  {% for c in [
+                    'Bachelor of Science in Psychology',
+                    'Bachelor of Arts in Broadcasting',
+                    'Bachelor of Science in Biology',
+                    'Bachelor of Science in Mathematics',
+                    'Bachelor of Science in Chemistry',
+                  ] %}
+                  <option value="{{ c }}" {% if sel_course==c %}selected{% endif %}>{{ c }}</option>
+                  {% endfor %}
+                </optgroup>
+
+                <optgroup label="College of Nursing">
+                  {% for c in [
+                    'Bachelor of Science in Nursing',
+                  ] %}
+                  <option value="{{ c }}" {% if sel_course==c %}selected{% endif %}>{{ c }}</option>
+                  {% endfor %}
+                </optgroup>
+
+                <optgroup label="College of Engineering">
+                  {% for c in [
+                    'Bachelor of Science in Computer Engineering',
+                    'Bachelor of Science in Mechanical Engineering',
+                    'Bachelor of Science in Civil Engineering',
+                    'Bachelor of Science in Electrical Engineering',
+                    'Bachelor of Science in Electronics Engineering',
+                  ] %}
+                  <option value="{{ c }}" {% if sel_course==c %}selected{% endif %}>{{ c }}</option>
+                  {% endfor %}
+                </optgroup>
+
+                <optgroup label="College of Business and Accountancy">
+                  {% for c in [
+                    'Bachelor of Science in Office Administration',
+                    'Bachelor of Science in Entrepreneurship',
+                    'Bachelor of Science in Accountancy',
+                    'Bachelor of Science in Business Administration major in Marketing',
+                    'Bachelor of Public Administration',
+                    'Bachelor of Science in Business Administration major in Financial Management',
+                    'Bachelor of Science in Financial Management',
+                    'Bachelor of Science in Hospitality Management',
+                    'Bachelor of Science in Tourism Management',
+                  ] %}
+                  <option value="{{ c }}" {% if sel_course==c %}selected{% endif %}>{{ c }}</option>
+                  {% endfor %}
+                </optgroup>
+
+                <optgroup label="College of Industrial Technology">
+                  {% for c in [
+                    'Bachelor of Science in Industrial Technology – Food Processing',
+                    'Bachelor of Science in Industrial Technology – Automotive',
+                    'Bachelor of Science in Industrial Technology – Drafting',
+                    'Bachelor of Science in Industrial Technology – Electrical',
+                    'Bachelor of Science in Industrial Technology – Electronics',
+                    'Bachelor of Science in Industrial Technology – Heating, Ventilation, and Air Conditioning',
+                  ] %}
+                  <option value="{{ c }}" {% if sel_course==c %}selected{% endif %}>{{ c }}</option>
+                  {% endfor %}
+                </optgroup>
+
+                <optgroup label="College of Computer Studies">
+                  {% for c in [
+                    'Bachelor of Science in Information Technology',
+                    'Bachelor of Science in Computer Science',
+                  ] %}
+                  <option value="{{ c }}" {% if sel_course==c %}selected{% endif %}>{{ c }}</option>
+                  {% endfor %}
+                </optgroup>
+
+                <optgroup label="College of Criminal Justice">
+                  {% for c in [
+                    'Bachelor of Science in Criminal Justice Education',
+                  ] %}
+                  <option value="{{ c }}" {% if sel_course==c %}selected{% endif %}>{{ c }}</option>
+                  {% endfor %}
+                </optgroup>
+
+              </select>
+              <div class="form-text">Select the course exactly as it appears on your COR.</div>
+            </div>
+
+            <!-- Year Level -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Year Level <span class="text-danger">*</span></label>
+              <select class="form-select" name="year_level" id="yearLevel" required>
+                <option value="">— Select Year Level —</option>
+                {% set sel_year = fd.year_level if fd else '' %}
+                {% for y in ['1st Year','2nd Year','3rd Year','4th Year'] %}
+                <option value="{{ y }}" {% if sel_year==y %}selected{% endif %}>{{ y }}</option>
+                {% endfor %}
+              </select>
+            </div>
+
+            <!-- Document uploads -->
+            <div id="documentSection" class="{% if not ocr_errors %}d-none{% endif %}">
+
+              {# ── OCR error box — shown inline when verification fails ── #}
+              {% if ocr_errors %}
+              <div class="alert border-0 rounded-3 mb-4" role="alert"
+                   style="background:#fff0f0;border-left:4px solid #dc3545 !important;">
+                <div class="d-flex align-items-start gap-3">
+                  <i class="bi bi-shield-x text-danger fs-4 flex-shrink-0 mt-1"></i>
+                  <div>
+                    <p class="fw-bold mb-2 text-danger fs-6">
+                      <i class="bi bi-exclamation-triangle me-1"></i>
+                      Document Verification Failed
+                    </p>
+                    <ul class="mb-2 small ps-3">
+                      {% for err in ocr_errors %}
+                      <li class="mb-1">{{ err }}</li>
+                      {% endfor %}
+                    </ul>
+                    <p class="mb-0 small text-muted">
+                      Your documents must contain the <strong>same name and Student ID</strong>
+                      that you entered in the form above. Please upload your own official
+                      LSPU documents and try again.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              {% endif %}
+
+              <div class="alert alert-info d-flex gap-2 align-items-start py-2 px-3 mb-3"
+                   id="docInfoBox">
+                <!-- updated by JS -->
+              </div>
+
+              <!-- COR -->
+              <div class="mb-3">
+                <label class="form-label fw-semibold">
+                  Certificate of Registration (COR) <span class="text-danger">*</span>
+                </label>
+                <input type="file" class="form-control" name="cor_file" id="corFile"
+                       accept=".pdf,.jpg,.jpeg,.png">
+                <div class="form-text">
+                  <i class="bi bi-file-earmark text-primary me-1"></i>
+                  <strong>PDF or Image (JPG/PNG)</strong> — max 5MB.
+                  Upload your official COR or take a clear photo of it.
+                </div>
+              </div>
+
+              <!-- Copy of Grades (2nd year and above) -->
+              <div class="mb-3" id="gradesSection">
+                <label class="form-label fw-semibold">
+                  Copy of Grades <span class="text-danger">*</span>
+                </label>
+                <input type="file" class="form-control" name="grades_file" id="gradesFile"
+                       accept=".pdf,.jpg,.jpeg,.png">
+                <div class="form-text">
+                  <i class="bi bi-file-earmark text-primary me-1"></i>
+                  <strong>PDF or Image (JPG/PNG)</strong> — max 5MB.
+                  Upload your official grades or take a clear photo of it.
+                </div>
+              </div>
+            </div>
+
+            <!-- Auto-password info -->
+            <div class="alert alert-success d-flex gap-2 align-items-start py-2 px-3 mb-4">
+              <i class="bi bi-envelope-check-fill flex-shrink-0 mt-1 text-success"></i>
+              <div class="small">
+                <strong>No password needed!</strong> A secure temporary password will be
+                generated and sent to your email. You can change it after your first login.
+              </div>
+            </div>
+
+            <!-- Terms -->
+            <div class="mb-4">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="terms" name="terms" required>
+                <label class="form-check-label small" for="terms">
+                  I agree to the
+                  <a href="#" class="text-decoration-none">Terms and Conditions</a>
+                  and <a href="#" class="text-decoration-none">Privacy Policy</a>
+                  of LSPU ScholarHub.
+                </label>
+              </div>
+            </div>
+
+            <!-- Submit -->
+            <div class="d-grid">
+              <button type="submit" class="btn btn-primary btn-lg fw-semibold" id="submitBtn">
+                <i class="bi bi-person-check me-2"></i>Register & Send Credentials
+              </button>
+            </div>
+
+            <!-- Scanning notice -->
+            <div id="scanningNotice" class="d-none mt-3">
+              <div class="alert alert-info d-flex align-items-center gap-3 py-2 px-3 mb-0">
+                <div class="spinner-border spinner-border-sm text-primary flex-shrink-0"></div>
+                <div class="small">
+                  <strong>Verifying your documents…</strong><br>
+                  Scanning uploaded files to verify your Student ID and name.
+                  This may take up to 30 seconds. Please do not close this page.
+                </div>
+              </div>
+            </div>
+
+          </form>
+
+          <div class="text-center mt-4">
+            <p class="text-muted small mb-0">
+              Already have an account?
+              <a href="{{ url_for('auth.login') }}" class="fw-semibold text-decoration-none">
+                Log in here
+              </a>
+            </p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  'use strict';
+
+  const yearSelect    = document.getElementById('yearLevel');
+  const docSection    = document.getElementById('documentSection');
+  const docInfoBox    = document.getElementById('docInfoBox');
+  const corInput      = document.getElementById('corFile');
+  const gradesInput   = document.getElementById('gradesFile');
+  const gradesSection = document.getElementById('gradesSection');
+  const form          = document.getElementById('registerForm');
+  const submitBtn     = document.getElementById('submitBtn');
+  const phoneInput    = document.getElementById('phoneInput');
+  const sidInput      = document.getElementById('studentIdInput');
+
+  const UPPERCLASS = new Set(['2nd Year', '3rd Year', '4th Year']);
+
+  // ── Restore document section state if year level is pre-selected ─────────
+  function applyYearLevel(year) {
+    const isFirst = year === '1st Year';
+    const isUpper = UPPERCLASS.has(year);
+
+    if (isFirst || isUpper) {
+      docSection.classList.remove('d-none');
+      corInput.required = true;
+
+      if (isFirst) {
+        gradesSection.classList.add('d-none');
+        gradesInput.required = false;
+        gradesInput.value    = '';
+        docInfoBox.innerHTML = `
+          <i class="bi bi-info-circle-fill flex-shrink-0 mt-1"></i>
+          <div class="small">
+            <strong>Document Required</strong> — As a 1st year student, please upload
+            your <strong>Certificate of Registration (COR)</strong>.
+            Copy of Grades is not required since you are a new student.
+          </div>`;
+      } else {
+        gradesSection.classList.remove('d-none');
+        gradesInput.required = true;
+        docInfoBox.innerHTML = `
+          <i class="bi bi-info-circle-fill flex-shrink-0 mt-1"></i>
+          <div class="small">
+            <strong>Documents Required</strong> — As a ${year} student, please upload
+            your <strong>Certificate of Registration (COR)</strong> and
+            <strong>Copy of Grades</strong> from your previous semester.
+            These will be reviewed by the scholarship office.
+          </div>`;
+      }
+    } else {
+      // Only hide if there are no OCR errors to show
+      if (!docSection.querySelector('.alert-danger')) {
+        docSection.classList.add('d-none');
+      }
+      corInput.required    = false;
+      gradesInput.required = false;
+    }
+  }
+
+  // Run on page load to restore state after OCR error
+  if (yearSelect.value) {
+    applyYearLevel(yearSelect.value);
+  }
+
+  yearSelect.addEventListener('change', function () {
+    applyYearLevel(this.value);
+  });
+
+  // ── Phone: digits only, max 11 ────────────────────────────────────────────
+  phoneInput.addEventListener('input', function () {
+    this.value = this.value.replace(/\D/g, '').slice(0, 11);
+  });
+  phoneInput.addEventListener('blur', function () {
+    if (this.value && this.value.length !== 11) {
+      this.classList.add('is-invalid');
+      document.getElementById('phoneError').textContent = 'Must be exactly 11 digits.';
+    } else {
+      this.classList.remove('is-invalid');
+    }
+  });
+
+  // ── Student ID: auto-format XXXX-XXXX ────────────────────────────────────
+  sidInput.addEventListener('input', function () {
+    let val = this.value.replace(/[^0-9\-]/g, '');
+    if (val.length > 4 && val[4] !== '-') {
+      val = val.slice(0, 4) + '-' + val.slice(4);
+    }
+    this.value = val.slice(0, 9);
+  });
+  sidInput.addEventListener('blur', function () {
+    const valid = /^[0-9]{4}-[0-9]{4}$/.test(this.value);
+    if (this.value && !valid) {
+      this.classList.add('is-invalid');
+      document.getElementById('studentIdError').textContent =
+        'Format must be XXXX-XXXX (e.g. 2024-1234).';
+    } else {
+      this.classList.remove('is-invalid');
+    }
+  });
+
+  // ── File size validation ──────────────────────────────────────────────────
+  function checkSize(input) {
+    if (input.files && input.files[0] && input.files[0].size > 5 * 1024 * 1024) {
+      alert(`"${input.files[0].name}" exceeds 5MB. Please choose a smaller file.`);
+      input.value = '';
+    }
+  }
+  corInput.addEventListener('change',    () => checkSize(corInput));
+  gradesInput.addEventListener('change', () => checkSize(gradesInput));
+
+  // ── Submit ────────────────────────────────────────────────────────────────
+  form.addEventListener('submit', function (e) {
+    let valid = true;
+
+    if (phoneInput.value && phoneInput.value.length !== 11) {
+      phoneInput.classList.add('is-invalid');
+      document.getElementById('phoneError').textContent = 'Must be exactly 11 digits.';
+      valid = false;
+    }
+    if (sidInput.value && !/^[0-9]{4}-[0-9]{4}$/.test(sidInput.value)) {
+      sidInput.classList.add('is-invalid');
+      document.getElementById('studentIdError').textContent =
+        'Format must be XXXX-XXXX (e.g. 2024-1234).';
+      valid = false;
+    }
+    if (!valid) { e.preventDefault(); return; }
+
+    const hasDocs = (corInput.files && corInput.files.length > 0) ||
+                    (gradesInput.files && gradesInput.files.length > 0);
+    submitBtn.disabled = true;
+    if (hasDocs) {
+      submitBtn.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-2"></span>Scanning Documents…';
+      document.getElementById('scanningNotice').classList.remove('d-none');
+    } else {
+      submitBtn.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-2"></span>Registering…';
+    }
+  });
+
+  // ── Scroll to OCR error box if present ───────────────────────────────────
+  const errBox = document.querySelector('.alert-danger');
+  if (errBox) {
+    setTimeout(() => errBox.scrollIntoView({ behavior: 'smooth', block: 'center' }), 200);
+  }
+
+})();
+</script>
+{% endblock %}

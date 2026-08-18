@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+{% block title %}Reports & Export - Staff{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <h1 class="h3 mb-4">Reports & Analytics</h1>
+
+  <!-- Summary stats -->
+  <div class="row mb-4">
+    {% for label, val, color in [
+        ('Total Applications', total_apps,    'primary'),
+        ('Approved',           approved,      'success'),
+        ('Pending Review',     pending,       'warning'),
+        ('Rejected',           rejected,      'danger')] %}
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card border-left-{{ color }} shadow h-100 py-2">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="text-xs fw-bold text-{{ color }} text-uppercase mb-1">{{ label }}</div>
+              <div class="h5 mb-0 fw-bold">{{ val }}</div>
+              {% if label == 'Approved' %}
+              <div class="text-xs text-muted">{{ approval_rate }}% approval rate</div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Charts row 1: Status + Approval + Scholar Performance -->
+  <div class="row mb-4">
+    <div class="col-xl-6 mb-3">
+      <div class="card shadow-sm h-100" style="border-radius:var(--sh-radius-lg);">
+        <div class="card-header bg-white border-0 pt-3 pb-0 px-4">
+          <h6 class="m-0 fw-bold text-primary small">Application Status Distribution</h6>
+        </div>
+        <div class="card-body p-3">
+          <canvas id="statusChart" height="160"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 mb-3">
+      <div class="card shadow-sm h-100" style="border-radius:var(--sh-radius-lg);">
+        <div class="card-header bg-white border-0 pt-3 pb-0 px-4">
+          <h6 class="m-0 fw-bold text-primary small">Approval Rate</h6>
+        </div>
+        <div class="card-body p-3 d-flex flex-column align-items-center justify-content-center">
+          <canvas id="approvalChart" height="140"></canvas>
+          <p class="mt-2 text-muted small text-center mb-0">
+            {{ approved }} / {{ total_apps }} approved
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-3 mb-3">
+      <div class="card shadow-sm h-100" style="border-radius:var(--sh-radius-lg);">
+        <div class="card-header bg-white border-0 pt-3 pb-0 px-4">
+          <h6 class="m-0 fw-bold text-primary small">Scholar Performance</h6>
+        </div>
+        <div class="card-body p-3 d-flex flex-column align-items-center justify-content-center">
+          <canvas id="scholarStatusChart" height="140"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts row 2: GWA distribution + Per-scholarship -->
+  <div class="row mb-4">
+    <div class="col-xl-5 mb-3">
+      <div class="card shadow-sm h-100" style="border-radius:var(--sh-radius-lg);">
+        <div class="card-header bg-white border-0 pt-3 pb-0 px-4">
+          <h6 class="m-0 fw-bold text-primary small">
+            <i class="bi bi-bar-chart-fill me-1 text-warning"></i>GWA Distribution
+          </h6>
+        </div>
+        <div class="card-body p-3">
+          <canvas id="gwaChart" height="180"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-xl-7 mb-3">
+      {% if scholarship_stats %}
+      <div class="card shadow-sm h-100" style="border-radius:var(--sh-radius-lg);">
+        <div class="card-header bg-white border-0 pt-3 pb-0 px-4">
+          <h6 class="m-0 fw-bold text-primary small">
+            <i class="bi bi-bar-chart-steps me-1 text-success"></i>Applications per Scholarship
+          </h6>
+        </div>
+        <div class="card-body p-3">
+          <canvas id="schChart" height="180"></canvas>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Export panel -->
+  <div class="card shadow mb-4">
+    <div class="card-header py-3">
+      <h6 class="m-0 fw-bold text-primary">
+        <i class="bi bi-download me-2"></i>Export Reports
+      </h6>
+    </div>
+    <div class="card-body">
+      <!-- Custom export form -->
+      <form method="GET" action="{{ url_for('staff.export_report') }}" target="_blank">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Report Type</label>
+            <select class="form-select" name="type">
+              <option value="applications">All Applications</option>
+              <option value="approved">Approved Scholars</option>
+              <option value="scholarships">Scholarship Programmes</option>
+              <option value="students">Student Roster</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Status Filter</label>
+            <select class="form-select" name="status">
+              <option value="">All Statuses</option>
+              <option value="pending">Pending</option>
+              <option value="under_review">Under Review</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Scholarship</label>
+            <select class="form-select" name="scholarship_id">
+              <option value="">All Scholarships</option>
+              {% for row in scholarship_stats %}
+              <option value="{{ row.scholarship.id }}">{{ row.scholarship.title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Format</label>
+            <select class="form-select" name="format">
+              <option value="pdf">PDF</option>
+              <option value="xlsx">Excel (XLSX)</option>
+              <option value="csv">CSV</option>
+              <option value="docx">Word (DOCX)</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="bi bi-download me-1"></i>Export
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <!-- Quick export buttons -->
+      <hr class="my-3">
+      <p class="small fw-semibold text-muted mb-2">Quick Exports</p>
+      <div class="d-flex flex-wrap gap-2">
+        {% for rtype, label, icon in [
+            ('applications','All Applications','bi-file-earmark-text'),
+            ('approved',    'Approved Scholars','bi-check-circle'),
+            ('scholarships','Scholarships',     'bi-mortarboard'),
+            ('students',    'Student Roster',   'bi-people')] %}
+        <div class="dropdown">
+          <button class="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+            <i class="bi {{ icon }} me-1"></i>{{ label }}
+          </button>
+          <ul class="dropdown-menu">
+            {% for fmt, flabel, ficon in [
+                ('pdf', 'PDF',        'bi-file-earmark-pdf text-danger'),
+                ('xlsx','Excel',      'bi-file-earmark-excel text-success'),
+                ('csv', 'CSV',        'bi-filetype-csv text-secondary'),
+                ('docx','Word (DOCX)','bi-file-earmark-word text-primary')] %}
+            <li>
+              <a class="dropdown-item"
+                 href="{{ url_for('staff.export_report', type=rtype, format=fmt) }}"
+                 target="_blank">
+                <i class="bi {{ ficon }} me-2"></i>{{ flabel }}
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Per-scholarship breakdown -->
+  <div class="card shadow">
+    <div class="card-header py-3">
+      <h6 class="m-0 fw-bold text-primary">Per-Scholarship Breakdown</h6>
+    </div>
+    <div class="card-body p-0">
+      {% if scholarship_stats %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Scholarship</th><th>Total</th><th>Approved</th>
+              <th>Pending</th><th>Rejected</th><th>Fill Rate</th><th>Export</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in scholarship_stats %}
+            <tr>
+              <td>
+                <strong>{{ row.scholarship.title }}</strong><br>
+                <small class="text-muted">
+                  Deadline: {{ row.scholarship.application_deadline.strftime('%b %d, %Y') }}
+                </small>
+              </td>
+              <td>{{ row.total }}</td>
+              <td><span class="text-success fw-bold">{{ row.approved }}</span></td>
+              <td><span class="text-warning fw-bold">{{ row.pending }}</span></td>
+              <td><span class="text-danger fw-bold">{{ row.rejected }}</span></td>
+              <td>
+                {% if row.scholarship.max_applicants %}
+                  {% set pct = ((row.scholarship.current_applicants or 0) / row.scholarship.max_applicants * 100)|int %}
+                  <div class="progress" style="height:16px;min-width:80px;">
+                    <div class="progress-bar
+                      {% if pct >= 90 %}bg-danger{% elif pct >= 60 %}bg-warning{% else %}bg-success{% endif %}"
+                      style="width:{{ pct }}%">{{ pct }}%</div>
+                  </div>
+                {% else %}—{% endif %}
+              </td>
+              <td>
+                <div class="dropdown">
+                  <button class="btn btn-sm btn-outline-primary dropdown-toggle"
+                          data-bs-toggle="dropdown">Export</button>
+                  <ul class="dropdown-menu">
+                    {% for fmt, flabel, ficon in [
+                        ('pdf', 'PDF',  'bi-file-earmark-pdf text-danger'),
+                        ('xlsx','Excel','bi-file-earmark-excel text-success'),
+                        ('csv', 'CSV',  'bi-filetype-csv text-secondary'),
+                        ('docx','Word', 'bi-file-earmark-word text-primary')] %}
+                    <li>
+                      <a class="dropdown-item"
+                         href="{{ url_for('staff.export_report', type='applications',
+                                          format=fmt, scholarship_id=row.scholarship.id) }}"
+                         target="_blank">
+                        <i class="bi {{ ficon }} me-2"></i>{{ flabel }}
+                      </a>
+                    </li>
+                    {% endfor %}
+                  </ul>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-4 text-muted">No data available.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block head %}
+<style>
+.border-left-primary { border-left:.25rem solid #4e73df !important; }
+.border-left-success { border-left:.25rem solid #1cc88a !important; }
+.border-left-warning { border-left:.25rem solid #f6c23e !important; }
+.border-left-danger  { border-left:.25rem solid #e74a3b !important; }
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+new Chart(document.getElementById('statusChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Approved', 'Pending / Under Review', 'Rejected'],
+    datasets: [{ label: 'Applications', data: [{{ approved }}, {{ pending }}, {{ rejected }}],
+      backgroundColor: ['#1cc88a', '#f6c23e', '#e74a3b'], borderRadius: 4 }]
+  },
+  options: { responsive: true, plugins: { legend: { display: false } },
+    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+});
+new Chart(document.getElementById('approvalChart'), {
+  type: 'doughnut',
+  data: { labels: ['Approved', 'Not Approved'],
+    datasets: [{ data: [{{ approved }}, {{ total_apps - approved }}],
+      backgroundColor: ['#1cc88a', '#e9ecef'], borderWidth: 0 }] },
+  options: { cutout: '70%', plugins: { legend: { position: 'bottom' },
+    tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}` } } } }
+});
+new Chart(document.getElementById('gwaChart'), {
+  type: 'bar',
+  data: { labels: {{ gwa_labels|safe }},
+    datasets: [{ label: 'Students', data: {{ gwa_data|safe }},
+      backgroundColor: ['#1cc88a','#36b9cc','#4e73df','#858796','#f6c23e','#fd7e14','#e74a3b'],
+      borderRadius: 4 }] },
+  options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } },
+    scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+});
+new Chart(document.getElementById('scholarStatusChart'), {
+  type: 'doughnut',
+  data: { labels: ['Good Standing', 'At Risk', 'Probation', 'Termination Warning'],
+    datasets: [{ data: {{ scholar_status_data|safe }},
+      backgroundColor: ['#1cc88a', '#f6c23e', '#fd7e14', '#e74a3b'], borderWidth: 2 }] },
+  options: { cutout: '60%', plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } }
+});
+{% if scholarship_stats %}
+new Chart(document.getElementById('schChart'), {
+  type: 'bar',
+  data: { labels: {{ sch_labels|safe }},
+    datasets: [
+      { label: 'Approved', data: {{ sch_approved|safe }}, backgroundColor: '#1cc88a', borderRadius: 2 },
+      { label: 'Pending',  data: {{ sch_pending|safe }},  backgroundColor: '#f6c23e', borderRadius: 2 },
+      { label: 'Rejected', data: {{ sch_rejected|safe }}, backgroundColor: '#e74a3b', borderRadius: 2 },
+    ] },
+  options: { responsive: true,
+    scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } } },
+    plugins: { legend: { position: 'top' } } }
+});
+{% endif %}
+</script>
+{% endblock %}

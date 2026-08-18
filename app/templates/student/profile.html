@@ -1,0 +1,443 @@
+{% extends "base.html" %}
+{% block title %}My Profile - LSPU ScholarHub{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+
+  {# ── First-login password change banner ── #}
+  {% if session.get('first_login') %}
+  <div class="alert alert-warning d-flex align-items-center gap-3 mb-4 shadow-sm" role="alert">
+    <i class="bi bi-key-fill fs-4 flex-shrink-0"></i>
+    <div>
+      <strong>You're using a temporary password.</strong>
+      Please scroll down and set a personal password now to secure your account.
+    </div>
+    <a href="#changePasswordCard" class="btn btn-warning btn-sm ms-auto flex-shrink-0">
+      Change Now
+    </a>
+  </div>
+  {% endif %}
+
+  <div class="row">
+
+    <!-- ── Sidebar ── -->
+    <div class="col-lg-4 mb-4">
+
+      <!-- Avatar card -->
+      <div class="card shadow border-0 text-center mb-4" style="border-radius:12px;">
+        <div class="card-body py-4">
+          <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex
+                      align-items-center justify-content-center mb-3"
+               style="width:90px;height:90px;">
+            <i class="bi bi-person-fill fs-1 text-primary"></i>
+          </div>
+          <h5 class="mb-0 fw-bold">{{ user.get_full_name() }}</h5>
+          <p class="text-muted small mb-1">Student</p>
+          {% if user.student_id %}
+          <p class="small mb-1 fw-semibold text-primary">{{ user.student_id }}</p>
+          {% endif %}
+          <p class="small mb-0 text-muted">{{ user.email }}</p>
+          {% if user.year_level %}
+          <span class="badge bg-secondary mt-2">{{ user.year_level }}</span>
+          {% endif %}
+          <div class="mt-2">
+            {% if user.is_verified %}
+              <span class="badge bg-success">
+                <i class="bi bi-check-circle me-1"></i>Verified
+              </span>
+            {% else %}
+              <span class="badge bg-warning text-dark">Unverified</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Application stats -->
+      <div class="card shadow border-0 mb-4" style="border-radius:12px;">
+        <div class="card-body">
+          <h6 class="fw-bold mb-3">Application Summary</h6>
+          <div class="row text-center g-2">
+            {% for label, val, color in [
+                ('Total',    total_applications, 'primary'),
+                ('Approved', approved_count,     'success'),
+                ('Pending',  pending_count,      'warning'),
+                ('Rejected', rejected_count,     'danger')] %}
+            <div class="col-6">
+              <div class="border rounded py-2">
+                <div class="h5 mb-0 text-{{ color }}">{{ val }}</div>
+                <small class="text-muted">{{ label }}</small>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          <div class="d-grid gap-2 mt-3">
+            <a href="{{ url_for('student.my_applications') }}"
+               class="btn btn-outline-primary btn-sm">
+              <i class="bi bi-file-earmark-text me-1"></i>My Applications
+            </a>
+            <a href="{{ url_for('scholarship.list_scholarships') }}"
+               class="btn btn-outline-success btn-sm">
+              <i class="bi bi-search me-1"></i>Browse Scholarships
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Registration documents (if uploaded) -->
+      {% if user.cor_file_path or user.grades_file_path %}
+      <div class="card shadow border-0" style="border-radius:12px;">
+        <div class="card-body">
+          <h6 class="fw-bold mb-3">
+            <i class="bi bi-folder2-open me-2 text-primary"></i>Registration Documents
+          </h6>
+          <ul class="list-unstyled mb-0">
+            {% if user.cor_file_path %}
+            <li class="mb-2 d-flex align-items-center gap-2">
+              <i class="bi bi-file-earmark-pdf text-danger"></i>
+              <span class="small">Certificate of Registration (COR)</span>
+              <span class="badge bg-success ms-auto">Uploaded</span>
+            </li>
+            {% endif %}
+            {% if user.grades_file_path %}
+            <li class="d-flex align-items-center gap-2">
+              <i class="bi bi-file-earmark-text text-primary"></i>
+              <span class="small">Copy of Grades</span>
+              <span class="badge bg-success ms-auto">Uploaded</span>
+            </li>
+            {% endif %}
+          </ul>
+          <p class="text-muted small mt-2 mb-0">
+            <i class="bi bi-info-circle me-1"></i>
+            These documents are under review by the scholarship office.
+          </p>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- GWA History (if any entries exist) -->
+      {% if user.gwa_history %}
+      <div class="card shadow border-0 mt-4" style="border-radius:12px;">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold mb-0">
+              <i class="bi bi-graph-up me-2 text-primary"></i>GWA History
+            </h6>
+            <a href="{{ url_for('student.upload_gwa') }}" class="btn btn-sm btn-outline-success">
+              <i class="bi bi-upload me-1"></i>Upload Grades
+            </a>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0" style="font-size:.85rem;">
+              <thead class="table-light">
+                <tr><th>School Year</th><th>Semester</th><th>GWA</th><th>Standing</th></tr>
+              </thead>
+              <tbody>
+                {% for h in user.gwa_history %}
+                <tr>
+                  <td>{{ h.school_year }}</td>
+                  <td>{{ h.semester }}</td>
+                  <td>
+                    <strong class="{% if h.gwa <= 3.00 %}text-success{% elif h.gwa < 4.00 %}text-warning{% else %}text-danger{% endif %}">
+                      {{ h.gwa }}
+                    </strong>
+                  </td>
+                  <td>
+                    {% if h.is_at_risk %}
+                      <span class="badge bg-warning text-dark">{{ h.standing }}</span>
+                    {% else %}
+                      <span class="badge bg-success">{{ h.standing }}</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          <p class="text-muted small mt-2 mb-0">
+            <i class="bi bi-info-circle me-1"></i>
+            GWA entries are recorded by the scholarship office each semester.
+          </p>
+        </div>
+      </div>
+      {% else %}
+      <!-- No GWA history — show upload prompt -->
+      <div class="card shadow border-0 mt-4" style="border-radius:12px;">
+        <div class="card-body text-center py-4">
+          <i class="bi bi-graph-up-arrow text-success display-5 mb-2"></i>
+          <h6 class="fw-bold">{% if user.gwa %}Update Your GWA{% else %}GWA Not Yet Recorded{% endif %}</h6>
+          <p class="text-muted small mb-3">
+            Upload your Copy of Grades (PDF) to {% if user.gwa %}update{% else %}set{% endif %} your GWA.
+          </p>
+          <a href="{{ url_for('student.upload_gwa') }}" class="btn btn-success">
+            <i class="bi bi-upload me-1"></i>Upload Copy of Grades
+          </a>
+        </div>
+      </div>
+      {% endif %}
+
+    </div><!-- /sidebar -->
+
+    <!-- ── Main content ── -->
+    <div class="col-lg-8">
+
+      <!-- Profile information form -->
+      <div class="card shadow border-0 mb-4" style="border-radius:12px;">
+        <div class="card-header py-3 bg-white border-bottom">
+          <h6 class="m-0 fw-bold text-primary">
+            <i class="bi bi-person me-2"></i>Profile Information
+          </h6>
+        </div>
+        <div class="card-body">
+          <form method="POST" action="{{ url_for('student.update_profile') }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">First Name</label>
+                <input type="text" class="form-control" name="first_name"
+                       value="{{ user.first_name }}" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Last Name</label>
+                <input type="text" class="form-control" name="last_name"
+                       value="{{ user.last_name }}" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Student ID</label>
+                <input type="text" class="form-control"
+                       value="{{ user.student_id or '—' }}" readonly>
+                <div class="form-text">Contact admin to update your Student ID.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Email</label>
+                <input type="email" class="form-control"
+                       value="{{ user.email }}" readonly>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Phone Number</label>
+                <input type="tel" class="form-control" name="phone_number"
+                       value="{{ user.phone_number or '' }}"
+                       placeholder="09XXXXXXXXX"
+                       pattern="[0-9]{11}" maxlength="11" inputmode="numeric">
+                <div class="form-text">11-digit number. Used for SMS notifications.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Year Level</label>
+                <select class="form-select" name="year_level">
+                  <option value="">Select Year</option>
+                  {% for y in ['1st Year','2nd Year','3rd Year','4th Year','5th Year'] %}
+                  <option value="{{ y }}"
+                    {% if user.year_level == y %}selected{% endif %}>{{ y }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Course / Program</label>
+                <select class="form-select" name="course">
+                  <option value="">Select Course</option>
+                  {% for c in [
+                    'Bachelor of Secondary Education major in English',
+                    'Bachelor of Secondary Education major in Filipino',
+                    'Bachelor of Secondary Education major in Social Science',
+                    'Bachelor of Secondary Education major in Mathematics',
+                    'Bachelor of Secondary Education major in Science',
+                    'Bachelor of Elementary Education',
+                    'Bachelor of Physical Education',
+                    'Bachelor of Technical-Vocational Teacher Education',
+                    'Bachelor of Technology and Livelihood Education',
+                    'Bachelor of Science in Psychology',
+                    'Bachelor of Arts in Broadcasting',
+                    'Bachelor of Science in Biology',
+                    'Bachelor of Science in Mathematics',
+                    'Bachelor of Science in Chemistry',
+                    'Bachelor of Science in Nursing',
+                    'Bachelor of Science in Computer Engineering',
+                    'Bachelor of Science in Mechanical Engineering',
+                    'Bachelor of Science in Civil Engineering',
+                    'Bachelor of Science in Electrical Engineering',
+                    'Bachelor of Science in Electronics Engineering',
+                    'Bachelor of Science in Office Administration',
+                    'Bachelor of Science in Entrepreneurship',
+                    'Bachelor of Science in Accountancy',
+                    'Bachelor of Science in Business Administration major in Marketing',
+                    'Bachelor of Public Administration',
+                    'Bachelor of Science in Business Administration major in Financial Management',
+                    'Bachelor of Science in Financial Management',
+                    'Bachelor of Science in Hospitality Management',
+                    'Bachelor of Science in Tourism Management',
+                    'Bachelor of Science in Industrial Technology – Food Processing',
+                    'Bachelor of Science in Industrial Technology – Automotive',
+                    'Bachelor of Science in Industrial Technology – Drafting',
+                    'Bachelor of Science in Industrial Technology – Electrical',
+                    'Bachelor of Science in Industrial Technology – Electronics',
+                    'Bachelor of Science in Industrial Technology – Heating, Ventilation, and Air Conditioning',
+                    'Bachelor of Science in Information Technology',
+                    'Bachelor of Science in Computer Science',
+                    'Bachelor of Science in Criminal Justice Education',
+                  ] %}
+                  <option value="{{ c }}"
+                    {% if user.course == c %}selected{% endif %}>{{ c }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+            </div>
+            <div class="mt-4">
+              <button type="submit" class="btn btn-primary px-4">
+                <i class="bi bi-check-lg me-1"></i>Save Profile
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Change password — prominent for first-time users -->
+      <div class="card shadow border-0"
+           id="changePasswordCard"
+           style="border-radius:12px; border-left: 4px solid #ffc107 !important;">
+        <div class="card-header py-3 bg-white border-bottom">
+          <h6 class="m-0 fw-bold text-warning">
+            <i class="bi bi-key me-2"></i>Change Password
+          </h6>
+        </div>
+        <div class="card-body">
+          <div class="alert alert-warning py-2 px-3 small mb-3">
+            <i class="bi bi-exclamation-triangle me-1"></i>
+            If you just registered, you received a <strong>temporary password</strong> by email.
+            Set a personal password here to secure your account.
+          </div>
+          <form method="POST" action="{{ url_for('student.update_profile') }}"
+                id="pwForm">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="row g-3">
+              <!-- Current password — required for security -->
+              <div class="col-12">
+                <label class="form-label fw-semibold">
+                  Current Password <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                  <input type="password" class="form-control" name="current_password"
+                         id="currentPw" placeholder="Enter your current password"
+                         autocomplete="current-password">
+                  <button class="btn btn-outline-secondary" type="button" id="toggleCurrentPw">
+                    <i class="bi bi-eye" id="eyeCurrent"></i>
+                  </button>
+                </div>
+                <div class="form-text">Required to verify your identity before changing your password.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">
+                  New Password <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                  <input type="password" class="form-control" name="new_password"
+                         id="newPw" placeholder="Minimum 8 characters" minlength="8"
+                         autocomplete="new-password">
+                  <button class="btn btn-outline-secondary" type="button" id="toggleNewPw">
+                    <i class="bi bi-eye" id="eyeNew"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">
+                  Confirm New Password <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                  <input type="password" class="form-control"
+                         id="confirmPw" placeholder="Repeat new password"
+                         autocomplete="new-password">
+                  <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPw">
+                    <i class="bi bi-eye" id="eyeConfirm"></i>
+                  </button>
+                </div>
+                <div id="pwMismatch" class="text-danger small mt-1 d-none">
+                  Passwords do not match.
+                </div>
+              </div>
+            </div>
+            <div class="mt-4">
+              <button type="submit" class="btn btn-warning px-4 fw-semibold"
+                      id="savePwBtn">
+                <i class="bi bi-shield-lock me-1"></i>Update Password
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div><!-- /main -->
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  // Toggle password visibility
+  function togglePw(btnId, inputId, iconId) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      const inp = document.getElementById(inputId);
+      const ico = document.getElementById(iconId);
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        ico.classList.replace('bi-eye', 'bi-eye-slash');
+      } else {
+        inp.type = 'password';
+        ico.classList.replace('bi-eye-slash', 'bi-eye');
+      }
+    });
+  }
+  togglePw('toggleCurrentPw', 'currentPw',  'eyeCurrent');
+  togglePw('toggleNewPw',     'newPw',       'eyeNew');
+  togglePw('toggleConfirmPw', 'confirmPw',   'eyeConfirm');
+
+  // Real-time password match check
+  const currentPw = document.getElementById('currentPw');
+  const newPw     = document.getElementById('newPw');
+  const confirmPw = document.getElementById('confirmPw');
+  const mismatch  = document.getElementById('pwMismatch');
+  const savePwBtn = document.getElementById('savePwBtn');
+
+  function checkMatch() {
+    if (confirmPw.value && newPw.value !== confirmPw.value) {
+      mismatch.classList.remove('d-none');
+      savePwBtn.disabled = true;
+    } else {
+      mismatch.classList.add('d-none');
+      savePwBtn.disabled = false;
+    }
+  }
+  newPw.addEventListener('input',     checkMatch);
+  confirmPw.addEventListener('input', checkMatch);
+
+  // Prevent submit if fields are incomplete
+  document.getElementById('pwForm').addEventListener('submit', function (e) {
+    const hasNew = newPw.value.trim().length > 0;
+    if (!hasNew) return; // no new password entered — profile-only save, allow
+
+    if (!currentPw.value.trim()) {
+      e.preventDefault();
+      currentPw.classList.add('is-invalid');
+      currentPw.focus();
+      return;
+    }
+    if (newPw.value !== confirmPw.value) {
+      e.preventDefault();
+      mismatch.classList.remove('d-none');
+    }
+  });
+
+  currentPw.addEventListener('input', function () {
+    this.classList.remove('is-invalid');
+  });
+
+  // Scroll to password section if #changePasswordCard in URL
+  if (window.location.hash === '#changePasswordCard') {
+    document.getElementById('changePasswordCard')
+            .scrollIntoView({ behavior: 'smooth' });
+  }
+})();
+</script>
+{% endblock %}

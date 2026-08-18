@@ -1,0 +1,492 @@
+{% extends "base.html" %}
+{% block title %}{% if editing %}Edit Application{% else %}Apply{% endif %} – {{ scholarship.title }} - LSPU ScholarHub{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+
+      <!-- Breadcrumb -->
+      <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb small">
+          <li class="breadcrumb-item"><a href="{{ url_for('scholarship.list_scholarships') }}">Scholarships</a></li>
+          <li class="breadcrumb-item"><a href="{{ url_for('scholarship.view_scholarship', scholarship_id=scholarship.id) }}">{{ scholarship.title }}</a></li>
+          <li class="breadcrumb-item active">{% if editing %}Edit Application{% else %}Apply{% endif %}</li>
+        </ol>
+      </nav>
+
+      <!-- Scholarship banner -->
+      <div class="card border-0 mb-4" style="background:linear-gradient(135deg,#1a3a6b,#0d6efd);border-radius:12px;">
+        <div class="card-body p-4 text-white">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <div>
+              <h4 class="fw-bold mb-1">{{ scholarship.title }}</h4>
+              <p class="mb-0 opacity-75 small">{{ scholarship.description[:100] }}…</p>
+            </div>
+            <div class="text-end">
+              {% if scholarship.award_amount %}
+              <div class="fs-4 fw-bold text-warning">₱{{ "{:,.0f}".format(scholarship.award_amount) }}</div>
+              {% endif %}
+              {% set days_left = (scholarship.application_deadline - now).days %}
+              <div class="small opacity-75">
+                Deadline: {{ scholarship.application_deadline.strftime('%b %d, %Y') }}
+                {% if days_left >= 0 %}
+                  <span class="badge {% if days_left <= 3 %}bg-danger{% elif days_left <= 7 %}bg-warning text-dark{% else %}bg-success{% endif %} ms-1">
+                    {{ days_left }}d left
+                  </span>
+                {% else %}
+                  <span class="badge bg-secondary ms-1">Expired</span>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress steps -->
+      <div class="d-flex align-items-center mb-4 gap-0">
+        {% for step, label in [('1','Personal Info'), ('2','Academic Info'), ('3','Essay'), ('4','Documents')] %}
+        <div class="d-flex align-items-center flex-grow-1">
+          <div class="step-circle rounded-circle d-flex align-items-center justify-content-center fw-bold"
+               id="step-circle-{{ step }}"
+               style="width:32px;height:32px;min-width:32px;background:#dee2e6;color:#6c757d;font-size:.8rem;">
+            {{ step }}
+          </div>
+          <div class="small ms-1 me-2 d-none d-md-block" style="white-space:nowrap;">{{ label }}</div>
+          {% if not loop.last %}
+          <div class="flex-grow-1 border-top border-2 mx-1" style="border-color:#dee2e6!important;"></div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+
+      <form method="POST" enctype="multipart/form-data" id="applyForm" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <!-- ══ SECTION 1: Personal Information ══════════════════════════ -->
+        <div class="card shadow-sm border-0 mb-4" id="section-1" style="border-radius:12px;">
+          <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
+            <h5 class="fw-bold mb-0">
+              <span class="badge bg-primary me-2">1</span>Personal Information
+            </h5>
+          </div>
+          <div class="card-body p-4">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">First Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="first_name" required
+                       value="{{ (application.application_data.first_name if application else user.first_name) or '' }}">
+                <div class="invalid-feedback">First name is required.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Last Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="last_name" required
+                       value="{{ (application.application_data.last_name if application else user.last_name) or '' }}">
+                <div class="invalid-feedback">Last name is required.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Student ID <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" name="student_id" required readonly
+                       value="{{ (application.application_data.student_id if application else user.student_id) or '' }}">
+                <div class="form-text">Auto-filled from your account.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
+                <input type="email" class="form-control" name="email" required readonly
+                       value="{{ (application.application_data.email if application else user.email) or '' }}">
+                <div class="form-text">Auto-filled from your account.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Phone Number <span class="text-danger">*</span></label>
+                <input type="tel" class="form-control" name="phone" required
+                       pattern="\d{11}" maxlength="11"
+                       placeholder="09XXXXXXXXX"
+                       value="{{ (application.application_data.phone if application else user.phone_number) or '' }}">
+                <div class="invalid-feedback">Enter a valid 11-digit phone number.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ SECTION 2: Academic Information ══════════════════════════ -->
+        <div class="card shadow-sm border-0 mb-4" id="section-2" style="border-radius:12px;">
+          <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
+            <h5 class="fw-bold mb-0">
+              <span class="badge bg-primary me-2">2</span>Academic Information
+            </h5>
+          </div>
+          <div class="card-body p-4">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Course / Program <span class="text-danger">*</span></label>
+                <select class="form-select" name="course" required>
+                  <option value="">Select Course</option>
+                  {% set sel_course = (application.application_data.course if application else user.course) or '' %}
+                  {% for c in [
+                    'Bachelor of Secondary Education major in English',
+                    'Bachelor of Secondary Education major in Filipino',
+                    'Bachelor of Secondary Education major in Social Science',
+                    'Bachelor of Secondary Education major in Mathematics',
+                    'Bachelor of Secondary Education major in Science',
+                    'Bachelor of Elementary Education',
+                    'Bachelor of Physical Education',
+                    'Bachelor of Technical-Vocational Teacher Education',
+                    'Bachelor of Technology and Livelihood Education',
+                    'Bachelor of Science in Psychology',
+                    'Bachelor of Arts in Broadcasting',
+                    'Bachelor of Science in Biology',
+                    'Bachelor of Science in Mathematics',
+                    'Bachelor of Science in Chemistry',
+                    'Bachelor of Science in Nursing',
+                    'Bachelor of Science in Computer Engineering',
+                    'Bachelor of Science in Mechanical Engineering',
+                    'Bachelor of Science in Civil Engineering',
+                    'Bachelor of Science in Electrical Engineering',
+                    'Bachelor of Science in Electronics Engineering',
+                    'Bachelor of Science in Office Administration',
+                    'Bachelor of Science in Entrepreneurship',
+                    'Bachelor of Science in Accountancy',
+                    'Bachelor of Science in Business Administration major in Marketing',
+                    'Bachelor of Public Administration',
+                    'Bachelor of Science in Business Administration major in Financial Management',
+                    'Bachelor of Science in Financial Management',
+                    'Bachelor of Science in Hospitality Management',
+                    'Bachelor of Science in Tourism Management',
+                    'Bachelor of Science in Industrial Technology – Food Processing',
+                    'Bachelor of Science in Industrial Technology – Automotive',
+                    'Bachelor of Science in Industrial Technology – Drafting',
+                    'Bachelor of Science in Industrial Technology – Electrical',
+                    'Bachelor of Science in Industrial Technology – Electronics',
+                    'Bachelor of Science in Industrial Technology – Heating, Ventilation, and Air Conditioning',
+                    'Bachelor of Science in Information Technology',
+                    'Bachelor of Science in Computer Science',
+                    'Bachelor of Science in Criminal Justice Education',
+                  ] %}
+                  <option value="{{ c }}" {% if sel_course == c %}selected{% endif %}>{{ c }}</option>
+                  {% endfor %}
+                </select>
+                <div class="invalid-feedback">Please select your course.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Year Level <span class="text-danger">*</span></label>
+                <select class="form-select" name="year_level" required>
+                  <option value="">Select Year</option>
+                  {% set sel_yr = (application.application_data.year_level if application else user.year_level) or '' %}
+                  {% for y in ['1st Year','2nd Year','3rd Year','4th Year','5th Year'] %}
+                  <option value="{{ y }}" {% if sel_yr == y %}selected{% endif %}>{{ y }}</option>
+                  {% endfor %}
+                </select>
+                <div class="invalid-feedback">Please select your year level.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Current GWA <span class="text-danger">*</span></label>
+                <input type="number" step="0.01" min="1.00" max="5.00" class="form-control"
+                       name="gpa" required placeholder="e.g. 1.75"
+                       value="{{ (application.application_data.gpa if application else (user.gwa | string if user.gwa else '')) or '' }}">
+                <div class="form-text">LSPU scale: 1.00 (Excellent) → 3.00 (Passed) → 5.00 (Failed)</div>
+                <div class="invalid-feedback">Enter a valid GWA between 1.00 and 5.00.</div>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Units Completed</label>
+                <input type="number" class="form-control" name="units_completed" min="0"
+                       placeholder="e.g. 48"
+                       value="{{ (application.application_data.units_completed if application else '') or '' }}">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ SECTION 3: Essay ══════════════════════════════════════════ -->
+        <div class="card shadow-sm border-0 mb-4" id="section-3" style="border-radius:12px;">
+          <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
+            <h5 class="fw-bold mb-0">
+              <span class="badge bg-primary me-2">3</span>Application Essay
+            </h5>
+          </div>
+          <div class="card-body p-4">
+            <label class="form-label fw-semibold">
+              Why do you deserve this scholarship? <span class="text-danger">*</span>
+            </label>
+            <p class="text-muted small mb-2">
+              Describe your academic achievements, financial need, and future goals.
+              Minimum <strong>300 words</strong> required.
+            </p>
+            <textarea class="form-control" name="essay" rows="10" required
+                      id="essayField" minlength="1"
+                      placeholder="Write your essay here…">{{ (application.application_data.essay if application else '') or '' }}</textarea>
+            <div class="d-flex justify-content-between mt-2">
+              <div id="wordCountMsg" class="small text-muted">
+                Word count: <strong id="wordCount">0</strong>
+                <span id="wordCountStatus" class="ms-2"></span>
+              </div>
+              <div class="small text-muted">Minimum 300 words</div>
+            </div>
+            <div id="essayError" class="text-danger small mt-1 d-none">
+              Essay must be at least 300 words.
+            </div>
+          </div>
+        </div>
+
+        <!-- ══ SECTION 4: Documents ══════════════════════════════════════ -->
+        <div class="card shadow-sm border-0 mb-4" id="section-4" style="border-radius:12px;">
+          <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
+            <h5 class="fw-bold mb-0">
+              <span class="badge bg-primary me-2">4</span>Required Documents
+            </h5>
+          </div>
+          <div class="card-body p-4">
+
+            {% if editing and application.uploaded_documents %}
+            <!-- Show existing documents when editing -->
+            <div class="alert alert-info py-2 px-3 small mb-4">
+              <i class="bi bi-info-circle me-1"></i>
+              Your previously uploaded documents are listed below. Upload a new file only if you want to replace one.
+            </div>
+            <div class="mb-4">
+              <h6 class="fw-semibold mb-3">Currently Uploaded Documents</h6>
+              <div class="list-group">
+                {% for doc in application.uploaded_documents %}
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                  <div>
+                    <i class="{{ doc.icon_class }} me-2"></i>
+                    <strong>{{ doc.category.replace('_',' ')|title }}</strong>
+                    <span class="text-muted small ms-2">{{ doc.original_filename }}</span>
+                    <span class="badge bg-light text-muted ms-1">{{ doc.file_size_display }}</span>
+                  </div>
+                  <div class="d-flex gap-1">
+                    <a href="{{ url_for('student.view_document', doc_id=doc.id) }}"
+                       class="btn btn-sm btn-outline-primary" target="_blank">
+                      <i class="bi bi-eye"></i>
+                    </a>
+                    <a href="{{ url_for('student.download_document', doc_id=doc.id) }}"
+                       class="btn btn-sm btn-outline-secondary">
+                      <i class="bi bi-download"></i>
+                    </a>
+                  </div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+            <h6 class="fw-semibold mb-3">Replace Documents (optional)</h6>
+            {% endif %}
+
+            <div class="row g-3">
+              <!-- Transcript -->
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">
+                  Transcript of Records
+                  {% if not editing %}<span class="text-danger">*</span>{% endif %}
+                </label>
+                <input type="file" class="form-control doc-upload" name="transcript"
+                       accept=".pdf,.jpg,.jpeg,.png"
+                       data-category="transcript"
+                       data-max-mb="5"
+                       data-allowed="pdf,jpg,jpeg,png"
+                       {% if not editing %}required{% endif %}>
+                <div class="form-text">
+                  Upload a <strong>photo or scan</strong> of your CTC-stamped TOR (JPG/PNG), or PDF — max 5 MB.
+                  The document must have a <strong>Certified True Copy</strong> stamp from the LSPU Registrar.
+                </div>
+                <div class="file-error text-danger small mt-1 d-none"></div>
+              </div>
+
+              <!-- Good Moral -->
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">
+                  Certificate of Good Moral
+                  {% if not editing %}<span class="text-danger">*</span>{% endif %}
+                </label>
+                <input type="file" class="form-control doc-upload" name="good_moral"
+                       accept=".pdf,.jpg,.jpeg,.png"
+                       data-category="good_moral"
+                       data-max-mb="5"
+                       data-allowed="pdf,jpg,jpeg,png"
+                       {% if not editing %}required{% endif %}>
+                <div class="form-text">PDF or photo/scan (JPG/PNG) — max 5 MB</div>
+                <div class="file-error text-danger small mt-1 d-none"></div>
+              </div>
+
+              <!-- Birth Certificate -->
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Birth Certificate <span class="text-muted small">(Optional)</span></label>
+                <input type="file" class="form-control doc-upload" name="birth_cert"
+                       accept=".pdf,.jpg,.jpeg,.png"
+                       data-category="birth_cert"
+                       data-max-mb="5"
+                       data-allowed="pdf,jpg,jpeg,png">
+                <div class="form-text">PDF/JPG/PNG — max 5 MB</div>
+                <div class="file-error text-danger small mt-1 d-none"></div>
+              </div>
+
+              <!-- Awards -->
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Academic Awards / Certificates <span class="text-muted small">(Optional)</span></label>
+                <input type="file" class="form-control doc-upload" name="awards"
+                       accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                       data-category="awards"
+                       data-max-mb="5"
+                       data-allowed="pdf,doc,docx,jpg,jpeg,png">
+                <div class="form-text">PDF/DOC/DOCX/JPG/PNG — max 5 MB</div>
+                <div class="file-error text-danger small mt-1 d-none"></div>
+              </div>
+            </div>
+
+            {% if not editing %}
+            <!-- Terms & Privacy -->
+            <div class="mt-4 p-3 bg-light rounded">
+              <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" name="terms" id="terms" required>
+                <label class="form-check-label small" for="terms">
+                  <strong>I certify</strong> that all information provided in this application is true, accurate, and complete.
+                  I understand that providing false information may result in disqualification.
+                </label>
+                <div class="invalid-feedback">You must certify the accuracy of your information.</div>
+              </div>
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="privacy" id="privacy" required>
+                <label class="form-check-label small" for="privacy">
+                  <strong>I consent</strong> to the collection, use, and processing of my personal information
+                  by LSPU for scholarship evaluation purposes, in accordance with the Data Privacy Act (RA 10173).
+                </label>
+                <div class="invalid-feedback">You must consent to the privacy policy.</div>
+              </div>
+            </div>
+            {% endif %}
+
+          </div>
+        </div>
+
+        <!-- Submit / Cancel -->
+        <div class="d-flex justify-content-between align-items-center mb-5">
+          <a href="{{ url_for('student.my_applications') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Cancel
+          </a>
+          <button type="submit" class="btn btn-primary btn-lg px-5 fw-semibold" id="submitBtn">
+            <i class="bi bi-send me-2"></i>
+            {% if editing %}Save Changes{% else %}Submit Application{% endif %}
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── Word counter ──────────────────────────────────────────────────────────────
+const essay   = document.getElementById('essayField');
+const counter = document.getElementById('wordCount');
+const status  = document.getElementById('wordCountStatus');
+const essayErr = document.getElementById('essayError');
+
+function countWords(text) {
+  return text.trim().split(/\s+/).filter(w => w.length > 0).length;
+}
+function updateWordCount() {
+  const n = countWords(essay.value);
+  counter.textContent = n;
+  if (n >= 300) {
+    status.innerHTML = '<span class="text-success"><i class="bi bi-check-circle me-1"></i>Minimum met</span>';
+    essayErr.classList.add('d-none');
+    essay.classList.remove('is-invalid');
+  } else {
+    status.innerHTML = `<span class="text-warning">${300 - n} more words needed</span>`;
+  }
+}
+essay.addEventListener('input', updateWordCount);
+updateWordCount();
+
+// ── Client-side file validation ───────────────────────────────────────────────
+document.querySelectorAll('.doc-upload').forEach(function(input) {
+  input.addEventListener('change', function() {
+    const errEl   = this.parentElement.querySelector('.file-error');
+    const allowed = this.dataset.allowed.split(',');
+    const maxMb   = parseFloat(this.dataset.maxMb);
+    const file    = this.files[0];
+
+    errEl.textContent = '';
+    errEl.classList.add('d-none');
+    this.classList.remove('is-invalid');
+
+    if (!file) return;
+
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!allowed.includes(ext)) {
+      errEl.textContent = `Invalid file type ".${ext}". Allowed: ${allowed.join(', ')}`;
+      errEl.classList.remove('d-none');
+      this.classList.add('is-invalid');
+      this.value = '';
+      return;
+    }
+    const sizeMb = file.size / (1024 * 1024);
+    if (sizeMb > maxMb) {
+      errEl.textContent = `File too large (${sizeMb.toFixed(1)} MB). Maximum is ${maxMb} MB.`;
+      errEl.classList.remove('d-none');
+      this.classList.add('is-invalid');
+      this.value = '';
+    }
+  });
+});
+
+// ── Form submit validation ────────────────────────────────────────────────────
+document.getElementById('applyForm').addEventListener('submit', function(e) {
+  let valid = true;
+
+  // Bootstrap native validation
+  if (!this.checkValidity()) {
+    e.preventDefault();
+    e.stopPropagation();
+    valid = false;
+  }
+  this.classList.add('was-validated');
+
+  // Essay word count
+  const words = countWords(essay.value);
+  if (words < 300) {
+    e.preventDefault();
+    essayErr.classList.remove('d-none');
+    essay.classList.add('is-invalid');
+    essay.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    valid = false;
+  }
+
+  // File errors
+  document.querySelectorAll('.doc-upload.is-invalid').forEach(function() {
+    e.preventDefault();
+    valid = false;
+  });
+
+  if (!valid) return;
+
+  // Disable submit to prevent double-submit
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Submitting…';
+});
+
+// ── Progress step highlight ───────────────────────────────────────────────────
+const sections = ['section-1','section-2','section-3','section-4'];
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const idx = sections.indexOf(entry.target.id) + 1;
+      document.querySelectorAll('[id^="step-circle-"]').forEach((c, i) => {
+        if (i + 1 <= idx) {
+          c.style.background = '#0d6efd';
+          c.style.color = '#fff';
+        } else {
+          c.style.background = '#dee2e6';
+          c.style.color = '#6c757d';
+        }
+      });
+    }
+  });
+}, { threshold: 0.3 });
+sections.forEach(id => {
+  const el = document.getElementById(id);
+  if (el) observer.observe(el);
+});
+</script>
+{% endblock %}

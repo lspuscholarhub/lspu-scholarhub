@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}LSPU ScholarHub — Scholarship Management System{% endblock %}
+
+{% block head %}
+<style>
+  main { padding: 0 !important; margin: 0 !important; background: transparent !important; flex-grow: 0 !important; }
+  .landing-hero {
+    position: relative;
+    min-height: calc(100vh - 60px);
+    display: flex;
+    align-items: center;
+    background: url("{{ url_for('static', filename='images/lspu-campus.jpg') }}") center/cover no-repeat;
+  }
+  .landing-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(26,58,107,.88) 0%, rgba(13,110,253,.75) 100%);
+    z-index: 1;
+  }
+  .landing-hero .container { position: relative; z-index: 2; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="landing-hero text-white">
+  <div class="container py-5">
+    <div class="row align-items-center">
+      <div class="col-lg-8 col-xl-7">
+        <div class="mb-3">
+          <img src="{{ url_for('static', filename='images/lspu-logo.png') }}" alt="LSPU Logo"
+               style="height:56px;width:56px;object-fit:contain;margin-bottom:8px;" class="d-block">
+          <span class="badge bg-white text-primary fw-semibold px-3 py-2" style="border-radius:20px;font-size:.8rem;">
+            Laguna State Polytechnic University — Santa Cruz Campus
+          </span>
+        </div>
+        <h1 class="display-3 fw-bold mb-3" style="line-height:1.05;letter-spacing:-.02em;">
+          Scholarship<br>Management System
+        </h1>
+        <p class="lead mb-4" style="font-size:1.15rem;opacity:.85;max-width:520px;">
+          Apply for scholarships, track your application status,
+          and manage scholar records — all in one platform.
+        </p>
+        <div class="d-flex flex-wrap gap-3">
+          <a href="{{ url_for('scholarship.list_scholarships') }}"
+             class="btn btn-light btn-lg fw-semibold px-4" style="border-radius:var(--sh-radius-md);">
+            <i class="bi bi-search me-2"></i>Browse Scholarships
+          </a>
+          {% if not session.get('user_id') %}
+          <a href="{{ url_for('auth.register') }}"
+             class="btn btn-outline-light btn-lg px-4" style="border-radius:var(--sh-radius-md);">
+            <i class="bi bi-person-plus me-2"></i>Register Now
+          </a>
+          {% elif session.get('user_type') == 'student' %}
+          <a href="{{ url_for('chatbot.chatbot_page') }}"
+             class="btn btn-outline-light btn-lg px-4" style="border-radius:var(--sh-radius-md);">
+            <i class="bi bi-robot me-2"></i>AI Assistant
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

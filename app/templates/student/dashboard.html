@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block title %}Student Dashboard - LSPU ScholarHub{% endblock %}
+
+{% block content %}
+<div class="container py-4 px-3">
+
+  <!-- Welcome -->
+  <div class="mb-4">
+    <h1 class="h4 fw-bold mb-1">Welcome, {{ user.first_name }}! 👋</h1>
+    <p class="text-muted small mb-0">Here's your scholarship overview.</p>
+  </div>
+
+  <!-- Alerts -->
+  {% if not session.get('is_verified') %}
+  <div class="alert alert-danger d-flex align-items-start gap-3 mb-3" role="alert" style="border-radius:var(--sh-radius-md);">
+    <i class="bi bi-shield-exclamation fs-4 flex-shrink-0 mt-1"></i>
+    <div>
+      <strong>Account not verified.</strong>
+      You cannot apply for scholarships until verified. Contact the scholarship office at
+      <strong>scholarships@lspu.edu.ph</strong>.
+    </div>
+  </div>
+  {% endif %}
+
+  {% if not user.gwa %}
+  <div class="alert alert-warning d-flex align-items-start gap-3 mb-3" role="alert" style="border-radius:var(--sh-radius-md);">
+    <i class="bi bi-graph-up-arrow fs-4 flex-shrink-0 mt-1"></i>
+    <div>
+      <strong>GWA not recorded.</strong>
+      <a href="{{ url_for('student.upload_gwa') }}" class="alert-link">Upload your Copy of Grades</a>
+      to update your GWA.
+    </div>
+  </div>
+  {% elif not user.grades_up_to_date %}
+  <div class="alert alert-info d-flex align-items-start gap-3 mb-3" role="alert" style="border-radius:var(--sh-radius-md);">
+    <i class="bi bi-arrow-repeat fs-4 flex-shrink-0 mt-1"></i>
+    <div>
+      <strong>Grades need updating.</strong>
+      Your grades are from <em>{{ user.grades_semester or 'a previous semester' }}</em>.
+      <a href="{{ url_for('student.upload_gwa') }}" class="alert-link">Upload your latest Copy of Grades</a>
+      for the current semester.
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Stats -->
+  <div class="row g-3 mb-4">
+    {% for label, value, color, icon in [
+      ('Applications',     total_apps,              '#0d6efd', 'bi-file-earmark-text'),
+      ('Approved',         approved_count,          '#198754', 'bi-check-circle'),
+      ('Pending',          pending_count,           '#fd7e14', 'bi-clock'),
+      ('Available',        new_scholarships_count,  '#6f42c1', 'bi-mortarboard'),
+    ] %}
+    <div class="col-6 col-md-3">
+      <div class="card stat-card shadow-sm h-100">
+        <div class="card-body p-3 text-center">
+          <i class="bi {{ icon }} fs-4 mb-1" style="color:{{ color }};"></i>
+          <div class="stat-value" style="color:{{ color }};font-size:1.5rem;">{{ value }}</div>
+          <div class="stat-label">{{ label }}</div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- GWA Card (if recorded) -->
+  {% if user.gwa %}
+  <div class="card shadow-sm border-0 mb-4" style="border-radius:var(--sh-radius-lg);">
+    <div class="card-body p-3 d-flex align-items-center gap-3">
+      <div class="stat-icon" style="background:{% if user.gwa <= 3.00 %}#d1f2e0;color:#198754{% else %}#fde8e8;color:#dc3545{% endif %};">
+        <i class="bi bi-graph-up"></i>
+      </div>
+      <div class="flex-grow-1">
+        <div class="d-flex align-items-center gap-2">
+          <span class="small text-muted">Current GWA</span>
+          {% if user.grades_up_to_date %}
+            <span class="badge bg-success" style="font-size:.65rem;"><i class="bi bi-check me-1"></i>Updated</span>
+          {% else %}
+            <span class="badge bg-warning text-dark" style="font-size:.65rem;"><i class="bi bi-exclamation-triangle me-1"></i>Outdated</span>
+          {% endif %}
+        </div>
+        <div class="fw-bold fs-5 {% if user.gwa <= 3.00 %}text-success{% else %}text-danger{% endif %}">{{ user.gwa }}</div>
+        {% if user.grades_semester %}
+        <div class="text-muted" style="font-size:.72rem;">From: {{ user.grades_semester }}</div>
+        {% endif %}
+      </div>
+      <a href="{{ url_for('student.upload_gwa') }}" class="btn btn-sm btn-outline-primary">
+        <i class="bi bi-upload me-1"></i>Update
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Quick Actions -->
+  <div class="row g-3 mb-4">
+    <div class="col-6">
+      <a href="{{ url_for('scholarship.list_scholarships') }}" class="quick-action-btn d-flex flex-column align-items-center gap-2 text-center h-100">
+        <i class="bi bi-search" style="color:#0d6efd;"></i>
+        <span class="small fw-semibold">Browse Scholarships</span>
+      </a>
+    </div>
+    <div class="col-6">
+      <a href="{{ url_for('student.my_applications') }}" class="quick-action-btn d-flex flex-column align-items-center gap-2 text-center h-100">
+        <i class="bi bi-file-earmark-text" style="color:#198754;"></i>
+        <span class="small fw-semibold">My Applications</span>
+      </a>
+    </div>
+    <div class="col-6">
+      <a href="{{ url_for('student.documents') }}" class="quick-action-btn d-flex flex-column align-items-center gap-2 text-center h-100">
+        <i class="bi bi-folder" style="color:#fd7e14;"></i>
+        <span class="small fw-semibold">My Documents</span>
+      </a>
+    </div>
+    <div class="col-6">
+      <a href="{{ url_for('student.notifications') }}" class="quick-action-btn d-flex flex-column align-items-center gap-2 text-center h-100">
+        <i class="bi bi-bell" style="color:#6f42c1;"></i>
+        <span class="small fw-semibold">Notifications</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Recent Applications -->
+  {% if recent_apps %}
+  <div class="card shadow-sm border-0 mb-4" style="border-radius:var(--sh-radius-lg);">
+    <div class="card-header bg-white border-0 pt-3 pb-0 px-3 d-flex justify-content-between align-items-center">
+      <h6 class="fw-bold small mb-0">Recent Applications</h6>
+      <a href="{{ url_for('student.my_applications') }}" class="btn btn-sm btn-outline-primary" style="font-size:.75rem;">View All</a>
+    </div>
+    <div class="card-body p-0">
+      <div class="list-group list-group-flush">
+        {% for app in recent_apps %}
+        <div class="list-group-item border-0 px-3 py-3">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="fw-semibold small">{{ app.scholarship.title[:30] }}</div>
+              <div class="text-muted" style="font-size:.72rem;">{{ app.submitted_at.strftime('%b %d, %Y') }}</div>
+            </div>
+            {% set sv = app.status.value %}
+            {% if sv == 'approved' %}<span class="badge bg-success" style="border-radius:6px;font-size:.7rem;">Approved</span>
+            {% elif sv == 'rejected' %}<span class="badge bg-danger" style="border-radius:6px;font-size:.7rem;">Rejected</span>
+            {% elif sv == 'under_review' %}<span class="badge bg-info text-dark" style="border-radius:6px;font-size:.7rem;">Review</span>
+            {% elif sv == 'withdrawn' %}<span class="badge bg-secondary" style="border-radius:6px;font-size:.7rem;">Withdrawn</span>
+            {% else %}<span class="badge bg-warning text-dark" style="border-radius:6px;font-size:.7rem;">Pending</span>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Available Scholarships -->
+  {% if new_scholarships %}
+  <div class="mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <h6 class="fw-bold small mb-0">Available Scholarships</h6>
+      <a href="{{ url_for('scholarship.list_scholarships') }}" class="small text-decoration-none">View All →</a>
+    </div>
+    <div class="row g-3">
+      {% for s in new_scholarships %}
+      <div class="col-12 col-md-4">
+        <div class="card shadow-sm border-0 h-100" style="border-radius:var(--sh-radius-md);border-left:3px solid #0d6efd;">
+          <div class="card-body p-3">
+            <h6 class="fw-bold small mb-1">{{ s.title[:35] }}</h6>
+            <div class="d-flex justify-content-between align-items-center mt-2">
+              <span class="small text-muted">
+                {% if s.award_amount %}₱{{ "{:,.0f}".format(s.award_amount) }}{% else %}TBA{% endif %}
+              </span>
+              <a href="{{ url_for('scholarship.apply_scholarship', scholarship_id=s.id) }}"
+                 class="btn btn-sm btn-primary" style="font-size:.72rem;">Apply</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Notifications -->
+  {% if recent_notifications %}
+  <div class="card shadow-sm border-0" style="border-radius:var(--sh-radius-lg);">
+    <div class="card-header bg-white border-0 pt-3 pb-0 px-3">
+      <h6 class="fw-bold small mb-0"><i class="bi bi-bell me-2 text-warning"></i>Notifications</h6>
+    </div>
+    <div class="card-body p-0">
+      <div class="list-group list-group-flush">
+        {% for n in recent_notifications[:3] %}
+        <div class="list-group-item border-0 px-3 py-2 {% if not n.is_read %}bg-light{% endif %}">
+          <div class="d-flex justify-content-between">
+            <div class="small fw-semibold">{{ n.title[:40] }}</div>
+            <small class="text-muted" style="font-size:.7rem;">{{ n.sent_at.strftime('%b %d') }}</small>
+          </div>
+          <div class="text-muted" style="font-size:.72rem;">{{ n.message[:60] }}…</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

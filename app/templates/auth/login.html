@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Login - LSPU ScholarHub{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+      <div class="card shadow border-0" style="border-radius:12px;">
+        <div class="card-body p-4 p-md-5">
+
+          <!-- Header -->
+          <div class="text-center mb-4">
+            <img src="{{ url_for('static', filename='images/lspu-logo.png') }}" alt="LSPU"
+                 style="height:64px;width:64px;object-fit:contain;" class="mb-3">
+            <h2 class="fw-bold mb-1">Welcome Back</h2>
+            <p class="text-muted small">Sign in to your LSPU ScholarHub account</p>
+          </div>
+
+          <form method="POST">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+
+            <!-- Identifier: email OR student ID -->
+            <div class="mb-3">
+              <label for="identifier" class="form-label fw-semibold">
+                Student ID or Email
+              </label>
+              <input type="text" class="form-control" id="identifier"
+                     name="identifier" required autocomplete="username"
+                     placeholder="e.g. 2024-01234 or your@email.com">
+              <div class="form-text">
+                Use your <strong>Student ID</strong> or <strong>Email address</strong>.
+              </div>
+            </div>
+
+            <!-- Password -->
+            <div class="mb-3">
+              <label for="password" class="form-label fw-semibold">Password</label>
+              <div class="input-group">
+                <input type="password" class="form-control border-end-0"
+                       id="password" name="password" required
+                       autocomplete="current-password"
+                       placeholder="Enter your password">
+                <button class="btn btn-outline-secondary border-start-0"
+                        type="button" id="togglePw" tabindex="-1">
+                  <i class="bi bi-eye" id="eyeIcon"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- Remember me -->
+            <div class="mb-4 d-flex justify-content-between align-items-center">
+              <div class="form-check mb-0">
+                <input class="form-check-input" type="checkbox"
+                       id="remember" name="remember">
+                <label class="form-check-label small" for="remember">
+                  Remember me
+                </label>
+              </div>
+              <a href="{{ url_for('auth.forgot_password') }}"
+                 class="small text-decoration-none text-primary">
+                Forgot password?
+              </a>
+            </div>
+
+            <!-- Submit -->
+            <div class="d-grid mb-3">
+              <button type="submit" class="btn btn-primary btn-lg fw-semibold">
+                <i class="bi bi-box-arrow-in-right me-2"></i>Log In
+              </button>
+            </div>
+
+          </form>
+
+          <!-- Info box for new students -->
+          <div class="alert alert-info py-2 px-3 small mb-3">
+            <i class="bi bi-envelope-open me-1"></i>
+            <strong>New student?</strong> Check your email for your temporary password
+            after registering. Log in and change it right away under
+            <em>My Account → Profile</em>.
+          </div>
+
+          <div class="text-center">
+            <p class="text-muted small mb-0">
+              Don't have an account?
+              <a href="{{ url_for('auth.register') }}"
+                 class="fw-semibold text-decoration-none">Register here</a>
+            </p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('togglePw').addEventListener('click', function () {
+  const pw  = document.getElementById('password');
+  const ico = document.getElementById('eyeIcon');
+  if (pw.type === 'password') {
+    pw.type = 'text';
+    ico.classList.replace('bi-eye', 'bi-eye-slash');
+  } else {
+    pw.type = 'password';
+    ico.classList.replace('bi-eye-slash', 'bi-eye');
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}About - LSPU ScholarHub{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="card shadow">
+                <div class="card-body p-5">
+                    <h1 class="card-title text-center mb-4">About LSPU ScholarHub</h1>
+                    
+                    <div class="mb-4">
+                        <h3>Our Mission</h3>
+                        <p>LSPU ScholarHub is dedicated to providing accessible scholarship opportunities for deserving students through our AI-enabled management system. We streamline the application process and connect students with financial aid opportunities.</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h3>What We Offer</h3>
+                        <ul>
+                            <li>Academic Excellence Scholarships</li>
+                            <li>Financial Aid Grants</li>
+                            <li>Sports Scholarships</li>
+                            <li>Cultural Arts Scholarships</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h3>AI-Enabled Features</h3>
+                        <p>Our intelligent chatbot provides instant answers to common scholarship questions, available 24/7 to assist students with their inquiries.</p>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h3>Contact Information</h3>
+                        <p><strong>Email:</strong> info@lspu-scholarhub.edu</p>
+                        <p><strong>Phone:</strong> (049) 576-1234</p>
+                        <p><strong>Office:</strong> Student Affairs Building, LSPU Main Campus</p>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <a href="{{ url_for('main.index') }}" class="btn btn-primary btn-lg">Back to Home</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

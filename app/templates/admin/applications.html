@@ -1,0 +1,306 @@
+{% extends "base.html" %}
+{% block title %}Manage Applications - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h1 class="h3">Manage Applications</h1>
+  </div>
+
+  <!-- Filters -->
+  <div class="card border-0 shadow-sm mb-4" style="border-radius:12px;">
+    <div class="card-body">
+      <form method="GET" class="auto-filter row g-2 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">Search</label>
+          <input type="text" name="q" value="{{ q }}" class="form-control"
+                 placeholder="Name or Student ID…">
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">Status</label>
+          <select name="status" class="form-select">
+            <option value="">All Status</option>
+            {% for val, label in [('pending','Pending'),('under_review','Under Review'),
+                                   ('approved','Approved'),('rejected','Rejected'),('withdrawn','Withdrawn')] %}
+            <option value="{{ val }}" {% if status_filter==val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">Scholarship</label>
+          <select name="scholarship_id" class="form-select">
+            <option value="">All Scholarships</option>
+            {% for s in scholarships %}
+            <option value="{{ s.id }}" {% if scholarship_filter==s.id|string %}selected{% endif %}>{{ s.title[:30] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">Course / Program</label>
+          <select name="course" class="form-select">
+            <option value="">All Courses</option>
+            {% for c in courses %}
+            <option value="{{ c }}" {% if course_filter==c %}selected{% endif %}>{{ c[:35] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-1">
+          <label class="form-label small fw-semibold">Year</label>
+          <select name="year" class="form-select">
+            <option value="">All</option>
+            {% for y in ['1st Year','2nd Year','3rd Year','4th Year','5th Year'] %}
+            <option value="{{ y }}" {% if year_filter==y %}selected{% endif %}>{{ y[:3] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2 d-flex justify-content-end">
+          <a href="{{ url_for('admin.manage_applications') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-x-circle me-1"></i>Reset
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Stats row -->
+  <div class="row mb-4">
+    {% for label, val, color in [('Total', stats.total, 'primary'),
+        ('Pending', stats.pending, 'warning'),
+        ('Under Review', stats.under_review, 'info'),
+        ('Approved', stats.approved, 'success'),
+        ('Rejected', stats.rejected, 'danger')] %}
+    <div class="col mb-2">
+      <div class="card text-center shadow-sm py-2">
+        <div class="h5 mb-0 text-{{ color }}">{{ val }}</div>
+        <small class="text-muted">{{ label }}</small>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Batch form wraps the table -->
+  <form method="POST" action="{{ url_for('admin.batch_review') }}" id="batchForm">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+    <div class="card shadow">
+      <div class="card-header d-flex justify-content-between align-items-center py-2">
+        <div class="d-flex gap-2 align-items-center">
+          <input type="checkbox" id="selectAll" class="form-check-input">
+          <label for="selectAll" class="mb-0 small">Select All</label>
+        </div>
+        <div class="d-flex gap-2">
+          <input type="text" name="review_notes" class="form-control form-control-sm"
+                 placeholder="Batch notes…" style="width:200px;">
+          <button type="submit" name="action" value="approve" class="btn btn-sm btn-success">
+            Batch Approve
+          </button>
+          <button type="submit" name="action" value="reject" class="btn btn-sm btn-danger">
+            Batch Reject
+          </button>
+        </div>
+      </div>
+      <div class="card-body p-0">
+        {% if applications %}
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th style="width:40px;"></th>
+                <th>#</th><th>Applicant</th><th>Scholarship</th>
+                <th>Submitted</th><th>Status</th><th>Tag</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for app in applications %}
+              <tr>
+                <td>
+                  <input type="checkbox" name="app_ids" value="{{ app.id }}"
+                         class="form-check-input row-check">
+                </td>
+                <td class="small text-muted">#{{ app.id }}</td>
+                <td>
+                  <strong>{{ app.applicant.get_full_name() }}</strong><br>
+                  <small class="text-muted">{{ app.applicant.email }}</small>
+                </td>
+                <td class="small">{{ app.scholarship.title }}</td>
+                <td class="small">{{ app.submitted_at.strftime('%b %d, %Y') }}</td>
+                <td>
+                  {% set sv = app.status.value %}
+                  {% if sv=='approved' %}<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Approved</span>
+                  {% elif sv=='rejected' %}<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Rejected</span>
+                  {% elif sv=='under_review' %}<span class="badge bg-info text-dark"><i class="bi bi-hourglass-split me-1"></i>Under Review</span>
+                  {% elif sv=='withdrawn' %}<span class="badge bg-secondary"><i class="bi bi-dash-circle me-1"></i>Withdrawn</span>
+                  {% else %}<span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Pending</span>{% endif %}
+                </td>
+                <td>
+                  {% if app.scholar_tag %}
+                    {% if app.scholar_tag=='active' %}<span class="badge bg-success">Active</span>
+                    {% elif app.scholar_tag=='probation' %}<span class="badge bg-warning text-dark">Probation</span>
+                    {% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
+                  {% else %}—{% endif %}
+                </td>
+                <td>
+                  <button type="button" class="btn btn-sm btn-outline-primary"
+                          data-bs-toggle="modal"
+                          data-bs-target="#reviewModal{{ app.id }}">Review</button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+          <i class="bi bi-inbox display-4"></i>
+          <p class="mt-3">No applications found.</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </form>
+</div>
+
+<!-- Per-application review modals -->
+{% for app in applications %}
+<div class="modal fade" id="reviewModal{{ app.id }}" tabindex="-1">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Review Application #{{ app.id }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div class="row">
+          <div class="col-md-6">
+            <h6>Applicant</h6>
+            <p><strong>Name:</strong> {{ app.applicant.get_full_name() }}</p>
+            <p><strong>Email:</strong> {{ app.applicant.email }}</p>
+            <p><strong>Phone:</strong> {{ app.applicant.phone_number or '—' }}</p>
+            {% if app.application_data %}
+            <p><strong>Student ID:</strong> {{ app.application_data.student_id or '—' }}</p>
+            <p><strong>Course:</strong> {{ app.application_data.course or '—' }}</p>
+            <p><strong>Year:</strong> {{ app.application_data.year_level or '—' }}</p>
+            <p><strong>GWA:</strong> {{ app.application_data.gpa or '—' }}</p>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            <h6>Application</h6>
+            <p><strong>Scholarship:</strong> {{ app.scholarship.title }}</p>
+            <p><strong>Submitted:</strong> {{ app.submitted_at.strftime('%B %d, %Y %I:%M %p') }}</p>
+            <p><strong>Current Status:</strong>
+              {% set sv2 = app.status.value %}
+              {% if sv2=='approved' %}<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Approved</span>
+              {% elif sv2=='rejected' %}<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Rejected</span>
+              {% elif sv2=='under_review' %}<span class="badge bg-info text-dark"><i class="bi bi-hourglass-split me-1"></i>Under Review</span>
+              {% elif sv2=='withdrawn' %}<span class="badge bg-secondary"><i class="bi bi-dash-circle me-1"></i>Withdrawn</span>
+              {% else %}<span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Pending</span>{% endif %}
+            </p>
+            {% if app.uploaded_documents %}
+            <h6 class="mt-3">Documents</h6>
+            <ul class="list-unstyled">
+              {% for doc in app.uploaded_documents %}
+              <li class="mb-2 p-2 rounded border" style="background:#f9fafb;">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <i class="{{ doc.icon_class }}"></i>
+                  <span class="small fw-semibold">{{ doc.original_filename }}</span>
+                  <!-- CTC badge for transcript -->
+                  {% if doc.category == 'transcript' %}
+                    {% if doc.ctc_detected == true %}
+                      <span class="badge bg-success" title="AI detected a Certified True Copy stamp">
+                        <i class="bi bi-patch-check-fill me-1"></i>CTC Detected
+                      </span>
+                    {% elif doc.ctc_detected == false %}
+                      <span class="badge bg-danger" title="AI did not detect a CTC stamp — verify manually">
+                        <i class="bi bi-exclamation-triangle-fill me-1"></i>No CTC Found
+                      </span>
+                    {% else %}
+                      <span class="badge bg-secondary" title="CTC check not available — verify manually">
+                        <i class="bi bi-question-circle me-1"></i>CTC Unverified
+                      </span>
+                    {% endif %}
+                    <!-- Admin CTC override buttons -->
+                    <div class="ms-1 d-flex gap-1">
+                      <form method="POST" action="{{ url_for('admin.override_ctc', doc_id=doc.id, value=1) }}" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-xs btn-outline-success py-0 px-1"
+                                style="font-size:.7rem;" title="Mark CTC as present">
+                          <i class="bi bi-check-lg"></i> CTC ✓
+                        </button>
+                      </form>
+                      <form method="POST" action="{{ url_for('admin.override_ctc', doc_id=doc.id, value=0) }}" class="d-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-1"
+                                style="font-size:.7rem;" title="Mark CTC as absent">
+                          <i class="bi bi-x-lg"></i> No CTC
+                        </button>
+                      </form>
+                    </div>
+                  {% endif %}
+                  <div class="ms-auto d-flex gap-1">
+                    <a href="{{ url_for('admin.view_document', doc_id=doc.id) }}"
+                       class="btn btn-sm btn-outline-primary" target="_blank">
+                      <i class="bi bi-eye me-1"></i>View
+                    </a>
+                    <a href="{{ url_for('admin.download_document', doc_id=doc.id) }}"
+                       class="btn btn-sm btn-outline-secondary">
+                      <i class="bi bi-download"></i>
+                    </a>
+                  </div>
+                </div>
+              </li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+          </div>
+        </div>
+        {% if app.application_data and app.application_data.essay %}
+        <hr>
+        <h6>Essay</h6>
+        <p class="small bg-light p-3 rounded">{{ app.application_data.essay }}</p>
+        {% endif %}
+        {% if app.review_notes %}
+        <hr>
+        <h6>Previous Notes</h6>
+        <p class="small text-muted">{{ app.review_notes }}</p>
+        {% endif %}
+      </div>
+      <div class="modal-footer flex-column align-items-stretch gap-2">
+        <form method="POST" action="{{ url_for('admin.review_application', app_id=app.id) }}">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+          <div class="mb-2">
+            <textarea class="form-control form-control-sm" name="review_notes"
+                      rows="2" placeholder="Review notes (optional)…"></textarea>
+          </div>
+          <!-- Scholar tag (for approved) -->
+          <div class="mb-2">
+            <select class="form-select form-select-sm" name="tag" style="width:auto;display:inline-block;">
+              <option value="active">Tag: Active</option>
+              <option value="probation">Tag: Probation</option>
+              <option value="inactive">Tag: Inactive</option>
+            </select>
+          </div>
+          <div class="d-flex gap-2 justify-content-end">
+            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+            <button type="submit" name="action" value="under_review"
+                    class="btn btn-info btn-sm">Mark Under Review</button>
+            <button type="submit" name="action" value="reject"
+                    class="btn btn-danger btn-sm">Reject</button>
+            <button type="submit" name="action" value="approve"
+                    class="btn btn-success btn-sm">Approve</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('selectAll').addEventListener('change', function() {
+  document.querySelectorAll('.row-check').forEach(cb => cb.checked = this.checked);
+});
+</script>
+{% endblock %}

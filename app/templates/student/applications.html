@@ -1,0 +1,385 @@
+{% extends "base.html" %}
+{% block title %}My Applications - LSPU ScholarHub{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <h1 class="h3 fw-bold mb-0">My Applications</h1>
+      <p class="text-muted small mb-0">Track the status of all your scholarship applications</p>
+    </div>
+    <a href="{{ url_for('scholarship.list_scholarships') }}" class="btn btn-primary">
+      <i class="bi bi-plus-circle me-1"></i>Apply for New Scholarship
+    </a>
+  </div>
+
+  <!-- Stats -->
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm text-center py-3" style="border-radius:12px;">
+        <div class="fs-2 fw-bold text-primary">{{ total }}</div>
+        <div class="small text-muted">Total</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm text-center py-3" style="border-radius:12px;">
+        <div class="fs-2 fw-bold text-success">{{ approved }}</div>
+        <div class="small text-muted">Approved</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm text-center py-3" style="border-radius:12px;">
+        <div class="fs-2 fw-bold text-warning">{{ pending }}</div>
+        <div class="small text-muted">Pending / Review</div>
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm text-center py-3" style="border-radius:12px;">
+        <div class="fs-2 fw-bold text-info">
+          {% if total_award > 0 %}₱{{ "{:,.0f}".format(total_award) }}{% else %}—{% endif %}
+        </div>
+        <div class="small text-muted">Total Awards</div>
+      </div>
+    </div>
+  </div>
+
+  {% if applications %}
+
+  <!-- Application cards -->
+  {% for app in applications %}
+  {% set sv = app.status.value %}
+  <div class="card border-0 shadow-sm mb-3" style="border-radius:12px;overflow:hidden;">
+    <div class="d-flex">
+      <!-- Status color bar -->
+      <div style="width:5px;min-height:100%;
+        background:{% if sv=='approved' %}#198754{% elif sv=='rejected' %}#dc3545{% elif sv=='under_review' %}#0dcaf0{% elif sv=='withdrawn' %}#6c757d{% else %}#ffc107{% endif %};">
+      </div>
+      <div class="flex-grow-1 p-4">
+
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+          <div>
+            <h5 class="fw-bold mb-1">{{ app.scholarship.title }}</h5>
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+              <!-- Consistent status badge -->
+              {% if sv == 'approved' %}
+                <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Approved</span>
+              {% elif sv == 'rejected' %}
+                <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Rejected</span>
+              {% elif sv == 'under_review' %}
+                <span class="badge bg-info text-dark"><i class="bi bi-hourglass-split me-1"></i>Under Review</span>
+              {% elif sv == 'withdrawn' %}
+                <span class="badge bg-secondary"><i class="bi bi-dash-circle me-1"></i>Withdrawn</span>
+              {% else %}
+                <span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Pending</span>
+              {% endif %}
+
+              <span class="text-muted small">
+                <i class="bi bi-calendar3 me-1"></i>Submitted {{ app.submitted_at.strftime('%b %d, %Y') }}
+              </span>
+              <span class="text-muted small">
+                <i class="bi bi-hash me-1"></i>App #{{ app.id }}
+              </span>
+            </div>
+          </div>
+
+          <div class="text-end">
+            {% if app.scholarship.award_amount %}
+            <div class="fw-bold text-success">₱{{ "{:,.0f}".format(app.scholarship.award_amount) }}</div>
+            {% endif %}
+            <div class="d-flex gap-1 mt-1 justify-content-end">
+              <button class="btn btn-sm btn-outline-primary"
+                      data-bs-toggle="modal"
+                      data-bs-target="#detailModal{{ app.id }}">
+                <i class="bi bi-eye me-1"></i>View Details
+              </button>
+              {% if sv in ('pending','under_review') and app.scholarship.is_application_open() %}
+              <a href="{{ url_for('scholarship.edit_application', app_id=app.id) }}"
+                 class="btn btn-sm btn-outline-warning">
+                <i class="bi bi-pencil me-1"></i>Edit
+              </a>
+              <button class="btn btn-sm btn-outline-danger"
+                      data-bs-toggle="modal"
+                      data-bs-target="#withdrawModal{{ app.id }}">
+                <i class="bi bi-x-circle me-1"></i>Withdraw
+              </button>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+
+        <!-- Status timeline -->
+        <div class="mt-3 pt-3 border-top">
+          <div class="d-flex align-items-center gap-0">
+            {% set steps = [
+              ('submitted',   'Submitted',   'bi-send',            sv in ('pending','under_review','approved','rejected')),
+              ('under_review','Under Review','bi-hourglass-split',  sv in ('under_review','approved','rejected')),
+              ('decided',     'Decision',    'bi-check2-circle',   sv in ('approved','rejected')),
+            ] %}
+            {% for step_id, step_label, step_icon, step_done in steps %}
+            <div class="d-flex align-items-center {% if not loop.last %}flex-grow-1{% endif %}">
+              <div class="d-flex flex-column align-items-center">
+                <div class="rounded-circle d-flex align-items-center justify-content-center"
+                     style="width:28px;height:28px;
+                       background:{% if step_done %}{% if sv=='rejected' and step_id=='decided' %}#dc3545{% else %}#198754{% endif %}{% else %}#dee2e6{% endif %};
+                       color:{% if step_done %}#fff{% else %}#6c757d{% endif %};">
+                  <i class="bi {{ step_icon }}" style="font-size:.7rem;"></i>
+                </div>
+                <div class="small mt-1" style="font-size:.7rem;white-space:nowrap;
+                  color:{% if step_done %}#198754{% else %}#6c757d{% endif %};">
+                  {{ step_label }}
+                </div>
+              </div>
+              {% if not loop.last %}
+              <div class="flex-grow-1 border-top mx-1 mb-3"
+                   style="border-color:{% if step_done %}#198754{% else %}#dee2e6{% endif %}!important;"></div>
+              {% endif %}
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Review notes -->
+        {% if app.review_notes %}
+        <div class="mt-2 p-2 rounded small
+          {% if sv == 'approved' %}bg-success bg-opacity-10 text-success
+          {% elif sv == 'rejected' %}bg-danger bg-opacity-10 text-danger
+          {% elif sv == 'withdrawn' %}bg-secondary bg-opacity-10 text-secondary
+          {% else %}bg-info bg-opacity-10 text-info{% endif %}">
+          <i class="bi bi-chat-left-text me-1"></i>
+          <strong>Note:</strong> {{ app.review_notes }}
+        </div>
+        {% endif %}
+
+        <!-- Deadline warning -->
+        {% if sv in ('pending','under_review') %}
+        {% set days_left = (app.scholarship.application_deadline - now).days %}
+        {% if days_left >= 0 and days_left <= 7 %}
+        <div class="mt-2 alert alert-warning py-1 px-2 small mb-0">
+          <i class="bi bi-exclamation-triangle me-1"></i>
+          Scholarship deadline in <strong>{{ days_left }} day(s)</strong>
+          ({{ app.scholarship.application_deadline.strftime('%b %d, %Y') }}).
+        </div>
+        {% endif %}
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+  {% else %}
+  <div class="card border-0 shadow-sm text-center py-5" style="border-radius:12px;">
+    <div class="card-body">
+      <i class="bi bi-file-earmark-x display-3 text-muted mb-3 d-block"></i>
+      <h5 class="text-muted">No applications yet</h5>
+      <p class="text-muted small">Browse available scholarships and submit your first application.</p>
+      <a href="{{ url_for('scholarship.list_scholarships') }}" class="btn btn-primary mt-2">
+        <i class="bi bi-search me-1"></i>Browse Scholarships
+      </a>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+
+<!-- ══ Withdraw Modals (one per withdrawable application) ════════════════════ -->
+{% for app in applications %}
+{% set sv = app.status.value %}
+{% if sv in ('pending','under_review') and app.scholarship.is_application_open() %}
+<div class="modal fade" id="withdrawModal{{ app.id }}" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:12px;">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold text-danger">
+          <i class="bi bi-exclamation-triangle me-2"></i>Withdraw Application
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST"
+            action="{{ url_for('scholarship.withdraw_application', app_id=app.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-body">
+          <p class="mb-3">
+            You are about to withdraw your application for
+            <strong>{{ app.scholarship.title }}</strong>.
+          </p>
+          <div class="alert alert-warning py-2 px-3 small">
+            <i class="bi bi-info-circle me-1"></i>
+            You can re-apply later as long as the scholarship is still open.
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">
+              Reason for Withdrawal <span class="text-muted fw-normal small">(optional)</span>
+            </label>
+            <textarea class="form-control" name="withdraw_reason" rows="3"
+                      placeholder="e.g. I found another scholarship, personal reasons, etc."></textarea>
+            <div class="form-text">
+              Your reason will be visible to the scholarship office.
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-danger fw-semibold">
+            <i class="bi bi-x-circle me-1"></i>Confirm Withdrawal
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endfor %}
+
+<!-- ══ Detail Modals ══════════════════════════════════════════════════════════ -->
+{% for app in applications %}
+{% set sv = app.status.value %}
+<div class="modal fade" id="detailModal{{ app.id }}" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content" style="border-radius:12px;overflow:hidden;">
+
+      <div class="modal-header text-white"
+           style="background:{% if sv=='approved' %}#198754{% elif sv=='rejected' %}#dc3545{% elif sv=='under_review' %}#0dcaf0{% elif sv=='withdrawn' %}#6c757d{% else %}#ffc107{% endif %};">
+        <div>
+          <h5 class="modal-title fw-bold mb-0">{{ app.scholarship.title }}</h5>
+          <div class="small opacity-75">Application #{{ app.id }} · Submitted {{ app.submitted_at.strftime('%B %d, %Y') }}</div>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body p-4">
+
+        <!-- Status + dates -->
+        <div class="row g-3 mb-4">
+          <div class="col-md-4 text-center">
+            <div class="small text-muted mb-1">Status</div>
+            {% if sv == 'approved' %}<span class="badge bg-success fs-6"><i class="bi bi-check-circle me-1"></i>Approved</span>
+            {% elif sv == 'rejected' %}<span class="badge bg-danger fs-6"><i class="bi bi-x-circle me-1"></i>Rejected</span>
+            {% elif sv == 'under_review' %}<span class="badge bg-info text-dark fs-6"><i class="bi bi-hourglass-split me-1"></i>Under Review</span>
+            {% elif sv == 'withdrawn' %}<span class="badge bg-secondary fs-6"><i class="bi bi-dash-circle me-1"></i>Withdrawn</span>
+            {% else %}<span class="badge bg-warning text-dark fs-6"><i class="bi bi-clock me-1"></i>Pending</span>{% endif %}
+          </div>
+          <div class="col-md-4 text-center">
+            <div class="small text-muted mb-1">Submitted</div>
+            <div class="fw-semibold small">{{ app.submitted_at.strftime('%b %d, %Y %I:%M %p') }}</div>
+          </div>
+          <div class="col-md-4 text-center">
+            <div class="small text-muted mb-1">Reviewed</div>
+            <div class="fw-semibold small">
+              {% if app.reviewed_at %}{{ app.reviewed_at.strftime('%b %d, %Y') }}{% else %}—{% endif %}
+            </div>
+          </div>
+        </div>
+
+        {% if app.review_notes %}
+        <div class="alert {% if sv=='approved' %}alert-success{% elif sv=='rejected' %}alert-danger{% elif sv=='withdrawn' %}alert-secondary{% else %}alert-info{% endif %} py-2 px-3 small mb-4">
+          <i class="bi bi-chat-left-text me-1"></i>
+          <strong>Note:</strong> {{ app.review_notes }}
+        </div>
+        {% endif %}
+
+        <!-- Personal & Academic info -->
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <h6 class="fw-bold border-bottom pb-2 mb-3">Personal Information</h6>
+            {% if app.application_data %}
+            <table class="table table-sm table-borderless mb-0">
+              <tr><td class="text-muted small" style="width:40%">Name</td>
+                  <td class="small fw-semibold">{{ app.application_data.first_name }} {{ app.application_data.last_name }}</td></tr>
+              <tr><td class="text-muted small">Student ID</td>
+                  <td class="small fw-semibold">{{ app.application_data.student_id or '—' }}</td></tr>
+              <tr><td class="text-muted small">Email</td>
+                  <td class="small fw-semibold">{{ app.application_data.email or '—' }}</td></tr>
+              <tr><td class="text-muted small">Phone</td>
+                  <td class="small fw-semibold">{{ app.application_data.phone or '—' }}</td></tr>
+            </table>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            <h6 class="fw-bold border-bottom pb-2 mb-3">Academic Information</h6>
+            {% if app.application_data %}
+            <table class="table table-sm table-borderless mb-0">
+              <tr><td class="text-muted small" style="width:40%">Course</td>
+                  <td class="small fw-semibold">{{ app.application_data.course or '—' }}</td></tr>
+              <tr><td class="text-muted small">Year Level</td>
+                  <td class="small fw-semibold">{{ app.application_data.year_level or '—' }}</td></tr>
+              <tr><td class="text-muted small">GWA</td>
+                  <td class="small fw-semibold">{{ app.application_data.gpa or '—' }}</td></tr>
+              <tr><td class="text-muted small">Units Done</td>
+                  <td class="small fw-semibold">{{ app.application_data.units_completed or '—' }}</td></tr>
+            </table>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Essay -->
+        {% if app.application_data and app.application_data.essay %}
+        <div class="mb-4">
+          <h6 class="fw-bold border-bottom pb-2 mb-3">Application Essay</h6>
+          <div class="bg-light rounded p-3 small" style="max-height:200px;overflow-y:auto;white-space:pre-wrap;">{{ app.application_data.essay }}</div>
+        </div>
+        {% endif %}
+
+        <!-- Documents -->
+        <div>
+          <h6 class="fw-bold border-bottom pb-2 mb-3">
+            Uploaded Documents
+            {% if app.uploaded_documents %}
+            <span class="badge bg-secondary ms-1">{{ app.uploaded_documents|length }}</span>
+            {% endif %}
+          </h6>
+          {% if app.uploaded_documents %}
+          <div class="list-group">
+            {% for doc in app.uploaded_documents %}
+            <div class="list-group-item d-flex justify-content-between align-items-center py-2">
+              <div>
+                <i class="{{ doc.icon_class }} me-2"></i>
+                <strong class="small">{{ doc.category.replace('_',' ')|title }}</strong>
+                <span class="text-muted small ms-2">{{ doc.original_filename }}</span>
+                <span class="badge bg-light text-muted border ms-1" style="font-size:.7rem;">{{ doc.file_size_display }}</span>
+                {% if doc.is_verified %}
+                <span class="badge bg-success ms-1" style="font-size:.7rem;"><i class="bi bi-check me-1"></i>Verified</span>
+                {% else %}
+                <span class="badge bg-warning text-dark ms-1" style="font-size:.7rem;"><i class="bi bi-clock me-1"></i>Pending Verification</span>
+                {% endif %}
+              </div>
+              <div class="d-flex gap-1">
+                <a href="{{ url_for('student.view_document', doc_id=doc.id) }}"
+                   class="btn btn-sm btn-outline-primary" target="_blank" title="View">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a href="{{ url_for('student.download_document', doc_id=doc.id) }}"
+                   class="btn btn-sm btn-outline-secondary" title="Download">
+                  <i class="bi bi-download"></i>
+                </a>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-muted small">No documents on record for this application.</p>
+          {% endif %}
+        </div>
+
+      </div>
+
+      <div class="modal-footer">
+        {% if sv in ('pending','under_review') and app.scholarship.is_application_open() %}
+        <a href="{{ url_for('scholarship.edit_application', app_id=app.id) }}"
+           class="btn btn-warning">
+          <i class="bi bi-pencil me-1"></i>Edit Application
+        </a>
+        {% endif %}
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+{% endblock %}
