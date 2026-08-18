@@ -57,6 +57,11 @@ class TestingConfig(Config):
 
 class ProductionConfig(Config):
     DEBUG = False
+    # CSRF works correctly behind Railway's HTTPS proxy
+    WTF_CSRF_SSL_STRICT = False
+    WTF_CSRF_TIME_LIMIT = 3600
+    # Trust Railway's proxy headers for HTTPS detection
+    PREFERRED_URL_SCHEME = 'https'
     # Force secure cookies over HTTPS
     SESSION_COOKIE_SECURE   = True
     SESSION_COOKIE_HTTPONLY = True

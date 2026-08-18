@@ -23,12 +23,16 @@ def create_app(config_name=None):
     app = Flask(__name__)
     app.config.from_object(config[config_name])
 
+    # Trust Railway's reverse proxy (fixes HTTPS detection and CSRF)
+    from werkzeug.middleware.proxy_fix import ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
     # Bind extensions to this app instance
     db.init_app(app)
-    migrate.init_app(app, db)   # enables `flask db init/migrate/upgrade`
+    migrate.init_app(app, db)
     mail.init_app(app)
     jwt.init_app(app)
-    csrf.init_app(app)          # CSRF protection on all POST/PUT/PATCH/DELETE forms
+    csrf.init_app(app)
 
     # Register blueprints
     from app.views.main import main_bp
