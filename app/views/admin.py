@@ -1337,7 +1337,10 @@ def override_ctc(doc_id, value):
     app_id = doc.application_id
     if app_id:
         return redirect(url_for('admin.manage_applications') + f'#app{app_id}')
-    return redirect(url_for('admin.student_profile', uid=doc.user_id))@admin_bp.route('/students/<int:uid>/update-gwa', methods=['POST'])
+    return redirect(url_for('admin.student_profile', uid=doc.user_id))
+
+
+@admin_bp.route('/students/<int:uid>/update-gwa', methods=['POST'])
 @role_required('admin')
 def update_gwa(uid):
     """Update a student's GWA."""
