@@ -42,6 +42,15 @@
             {% else %}
               <span class="badge bg-warning text-dark">Unverified</span>
             {% endif %}
+            {% if student.ocr_verified == true %}
+              <span class="badge bg-info ms-1"><i class="bi bi-robot me-1"></i>OCR Passed</span>
+            {% elif student.ocr_verified == false %}
+              <span class="badge bg-danger ms-1" title="{{ student.ocr_result }}">
+                <i class="bi bi-exclamation-triangle me-1"></i>OCR Failed
+              </span>
+            {% else %}
+              <span class="badge bg-secondary ms-1"><i class="bi bi-hourglass-split me-1"></i>OCR Pending</span>
+            {% endif %}
           </div>
         </div>
         <div class="card-footer bg-white border-top">

@@ -306,48 +306,11 @@ def register():
                 flash('Grades file could not be saved. Please upload a valid PDF (max 5MB).', 'error')
                 return render_template('auth/register.html')
 
-        # ── Run OCR triple-match verification ─────────────────────────────────
-        if cor_bytes:
-            try:
-                from app.services.ocr_service import verify_documents
-                ocr_result = verify_documents(
-                    form_student_id=student_id,
-                    form_first_name=first_name,
-                    form_last_name=last_name,
-                    form_middle_name=middle_name,
-                    cor_bytes=cor_bytes,
-                    cor_ext=cor_ext,
-                    grades_bytes=grades_bytes,
-                    grades_ext=grades_ext,
-                    form_course=course,
-                )
-
-                if not ocr_result['passed']:
-                    flash(
-                        'Document verification failed. Please check the errors below.',
-                        'error'
-                    )
-                    return render_template('auth/register.html',
-                                           ocr_errors=ocr_result['errors'],
-                                           form_data=request.form)
-
-                # Non-blocking warnings (e.g. GWA not found — staff will enter manually)
-                if ocr_result.get('warnings'):
-                    for w in ocr_result['warnings']:
-                        flash(w, 'warning')
-
-                # Auto-populate GWA if extracted
-                auto_gwa = ocr_result.get('gwa')
-
-            except Exception as e:
-                import logging as _log
-                _log.getLogger(__name__).warning(f'OCR verification error: {e}')
-                flash(
-                    'Document verification encountered an unexpected error. '
-                    'Please try again. If the problem persists, contact the scholarship office.',
-                    'error'
-                )
-                return render_template('auth/register.html', form_data=request.form)
+        # ── Document validation — file type check only (no OCR during registration) ──
+        # OCR/AI verification is done by staff when reviewing scholarship applications.
+        # Running Gemini during registration causes timeouts on production servers.
+        # Staff can view uploaded COR/grades from the student profile page.
+        auto_gwa = None  # GWA will be entered manually by staff after reviewing grades
 
         # ── Generate and send OTP ─────────────────────────────────────────────
         otp = _generate_otp()
@@ -486,6 +449,87 @@ def verify_otp():
 
             # Send credentials
             _send_credentials_email(new_user, temp_password)
+
+            # ── Run OCR in background thread after account is created ─────────
+            # This keeps registration instant while still auto-verifying documents.
+            # Results are stored on the user record and visible on the admin/staff profile page.
+            try:
+                import threading
+                from flask import current_app
+
+                def _background_ocr(app, user_id, cor_path, grades_path,
+                                     student_id, first_name, last_name,
+                                     middle_name, course):
+                    """Run OCR after account creation — non-blocking."""
+                    with app.app_context():
+                        try:
+                            import os
+                            from app.models import User as _User
+                            from app import db as _db
+
+                            user_rec = _User.query.get(user_id)
+                            if not user_rec:
+                                return
+
+                            # Read file bytes from saved paths
+                            def _read(path):
+                                if path and os.path.exists(path):
+                                    with open(path, 'rb') as f:
+                                        return f.read()
+                                return None
+
+                            cor_b    = _read(cor_path)
+                            grades_b = _read(grades_path)
+
+                            if not cor_b:
+                                return
+
+                            cor_ext_bg    = cor_path.rsplit('.', 1)[-1].lower() if cor_path and '.' in cor_path else ''
+                            grades_ext_bg = grades_path.rsplit('.', 1)[-1].lower() if grades_path and '.' in grades_path else ''
+
+                            from app.services.ocr_service import verify_documents
+                            result = verify_documents(
+                                form_student_id=student_id,
+                                form_first_name=first_name,
+                                form_last_name=last_name,
+                                form_middle_name=middle_name,
+                                cor_bytes=cor_b,
+                                cor_ext=cor_ext_bg,
+                                grades_bytes=grades_b,
+                                grades_ext=grades_ext_bg,
+                                form_course=course,
+                            )
+
+                            # Store OCR result on user record
+                            user_rec.ocr_verified  = result.get('passed', False)
+                            user_rec.ocr_result    = str(result.get('errors', []))
+                            if result.get('gwa') and not user_rec.gwa:
+                                user_rec.gwa = result['gwa']
+                            _db.session.commit()
+
+                        except Exception as ocr_err:
+                            import logging as _l
+                            _l.getLogger(__name__).warning(f'Background OCR failed: {ocr_err}')
+
+                t = threading.Thread(
+                    target=_background_ocr,
+                    args=(
+                        current_app._get_current_object(),
+                        new_user.id,
+                        pending.get('cor_path'),
+                        pending.get('grades_path'),
+                        pending['student_id'],
+                        pending['first_name'],
+                        pending['last_name'],
+                        pending.get('middle_name'),
+                        pending['course'],
+                    ),
+                    daemon=True,
+                )
+                t.start()
+            except Exception as bg_err:
+                import logging as _log
+                _log.getLogger(__name__).warning(f'Could not start background OCR: {bg_err}')
 
             # Audit log — registration
             try:

@@ -27,8 +27,11 @@ class User(db.Model):
     # Uploaded registration documents (for 2nd year and above)
     cor_file_path    = db.Column(db.String(500))   # Certificate of Registration
     grades_file_path = db.Column(db.String(500))   # Copy of Grades
-    grades_semester  = db.Column(db.String(50))    # Which semester the grades are for (e.g. "2nd Semester AY 2025-2026")
+    grades_semester  = db.Column(db.String(50))    # Which semester the grades are for
     grades_updated_at = db.Column(db.DateTime)     # When grades were last uploaded/updated
+    # Background OCR verification result (set after registration)
+    ocr_verified     = db.Column(db.Boolean, nullable=True)   # True=passed, False=failed, None=pending
+    ocr_result       = db.Column(db.Text, nullable=True)      # Raw OCR error list if failed
     # Academic monitoring
     gwa              = db.Column(db.Float)          # General Weighted Average (input by staff)
     units_enrolled   = db.Column(db.Integer)        # Total units enrolled this semester
