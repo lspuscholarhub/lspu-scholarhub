@@ -61,10 +61,11 @@ class ProductionConfig(Config):
     WTF_CSRF_SSL_STRICT = False
     WTF_CSRF_TIME_LIMIT = None   # no expiry on CSRF tokens
     PREFERRED_URL_SCHEME = 'https'
-    # Session cookies
+    # Session cookies — expire when browser is closed
     SESSION_COOKIE_SECURE   = False   # Railway handles HTTPS termination
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
+    PERMANENT_SESSION_LIFETIME = 3600   # 1 hour if session IS permanent
 
 
 config = {

@@ -658,10 +658,14 @@ def serve_student_document_raw(doc_id):
     if doc.cloudinary_public_id:
         try:
             import urllib.request as _ur
-            from app.services.storage_service import get_signed_url
-            res_type = 'image' if (doc.file_type or '').lower() in ('jpg','jpeg','png') else 'raw'
-            signed   = get_signed_url(doc.cloudinary_public_id, resource_type=res_type)
-            fetch_url = signed or doc.cloudinary_url
+            fetch_url = doc.cloudinary_url
+            if not fetch_url:
+                from app.services.storage_service import get_signed_url
+                res_type  = 'image' if (doc.file_type or '').lower() in ('jpg','jpeg','png') else 'raw'
+                fetch_url = get_signed_url(doc.cloudinary_public_id, resource_type=res_type)
+            if not fetch_url:
+                flash('File URL not available.', 'error')
+                return redirect(url_for('staff.student_profile', uid=doc.user_id))
             req = _ur.Request(fetch_url)
             req.add_header('User-Agent', 'LSPU-ScholarHub/1.0')
             with _ur.urlopen(req, timeout=30) as resp:
