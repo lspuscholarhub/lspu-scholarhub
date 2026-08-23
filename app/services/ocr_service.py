@@ -354,7 +354,10 @@ def _extract_via_gemini(file_bytes: bytes, file_ext: str, raw_text: str = '') ->
         client = genai.Client(api_key=api_key)
 
         # Use model name from env, with fallback
-        _ocr_model = os.environ.get('GEMINI_MODEL', 'gemini-3-flash-preview').strip()
+        _ocr_model = os.environ.get('GEMINI_MODEL', 'gemini-1.5-flash').strip()
+        # Guard against invalid legacy model names
+        if 'preview' in _ocr_model and _ocr_model not in ('gemini-1.5-pro-preview', 'gemini-1.5-flash-preview'):
+            _ocr_model = 'gemini-1.5-flash'
 
         # Retry logic: if we get a 429 with a short retry delay, wait and try once more
         max_attempts = 2
@@ -789,7 +792,10 @@ def detect_ctc_stamp(file_bytes: bytes, file_ext: str) -> dict:
         return {'detected': None, 'confidence': 'unknown',
                 'notes': 'AI not configured — manual check required.'}
 
-    model_name = os.environ.get('GEMINI_MODEL', 'gemini-3-flash-preview').strip()
+    model_name = os.environ.get('GEMINI_MODEL', 'gemini-1.5-flash').strip()
+    # Guard against invalid legacy model names
+    if 'preview' in model_name and model_name not in ('gemini-1.5-pro-preview', 'gemini-1.5-flash-preview'):
+        model_name = 'gemini-1.5-flash'
 
     prompt = (
         "Examine this document carefully. It should be an official school document "
