@@ -310,7 +310,27 @@ def register():
         # OCR/AI verification is done by staff when reviewing scholarship applications.
         # Running Gemini during registration causes timeouts on production servers.
         # Staff can view uploaded COR/grades from the student profile page.
-        auto_gwa = None  # GWA will be entered manually by staff after reviewing grades
+
+        # ── Quick GWA extraction from grades file (fast, non-blocking) ────────
+        # Only try if grades file was uploaded — uses Gemini but with short timeout
+        auto_gwa = None
+        if grades_bytes and grades_ext:
+            try:
+                import concurrent.futures
+                from app.services.ocr_service import extract_document_data
+
+                def _extract_gwa():
+                    result = extract_document_data(grades_bytes, grades_ext)
+                    return result.get('gwa')
+
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
+                    future = ex.submit(_extract_gwa)
+                    try:
+                        auto_gwa = future.result(timeout=15)
+                    except concurrent.futures.TimeoutError:
+                        auto_gwa = None  # staff enters manually
+            except Exception:
+                auto_gwa = None
 
         # ── Generate and send OTP ─────────────────────────────────────────────
         otp = _generate_otp()
