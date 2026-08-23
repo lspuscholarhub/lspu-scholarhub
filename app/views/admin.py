@@ -2093,3 +2093,68 @@ def export_batch(batch_id):
                      mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                      as_attachment=True,
                      download_name=filename)
+
+
+# ── Temporary email test route (admin only) ───────────────────────────────────
+
+@admin_bp.route('/test-email')
+@role_required('admin')
+def test_email():
+    """Test email configuration — visit /admin/test-email to check."""
+    import os
+    import smtplib
+    from flask import jsonify
+
+    mail_server   = os.environ.get('MAIL_SERVER', 'NOT SET')
+    mail_port     = os.environ.get('MAIL_PORT', 'NOT SET')
+    mail_username = os.environ.get('MAIL_USERNAME', 'NOT SET')
+    mail_password = os.environ.get('MAIL_PASSWORD', 'NOT SET')
+    mail_tls      = os.environ.get('MAIL_USE_TLS', 'NOT SET')
+
+    config_info = {
+        'MAIL_SERVER':   mail_server,
+        'MAIL_PORT':     mail_port,
+        'MAIL_USERNAME': mail_username,
+        'MAIL_PASSWORD': mail_password[:6] + '...' if mail_password and mail_password != 'NOT SET' else mail_password,
+        'MAIL_USE_TLS':  mail_tls,
+    }
+
+    # Try connecting to SMTP
+    smtp_result = 'NOT TESTED'
+    send_result = 'NOT TESTED'
+    error_detail = None
+
+    try:
+        server = smtplib.SMTP(mail_server, int(mail_port), timeout=15)
+        server.ehlo()
+        if mail_tls.lower() in ('true', '1', 'on'):
+            server.starttls()
+        server.login(mail_username, mail_password)
+        smtp_result = 'LOGIN SUCCESS'
+
+        # Try sending a test email to admin
+        from app import db
+        admin_user = User.query.filter_by(user_type='admin').first()
+        test_to = admin_user.email if admin_user else mail_username
+
+        from email.mime.text import MIMEText
+        from email.mime.multipart import MIMEMultipart
+        msg = MIMEMultipart()
+        msg['From']    = f"LSPU ScholarHub <lspu.scholarhub@gmail.com>"
+        msg['To']      = test_to
+        msg['Subject'] = "LSPU ScholarHub — Test Email"
+        msg.attach(MIMEText('<h2>Test email works!</h2><p>Email configuration is correct.</p>', 'html'))
+        server.send_message(msg)
+        server.quit()
+        send_result = f'EMAIL SENT to {test_to}'
+
+    except Exception as e:
+        smtp_result = 'FAILED'
+        error_detail = str(e)
+
+    return jsonify({
+        'config':       config_info,
+        'smtp_connect': smtp_result,
+        'send_result':  send_result,
+        'error':        error_detail,
+    })
