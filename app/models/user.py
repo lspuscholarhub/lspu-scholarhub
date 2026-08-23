@@ -25,8 +25,10 @@ class User(db.Model):
     course = db.Column(db.String(100))
     year_level = db.Column(db.String(20))
     # Uploaded registration documents (for 2nd year and above)
-    cor_file_path    = db.Column(db.String(500))   # Certificate of Registration
-    grades_file_path = db.Column(db.String(500))   # Copy of Grades
+    cor_file_path    = db.Column(db.String(500))   # Certificate of Registration (local path or Cloudinary URL)
+    grades_file_path = db.Column(db.String(500))   # Copy of Grades (local path or Cloudinary URL)
+    cor_cloudinary_id    = db.Column(db.String(255), nullable=True)   # Cloudinary public_id for COR
+    grades_cloudinary_id = db.Column(db.String(255), nullable=True)   # Cloudinary public_id for Grades
     grades_semester  = db.Column(db.String(50))    # Which semester the grades are for
     grades_updated_at = db.Column(db.DateTime)     # When grades were last uploaded/updated
     # Background OCR verification result (set after registration)

@@ -1111,9 +1111,14 @@ def student_profile(uid):
 def view_student_document(doc_id):
     """Render a viewer page for a student document."""
     import os
-    from flask import current_app
+    from flask import current_app, redirect as _redirect
     from app.models.document import Document
     doc = Document.query.get_or_404(doc_id)
+
+    # If stored on Cloudinary, redirect directly to the URL
+    if doc.cloudinary_url:
+        return _redirect(doc.cloudinary_url)
+
     file_path = doc.file_path
     if not os.path.isabs(file_path):
         file_path = os.path.join(current_app.root_path, '..', file_path)
@@ -1198,25 +1203,44 @@ def upload_student_document(uid):
         flash(f'File type .{ext} not allowed. Use PDF, JPG, PNG, DOC, or DOCX.', 'error')
         return redirect(url_for('admin.student_profile', uid=uid))
 
-    # Save file
-    unique_name = f"{cat}_{uid}_{_dt.utcnow().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}.{ext}"
-    unique_name = secure_filename(unique_name)
-    upload_dir  = os.path.join(current_app.config['UPLOAD_FOLDER'], 'documents', str(uid))
-    os.makedirs(upload_dir, exist_ok=True)
-    file_path   = os.path.join(upload_dir, unique_name)
-    file.save(file_path)
-    file_size = os.path.getsize(file_path)
+    # Read file bytes
+    file_bytes = file.read()
+    file_size  = len(file_bytes)
+
+    # Build unique filename
+    unique_name = secure_filename(
+        f"{cat}_{uid}_{_dt.utcnow().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}.{ext}"
+    )
+
+    # Save file via Cloudinary or local
+    from app.services.storage_service import upload_file as _cloud_upload
+    cloud_result = _cloud_upload(file_bytes, unique_name,
+                                 f"documents/{uid}", resource_type='auto')
+    if cloud_result['success']:
+        file_path      = cloud_result['url']
+        cloudinary_url = cloud_result['url']
+        cloudinary_pid = cloud_result.get('public_id')
+    else:
+        upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'documents', str(uid))
+        os.makedirs(upload_dir, exist_ok=True)
+        file_path = os.path.join(upload_dir, unique_name)
+        with open(file_path, 'wb') as f:
+            f.write(file_bytes)
+        cloudinary_url = None
+        cloudinary_pid = None
 
     doc = Document(
-        user_id           = uid,
-        original_filename = file.filename,
-        stored_filename   = unique_name,
-        file_path         = file_path,
-        file_size         = file_size,
-        category          = cat,
-        file_type         = ext,
-        description       = desc or None,
-        is_verified       = True,  # admin-uploaded = auto verified
+        user_id              = uid,
+        original_filename    = file.filename,
+        stored_filename      = unique_name,
+        file_path            = file_path,
+        file_size            = file_size,
+        category             = cat,
+        file_type            = ext,
+        description          = desc or None,
+        is_verified          = True,
+        cloudinary_url       = cloudinary_url,
+        cloudinary_public_id = cloudinary_pid,
     )
     db.session.add(doc)
     db.session.commit()
@@ -1290,26 +1314,44 @@ def replace_reg_document(uid):
 
     # Delete old file
     old_path = student.cor_file_path if doc_type == 'cor' else student.grades_file_path
-    if old_path and os.path.exists(old_path):
+    old_cid  = student.cor_cloudinary_id if doc_type == 'cor' else student.grades_cloudinary_id
+    if old_cid:
+        from app.services.storage_service import delete_file as _del
+        _del(public_id=old_cid)
+    elif old_path and os.path.exists(old_path):
         try:
             os.remove(old_path)
         except Exception:
             pass
 
-    # Save new file
+    # Read new file bytes
+    file_bytes = file.read()
+
+    # Upload to Cloudinary or local
+    from app.services.storage_service import upload_file as _cloud_upload
     upload_dir  = os.path.join(current_app.config['UPLOAD_FOLDER'], 'registration')
     os.makedirs(upload_dir, exist_ok=True)
     label       = 'cor' if doc_type == 'cor' else 'grades'
     unique_name = secure_filename(
         f"{label}_{student.student_id}_{_dt.utcnow().strftime('%Y%m%d%H%M%S')}.{ext}"
     )
-    new_path = os.path.join(upload_dir, unique_name)
-    file.save(new_path)
+    cloud_result = _cloud_upload(file_bytes, unique_name,
+                                 f"registration/{student.id}", resource_type='auto')
+    if cloud_result['success']:
+        new_path = cloud_result['url']
+        new_cid  = cloud_result.get('public_id')
+    else:
+        new_path = os.path.join(upload_dir, unique_name)
+        with open(new_path, 'wb') as f:
+            f.write(file_bytes)
+        new_cid = None
 
     if doc_type == 'cor':
-        student.cor_file_path = new_path
+        student.cor_file_path    = new_path
+        student.cor_cloudinary_id = new_cid
     else:
-        student.grades_file_path = new_path
+        student.grades_file_path    = new_path
+        student.grades_cloudinary_id = new_cid
 
     db.session.commit()
 
@@ -1389,15 +1431,24 @@ def view_reg_document(uid, doc_type):
 
     file_path = student.cor_file_path if doc_type == 'cor' else student.grades_file_path
     if not file_path:
-        flash('Document not found.', 'error')
+        flash('No document uploaded yet. Use the Replace button to upload one.', 'warning')
         return redirect(url_for('admin.student_profile', uid=uid))
+
+    # If it's a Cloudinary URL, redirect directly
+    if file_path and (file_path.startswith('http://') or file_path.startswith('https://')):
+        return redirect(file_path)
 
     if not os.path.isabs(file_path):
         file_path = os.path.join(current_app.root_path, '..', file_path)
     file_path = os.path.normpath(file_path)
 
     if not os.path.exists(file_path):
-        flash('File not found on server.', 'error')
+        label_display = 'COR' if doc_type == 'cor' else 'Copy of Grades'
+        flash(
+            f'{label_display} file was not found on the server. '
+            f'Please use the Replace button to re-upload the file.',
+            'warning'
+        )
         return redirect(url_for('admin.student_profile', uid=uid))
 
     ext = file_path.rsplit('.', 1)[-1].lower()

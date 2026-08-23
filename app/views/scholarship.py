@@ -272,6 +272,8 @@ def apply_scholarship(scholarship_id):
                 category=doc_info['category'],
                 file_type=doc_info['file_type'],
                 ctc_detected=ctc_result,
+                cloudinary_url=doc_info.get('cloudinary_url'),
+                cloudinary_public_id=doc_info.get('cloudinary_public_id'),
             )
             db.session.add(doc)
 
@@ -395,20 +397,25 @@ def edit_application(app_id):
                 result = document_service.save_file(file, user.id, field_name)
                 if result['success']:
                     info = result['file_info']
-                    # Replace existing doc of same category or add new one
                     existing_doc = Document.query.filter_by(
                         application_id=application.id,
                         category=field_name
                     ).first()
                     if existing_doc:
-                        # Delete old file from disk
-                        document_service.delete_file(existing_doc.file_path)
-                        existing_doc.original_filename = info['original_filename']
-                        existing_doc.stored_filename   = info['stored_filename']
-                        existing_doc.file_path         = info['file_path']
-                        existing_doc.file_size         = info['file_size']
-                        existing_doc.file_type         = info['file_type']
-                        existing_doc.is_verified       = False  # needs re-verification
+                        # Delete old file
+                        if existing_doc.cloudinary_public_id:
+                            from app.services.storage_service import delete_file as _del
+                            _del(public_id=existing_doc.cloudinary_public_id)
+                        elif existing_doc.file_path:
+                            document_service.delete_file(existing_doc.file_path)
+                        existing_doc.original_filename    = info['original_filename']
+                        existing_doc.stored_filename      = info['stored_filename']
+                        existing_doc.file_path            = info['file_path']
+                        existing_doc.file_size            = info['file_size']
+                        existing_doc.file_type            = info['file_type']
+                        existing_doc.cloudinary_url       = info.get('cloudinary_url')
+                        existing_doc.cloudinary_public_id = info.get('cloudinary_public_id')
+                        existing_doc.is_verified          = False
                     else:
                         new_doc = Document(
                             user_id=user.id,
@@ -419,6 +426,8 @@ def edit_application(app_id):
                             file_size=info['file_size'],
                             category=field_name,
                             file_type=info['file_type'],
+                            cloudinary_url=info.get('cloudinary_url'),
+                            cloudinary_public_id=info.get('cloudinary_public_id'),
                         )
                         db.session.add(new_doc)
                 else:

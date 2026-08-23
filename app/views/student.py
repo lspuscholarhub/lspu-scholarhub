@@ -469,15 +469,25 @@ def upload_gwa():
         file_bytes = file.read()
         file.seek(0)
 
-        # Save the file
+        # Save the file to Cloudinary or local
         from datetime import datetime
         from werkzeug.utils import secure_filename
-        filename = f"grades_{user.student_id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.{ext}"
-        filename = secure_filename(filename)
-        upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'registration')
-        os.makedirs(upload_dir, exist_ok=True)
-        file_path = os.path.join(upload_dir, filename)
-        file.save(file_path)
+        from app.services.storage_service import upload_file as _upload
+        filename = secure_filename(
+            f"grades_{user.student_id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.{ext}"
+        )
+        upload_result = _upload(file_bytes, filename, f"registration/{user.id}")
+        if upload_result['success']:
+            file_path  = upload_result['url']
+            grades_cid = upload_result.get('public_id')
+        else:
+            # Local fallback
+            upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'registration')
+            os.makedirs(upload_dir, exist_ok=True)
+            file_path = os.path.join(upload_dir, filename)
+            with open(file_path, 'wb') as f:
+                f.write(file_bytes)
+            grades_cid = None
 
         # Run OCR to extract GWA
         try:
@@ -503,6 +513,7 @@ def upload_gwa():
                 old_gwa = user.gwa
                 user.gwa = round(extracted_gwa, 2)
                 user.grades_file_path = file_path
+                user.grades_cloudinary_id = grades_cid
                 user.grades_updated_at = datetime.utcnow()
 
                 # Mark which semester these grades are for

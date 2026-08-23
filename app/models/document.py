@@ -21,12 +21,21 @@ class Document(db.Model):
     uploaded_at       = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at        = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    # Cloudinary storage fields
+    cloudinary_url       = db.Column(db.String(500), nullable=True)   # permanent public URL
+    cloudinary_public_id = db.Column(db.String(255), nullable=True)   # for deletion
+
     # Relationships
     owner       = db.relationship('User', backref=db.backref('documents', lazy=True))
     application = db.relationship('ScholarshipApplication',
                                   backref=db.backref('uploaded_documents', lazy=True))
 
     # ── helpers ──────────────────────────────────────────────────────────────
+
+    @property
+    def view_url(self):
+        """Return Cloudinary URL if available, otherwise None (use serve route)."""
+        return self.cloudinary_url or None
 
     @property
     def file_size_display(self):
@@ -65,6 +74,7 @@ class Document(db.Model):
             'file_type':         self.file_type,
             'description':       self.description,
             'is_verified':       self.is_verified,
+            'cloudinary_url':    self.cloudinary_url,
             'uploaded_at':       self.uploaded_at.isoformat() if self.uploaded_at else None,
         }
 

@@ -79,32 +79,51 @@ def _send_otp_email(email, full_name, otp):
 
 def _save_registration_file(file, user_student_id, file_type):
     """
-    Save a registration document (COR or grades) to disk.
-    Accepts PDF and image files (JPG, PNG) — images are analyzed via Gemini Vision.
-    Returns the relative file path or None on failure.
+    Save a registration document (COR or grades) to Cloudinary or local disk.
+    Accepts PDF and image files (JPG, PNG).
+    Returns (url_or_path, cloudinary_public_id) tuple. public_id is None for local saves.
     """
     if not file or not file.filename:
-        return None
+        return None, None
 
-    from flask import current_app
     from werkzeug.utils import secure_filename
 
     ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
 
-    # Accept PDF and images
     allowed = {'pdf', 'jpg', 'jpeg', 'png'}
     if ext not in allowed:
-        return None
+        return None, None
 
-    filename = f"{file_type}_{user_student_id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.{ext}"
-    filename = secure_filename(filename)
+    filename = secure_filename(
+        f"{file_type}_{user_student_id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.{ext}"
+    )
 
+    file_bytes = file.read()
+    file.seek(0)
+
+    # Try Cloudinary first
+    from app.services.storage_service import upload_file
+    result = upload_file(
+        file_bytes  = file_bytes,
+        filename    = filename,
+        folder      = f"registration/{user_student_id}",
+        resource_type = 'auto',
+    )
+
+    if result['success']:
+        return result['url'], result.get('public_id')
+
+    # Cloudinary failed — fall back to local
+    import logging as _log
+    _log.getLogger(__name__).warning(f'Cloudinary upload failed, using local: {result.get("error")}')
+
+    from flask import current_app
     upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'registration')
     os.makedirs(upload_dir, exist_ok=True)
-
     file_path = os.path.join(upload_dir, filename)
-    file.save(file_path)
-    return file_path
+    with open(file_path, 'wb') as f:
+        f.write(file_bytes)
+    return file_path, None
 
 
 def _send_credentials_email(user, temp_password):
@@ -259,6 +278,8 @@ def register():
         cor_ext      = None
         grades_bytes = None
         grades_ext   = None
+        cor_cloudinary_id    = None
+        grades_cloudinary_id = None
 
         if year_level in NEEDS_COR:
             cor_file = request.files.get('cor_file')
@@ -278,7 +299,7 @@ def register():
             cor_bytes = cor_file.read()
             cor_file.seek(0)
 
-            cor_path = _save_registration_file(cor_file, student_id, 'cor')
+            cor_path, cor_cloudinary_id = _save_registration_file(cor_file, student_id, 'cor')
             if not cor_path:
                 flash('COR file could not be saved. Please upload a valid PDF (max 5MB).', 'error')
                 return render_template('auth/register.html')
@@ -301,7 +322,7 @@ def register():
             grades_bytes = grades_file.read()
             grades_file.seek(0)
 
-            grades_path = _save_registration_file(grades_file, student_id, 'grades')
+            grades_path, grades_cloudinary_id = _save_registration_file(grades_file, student_id, 'grades')
             if not grades_path:
                 flash('Grades file could not be saved. Please upload a valid PDF (max 5MB).', 'error')
                 return render_template('auth/register.html')
@@ -339,23 +360,25 @@ def register():
 
         # ── Store pending registration in session ─────────────────────────────
         session['pending_registration'] = {
-            'first_name':      first_name.title(),
-            'last_name':       last_name.title(),
-            'middle_name':     middle_name.title() if middle_name else None,
-            'email':           email,
-            'student_id':      student_id,
-            'phone':           phone,
-            'gender':          gender,
-            'town':            town,
-            'province':        province,
-            'course':          course,
-            'year_level':      year_level,
-            'cor_path':        cor_path,
-            'grades_path':     grades_path,
-            'auto_gwa':        auto_gwa,   # extracted by OCR, may be None
-            'otp':             otp,
-            'otp_expires':     (datetime.utcnow() + timedelta(minutes=OTP_EXPIRY_MINUTES)).isoformat(),
-            'attempts':        0,
+            'first_name':           first_name.title(),
+            'last_name':            last_name.title(),
+            'middle_name':          middle_name.title() if middle_name else None,
+            'email':                email,
+            'student_id':           student_id,
+            'phone':                phone,
+            'gender':               gender,
+            'town':                 town,
+            'province':             province,
+            'course':               course,
+            'year_level':           year_level,
+            'cor_path':             cor_path,
+            'grades_path':          grades_path,
+            'cor_cloudinary_id':    cor_cloudinary_id,
+            'grades_cloudinary_id': grades_cloudinary_id,
+            'auto_gwa':             auto_gwa,
+            'otp':                  otp,
+            'otp_expires':          (datetime.utcnow() + timedelta(minutes=OTP_EXPIRY_MINUTES)).isoformat(),
+            'attempts':             0,
         }
 
         flash(f'A 6-digit verification code has been sent to <strong>{email}</strong>. '
@@ -428,6 +451,8 @@ def verify_otp():
                 is_verified=True,
                 cor_file_path=pending.get('cor_path'),
                 grades_file_path=pending.get('grades_path'),
+                cor_cloudinary_id=pending.get('cor_cloudinary_id'),
+                grades_cloudinary_id=pending.get('grades_cloudinary_id'),
             )
             new_user.set_password(temp_password)
             db.session.add(new_user)

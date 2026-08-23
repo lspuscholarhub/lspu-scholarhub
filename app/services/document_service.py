@@ -81,57 +81,76 @@ class DocumentService:
         return filename
     
     def save_file(self, file, user_id, category):
-        """Save uploaded file with validation"""
+        """Save uploaded file with validation — uses Cloudinary if configured."""
         try:
             if not file or file.filename == '':
                 return {'success': False, 'message': 'No file selected'}
-            
+
             original_filename = file.filename
-            file_size = len(file.read())
-            file.seek(0)  # Reset file pointer
-            
+            file_bytes = file.read()
+            file_size  = len(file_bytes)
+            file.seek(0)
+
             # Validate file extension
             if not self.allowed_file(original_filename, category):
                 return {
-                    'success': False, 
+                    'success': False,
                     'message': f'File type not allowed for {category}. Allowed types: {", ".join(self.ALLOWED_EXTENSIONS.get(category, []))}'
                 }
-            
+
             # Validate file size
             size_valid, size_message = self.validate_file_size(original_filename, file_size)
             if not size_valid:
                 return {'success': False, 'message': size_message}
-            
+
             # Generate unique filename
             unique_filename = self.generate_unique_filename(original_filename, user_id, category)
-            
-            # Create upload directory if it doesn't exist
-            upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'documents', str(user_id))
-            os.makedirs(upload_dir, exist_ok=True)
-            
-            # Save file
-            file_path = os.path.join(upload_dir, unique_filename)
-            file.save(file_path)
-            
-            # Get file info
+
+            # Try Cloudinary first, fall back to local
+            from app.services.storage_service import upload_file as _cloud_upload
+            cloud_result = _cloud_upload(
+                file_bytes    = file_bytes,
+                filename      = unique_filename,
+                folder        = f"documents/{user_id}",
+                resource_type = 'auto',
+            )
+
+            if cloud_result['success']:
+                file_path         = cloud_result['url']
+                cloudinary_url    = cloud_result['url']
+                cloudinary_pid    = cloud_result.get('public_id')
+                stored_filename   = unique_filename
+            else:
+                # Local fallback
+                from flask import current_app
+                upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'documents', str(user_id))
+                os.makedirs(upload_dir, exist_ok=True)
+                file_path = os.path.join(upload_dir, unique_filename)
+                with open(file_path, 'wb') as f:
+                    f.write(file_bytes)
+                cloudinary_url  = None
+                cloudinary_pid  = None
+                stored_filename = unique_filename
+
             file_info = {
                 'original_filename': original_filename,
-                'stored_filename': unique_filename,
-                'file_path': file_path,
-                'file_size': file_size,
-                'category': category,
-                'uploaded_at': datetime.utcnow().isoformat(),  # ISO string — safe for JSON columns
-                'file_type': original_filename.rsplit('.', 1)[1].lower() if '.' in original_filename else ''
+                'stored_filename':   stored_filename,
+                'file_path':         file_path,
+                'file_size':         file_size,
+                'category':          category,
+                'uploaded_at':       datetime.utcnow().isoformat(),
+                'file_type':         original_filename.rsplit('.', 1)[1].lower() if '.' in original_filename else '',
+                'cloudinary_url':    cloudinary_url,
+                'cloudinary_public_id': cloudinary_pid,
             }
-            
-            logger.info(f"File saved successfully: {unique_filename} for user {user_id}")
-            
+
+            logger.info(f"File saved: {unique_filename} for user {user_id} via {'cloudinary' if cloudinary_url else 'local'}")
             return {
-                'success': True,
-                'message': 'File uploaded successfully',
-                'file_info': file_info
+                'success':   True,
+                'message':   'File uploaded successfully',
+                'file_info': file_info,
             }
-            
+
         except Exception as e:
             logger.error(f"Error saving file: {str(e)}")
             return {'success': False, 'message': f'Error saving file: {str(e)}'}
