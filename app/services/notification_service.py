@@ -26,36 +26,86 @@ class NotificationService:
         }
     
     def send_email(self, to_email, subject, message, template_data=None):
-        """Send email notification"""
+        """
+        Send email notification.
+        Priority:
+          1. Brevo HTTP API  — if BREVO_API_KEY is set (bypasses SMTP port restrictions)
+          2. SMTP            — fallback for local development
+        """
+        html_content = self._generate_email_html(message, template_data)
+
+        # ── Option 1: Brevo HTTP API (works on Railway) ───────────────────────
+        brevo_key = os.environ.get('BREVO_API_KEY', '').strip()
+        if brevo_key:
+            return self._send_via_brevo_api(to_email, subject, html_content, brevo_key)
+
+        # ── Option 2: SMTP fallback (local dev) ───────────────────────────────
         try:
             if not self.email_config['username'] or not self.email_config['password']:
                 logger.warning("Email credentials not configured. Skipping email send.")
                 return {'success': False, 'message': 'Email not configured'}
-            
-            # Create message
+
             msg = MIMEMultipart()
-            msg['From'] = f"LSPU ScholarHub <lspu.scholarhub@gmail.com>"
-            msg['To'] = to_email
+            msg['From']    = "LSPU ScholarHub <lspu.scholarhub@gmail.com>"
+            msg['To']      = to_email
             msg['Subject'] = subject
-            
-            # Add HTML content
-            html_content = self._generate_email_html(message, template_data)
             msg.attach(MIMEText(html_content, 'html'))
-            
-            # Send email
+
             server = smtplib.SMTP(self.email_config['server'], self.email_config['port'])
             if self.email_config['use_tls']:
                 server.starttls()
             server.login(self.email_config['username'], self.email_config['password'])
             server.send_message(msg)
             server.quit()
-            
-            logger.info(f"Email sent successfully to {to_email}")
+
+            logger.info(f"Email sent via SMTP to {to_email}")
             return {'success': True, 'message': 'Email sent successfully'}
-            
+
         except Exception as e:
             logger.error(f"Failed to send email to {to_email}: {str(e)}")
             return {'success': False, 'message': f'Email send failed: {str(e)}'}
+
+    def _send_via_brevo_api(self, to_email, subject, html_content, api_key):
+        """Send email via Brevo HTTP API — works on Railway (no SMTP ports needed)."""
+        import urllib.request
+        import urllib.error
+        import json
+
+        payload = json.dumps({
+            'sender':   {'name': 'LSPU ScholarHub', 'email': 'lspu.scholarhub@gmail.com'},
+            'to':       [{'email': to_email}],
+            'subject':  subject,
+            'htmlContent': html_content,
+        }).encode('utf-8')
+
+        req = urllib.request.Request(
+            'https://api.brevo.com/v3/smtp/email',
+            data=payload,
+            method='POST',
+        )
+        req.add_header('accept',       'application/json')
+        req.add_header('api-key',      api_key)
+        req.add_header('content-type', 'application/json')
+
+        try:
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                body = json.loads(resp.read().decode('utf-8'))
+                msg_id = body.get('messageId', '')
+                logger.info(f"Email sent via Brevo API to {to_email} | id: {msg_id}")
+                return {'success': True, 'message': f'Email sent via Brevo (id: {msg_id})'}
+
+        except urllib.error.HTTPError as e:
+            try:
+                err_body = json.loads(e.read().decode('utf-8'))
+                err_msg  = err_body.get('message', str(e))
+            except Exception:
+                err_msg = str(e)
+            logger.error(f"Brevo API error {e.code}: {err_msg}")
+            return {'success': False, 'message': f'Brevo API error {e.code}: {err_msg}'}
+
+        except Exception as e:
+            logger.error(f"Brevo API request failed: {e}")
+            return {'success': False, 'message': f'Brevo API failed: {e}'}
     
     def send_sms(self, phone_number, message):
         """
