@@ -103,21 +103,27 @@ def _upload_to_cloudinary(file_bytes, filename, folder, resource_type):
         _init_cloudinary()
 
         import io
-        # Build a clean public_id (no extension — Cloudinary stores that separately)
-        base = filename.rsplit('.', 1)[0] if '.' in filename else filename
-        # Replace spaces and special chars
         import re
+
+        ext  = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+        base = filename.rsplit('.', 1)[0] if '.' in filename else filename
         base = re.sub(r'[^\w\-]', '_', base)
-        public_id = f"scholarhub/{folder}/{base}"
+
+        # For raw files (PDF, DOC etc.) include the extension in the public_id
+        # so Cloudinary serves the file with the correct extension in the URL
+        if resource_type == 'raw':
+            public_id = f"scholarhub/{folder}/{base}.{ext}"
+        else:
+            public_id = f"scholarhub/{folder}/{base}"
 
         result = cloudinary.uploader.upload(
             io.BytesIO(file_bytes),
-            public_id      = public_id,
-            resource_type  = resource_type,
-            overwrite      = True,
-            use_filename   = False,
-            access_mode    = 'public',
-            type           = 'upload',
+            public_id     = public_id,
+            resource_type = resource_type,
+            overwrite     = True,
+            use_filename  = False,
+            access_mode   = 'public',
+            type          = 'upload',
         )
 
         url = result.get('secure_url', '')
