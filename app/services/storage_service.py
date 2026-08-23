@@ -53,6 +53,15 @@ def upload_file(file_bytes: bytes, filename: str, folder: str,
       provider  : 'cloudinary' | 'local'
       error     : error message if success=False
     """
+    # Determine correct resource type based on extension
+    ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+    if ext == 'pdf':
+        resource_type = 'raw'       # PDFs must be 'raw' to get a direct viewable URL
+    elif ext in ('jpg', 'jpeg', 'png', 'gif', 'webp'):
+        resource_type = 'image'
+    else:
+        resource_type = 'raw'       # DOC, DOCX, etc.
+
     if _cloudinary_configured():
         return _upload_to_cloudinary(file_bytes, filename, folder, resource_type)
     return _upload_local(file_bytes, filename, folder)
@@ -105,8 +114,10 @@ def _upload_to_cloudinary(file_bytes, filename, folder, resource_type):
             io.BytesIO(file_bytes),
             public_id      = public_id,
             resource_type  = resource_type,
-            overwrite       = True,
-            use_filename    = False,
+            overwrite      = True,
+            use_filename   = False,
+            access_mode    = 'public',
+            type           = 'upload',
         )
 
         url = result.get('secure_url', '')
