@@ -34,7 +34,7 @@ class NotificationService:
             
             # Create message
             msg = MIMEMultipart()
-            msg['From'] = self.email_config['username']
+            msg['From'] = f"LSPU ScholarHub <lspu.scholarhub@gmail.com>"
             msg['To'] = to_email
             msg['Subject'] = subject
             
