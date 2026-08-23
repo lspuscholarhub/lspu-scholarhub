@@ -1134,15 +1134,12 @@ def view_student_document(doc_id):
 @admin_bp.route('/documents/<int:doc_id>/raw')
 @role_required('admin')
 def serve_student_document_raw(doc_id):
-    """Serve the raw file inline."""
+    """Serve the raw file inline — proxies Cloudinary files through Flask."""
     import os
-    from flask import send_file as _sf, current_app
+    from flask import send_file as _sf, current_app, Response
     from app.models.document import Document
     doc = Document.query.get_or_404(doc_id)
-    path = doc.file_path
-    if not os.path.isabs(path):
-        path = os.path.join(current_app.root_path, '..', path)
-    path = os.path.normpath(path)
+
     mime_map = {
         'pdf':  'application/pdf',
         'jpg':  'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png',
@@ -1151,6 +1148,40 @@ def serve_student_document_raw(doc_id):
     }
     mime = mime_map.get((doc.file_type or '').lower(), 'application/octet-stream')
     force_download = request.args.get('dl') == '1'
+    disposition    = 'attachment' if force_download else 'inline'
+
+    # If stored on Cloudinary — fetch via signed URL and stream through Flask
+    if doc.cloudinary_public_id:
+        try:
+            import urllib.request as _ur
+            from app.services.storage_service import get_signed_url
+            res_type = 'image' if (doc.file_type or '').lower() in ('jpg','jpeg','png') else 'raw'
+            signed   = get_signed_url(doc.cloudinary_public_id, resource_type=res_type)
+            fetch_url = signed or doc.cloudinary_url
+            req = _ur.Request(fetch_url)
+            req.add_header('User-Agent', 'LSPU-ScholarHub/1.0')
+            with _ur.urlopen(req, timeout=30) as resp:
+                file_data = resp.read()
+            return Response(
+                file_data,
+                mimetype=mime,
+                headers={
+                    'Content-Disposition': f'{disposition}; filename="{doc.original_filename}"',
+                    'Content-Length': str(len(file_data)),
+                }
+            )
+        except Exception as e:
+            flash(f'Could not load file from cloud storage: {e}', 'error')
+            return redirect(url_for('admin.student_profile', uid=doc.user_id))
+
+    # Local file fallback
+    path = doc.file_path
+    if not os.path.isabs(path):
+        path = os.path.join(current_app.root_path, '..', path)
+    path = os.path.normpath(path)
+    if not os.path.exists(path):
+        flash('File not found on server.', 'error')
+        return redirect(url_for('admin.student_profile', uid=doc.user_id))
     return _sf(path, mimetype=mime, as_attachment=force_download,
                download_name=doc.original_filename)
 
@@ -1434,9 +1465,41 @@ def view_reg_document(uid, doc_type):
         flash('No document uploaded yet. Use the Replace button to upload one.', 'warning')
         return redirect(url_for('admin.student_profile', uid=uid))
 
-    # If it's a Cloudinary URL, redirect directly
+    # If it's a Cloudinary URL, stream it through our Flask route
+    # (avoids Cloudinary 401 for raw files)
     if file_path and (file_path.startswith('http://') or file_path.startswith('https://')):
-        return redirect(file_path)
+        try:
+            import urllib.request
+            from flask import Response
+            cid = student.cor_cloudinary_id if doc_type == 'cor' else student.grades_cloudinary_id
+            # Generate signed URL if we have a public_id
+            fetch_url = file_path
+            if cid:
+                from app.services.storage_service import get_signed_url
+                signed = get_signed_url(cid, resource_type='raw')
+                if signed:
+                    fetch_url = signed
+            # Stream file through Flask
+            req = urllib.request.Request(fetch_url)
+            req.add_header('User-Agent', 'LSPU-ScholarHub/1.0')
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                file_data = resp.read()
+            ext = file_path.rsplit('.', 1)[-1].lower() if '.' in file_path else 'pdf'
+            mime_map = {
+                'pdf': 'application/pdf',
+                'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png',
+            }
+            mime  = mime_map.get(ext, 'application/octet-stream')
+            label = 'COR' if doc_type == 'cor' else 'Grades'
+            fname = f"{student.student_id}_{label}.{ext}"
+            return Response(
+                file_data,
+                mimetype=mime,
+                headers={'Content-Disposition': f'inline; filename="{fname}"'}
+            )
+        except Exception as e:
+            flash(f'Could not load file: {e}', 'error')
+            return redirect(url_for('admin.student_profile', uid=uid))
 
     if not os.path.isabs(file_path):
         file_path = os.path.join(current_app.root_path, '..', file_path)

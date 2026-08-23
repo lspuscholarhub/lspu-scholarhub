@@ -638,15 +638,12 @@ def view_student_document(doc_id):
 @staff_bp.route('/documents/<int:doc_id>/raw')
 @role_required('staff')
 def serve_student_document_raw(doc_id):
-    """Serve the raw file inline."""
+    """Serve the raw file inline — proxies Cloudinary files through Flask."""
     import os
-    from flask import send_file as _sf, current_app
+    from flask import send_file as _sf, current_app, Response
     from app.models.document import Document
     doc = Document.query.get_or_404(doc_id)
-    path = doc.file_path
-    if not os.path.isabs(path):
-        path = os.path.join(current_app.root_path, '..', path)
-    path = os.path.normpath(path)
+
     mime_map = {
         'pdf':  'application/pdf',
         'jpg':  'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png',
@@ -655,6 +652,40 @@ def serve_student_document_raw(doc_id):
     }
     mime = mime_map.get((doc.file_type or '').lower(), 'application/octet-stream')
     force_download = request.args.get('dl') == '1'
+    disposition    = 'attachment' if force_download else 'inline'
+
+    # If stored on Cloudinary — fetch via signed URL and stream through Flask
+    if doc.cloudinary_public_id:
+        try:
+            import urllib.request as _ur
+            from app.services.storage_service import get_signed_url
+            res_type = 'image' if (doc.file_type or '').lower() in ('jpg','jpeg','png') else 'raw'
+            signed   = get_signed_url(doc.cloudinary_public_id, resource_type=res_type)
+            fetch_url = signed or doc.cloudinary_url
+            req = _ur.Request(fetch_url)
+            req.add_header('User-Agent', 'LSPU-ScholarHub/1.0')
+            with _ur.urlopen(req, timeout=30) as resp:
+                file_data = resp.read()
+            return Response(
+                file_data,
+                mimetype=mime,
+                headers={
+                    'Content-Disposition': f'{disposition}; filename="{doc.original_filename}"',
+                    'Content-Length': str(len(file_data)),
+                }
+            )
+        except Exception as e:
+            flash(f'Could not load file from cloud storage: {e}', 'error')
+            return redirect(url_for('staff.student_profile', uid=doc.user_id))
+
+    # Local file fallback
+    path = doc.file_path
+    if not os.path.isabs(path):
+        path = os.path.join(current_app.root_path, '..', path)
+    path = os.path.normpath(path)
+    if not os.path.exists(path):
+        flash('File not found on server.', 'error')
+        return redirect(url_for('staff.student_profile', uid=doc.user_id))
     return _sf(path, mimetype=mime, as_attachment=force_download,
                download_name=doc.original_filename)
 

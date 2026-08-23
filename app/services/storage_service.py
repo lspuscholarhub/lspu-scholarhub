@@ -55,12 +55,10 @@ def upload_file(file_bytes: bytes, filename: str, folder: str,
     """
     # Determine correct resource type based on extension
     ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
-    if ext == 'pdf':
-        resource_type = 'raw'       # PDFs must be 'raw' to get a direct viewable URL
-    elif ext in ('jpg', 'jpeg', 'png', 'gif', 'webp'):
+    if ext in ('jpg', 'jpeg', 'png', 'gif', 'webp'):
         resource_type = 'image'
     else:
-        resource_type = 'raw'       # DOC, DOCX, etc.
+        resource_type = 'raw'   # PDF, DOC, DOCX etc.
 
     if _cloudinary_configured():
         return _upload_to_cloudinary(file_bytes, filename, folder, resource_type)
@@ -81,8 +79,27 @@ def delete_file(public_id: str = None, file_path: str = None,
     return {'success': False, 'error': 'No identifier provided'}
 
 
-def get_file_bytes(public_id: str = None, file_path: str = None,
-                   resource_type: str = 'auto') -> bytes | None:
+def get_signed_url(public_id: str, resource_type: str = 'raw',
+                   expires_in: int = 3600) -> str | None:
+    """
+    Generate a signed (time-limited) URL for a Cloudinary file.
+    Used to serve private/raw files securely through our Flask route.
+    """
+    if not _cloudinary_configured():
+        return None
+    try:
+        import cloudinary.utils
+        _init_cloudinary()
+        url, _ = cloudinary.utils.cloudinary_url(
+            public_id,
+            resource_type = resource_type,
+            sign_url      = True,
+            secure        = True,
+        )
+        return url
+    except Exception as e:
+        logger.error(f'Signed URL generation failed: {e}')
+        return None
     """
     Fetch raw bytes of a stored file.
     Used for OCR processing that needs the file content.
@@ -125,7 +142,6 @@ def _upload_to_cloudinary(file_bytes, filename, folder, resource_type):
             access_mode   = 'public',
             type          = 'upload',
         )
-
         url = result.get('secure_url', '')
         pid = result.get('public_id', '')
         logger.info(f'Cloudinary upload OK: {pid} → {url}')

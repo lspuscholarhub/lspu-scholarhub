@@ -236,11 +236,33 @@ def delete_document(doc_id):
 @role_required('student')
 def download_document(doc_id):
     import os
-    from flask import send_file as _send_file
+    from flask import send_file as _send_file, Response
     doc = Document.query.get_or_404(doc_id)
     if doc.user_id != session['user_id']:
         flash('Access denied.', 'error')
         return redirect(url_for('student.documents'))
+
+    # Cloudinary proxy
+    if doc.cloudinary_public_id:
+        try:
+            import urllib.request as _ur
+            from app.services.storage_service import get_signed_url
+            res_type  = 'image' if (doc.file_type or '').lower() in ('jpg','jpeg','png') else 'raw'
+            signed    = get_signed_url(doc.cloudinary_public_id, resource_type=res_type)
+            fetch_url = signed or doc.cloudinary_url
+            req = _ur.Request(fetch_url)
+            req.add_header('User-Agent', 'LSPU-ScholarHub/1.0')
+            with _ur.urlopen(req, timeout=30) as resp:
+                file_data = resp.read()
+            mime_map = {'pdf':'application/pdf','jpg':'image/jpeg','jpeg':'image/jpeg',
+                        'png':'image/png','doc':'application/msword',
+                        'docx':'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}
+            mime = mime_map.get((doc.file_type or '').lower(), 'application/octet-stream')
+            return Response(file_data, mimetype=mime,
+                            headers={'Content-Disposition': f'attachment; filename="{doc.original_filename}"'})
+        except Exception as e:
+            flash(f'Could not download file: {e}', 'error')
+            return redirect(url_for('student.documents'))
 
     file_path = doc.file_path
     if not os.path.isabs(file_path):
@@ -285,19 +307,10 @@ def view_document(doc_id):
 def serve_document_raw(doc_id):
     """Serve the raw file with correct MIME type for inline display."""
     import os
-    from flask import send_file as _send_file
+    from flask import send_file as _send_file, Response
     doc = Document.query.get_or_404(doc_id)
     if doc.user_id != session['user_id']:
         flash('Access denied.', 'error')
-        return redirect(url_for('student.documents'))
-
-    file_path = doc.file_path
-    if not os.path.isabs(file_path):
-        file_path = os.path.join(current_app.root_path, '..', file_path)
-    file_path = os.path.normpath(file_path)
-
-    if not os.path.exists(file_path):
-        flash('File not found.', 'error')
         return redirect(url_for('student.documents'))
 
     mime_map = {
@@ -308,6 +321,38 @@ def serve_document_raw(doc_id):
     }
     mime = mime_map.get((doc.file_type or '').lower(), 'application/octet-stream')
     force_download = request.args.get('dl') == '1'
+    disposition    = 'attachment' if force_download else 'inline'
+
+    # Cloudinary proxy
+    if doc.cloudinary_public_id:
+        try:
+            import urllib.request as _ur
+            from app.services.storage_service import get_signed_url
+            res_type  = 'image' if (doc.file_type or '').lower() in ('jpg','jpeg','png') else 'raw'
+            signed    = get_signed_url(doc.cloudinary_public_id, resource_type=res_type)
+            fetch_url = signed or doc.cloudinary_url
+            req = _ur.Request(fetch_url)
+            req.add_header('User-Agent', 'LSPU-ScholarHub/1.0')
+            with _ur.urlopen(req, timeout=30) as resp:
+                file_data = resp.read()
+            return Response(file_data, mimetype=mime,
+                            headers={
+                                'Content-Disposition': f'{disposition}; filename="{doc.original_filename}"',
+                                'Content-Length': str(len(file_data)),
+                            })
+        except Exception as e:
+            flash(f'Could not load file: {e}', 'error')
+            return redirect(url_for('student.documents'))
+
+    file_path = doc.file_path
+    if not os.path.isabs(file_path):
+        file_path = os.path.join(current_app.root_path, '..', file_path)
+    file_path = os.path.normpath(file_path)
+
+    if not os.path.exists(file_path):
+        flash('File not found.', 'error')
+        return redirect(url_for('student.documents'))
+
     return _send_file(file_path, mimetype=mime, as_attachment=force_download,
                       download_name=doc.original_filename)
 
