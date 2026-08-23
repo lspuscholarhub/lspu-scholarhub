@@ -187,11 +187,14 @@ def login():
             user.last_login = datetime.utcnow()
             db.session.commit()
 
+            # Non-permanent session — expires when browser is closed
+            session.permanent = False
             session['user_id']     = user.id
             session['username']    = user.username
             session['user_type']   = user.user_type
             session['is_verified'] = user.is_verified
             session['first_login'] = (user.last_login is None)
+            session['last_active'] = datetime.utcnow().timestamp()
 
             # Audit log
             from app.services.audit_service import log_action

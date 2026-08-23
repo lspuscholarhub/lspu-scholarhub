@@ -60,6 +60,37 @@ def create_app(config_name=None):
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     os.makedirs('logs', exist_ok=True)
 
+    # ── Inactivity timeout ────────────────────────────────────────────────
+    # Log out users who have been inactive for more than 30 minutes.
+    # Checked on every request — if last_active is older than timeout, clear session.
+    INACTIVITY_TIMEOUT = 30 * 60   # 30 minutes in seconds
+
+    @app.before_request
+    def check_session_timeout():
+        from flask import session as _s, request as _req, redirect as _redir, url_for as _uf
+        from datetime import datetime as _dt
+
+        # Only check authenticated sessions
+        if not _s.get('user_id'):
+            return
+
+        # Skip static files
+        if _req.endpoint and _req.endpoint.startswith('static'):
+            return
+
+        now        = _dt.utcnow().timestamp()
+        last_active = _s.get('last_active')
+
+        if last_active and (now - last_active) > INACTIVITY_TIMEOUT:
+            # Session expired — clear and redirect to login
+            _s.clear()
+            from flask import flash as _flash
+            _flash('You have been logged out due to inactivity.', 'warning')
+            return _redir(_uf('auth.login'))
+
+        # Update last active timestamp on every request
+        _s['last_active'] = now
+
     # ── Template globals ──────────────────────────────────────────────────
     from datetime import datetime as _dt
 
