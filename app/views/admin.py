@@ -1172,6 +1172,157 @@ def unverify_student_document(doc_id):
     return redirect(url_for('admin.student_profile', uid=doc.user_id))
 
 
+@admin_bp.route('/students/<int:uid>/documents/upload', methods=['POST'])
+@role_required('admin')
+def upload_student_document(uid):
+    """Admin uploads a new document for a student."""
+    import os
+    import uuid
+    from datetime import datetime as _dt
+    from flask import current_app
+    from werkzeug.utils import secure_filename
+    from app.models.document import Document
+
+    student = User.query.get_or_404(uid)
+    file    = request.files.get('document_file')
+    desc    = request.form.get('description', '').strip()
+    cat     = request.form.get('category', 'general').strip()
+
+    if not file or not file.filename:
+        flash('No file selected.', 'error')
+        return redirect(url_for('admin.student_profile', uid=uid))
+
+    ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+    allowed = {'pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'}
+    if ext not in allowed:
+        flash(f'File type .{ext} not allowed. Use PDF, JPG, PNG, DOC, or DOCX.', 'error')
+        return redirect(url_for('admin.student_profile', uid=uid))
+
+    # Save file
+    unique_name = f"{cat}_{uid}_{_dt.utcnow().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}.{ext}"
+    unique_name = secure_filename(unique_name)
+    upload_dir  = os.path.join(current_app.config['UPLOAD_FOLDER'], 'documents', str(uid))
+    os.makedirs(upload_dir, exist_ok=True)
+    file_path   = os.path.join(upload_dir, unique_name)
+    file.save(file_path)
+    file_size = os.path.getsize(file_path)
+
+    doc = Document(
+        user_id           = uid,
+        original_filename = file.filename,
+        stored_filename   = unique_name,
+        file_path         = file_path,
+        file_size         = file_size,
+        category          = cat,
+        file_type         = ext,
+        description       = desc or None,
+        is_verified       = True,  # admin-uploaded = auto verified
+    )
+    db.session.add(doc)
+    db.session.commit()
+
+    from app.services.audit_service import log_action
+    log_action('document.upload',
+               f'Admin {session.get("username")} uploaded "{file.filename}" '
+               f'({cat}) for student {student.get_full_name()} ({student.student_id}).',
+               category='document', target_type='user', target_id=uid)
+    flash(f'Document "{file.filename}" uploaded successfully.', 'success')
+    return redirect(url_for('admin.student_profile', uid=uid))
+
+
+@admin_bp.route('/documents/<int:doc_id>/delete', methods=['POST'])
+@role_required('admin')
+def delete_student_document(doc_id):
+    """Admin deletes a student document."""
+    import os
+    from app.models.document import Document
+
+    doc     = Document.query.get_or_404(doc_id)
+    uid     = doc.user_id
+    fname   = doc.original_filename
+    student = User.query.get(uid)
+
+    # Delete physical file
+    try:
+        if doc.file_path and os.path.exists(doc.file_path):
+            os.remove(doc.file_path)
+    except Exception:
+        pass
+
+    db.session.delete(doc)
+    db.session.commit()
+
+    from app.services.audit_service import log_action
+    log_action('document.delete',
+               f'Admin {session.get("username")} deleted document "{fname}" '
+               f'for student {student.get_full_name() if student else uid}.',
+               category='document', target_type='user', target_id=uid)
+    flash(f'Document "{fname}" deleted.', 'success')
+    return redirect(url_for('admin.student_profile', uid=uid))
+
+
+@admin_bp.route('/students/<int:uid>/documents/replace-reg', methods=['POST'])
+@role_required('admin')
+def replace_reg_document(uid):
+    """Admin replaces a student's registration document (COR or grades)."""
+    import os
+    import uuid
+    from datetime import datetime as _dt
+    from flask import current_app
+    from werkzeug.utils import secure_filename
+
+    student  = User.query.get_or_404(uid)
+    doc_type = request.form.get('doc_type')   # 'cor' or 'grades'
+    file     = request.files.get('reg_file')
+
+    if doc_type not in ('cor', 'grades'):
+        flash('Invalid document type.', 'error')
+        return redirect(url_for('admin.student_profile', uid=uid))
+
+    if not file or not file.filename:
+        flash('No file selected.', 'error')
+        return redirect(url_for('admin.student_profile', uid=uid))
+
+    ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+    if ext not in ('pdf', 'jpg', 'jpeg', 'png'):
+        flash('Only PDF, JPG, or PNG files are accepted.', 'error')
+        return redirect(url_for('admin.student_profile', uid=uid))
+
+    # Delete old file
+    old_path = student.cor_file_path if doc_type == 'cor' else student.grades_file_path
+    if old_path and os.path.exists(old_path):
+        try:
+            os.remove(old_path)
+        except Exception:
+            pass
+
+    # Save new file
+    upload_dir  = os.path.join(current_app.config['UPLOAD_FOLDER'], 'registration')
+    os.makedirs(upload_dir, exist_ok=True)
+    label       = 'cor' if doc_type == 'cor' else 'grades'
+    unique_name = secure_filename(
+        f"{label}_{student.student_id}_{_dt.utcnow().strftime('%Y%m%d%H%M%S')}.{ext}"
+    )
+    new_path = os.path.join(upload_dir, unique_name)
+    file.save(new_path)
+
+    if doc_type == 'cor':
+        student.cor_file_path = new_path
+    else:
+        student.grades_file_path = new_path
+
+    db.session.commit()
+
+    from app.services.audit_service import log_action
+    label_display = 'COR' if doc_type == 'cor' else 'Copy of Grades'
+    log_action('document.replace',
+               f'Admin {session.get("username")} replaced {label_display} '
+               f'for student {student.get_full_name()} ({student.student_id}).',
+               category='document', target_type='user', target_id=uid)
+    flash(f'{label_display} replaced successfully.', 'success')
+    return redirect(url_for('admin.student_profile', uid=uid))
+
+
 @admin_bp.route('/documents/<int:doc_id>/ctc-override/<int:value>', methods=['POST'])
 @role_required('admin')
 def override_ctc(doc_id, value):
