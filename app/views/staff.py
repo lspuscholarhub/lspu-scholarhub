@@ -618,11 +618,16 @@ def student_profile(uid):
 @staff_bp.route('/documents/<int:doc_id>/view')
 @role_required('staff')
 def view_student_document(doc_id):
-    """Render a viewer page for a student document."""
+    """Render a viewer page for a student document — redirects to raw proxy for Cloudinary files."""
     import os
-    from flask import current_app
+    from flask import current_app, redirect as _redir
     from app.models.document import Document
     doc = Document.query.get_or_404(doc_id)
+
+    # If stored on Cloudinary, go straight to the raw proxy route
+    if doc.cloudinary_public_id or (doc.file_path and (doc.file_path.startswith('http://') or doc.file_path.startswith('https://'))):
+        return redirect(url_for('staff.serve_student_document_raw', doc_id=doc.id))
+
     file_path = doc.file_path
     if not os.path.isabs(file_path):
         file_path = os.path.join(current_app.root_path, '..', file_path)
@@ -770,26 +775,49 @@ def update_gwa(uid):
 @role_required('staff')
 def view_reg_document(uid, doc_type):
     import os
-    from flask import send_file as _send_file, current_app
-    student = User.query.get_or_404(uid)
+    from flask import send_file as _send_file, current_app, Response
+    student   = User.query.get_or_404(uid)
     file_path = student.cor_file_path if doc_type == 'cor' else student.grades_file_path
+
     if not file_path:
-        flash('Document not found.', 'error')
+        flash('No document uploaded yet. Use the Replace button to upload one.', 'warning')
         return redirect(url_for('staff.student_profile', uid=uid))
+
+    ext = file_path.rsplit('.', 1)[-1].lower() if '.' in file_path else 'pdf'
+    mime_map = {'pdf':'application/pdf','jpg':'image/jpeg','jpeg':'image/jpeg','png':'image/png'}
+    mime  = mime_map.get(ext, 'application/pdf')
+    label = 'COR' if doc_type == 'cor' else 'Grades'
+    fname = f"{student.student_id}_{label}.{ext}"
+
+    # Cloudinary URL — proxy through Flask to avoid 401
+    if file_path.startswith('http://') or file_path.startswith('https://'):
+        try:
+            import urllib.request as _ur
+            req = _ur.Request(file_path)
+            req.add_header('User-Agent', 'LSPU-ScholarHub/1.0')
+            with _ur.urlopen(req, timeout=30) as resp:
+                file_data = resp.read()
+            return Response(
+                file_data,
+                mimetype=mime,
+                headers={
+                    'Content-Disposition': f'inline; filename="{fname}"',
+                    'Content-Length': str(len(file_data)),
+                }
+            )
+        except Exception as e:
+            flash(f'Could not load file: {e}', 'error')
+            return redirect(url_for('staff.student_profile', uid=uid))
+
+    # Local file fallback
     if not os.path.isabs(file_path):
         file_path = os.path.join(current_app.root_path, '..', file_path)
     file_path = os.path.normpath(file_path)
     if not os.path.exists(file_path):
-        flash('File not found on server.', 'error')
+        flash(f'{"COR" if doc_type == "cor" else "Copy of Grades"} file was not found. '
+              f'Please use the Replace button to re-upload it.', 'warning')
         return redirect(url_for('staff.student_profile', uid=uid))
-    ext = file_path.rsplit('.', 1)[-1].lower()
-    mime_map = {'pdf':'application/pdf','jpg':'image/jpeg','jpeg':'image/jpeg',
-                'png':'image/png','doc':'application/msword',
-                'docx':'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}
-    mime = mime_map.get(ext, 'application/octet-stream')
-    label = 'COR' if doc_type == 'cor' else 'Grades'
-    return _send_file(file_path, mimetype=mime, as_attachment=False,
-                      download_name=f"{student.student_id}_{label}.{ext}")
+    return _send_file(file_path, mimetype=mime, as_attachment=False, download_name=fname)
 
 
 # ── Reports ───────────────────────────────────────────────────────────────────
@@ -974,9 +1002,29 @@ def update_profile():
 @role_required('staff')
 def download_document(doc_id):
     import os
-    from flask import send_file as _send_file, current_app
+    from flask import send_file as _send_file, current_app, Response
     from app.models.document import Document
     doc = Document.query.get_or_404(doc_id)
+
+    # Cloudinary proxy
+    if doc.cloudinary_public_id or (doc.file_path and (doc.file_path.startswith('http://') or doc.file_path.startswith('https://'))):
+        try:
+            import urllib.request as _ur
+            fetch_url = doc.cloudinary_url or doc.file_path
+            req = _ur.Request(fetch_url)
+            req.add_header('User-Agent', 'LSPU-ScholarHub/1.0')
+            with _ur.urlopen(req, timeout=30) as resp:
+                file_data = resp.read()
+            mime_map = {'pdf':'application/pdf','jpg':'image/jpeg','jpeg':'image/jpeg',
+                        'png':'image/png','doc':'application/msword',
+                        'docx':'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}
+            mime = mime_map.get((doc.file_type or '').lower(), 'application/octet-stream')
+            return Response(file_data, mimetype=mime,
+                            headers={'Content-Disposition': f'attachment; filename="{doc.original_filename}"'})
+        except Exception as e:
+            flash(f'Could not download file: {e}', 'error')
+            return redirect(url_for('staff.review_applications'))
+
     file_path = doc.file_path
     if not os.path.isabs(file_path):
         file_path = os.path.join(current_app.root_path, '..', file_path)
@@ -991,9 +1039,31 @@ def download_document(doc_id):
 @role_required('staff')
 def view_document(doc_id):
     import os
-    from flask import send_file as _send_file, current_app
+    from flask import send_file as _send_file, current_app, Response
     from app.models.document import Document
     doc = Document.query.get_or_404(doc_id)
+
+    mime_map = {'pdf':'application/pdf','jpg':'image/jpeg','jpeg':'image/jpeg',
+                'png':'image/png','doc':'application/msword',
+                'docx':'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}
+    mime = mime_map.get((doc.file_type or '').lower(), 'application/octet-stream')
+
+    # Cloudinary proxy
+    if doc.cloudinary_public_id or (doc.file_path and (doc.file_path.startswith('http://') or doc.file_path.startswith('https://'))):
+        try:
+            import urllib.request as _ur
+            fetch_url = doc.cloudinary_url or doc.file_path
+            req = _ur.Request(fetch_url)
+            req.add_header('User-Agent', 'LSPU-ScholarHub/1.0')
+            with _ur.urlopen(req, timeout=30) as resp:
+                file_data = resp.read()
+            return Response(file_data, mimetype=mime,
+                            headers={'Content-Disposition': f'inline; filename="{doc.original_filename}"',
+                                     'Content-Length': str(len(file_data))})
+        except Exception as e:
+            flash(f'Could not load file: {e}', 'error')
+            return redirect(url_for('staff.review_applications'))
+
     file_path = doc.file_path
     if not os.path.isabs(file_path):
         file_path = os.path.join(current_app.root_path, '..', file_path)
@@ -1001,10 +1071,6 @@ def view_document(doc_id):
     if not os.path.exists(file_path):
         flash('File not found.', 'error')
         return redirect(url_for('staff.review_applications'))
-    mime_map = {'pdf':'application/pdf','jpg':'image/jpeg','jpeg':'image/jpeg',
-                'png':'image/png','doc':'application/msword',
-                'docx':'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}
-    mime = mime_map.get((doc.file_type or '').lower(), 'application/octet-stream')
     return _send_file(file_path, mimetype=mime, as_attachment=False,
                       download_name=doc.original_filename)
 
