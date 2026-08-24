@@ -101,22 +101,37 @@ def _save_registration_file(file, user_student_id, file_type):
     file_bytes = file.read()
     file.seek(0)
 
-    # Try Cloudinary first
+    # Try Cloudinary up to 2 times before giving up
     from app.services.storage_service import upload_file
-    result = upload_file(
-        file_bytes  = file_bytes,
-        filename    = filename,
-        folder      = f"registration/{user_student_id}",
-        resource_type = 'auto',
-    )
-
-    if result['success']:
-        return result['url'], result.get('public_id')
-
-    # Cloudinary failed — fall back to local
     import logging as _log
-    _log.getLogger(__name__).warning(f'Cloudinary upload failed, using local: {result.get("error")}')
 
+    result = None
+    for attempt in range(2):
+        result = upload_file(
+            file_bytes    = file_bytes,
+            filename      = filename,
+            folder        = f"registration/{user_student_id}",
+            resource_type = 'auto',
+        )
+        if result['success']:
+            return result['url'], result.get('public_id')
+        _log.getLogger(__name__).warning(
+            f'Cloudinary upload attempt {attempt+1} failed: {result.get("error")}'
+        )
+
+    # Both Cloudinary attempts failed
+    # Only fall back to local if Cloudinary is NOT configured
+    # (i.e. local dev environment) — on Railway we return None to block registration
+    from app.services.storage_service import _cloudinary_configured
+    if _cloudinary_configured():
+        # On Railway — Cloudinary failed, don't save broken path
+        _log.getLogger(__name__).error(
+            f'Cloudinary upload failed after 2 attempts for {filename}. '
+            f'Returning None to prevent broken file reference.'
+        )
+        return None, None
+
+    # Local dev fallback
     from flask import current_app
     upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'registration')
     os.makedirs(upload_dir, exist_ok=True)
@@ -304,7 +319,7 @@ def register():
 
             cor_path, cor_cloudinary_id = _save_registration_file(cor_file, student_id, 'cor')
             if not cor_path:
-                flash('COR file could not be saved. Please upload a valid PDF (max 5MB).', 'error')
+                flash('COR file could not be uploaded to cloud storage. Please try again.', 'error')
                 return render_template('auth/register.html')
 
         if year_level in NEEDS_GRADES:
@@ -327,7 +342,7 @@ def register():
 
             grades_path, grades_cloudinary_id = _save_registration_file(grades_file, student_id, 'grades')
             if not grades_path:
-                flash('Grades file could not be saved. Please upload a valid PDF (max 5MB).', 'error')
+                flash('Grades file could not be uploaded to cloud storage. Please try again.', 'error')
                 return render_template('auth/register.html')
 
         # ── Document validation — file type check only (no OCR during registration) ──
