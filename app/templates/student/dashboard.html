@@ -113,8 +113,8 @@
     </div>
     <div class="col-6">
       <a href="{{ url_for('student.notifications') }}" class="quick-action-btn d-flex flex-column align-items-center gap-2 text-center h-100">
-        <i class="bi bi-bell" style="color:#6f42c1;"></i>
-        <span class="small fw-semibold">Notifications</span>
+        <i class="bi bi-megaphone" style="color:#6f42c1;"></i>
+        <span class="small fw-semibold">Announcements</span>
       </a>
     </div>
   </div>
@@ -177,11 +177,11 @@
   </div>
   {% endif %}
 
-  <!-- Notifications -->
+  <!-- Announcements -->
   {% if recent_notifications %}
   <div class="card shadow-sm border-0" style="border-radius:var(--sh-radius-lg);">
     <div class="card-header bg-white border-0 pt-3 pb-0 px-3">
-      <h6 class="fw-bold small mb-0"><i class="bi bi-bell me-2 text-warning"></i>Notifications</h6>
+      <h6 class="fw-bold small mb-0"><i class="bi bi-megaphone me-2 text-warning"></i>Announcements</h6>
     </div>
     <div class="card-body p-0">
       <div class="list-group list-group-flush">

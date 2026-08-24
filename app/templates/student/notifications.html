@@ -1,18 +1,17 @@
 {% extends "base.html" %}
-{% block title %}Notifications - Student{% endblock %}
+{% block title %}Announcements - Student{% endblock %}
 
 {% block content %}
 <div class="container py-5">
   <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <h1 class="h3">My Notifications
+    <h1 class="h3"><i class="bi bi-megaphone me-2 text-primary"></i>My Announcements
       {% if unread_count > 0 %}
         <span class="badge bg-danger ms-2">{{ unread_count }}</span>
       {% endif %}
     </h1>
     <div class="d-flex gap-2">
       <form method="POST" action="{{ url_for('student.mark_all_read') }}">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="btn btn-outline-secondary btn-sm">Mark All as Read</button>
       </form>
     </div>
@@ -50,8 +49,7 @@
             <form method="POST"
                   action="{{ url_for('student.mark_notification_read', notif_id=n.id) }}"
                   class="ms-3">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button class="btn btn-sm btn-outline-secondary">Mark Read</button>
             </form>
             {% endif %}
@@ -61,8 +59,8 @@
       </div>
       {% else %}
       <div class="text-center py-5">
-        <i class="bi bi-bell-slash display-4 text-muted"></i>
-        <p class="mt-3 text-muted">No notifications found.</p>
+        <i class="bi bi-megaphone display-4 text-muted"></i>
+        <p class="mt-3 text-muted">No announcements found.</p>
       </div>
       {% endif %}
     </div>

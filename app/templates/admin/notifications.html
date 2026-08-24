@@ -1,18 +1,18 @@
 {% extends "base.html" %}
-{% block title %}Notifications - Admin{% endblock %}
+{% block title %}Announcements - Admin{% endblock %}
 
 {% block content %}
 <div class="container-fluid py-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="h3">Manage Notifications</h1>
+    <h1 class="h3"><i class="bi bi-megaphone me-2 text-primary"></i>Manage Announcements</h1>
     <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#sendModal">
-      <i class="bi bi-send"></i> Send Notification
+      <i class="bi bi-send"></i> Send Announcement
     </button>
   </div>
 
-  <!-- Recent sent notifications -->
+  <!-- Recent sent announcements -->
   <div class="card shadow">
-    <div class="card-header py-3"><h6 class="m-0 fw-bold text-primary">Recent Notifications</h6></div>
+    <div class="card-header py-3"><h6 class="m-0 fw-bold text-primary">Recent Announcements</h6></div>
     <div class="card-body p-0">
       {% if recent %}
       <div class="table-responsive">
@@ -41,20 +41,20 @@
       </div>
       {% else %}
       <div class="text-center py-5 text-muted">
-        <i class="bi bi-bell-slash display-4"></i>
-        <p class="mt-3">No notifications sent yet.</p>
+        <i class="bi bi-megaphone display-4"></i>
+        <p class="mt-3">No announcements sent yet.</p>
       </div>
       {% endif %}
     </div>
   </div>
 </div>
 
-<!-- Send Modal -->
+<!-- Send Announcement Modal -->
 <div class="modal fade" id="sendModal" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="bi bi-send me-2"></i>Send Notification</h5>
+        <h5 class="modal-title"><i class="bi bi-send me-2"></i>Send Announcement</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" action="{{ url_for('admin.send_notification') }}">
@@ -74,7 +74,7 @@
             </select>
           </div>
 
-          <!-- Group sub-filter (shown for non-multiple types) -->
+          <!-- Group sub-filter -->
           <div class="mb-2 d-none" id="groupSubFilter">
             <!-- By Course -->
             <div class="d-none" id="sub_course">
@@ -104,14 +104,28 @@
             <!-- By Scholarship -->
             <div class="d-none" id="sub_scholarship">
               <label class="form-label small fw-semibold">Scholarship Program</label>
-              <select class="form-select mb-2" name="group_scholarship" id="sel_scholarship" onchange="filterByGroup('scholarship',this.value)">
-                <option value="">— choose —</option>
-                {% for sch in scholarships %}<option value="{{ sch.id }}">{{ sch.title }}</option>{% endfor %}
+              <select class="form-select mb-2" name="group_scholarship" id="sel_scholarship"
+                      onchange="onScholarshipChange(this.value)">
+                <option value="">— choose scholarship —</option>
+                {% for sch in scholarships %}
+                <option value="{{ sch.id }}">{{ sch.title }}</option>
+                {% endfor %}
               </select>
+              <!-- Batch sub-filter — shown after scholarship is selected -->
+              <div id="batchFilterRow" class="d-none mt-2">
+                <label class="form-label small fw-semibold">
+                  Filter by Batch
+                  <span class="text-muted fw-normal">(optional — leave blank for all batches)</span>
+                </label>
+                <select class="form-select" name="group_batch" id="sel_batch"
+                        onchange="filterByBatch(this.value)">
+                  <option value="">All Batches</option>
+                </select>
+              </div>
             </div>
           </div>
 
-          <!-- Unified student list (used by all options) -->
+          <!-- Unified student list -->
           <div class="mb-3" id="studentListPanel">
             <div class="d-flex justify-content-between align-items-center mb-1">
               <label class="form-label fw-semibold mb-0">Students
@@ -123,7 +137,6 @@
                 <button type="button" class="btn btn-link btn-sm p-0 text-secondary" onclick="clearAll()">Clear</button>
               </div>
             </div>
-            <!-- Search (only shown for Select Students mode) -->
             <div class="input-group mb-2" id="searchRow">
               <input type="text" class="form-control form-control-sm"
                      id="studentSearchBox"
@@ -136,7 +149,7 @@
                 <i class="bi bi-x"></i>
               </button>
             </div>
-            <div class="border rounded" style="max-height:200px;overflow-y:auto;background:#fafafa;">
+            <div class="border rounded" style="max-height:220px;overflow-y:auto;background:#fafafa;">
               <div class="px-3 py-2 border-bottom bg-white sticky-top">
                 <span class="small text-muted" id="listCountLabel">{{ students|length }} students</span>
               </div>
@@ -148,7 +161,7 @@
                      data-course="{{ s.course|lower if s.course else '' }}"
                      data-year="{{ s.year_level|lower if s.year_level else '' }}"
                      data-gender="{{ s.gender|lower if s.gender else '' }}"
-                     data-schids=""
+                     data-schids="{{ s.id }}"
                      data-gwa="{{ s.gwa if s.gwa else '' }}"
                      style="cursor:pointer;display:flex;" onclick="toggleCheck({{ s.id }})">
                   <input class="form-check-input flex-shrink-0 student-checkbox" type="checkbox"
@@ -174,7 +187,7 @@
           <div class="mb-3">
             <label class="form-label fw-semibold">Message *</label>
             <textarea class="form-control" name="message" rows="4"
-                      placeholder="Write your notification message here…" required></textarea>
+                      placeholder="Write your announcement message here…" required></textarea>
           </div>
           <div class="form-check">
             <input class="form-check-input" type="checkbox" name="send_email" id="sendEmail">
@@ -206,89 +219,140 @@ var SCHOLARSHIP_STUDENTS = {
   {% endfor %}
 };
 
-function handleGroupChange(type) {
-  // Show/hide sub-filter dropdowns
-  var subs = ['course','year','gender','scholarship'];
-  subs.forEach(function(s){
-    document.getElementById('sub_' + s).classList.add('d-none');
+// Scholarship → batch list  { schId: [{id, name, student_ids:[...]}, ...] }
+var SCHOLARSHIP_BATCHES = {
+  {% for sch in scholarships %}
+  "{{ sch.id }}": [
+    {% for b in sch.batches %}
+    {
+      "id": {{ b.id }},
+      "name": "{{ b.batch_name }}",
+      "student_ids": [{% for app in b.applications if app.status.value == 'approved' %}{{ app.applicant_id }}{% if not loop.last %},{% endif %}{% endfor %}]
+    }{% if not loop.last %},{% endif %}
+    {% endfor %}
+  ]{% if not loop.last %},{% endif %}
+  {% endfor %}
+};
+
+// Called when scholarship dropdown changes
+function onScholarshipChange(schId) {
+  clearAll();
+  var batchRow = document.getElementById('batchFilterRow');
+  var batchSel = document.getElementById('sel_batch');
+
+  if (!schId) {
+    batchRow.classList.add('d-none');
+    showAllItems(); updateListCount();
+    return;
+  }
+
+  // Populate batch dropdown
+  var batches = SCHOLARSHIP_BATCHES[schId] || [];
+  batchSel.innerHTML = '<option value="">All Batches</option>';
+  batches.forEach(function(b) {
+    var opt = document.createElement('option');
+    opt.value = b.id;
+    opt.textContent = b.name + ' (' + b.student_ids.length + ' scholars)';
+    batchSel.appendChild(opt);
   });
+
+  // Show batch row only if there are batches
+  if (batches.length > 0) {
+    batchRow.classList.remove('d-none');
+  } else {
+    batchRow.classList.add('d-none');
+  }
+
+  // Filter by all batches of this scholarship by default
+  filterByGroup('scholarship', schId);
+}
+
+// Called when batch dropdown changes
+function filterByBatch(batchId) {
+  var schId = document.getElementById('sel_scholarship').value;
+  if (!batchId) {
+    // No batch selected — show all students of this scholarship
+    filterByGroup('scholarship', schId);
+    return;
+  }
+
+  var batches = SCHOLARSHIP_BATCHES[schId] || [];
+  var batch = batches.find(function(b) { return String(b.id) === String(batchId); });
+  if (!batch) { showAllItems(); return; }
+
+  clearAll();
+  filterItems(function(item) {
+    var itemId = parseInt(item.querySelector('.student-checkbox').value);
+    return batch.student_ids.indexOf(itemId) !== -1;
+  });
+  selectAllVisible();
+}
+
+function handleGroupChange(type) {
+  var subs = ['course','year','gender','scholarship'];
+  subs.forEach(function(s){ document.getElementById('sub_' + s).classList.add('d-none'); });
   var groupPanel = document.getElementById('groupSubFilter');
   var searchRow  = document.getElementById('searchRow');
+  // Hide batch row when switching away from scholarship
+  document.getElementById('batchFilterRow').classList.add('d-none');
 
   if (type === 'multiple') {
     groupPanel.classList.add('d-none');
     searchRow.classList.remove('d-none');
-    // Reset search and show all
     document.getElementById('studentSearchBox').value = '';
-    showAllItems();
-    clearAll();
+    showAllItems(); clearAll();
   } else if (type === 'at_risk') {
     groupPanel.classList.add('d-none');
     searchRow.classList.add('d-none');
     filterItems(function(item) {
-      var gwa = parseFloat(item.getAttribute('data-gwa') || '0');
-      return gwa > 3.00;
+      return parseFloat(item.getAttribute('data-gwa') || '0') > 3.00;
     });
+    selectAllVisible();
   } else {
     groupPanel.classList.remove('d-none');
     searchRow.classList.add('d-none');
     document.getElementById('sub_' + type).classList.remove('d-none');
-    // Reset list until sub-filter is chosen
-    showAllItems();
-    clearAll();
-    updateListCount();
+    showAllItems(); clearAll(); updateListCount();
   }
 }
 
 function filterByGroup(type, val) {
   clearAll();
   if (!val) { showAllItems(); updateListCount(); return; }
-
   filterItems(function(item) {
-    if (type === 'course')       return item.getAttribute('data-course') === val.toLowerCase();
-    if (type === 'year')         return item.getAttribute('data-year')   === val.toLowerCase();
-    if (type === 'gender')       return item.getAttribute('data-gender') === val.toLowerCase();
+    if (type === 'course')  return item.getAttribute('data-course')  === val.toLowerCase();
+    if (type === 'year')    return item.getAttribute('data-year')    === val.toLowerCase();
+    if (type === 'gender')  return item.getAttribute('data-gender')  === val.toLowerCase();
     if (type === 'scholarship') {
       var ids = SCHOLARSHIP_STUDENTS[val] || [];
-      var itemId = parseInt(item.querySelector('.student-checkbox').value);
-      return ids.indexOf(itemId) !== -1;
+      return ids.indexOf(parseInt(item.querySelector('.student-checkbox').value)) !== -1;
     }
     return true;
   });
+  selectAllVisible();
 }
 
 function filterItems(matchFn) {
   var items = document.getElementById('studentCheckboxList').getElementsByClassName('student-item');
-  var count = 0;
   for (var i = 0; i < items.length; i++) {
-    if (matchFn(items[i])) {
-      items[i].style.display = 'flex';
-      count++;
-    } else {
-      items[i].style.display = 'none';
-    }
+    items[i].style.display = matchFn(items[i]) ? 'flex' : 'none';
   }
   updateListCount();
 }
 
 function showAllItems() {
   var items = document.getElementById('studentCheckboxList').getElementsByClassName('student-item');
-  for (var i = 0; i < items.length; i++) {
-    items[i].style.display = 'flex';
-  }
+  for (var i = 0; i < items.length; i++) { items[i].style.display = 'flex'; }
   updateListCount();
 }
 
 function updateListCount() {
   var items = document.getElementById('studentCheckboxList').getElementsByClassName('student-item');
-  var visible = 0;
-  for (var i = 0; i < items.length; i++) {
-    if (items[i].style.display !== 'none') visible++;
-  }
-  document.getElementById('listCountLabel').textContent = visible + ' student(s)';
+  var v = 0;
+  for (var i = 0; i < items.length; i++) { if (items[i].style.display !== 'none') v++; }
+  document.getElementById('listCountLabel').textContent = v + ' student(s)';
 }
 
-// Search (for Select Students mode)
 function notifSearch(val) {
   var q = val.trim().toLowerCase();
   var items = document.getElementById('studentCheckboxList').getElementsByClassName('student-item');
@@ -301,13 +365,14 @@ function notifSearch(val) {
 }
 
 function updateCount() {
-  var n = document.querySelectorAll('.student-checkbox:checked').length;
-  document.getElementById('selectedCount').textContent = n + ' selected';
+  document.getElementById('selectedCount').textContent =
+    document.querySelectorAll('.student-checkbox:checked').length + ' selected';
 }
 
 function toggleCheck(id) {
+  var item = document.getElementById('chk_' + id).closest('.student-item');
+  if (item.style.display === 'none') return;
   var cb = document.getElementById('chk_' + id);
-  if (cb.closest('.student-item').style.display === 'none') return;
   cb.checked = !cb.checked;
   updateCount();
 }
@@ -315,9 +380,7 @@ function toggleCheck(id) {
 function selectAllVisible() {
   var items = document.getElementById('studentCheckboxList').getElementsByClassName('student-item');
   for (var i = 0; i < items.length; i++) {
-    if (items[i].style.display !== 'none') {
-      items[i].querySelector('.student-checkbox').checked = true;
-    }
+    if (items[i].style.display !== 'none') items[i].querySelector('.student-checkbox').checked = true;
   }
   updateCount();
 }
