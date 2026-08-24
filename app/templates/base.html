@@ -146,15 +146,11 @@
           </a>
         </li>
 
-        {# Scholarships dropdown — full management #}
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">
+        {# Scholarships — direct link #}
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('staff.manage_scholarships') }}">
             <i class="bi bi-mortarboard me-1"></i>Scholarships
           </a>
-          <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="{{ url_for('staff.manage_scholarships') }}">
-              <i class="bi bi-list-ul me-2 text-primary"></i>Manage Scholarships</a></li>
-          </ul>
         </li>
 
         {# Students dropdown #}
