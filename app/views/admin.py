@@ -1421,7 +1421,7 @@ def override_ctc(doc_id, value):
 @admin_bp.route('/students/<int:uid>/update-gwa', methods=['POST'])
 @role_required('admin')
 def update_gwa(uid):
-    """Update a student's GWA."""
+    """Update a student's GWA and units enrolled."""
     student = User.query.get_or_404(uid)
     try:
         gwa_val = float(request.form.get('gwa', '').strip())
@@ -1429,6 +1429,13 @@ def update_gwa(uid):
             flash('GWA must be between 1.0 and 5.0.', 'error')
             return redirect(url_for('admin.student_profile', uid=uid))
         student.gwa = round(gwa_val, 2)
+        # Save units_enrolled if provided
+        units_str = request.form.get('units_enrolled', '').strip()
+        if units_str:
+            try:
+                student.units_enrolled = int(units_str)
+            except ValueError:
+                pass
         db.session.commit()
         from app.services.audit_service import log_action
         from app.models.gwa_history import GwaHistory

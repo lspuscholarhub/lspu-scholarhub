@@ -312,7 +312,8 @@ GEMINI_INSTRUCTION = (
     '  Layout: Name: [name]\n'
     '          Student ID: [XXXX-XXXX]\n'
     '          Course: [full program name]\n'
-    '          GWA: [number]\n\n'
+    '          GWA: [number]\n'
+    '          Total Units / Units Enrolled: [number]\n\n'
     'Extract ALL values you can find. The course/program is REQUIRED.\n'
     'Also extract the academic year and semester if visible '
     '(e.g. "Second Semester AY 2025-2026").\n\n'
@@ -321,6 +322,7 @@ GEMINI_INSTRUCTION = (
     '  "student_id": "XXXX-XXXX format or null",\n'
     '  "name": "Full student name exactly as printed or null",\n'
     '  "gwa": 2.00 or null,\n'
+    '  "units_enrolled": 21 or null,\n'
     '  "course": "Full course/program name or null",\n'
     '  "semester": "e.g. 2nd Semester or null",\n'
     '  "academic_year": "e.g. 2025-2026 or null"\n'
@@ -424,6 +426,12 @@ def _extract_via_gemini(file_bytes: bytes, file_ext: str, raw_text: str = '') ->
             academic_year = data.get('academic_year')
             if academic_year and str(academic_year).lower() != 'null':
                 result['academic_year'] = str(academic_year).strip()
+            units = data.get('units_enrolled')
+            if units and str(units).lower() != 'null':
+                try:
+                    result['units_enrolled'] = int(float(units))
+                except (ValueError, TypeError):
+                    pass
 
     except Exception as e:
         logger.warning(f'Gemini OCR failed: {e}')
@@ -444,12 +452,13 @@ def extract_document_data(file_bytes: bytes, file_ext: str) -> dict:
       - Images (JPG/PNG): sent directly to Gemini Vision (like Google Lens)
         Works with screenshots, photos of documents, scanned images.
 
-    Returns dict with keys: student_id, name, gwa, course, raw_text, method, semester, academic_year
+    Returns dict with keys: student_id, name, gwa, units_enrolled, course, raw_text, method, semester, academic_year
     """
     result = {
         'student_id':    None,
         'name':          None,
         'gwa':           None,
+        'units_enrolled': None,
         'course':        None,
         'raw_text':      '',
         'method':        'failed',
@@ -468,7 +477,7 @@ def extract_document_data(file_bytes: bytes, file_ext: str) -> dict:
         logger.info(f'Running Gemini Vision analysis for .{file_ext} image.')
         try:
             gemini = _extract_via_gemini(file_bytes, file_ext)
-            for key in ('student_id', 'name', 'gwa', 'course', 'semester', 'academic_year'):
+            for key in ('student_id', 'name', 'gwa', 'units_enrolled', 'course', 'semester', 'academic_year'):
                 if gemini.get(key):
                     result[key] = gemini[key]
             result['method'] = (
@@ -496,7 +505,7 @@ def extract_document_data(file_bytes: bytes, file_ext: str) -> dict:
     logger.info(f'Running Gemini analysis for .{file_ext} document.')
     try:
         gemini = _extract_via_gemini(file_bytes, file_ext, raw_text)
-        for key in ('student_id', 'name', 'gwa', 'course', 'semester', 'academic_year'):
+        for key in ('student_id', 'name', 'gwa', 'units_enrolled', 'course', 'semester', 'academic_year'):
             if gemini.get(key):
                 result[key] = gemini[key]
         result['method'] = (

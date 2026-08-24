@@ -554,12 +554,16 @@ def upload_gwa():
                 return redirect(url_for('student.upload_gwa'))
 
             if extracted_gwa:
-                # Update user GWA
+                # Update user GWA and units
                 old_gwa = user.gwa
                 user.gwa = round(extracted_gwa, 2)
                 user.grades_file_path = file_path
                 user.grades_cloudinary_id = grades_cid
                 user.grades_updated_at = datetime.utcnow()
+                # Auto-populate units_enrolled if extracted
+                extracted_units = result.get('units_enrolled')
+                if extracted_units:
+                    user.units_enrolled = extracted_units
 
                 # Mark which semester these grades are for
                 from app.models.academic_period import AcademicPeriod

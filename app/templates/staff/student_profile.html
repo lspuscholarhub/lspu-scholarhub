@@ -88,6 +88,11 @@
                   {% else %}text-danger{% endif %}">
                   {{ student.gwa }}
                 </div>
+                {% if student.units_enrolled %}
+                <div class="text-muted small mt-1">
+                  <i class="bi bi-journal-bookmark me-1"></i>{{ student.units_enrolled }} units enrolled
+                </div>
+                {% endif %}
                 {% if student.gwa <= 1.25 %}
                   <span class="badge bg-success mt-1">Excellent</span>
                 {% elif student.gwa <= 1.75 %}
@@ -147,7 +152,13 @@
                          value="{{ now.year }}-{{ now.year + 1 }}">
                 </div>
                 <div class="col-md-3">
-                  <button type="submit" class="btn btn-primary w-100">
+                  <label class="form-label small fw-semibold mb-1">Units Enrolled</label>
+                  <input type="number" class="form-control" name="units_enrolled"
+                         min="1" max="30" placeholder="e.g. 21"
+                         value="{{ student.units_enrolled or '' }}">
+                </div>
+                <div class="col-md-3">
+                  <button type="submit" class="btn btn-primary w-100 mt-4">
                     <i class="bi bi-check-lg me-1"></i>Save GWA
                   </button>
                 </div>

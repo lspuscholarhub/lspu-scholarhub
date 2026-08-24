@@ -112,6 +112,11 @@
                   {% else %}text-danger{% endif %}">
                   {{ student.gwa }}
                 </div>
+                {% if student.units_enrolled %}
+                <div class="text-muted small mt-1">
+                  <i class="bi bi-journal-bookmark me-1"></i>{{ student.units_enrolled }} units enrolled
+                </div>
+                {% endif %}
                 {# LSPU Grading: 1.00-1.25 Excellent, 1.50-1.75 Very Satisfactory,
                    2.00-2.25 Satisfactory, 2.50-2.75 Fairly Satisfactory,
                    3.00 Passed, 4.00 Conditional Failure, 5.00 Failed #}
@@ -174,7 +179,13 @@
                          value="{{ now.year }}-{{ now.year + 1 }}">
                 </div>
                 <div class="col-md-3">
-                  <button type="submit" class="btn btn-primary w-100">
+                  <label class="form-label small fw-semibold mb-1">Units Enrolled</label>
+                  <input type="number" class="form-control" name="units_enrolled"
+                         min="1" max="30" placeholder="e.g. 21"
+                         value="{{ student.units_enrolled or '' }}">
+                </div>
+                <div class="col-md-3">
+                  <button type="submit" class="btn btn-primary w-100 mt-4">
                     <i class="bi bi-check-lg me-1"></i>Save GWA
                   </button>
                 </div>

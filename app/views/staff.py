@@ -746,6 +746,13 @@ def update_gwa(uid):
         if not (1.0 <= gwa_val <= 5.0):
             raise ValueError
         student.gwa = round(gwa_val, 2)
+        # Save units_enrolled if provided
+        units_str = request.form.get('units_enrolled', '').strip()
+        if units_str:
+            try:
+                student.units_enrolled = int(units_str)
+            except ValueError:
+                pass
         db.session.commit()
         from app.services.audit_service import log_action
         from app.models.gwa_history import GwaHistory
