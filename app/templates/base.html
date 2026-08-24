@@ -394,5 +394,65 @@
 </script>
 
 {% block scripts %}{% endblock %}
+
+<script>
+/* ── Global password eye-toggle ─────────────────────────────────────────────
+   Automatically adds a show/hide button to every input[type=password] that
+   is inside an .input-group.  Works across all pages with zero extra markup.
+   For fields NOT inside an input-group, wraps them automatically.
+   Skips fields that already have a sibling toggle button to avoid duplicates.
+──────────────────────────────────────────────────────────────────────────── */
+(function () {
+  function addToggle(input) {
+    // Skip if a toggle button already exists next to this input
+    var parent = input.parentElement;
+    if (parent && parent.querySelector('.pw-eye-btn')) return;
+
+    // Wrap bare inputs in an input-group if not already inside one
+    if (!parent || !parent.classList.contains('input-group')) {
+      var wrapper = document.createElement('div');
+      wrapper.className = 'input-group';
+      input.parentNode.insertBefore(wrapper, input);
+      wrapper.appendChild(input);
+      // Move any immediately following .form-text outside the wrapper
+      parent = wrapper;
+    }
+
+    // Remove border-end from input so it joins cleanly with the button
+    input.classList.add('border-end-0');
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-outline-secondary border-start-0 pw-eye-btn';
+    btn.tabIndex = -1;
+    btn.setAttribute('aria-label', 'Toggle password visibility');
+    btn.innerHTML = '<i class="bi bi-eye"></i>';
+
+    btn.addEventListener('click', function () {
+      var isHidden = input.type === 'password';
+      input.type = isHidden ? 'text' : 'password';
+      btn.querySelector('i').className = isHidden ? 'bi bi-eye-slash' : 'bi bi-eye';
+    });
+
+    parent.appendChild(btn);
+  }
+
+  function initAll() {
+    document.querySelectorAll('input[type="password"]').forEach(addToggle);
+  }
+
+  // Run on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAll);
+  } else {
+    initAll();
+  }
+
+  // Re-run when modals open (Bootstrap modals may contain password fields)
+  document.addEventListener('shown.bs.modal', function (e) {
+    e.target.querySelectorAll('input[type="password"]').forEach(addToggle);
+  });
+})();
+</script>
 </body>
 </html>

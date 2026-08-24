@@ -319,9 +319,6 @@
                   <input type="password" class="form-control" name="current_password"
                          id="currentPw" placeholder="Enter your current password"
                          autocomplete="current-password">
-                  <button class="btn btn-outline-secondary" type="button" id="toggleCurrentPw">
-                    <i class="bi bi-eye" id="eyeCurrent"></i>
-                  </button>
                 </div>
                 <div class="form-text">Required to verify your identity before changing your password.</div>
               </div>
@@ -333,9 +330,6 @@
                   <input type="password" class="form-control" name="new_password"
                          id="newPw" placeholder="Minimum 8 characters" minlength="8"
                          autocomplete="new-password">
-                  <button class="btn btn-outline-secondary" type="button" id="toggleNewPw">
-                    <i class="bi bi-eye" id="eyeNew"></i>
-                  </button>
                 </div>
               </div>
               <div class="col-md-6">
@@ -346,9 +340,6 @@
                   <input type="password" class="form-control"
                          id="confirmPw" placeholder="Repeat new password"
                          autocomplete="new-password">
-                  <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPw">
-                    <i class="bi bi-eye" id="eyeConfirm"></i>
-                  </button>
                 </div>
                 <div id="pwMismatch" class="text-danger small mt-1 d-none">
                   Passwords do not match.
@@ -373,26 +364,6 @@
 {% block scripts %}
 <script>
 (function () {
-  // Toggle password visibility
-  function togglePw(btnId, inputId, iconId) {
-    const btn = document.getElementById(btnId);
-    if (!btn) return;
-    btn.addEventListener('click', function () {
-      const inp = document.getElementById(inputId);
-      const ico = document.getElementById(iconId);
-      if (inp.type === 'password') {
-        inp.type = 'text';
-        ico.classList.replace('bi-eye', 'bi-eye-slash');
-      } else {
-        inp.type = 'password';
-        ico.classList.replace('bi-eye-slash', 'bi-eye');
-      }
-    });
-  }
-  togglePw('toggleCurrentPw', 'currentPw',  'eyeCurrent');
-  togglePw('toggleNewPw',     'newPw',       'eyeNew');
-  togglePw('toggleConfirmPw', 'confirmPw',   'eyeConfirm');
-
   // Real-time password match check
   const currentPw = document.getElementById('currentPw');
   const newPw     = document.getElementById('newPw');
