@@ -3,7 +3,16 @@
 
 {% block content %}
 <div class="container-fluid py-4">
-  <h1 class="h3 mb-4">Student Directory</h1>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">Student Directory</h1>
+    <form method="POST" action="{{ url_for('admin.rescan_units') }}"
+          onsubmit="return confirm('Re-scan grades documents for all students missing units enrolled? This runs in the background.')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-repeat me-1"></i>Re-scan Units Enrolled
+      </button>
+    </form>
+  </div>
 
   <!-- Stats row -->
   <div class="row mb-4 g-3">

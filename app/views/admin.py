@@ -2403,3 +2403,95 @@ def test_email():
         'MAIL_SERVER':   os.environ.get('MAIL_SERVER', 'NOT SET'),
         'MAIL_USERNAME': os.environ.get('MAIL_USERNAME', 'NOT SET'),
     })
+
+
+# ── Bulk OCR re-scan for units_enrolled ───────────────────────────────────────
+
+@admin_bp.route('/students/rescan-units', methods=['POST'])
+@role_required('admin')
+def rescan_units():
+    """
+    Re-run OCR on all students who have a grades file but no units_enrolled.
+    Runs in a background thread so it doesn't timeout.
+    Returns immediately with a flash message.
+    """
+    import threading
+    from flask import current_app
+
+    # Find students missing units but having a grades file
+    students = User.query.filter_by(user_type='student') \
+                         .filter(User.grades_file_path.isnot(None)) \
+                         .filter(User.units_enrolled.is_(None)) \
+                         .all()
+
+    if not students:
+        flash('All students with grades files already have units recorded.', 'info')
+        return redirect(url_for('admin.student_directory'))
+
+    count = len(students)
+
+    def _run(app, student_ids):
+        with app.app_context():
+            import urllib.request as _ur
+            from app.services.ocr_service import extract_document_data
+            from app.models import User as _User
+            from app import db as _db
+
+            for uid in student_ids:
+                try:
+                    student = _User.query.get(uid)
+                    if not student or not student.grades_file_path:
+                        continue
+
+                    file_path = student.grades_file_path
+                    ext = file_path.rsplit('.', 1)[-1].lower() if '.' in file_path else 'pdf'
+
+                    # Fetch file bytes — Cloudinary URL or local path
+                    if file_path.startswith('http://') or file_path.startswith('https://'):
+                        try:
+                            req = _ur.Request(file_path)
+                            req.add_header('User-Agent', 'LSPU-ScholarHub/1.0')
+                            with _ur.urlopen(req, timeout=30) as resp:
+                                file_bytes = resp.read()
+                        except Exception as e:
+                            import logging
+                            logging.getLogger(__name__).warning(
+                                f'Could not fetch grades for student {uid}: {e}')
+                            continue
+                    else:
+                        import os
+                        if not os.path.exists(file_path):
+                            continue
+                        with open(file_path, 'rb') as f:
+                            file_bytes = f.read()
+
+                    result = extract_document_data(file_bytes, ext)
+                    units = result.get('units_enrolled')
+
+                    if units:
+                        student.units_enrolled = units
+                        _db.session.commit()
+                        import logging
+                        logging.getLogger(__name__).info(
+                            f'Units set to {units} for student {student.student_id}')
+
+                except Exception as e:
+                    import logging
+                    logging.getLogger(__name__).warning(
+                        f'Rescan failed for student {uid}: {e}')
+                    _db.session.rollback()
+
+    student_ids = [s.id for s in students]
+    t = threading.Thread(
+        target=_run,
+        args=(current_app._get_current_object(), student_ids),
+        daemon=True,
+    )
+    t.start()
+
+    flash(
+        f'Re-scanning {count} student(s) for units enrolled. '
+        f'This runs in the background — refresh student profiles in a few minutes to see results.',
+        'info'
+    )
+    return redirect(url_for('admin.student_directory'))
