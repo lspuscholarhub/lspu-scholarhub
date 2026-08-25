@@ -63,7 +63,7 @@
                 <label class="form-label fw-semibold">Student ID <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" name="student_id" id="studentIdInput"
                        value="{{ fd.student_id if fd else '' }}"
-                       placeholder="e.g. 2024-1234" required
+                       placeholder="e.g. 0000-1234" required
                        pattern="[0-9]{4}-[0-9]{4}" maxlength="9" inputmode="numeric">
                 <div class="form-text">Format: <strong>XXXX-XXXX</strong></div>
                 <div class="invalid-feedback" id="studentIdError"></div>
@@ -438,7 +438,7 @@
     if (this.value && !valid) {
       this.classList.add('is-invalid');
       document.getElementById('studentIdError').textContent =
-        'Format must be XXXX-XXXX (e.g. 2024-1234).';
+        'Format must be XXXX-XXXX (e.g. 0000-1234).';
     } else {
       this.classList.remove('is-invalid');
     }
@@ -466,7 +466,7 @@
     if (sidInput.value && !/^[0-9]{4}-[0-9]{4}$/.test(sidInput.value)) {
       sidInput.classList.add('is-invalid');
       document.getElementById('studentIdError').textContent =
-        'Format must be XXXX-XXXX (e.g. 2024-1234).';
+        'Format must be XXXX-XXXX (e.g. 0000-1234).';
       valid = false;
     }
     if (!valid) { e.preventDefault(); return; }

@@ -81,18 +81,23 @@ def manage_scholarships():
 @role_required('staff')
 def create_scholarship():
     try:
+        deadline_str = request.form.get('application_deadline', '').strip()
+        deadline = datetime.strptime(deadline_str, '%Y-%m-%d') if deadline_str else None
         s = Scholarship(
             title=request.form['title'],
             category=request.form.get('category', 'General'),
-            description=request.form['description'],
-            eligibility_criteria=request.form.get('eligibility_criteria', ''),
-            benefits=request.form.get('benefits', ''),
+            description=request.form.get('description', '').strip() or None,
+            eligibility_criteria=request.form.get('eligibility_criteria', '').strip() or None,
+            benefits=request.form.get('benefits', '').strip() or None,
+            scholarship_type=request.form.get('scholarship_type', 'Financial Assistance'),
             award_amount=request.form.get('award_amount') or None,
             max_applicants=request.form.get('max_applicants') or None,
-            application_deadline=datetime.strptime(request.form['application_deadline'], '%Y-%m-%d'),
+            application_deadline=deadline,
             status=ScholarshipStatus.ACTIVE,
             created_by=session['user_id'],
         )
+        s.is_hidden = bool(request.form.get('is_hidden'))
+        s.allowed_student_ids = request.form.get('allowed_student_ids', '').strip() or None
         db.session.add(s)
         db.session.commit()
         from app.services.audit_service import log_action

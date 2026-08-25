@@ -95,15 +95,17 @@ def create_scholarship():
             title                = request.form['title'],
             category             = request.form.get('category', 'General'),
             scholarship_type     = request.form.get('scholarship_type', 'Financial Assistance'),
-            description          = request.form.get('description', '—') or '—',
-            eligibility_criteria = request.form.get('eligibility_criteria', '—') or '—',
-            benefits             = request.form.get('benefits', '—') or '—',
+            description          = request.form.get('description', '').strip() or None,
+            eligibility_criteria = request.form.get('eligibility_criteria', '').strip() or None,
+            benefits             = request.form.get('benefits', '').strip() or None,
             award_amount         = request.form.get('award_amount') or None,
             max_applicants       = request.form.get('max_applicants') or None,
-            application_deadline = datetime.strptime(request.form['application_deadline'], '%Y-%m-%d'),
+            application_deadline = datetime.strptime(request.form['application_deadline'], '%Y-%m-%d') if request.form.get('application_deadline') else None,
             status               = ScholarshipStatus.ACTIVE,
             created_by           = session['user_id'],
         )
+        s.is_hidden = bool(request.form.get('is_hidden'))
+        s.allowed_student_ids = request.form.get('allowed_student_ids', '').strip() or None
         db.session.add(s)
         db.session.commit()
         from app.services.audit_service import log_action

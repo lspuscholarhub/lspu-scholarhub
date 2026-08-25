@@ -131,8 +131,8 @@
                      placeholder="e.g. 10000">
             </div>
             <div class="col-md-6">
-              <label class="form-label fw-semibold">Application Deadline <span class="text-danger">*</span></label>
-              <input type="date" class="form-control" name="application_deadline" required>
+              <label class="form-label fw-semibold">Application Deadline</label>
+              <input type="date" class="form-control" name="application_deadline">
             </div>
           </div>
           <div class="mb-3">
@@ -159,7 +159,7 @@
             </div>
             <div id="addAllowed" class="d-none mt-2">
               <textarea class="form-control font-monospace" name="allowed_student_ids" rows="2"
-                        placeholder="Student IDs: 2024-0001, 2024-0002" style="font-size:.82rem;"></textarea>
+                        placeholder="Student IDs: 0000-0001, 0000-0002" style="font-size:.82rem;"></textarea>
             </div>
           </div>
         </div>
@@ -234,7 +234,7 @@
             <div id="editAllowed{{ s.id }}" class="{% if not s.is_hidden %}d-none{% endif %} mt-2">
               <textarea class="form-control font-monospace" name="allowed_student_ids" rows="4"
                         style="font-size:.82rem;"
-                        placeholder="Enter Student IDs who can see this scholarship (comma-separated)&#10;&#10;e.g. 0123-1234, 0123-5678, 2024-0001">{{ s.allowed_student_ids or '' }}</textarea>
+                        placeholder="Enter Student IDs who can see this scholarship (comma-separated)&#10;&#10;e.g. 0123-1234, 0123-5678, 0000-0001">{{ s.allowed_student_ids or '' }}</textarea>
               <div class="form-text">Only these students will be able to see and apply. Leave blank to hide from all students.</div>
             </div>
           </div>
