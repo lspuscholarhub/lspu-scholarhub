@@ -21,25 +21,11 @@ logger = logging.getLogger(__name__)
 @scholarship_bp.route('/')
 def list_scholarships():
     """List scholarships — respects is_hidden and allowed_student_ids."""
-    q        = request.args.get('q', '').strip()
-    status   = request.args.get('status', 'active')
-    category = request.args.get('category', '')
+    q = request.args.get('q', '').strip()
 
     query = Scholarship.query
-    if status == 'active':
-        query = query.filter_by(status=ScholarshipStatus.ACTIVE)
-    elif status == 'all':
-        pass
-    else:
-        try:
-            query = query.filter_by(status=ScholarshipStatus(status))
-        except ValueError:
-            pass
-
     if q:
         query = query.filter(Scholarship.title.ilike(f'%{q}%'))
-    if category:
-        query = query.filter(Scholarship.category == category)
 
     all_scholarships = query.order_by(Scholarship.application_deadline.asc()).all()
 
@@ -64,18 +50,12 @@ def list_scholarships():
             else:
                 applied_ids.add(a.scholarship_id)
 
-    # Get distinct categories for the filter dropdown
-    categories = sorted({s.category for s in Scholarship.query.all() if s.category})
-
     return render_template(
         'scholarship/list.html',
         scholarships=scholarships,
         applied_ids=applied_ids,
         withdrawn_ids=withdrawn_ids,
-        categories=categories,
         q=q,
-        status=status,
-        category=category,
     )
 
 
