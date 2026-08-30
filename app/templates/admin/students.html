@@ -5,45 +5,15 @@
 <div class="container-fluid py-4">
 
   <!-- Header -->
-  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <h1 class="h3">Student Information</h1>
-    <div class="d-flex gap-2 flex-wrap">
-      <form class="d-flex gap-2" method="GET">
-        <input type="text" name="q" value="{{ q }}" class="form-control"
-               placeholder="Search name / ID…" style="width:200px;">
-        <select name="course" class="form-select" style="width:200px;">
-          <option value="">All Courses</option>
-          {% for c in courses %}
-          <option value="{{ c }}" {% if course==c %}selected{% endif %}>{{ c }}</option>
-          {% endfor %}
-        </select>
-        <select name="year" class="form-select" style="width:140px;">
-          <option value="">All Years</option>
-          {% for y in ['1st Year','2nd Year','3rd Year','4th Year'] %}
-          <option value="{{ y }}" {% if year==y %}selected{% endif %}>{{ y }}</option>
-          {% endfor %}
-        </select>
-        <select name="gender" class="form-select" style="width:130px;">
-          <option value="" {% if gender=='' %}selected{% endif %}>All Genders</option>
-          <option value="Male"   {% if gender=='Male'   %}selected{% endif %}>Male</option>
-          <option value="Female" {% if gender=='Female' %}selected{% endif %}>Female</option>
-        </select>
-        <select name="sort" class="form-select" style="width:160px;">
-          <option value="name"     {% if sort=='name'     %}selected{% endif %}>Name (A–Z)</option>
-          <option value="gwa_desc" {% if sort=='gwa_desc' %}selected{% endif %}>GWA High → Low</option>
-          <option value="gwa_asc"  {% if sort=='gwa_asc'  %}selected{% endif %}>GWA Low → High</option>
-        </select>
-        <button class="btn btn-outline-primary" type="submit">Search</button>
-        <a href="{{ url_for('admin.student_directory') }}" class="btn btn-outline-secondary">Reset</a>
-      </form>
-      <form method="POST" action="{{ url_for('admin.rescan_units') }}"
-            onsubmit="return confirm('Re-scan grades documents for all students missing units enrolled? This runs in the background.')">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="btn btn-outline-secondary btn-sm">
-          <i class="bi bi-arrow-repeat me-1"></i>Re-scan Units
-        </button>
-      </form>
-    </div>
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h3 mb-0">Student Information</h1>
+    <form method="POST" action="{{ url_for('admin.rescan_units') }}"
+          onsubmit="return confirm('Re-scan grades documents for all students missing units enrolled? This runs in the background.')">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-repeat me-1"></i>Re-scan Units
+      </button>
+    </form>
   </div>
 
   <!-- Stats -->
@@ -64,6 +34,73 @@
       <h2 class="text-info mb-0">{{ avg_gwa or '—' }}</h2>
       <small class="text-muted">Average GWA</small>
     </div></div>
+  </div>
+
+  <!-- Filters -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <form method="GET">
+        <div class="row g-3 mb-3">
+          <div class="col-md-4">
+            <label class="form-label small fw-semibold">Search</label>
+            <input type="text" name="q" value="{{ q }}" class="form-control"
+                   placeholder="Name, Student ID, Email…">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label small fw-semibold">Year Level</label>
+            <select name="year" class="form-select">
+              <option value="">All Years</option>
+              {% for y in ['1st Year','2nd Year','3rd Year','4th Year'] %}
+              <option value="{{ y }}" {% if year==y %}selected{% endif %}>{{ y }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-semibold">Course / Program</label>
+            <select name="course" class="form-select">
+              <option value="">All Courses</option>
+              {% for c in courses %}
+              <option value="{{ c }}" {% if course==c %}selected{% endif %}>{{ c }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-semibold">Gender</label>
+            <select name="gender" class="form-select">
+              <option value="" {% if gender=='' %}selected{% endif %}>All Genders</option>
+              <option value="Male"   {% if gender=='Male'   %}selected{% endif %}>Male</option>
+              <option value="Female" {% if gender=='Female' %}selected{% endif %}>Female</option>
+            </select>
+          </div>
+        </div>
+        <div class="row g-3 align-items-end">
+          <div class="col-md-3">
+            <label class="form-label small fw-semibold">Sort By</label>
+            <select name="sort" class="form-select">
+              <option value="name"     {% if sort=='name'     %}selected{% endif %}>Name (A–Z)</option>
+              <option value="gwa_desc" {% if sort=='gwa_desc' %}selected{% endif %}>GWA (High → Low)</option>
+              <option value="gwa_asc"  {% if sort=='gwa_asc'  %}selected{% endif %}>GWA (Low → High)</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label small fw-semibold">GWA Status</label>
+            <select name="gwa_flag" class="form-select">
+              <option value=""        {% if gwa_flag==''        %}selected{% endif %}>All</option>
+              <option value="at_risk" {% if gwa_flag=='at_risk' %}selected{% endif %}>⚠ At Risk</option>
+            </select>
+          </div>
+          <div class="col-md-3"></div>
+          <div class="col-md-3 d-flex gap-2 justify-content-end">
+            <button type="submit" class="btn btn-outline-primary">
+              <i class="bi bi-search me-1"></i>Search
+            </button>
+            <a href="{{ url_for('admin.student_directory') }}" class="btn btn-outline-secondary">
+              <i class="bi bi-x-circle me-1"></i>Reset
+            </a>
+          </div>
+        </div>
+      </form>
+    </div>
   </div>
 
   <!-- Table -->
