@@ -154,16 +154,7 @@ def apply_scholarship(scholarship_id):
         return redirect(url_for('scholarship.list_scholarships'))
 
     if request.method == 'POST':
-        # ── Collect form data ──────────────────────────────────────────────
         form = request.form
-        required_fields = ['first_name', 'last_name', 'student_id', 'email',
-                           'phone', 'course', 'year_level', 'gpa', 'essay']
-        missing = [f for f in required_fields if not form.get(f, '').strip()]
-        if missing:
-            flash(f'Please fill in all required fields: {", ".join(missing)}', 'error')
-            return render_template('scholarship/apply.html',
-                                   scholarship=scholarship, user=user,
-                                   editing=False, application=None)
 
         if not form.get('terms') or not form.get('privacy'):
             flash('You must agree to the terms and privacy policy.', 'error')
@@ -171,147 +162,79 @@ def apply_scholarship(scholarship_id):
                                    scholarship=scholarship, user=user,
                                    editing=False, application=None)
 
-        try:
-            gpa = float(form['gpa'])
-            if not (1.00 <= gpa <= 5.00):
-                raise ValueError
-        except ValueError:
-            flash('GWA must be a number between 1.00 and 5.00.', 'error')
+        # ── Upload grades file ────────────────────────────────────────────
+        grades_file = request.files.get('grades_file')
+        if not grades_file or not grades_file.filename:
+            flash('Please upload your Copy of Grades.', 'error')
             return render_template('scholarship/apply.html',
                                    scholarship=scholarship, user=user,
                                    editing=False, application=None)
 
-        # Enforce essay minimum word count
-        essay_text = form.get('essay', '').strip()
-        word_count = len(essay_text.split())
-        if word_count < 300:
-            flash(f'Your essay must be at least 300 words (currently {word_count} words).', 'error')
+        grades_result = document_service.save_file(grades_file, user.id, 'grades')
+        if not grades_result['success']:
+            flash(f'Could not upload grades: {grades_result["message"]}', 'error')
             return render_template('scholarship/apply.html',
                                    scholarship=scholarship, user=user,
                                    editing=False, application=None)
 
+        grades_info = grades_result['file_info']
+
+        # ── Build application data from user profile ───────────────────────
+        gpa = user.gwa or 0
         application_data = {
-            'first_name':      form['first_name'],
-            'last_name':       form['last_name'],
-            'student_id':      form['student_id'],
-            'email':           form['email'],
-            'phone':           form['phone'],
-            'course':          form['course'],
-            'year_level':      form['year_level'],
-            'gpa':             gpa,
-            'units_completed': form.get('units_completed', ''),
-            'essay':           essay_text,
+            'first_name':      user.first_name,
+            'last_name':       user.last_name,
+            'student_id':      user.student_id,
+            'email':           user.email,
+            'phone':           user.phone_number or '',
+            'course':          user.course or '',
+            'year_level':      user.year_level or '',
+            'gwa':             gpa,
         }
 
-        # ── Handle file uploads ────────────────────────────────────────────
-        saved_docs    = []
-        upload_errors = []
-        # Store file bytes for CTC detection (transcript specifically)
-        transcript_bytes = None
-        transcript_ext   = None
-
-        for field_name in ['transcript', 'good_moral', 'birth_cert', 'awards']:
-            file = request.files.get(field_name)
-            if file and file.filename:
-                if field_name == 'transcript':
-                    transcript_bytes = file.read()
-                    transcript_ext   = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
-                    file.seek(0)   # reset stream for document_service
-                result = document_service.save_file(file, user.id, field_name)
-                if result['success']:
-                    saved_docs.append(result['file_info'])
-                else:
-                    upload_errors.append(f"{field_name}: {result['message']}")
-
-        # transcript and good_moral are required
-        uploaded_categories = {d['category'] for d in saved_docs}
-        for required_doc in ['transcript', 'good_moral']:
-            if required_doc not in uploaded_categories:
-                upload_errors.append(f'{required_doc.replace("_", " ").title()} is required.')
-
-        if upload_errors:
-            flash('Document errors: ' + '; '.join(upload_errors), 'error')
-            return render_template('scholarship/apply.html',
-                                   scholarship=scholarship, user=user)
-
         # ── Save application ───────────────────────────────────────────────
-        # Sanitise saved_docs for JSON storage — convert any datetime to ISO string
-        json_safe_docs = []
-        for d in saved_docs:
-            safe = dict(d)
-            if hasattr(safe.get('uploaded_at'), 'isoformat'):
-                safe['uploaded_at'] = safe['uploaded_at'].isoformat()
-            json_safe_docs.append(safe)
-
         application = ScholarshipApplication(
             scholarship_id=scholarship_id,
             applicant_id=user.id,
             application_data=application_data,
-            documents=json_safe_docs,
+            documents=[],
             status=ApplicationStatus.PENDING,
         )
         db.session.add(application)
-        db.session.flush()   # get application.id before committing
+        db.session.flush()
 
-        # Persist Document records (run CTC detection on transcript)
-        from app.services.ocr_service import detect_ctc_stamp
-        for doc_info in saved_docs:
-            ctc_result = None
-            if doc_info['category'] == 'transcript' and transcript_bytes:
-                try:
-                    ctc = detect_ctc_stamp(transcript_bytes, transcript_ext or doc_info['file_type'])
-                    ctc_result = ctc.get('detected')   # True/False/None
-                    logger.info(f"CTC detection on transcript: detected={ctc_result}, "
-                                f"confidence={ctc.get('confidence')}, notes={ctc.get('notes')}")
-                except Exception as ctc_err:
-                    logger.warning(f'CTC detection error: {ctc_err}')
+        # Save grades document record
+        doc = Document(
+            user_id=user.id,
+            application_id=application.id,
+            original_filename=grades_info['original_filename'],
+            stored_filename=grades_info['stored_filename'],
+            file_path=grades_info['file_path'],
+            file_size=grades_info['file_size'],
+            category='grades',
+            file_type=grades_info['file_type'],
+            cloudinary_url=grades_info.get('cloudinary_url'),
+            cloudinary_public_id=grades_info.get('cloudinary_public_id'),
+        )
+        db.session.add(doc)
 
-            doc = Document(
-                user_id=user.id,
-                application_id=application.id,
-                original_filename=doc_info['original_filename'],
-                stored_filename=doc_info['stored_filename'],
-                file_path=doc_info['file_path'],
-                file_size=doc_info['file_size'],
-                category=doc_info['category'],
-                file_type=doc_info['file_type'],
-                ctc_detected=ctc_result,
-                cloudinary_url=doc_info.get('cloudinary_url'),
-                cloudinary_public_id=doc_info.get('cloudinary_public_id'),
-            )
-            db.session.add(doc)
-
-        # Update applicant counter on scholarship
+        # Update applicant counter
         scholarship.current_applicants = (scholarship.current_applicants or 0) + 1
-
-        # Update user profile fields if not already set
-        if not user.student_id:
-            user.student_id = form['student_id']
-        if not user.course:
-            user.course = form['course']
-        if not user.year_level:
-            user.year_level = form['year_level']
 
         db.session.commit()
 
         # ── Notifications ──────────────────────────────────────────────────
         notification_service.send_scholarship_application_received(
-            user.email,
-            user.phone_number or '',
-            user.id,
-            scholarship.title,
+            user.email, user.phone_number or '', user.id, scholarship.title,
         )
 
         from app.services.audit_service import log_action
         log_action('application.submit',
                    f'Student {user.get_full_name()} ({user.student_id}) submitted application '
-                   f'#{application.id} for "{scholarship.title}". '
-                   f'GWA: {application_data.get("gpa", "N/A")}, '
-                   f'Course: {application_data.get("course", "N/A")}, '
-                   f'Year: {application_data.get("year_level", "N/A")}.',
+                   f'#{application.id} for "{scholarship.title}". GWA: {gpa}.',
                    category='application', target_type='application', target_id=application.id)
 
-        flash(f'Your application for "{scholarship.title}" has been submitted successfully!', 'success')
+        flash(f'Your application for "{scholarship.title}" has been submitted!', 'success')
         return redirect(url_for('student.my_applications'))
 
     return render_template('scholarship/apply.html', scholarship=scholarship, user=user,
