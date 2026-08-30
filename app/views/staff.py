@@ -542,22 +542,9 @@ def send_renewal_reminder(app_id):
 
 @staff_bp.route('/students')
 @role_required('staff')
-def view_students():
-    q      = request.args.get('q', '').strip()
-    course = request.args.get('course', '')
-    query  = User.query.filter_by(user_type='student')
-    if q:
-        query = query.filter(db.or_(
-            User.first_name.ilike(f'%{q}%'), User.last_name.ilike(f'%{q}%'),
-            User.username.ilike(f'%{q}%'), User.student_id.ilike(f'%{q}%'),
-        ))
-    if course:
-        query = query.filter(User.course.ilike(f'%{course}%'))
-    students = query.order_by(User.last_name.asc()).all()
-    courses  = sorted({c[0] for c in db.session.query(User.course).filter(
-        User.user_type == 'student', User.course.isnot(None)).distinct().all() if c[0]})
-    return render_template('staff/students.html', students=students, q=q,
-                           course=course, courses=courses)
+def students():
+    """Redirect to the main student directory."""
+    return redirect(url_for('staff.student_directory'))
 
 
 @staff_bp.route('/students/directory')
