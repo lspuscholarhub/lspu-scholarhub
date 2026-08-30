@@ -53,11 +53,13 @@ class Scholarship(db.Model):
         return student_id in self.get_allowed_ids()
 
     def is_application_open(self):
-        return (
-            self.status == ScholarshipStatus.ACTIVE and
-            self.application_deadline > datetime.utcnow() and
-            (self.max_applicants is None or self.current_applicants < self.max_applicants)
-        )
+        if self.status != ScholarshipStatus.ACTIVE:
+            return False
+        if self.application_deadline is not None and self.application_deadline < datetime.utcnow():
+            return False
+        if self.max_applicants is not None and self.current_applicants >= self.max_applicants:
+            return False
+        return True
 
     def increment_applicants(self):
         if self.current_applicants is not None:
