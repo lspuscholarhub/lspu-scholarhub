@@ -805,10 +805,22 @@ def view_reg_document(uid, doc_type):
     if file_path.startswith('http://') or file_path.startswith('https://'):
         try:
             import urllib.request as _ur
-            req = _ur.Request(file_path)
+            # Detect correct resource type for signed URL
+            is_image = ext in ('jpg', 'jpeg', 'png') or '/image/upload/' in file_path
+            fetch_url = file_path
+            cid = student.cor_cloudinary_id if doc_type == 'cor' else student.grades_cloudinary_id
+            if cid:
+                from app.services.storage_service import get_signed_url
+                signed = get_signed_url(cid, resource_type='image' if is_image else 'raw')
+                if signed:
+                    fetch_url = signed
+            req = _ur.Request(fetch_url)
             req.add_header('User-Agent', 'LSPU-ScholarHub/1.0')
             with _ur.urlopen(req, timeout=30) as resp:
                 file_data = resp.read()
+            # Use correct mime for images
+            if is_image and mime == 'application/pdf':
+                mime = 'image/jpeg' if ext in ('jpg','jpeg') else 'image/png'
             return Response(
                 file_data,
                 mimetype=mime,

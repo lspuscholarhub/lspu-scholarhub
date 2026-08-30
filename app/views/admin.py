@@ -1485,31 +1485,40 @@ def view_reg_document(uid, doc_type):
         try:
             import urllib.request
             from flask import Response
-            cid = student.cor_cloudinary_id if doc_type == 'cor' else student.grades_cloudinary_id
-            # Generate signed URL if we have a public_id
+
+            # Determine resource type from URL or extension
+            ext = file_path.rsplit('.', 1)[-1].lower() if '.' in file_path else 'pdf'
+            # Cloudinary image URLs contain /image/upload/
+            is_image = ext in ('jpg', 'jpeg', 'png') or '/image/upload/' in file_path
+            res_type = 'image' if is_image else 'raw'
+
             fetch_url = file_path
+            cid = student.cor_cloudinary_id if doc_type == 'cor' else student.grades_cloudinary_id
             if cid:
                 from app.services.storage_service import get_signed_url
-                signed = get_signed_url(cid, resource_type='raw')
+                signed = get_signed_url(cid, resource_type=res_type)
                 if signed:
                     fetch_url = signed
-            # Stream file through Flask
+
             req = urllib.request.Request(fetch_url)
             req.add_header('User-Agent', 'LSPU-ScholarHub/1.0')
             with urllib.request.urlopen(req, timeout=30) as resp:
                 file_data = resp.read()
-            ext = file_path.rsplit('.', 1)[-1].lower() if '.' in file_path else 'pdf'
+
             mime_map = {
                 'pdf': 'application/pdf',
                 'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png',
             }
-            mime  = mime_map.get(ext, 'application/octet-stream')
+            mime  = mime_map.get(ext, 'image/jpeg' if is_image else 'application/pdf')
             label = 'COR' if doc_type == 'cor' else 'Grades'
             fname = f"{student.student_id}_{label}.{ext}"
             return Response(
                 file_data,
                 mimetype=mime,
-                headers={'Content-Disposition': f'inline; filename="{fname}"'}
+                headers={
+                    'Content-Disposition': f'inline; filename="{fname}"',
+                    'Content-Length': str(len(file_data)),
+                }
             )
         except Exception as e:
             flash(f'Could not load file: {e}', 'error')
