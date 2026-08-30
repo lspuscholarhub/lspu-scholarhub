@@ -169,7 +169,7 @@ def _send_credentials_email(user, temp_password):
         </table>
         <p style="color:#dc3545;"><strong>⚠️ Important:</strong> Please log in and change your password immediately under <em>My Account → Profile</em>.</p>
         <p>You can log in at: <a href="{login_url}">{login_url}</a></p>
-        <p>If you have any questions, contact us at <a href="mailto:scholarships@lspu.edu.ph">scholarships@lspu.edu.ph</a> or call (049) 576-1234.</p>
+        <p>If you have any questions, contact us at <a href="mailto:lspu.scholarhub@gmail.com">lspu.scholarhub@gmail.com</a> or call 0968-365-2615.</p>
         <p>Best regards,<br><strong>LSPU Scholarship Office</strong></p>
         """
         notification_service.send_email(user.email, subject, message)

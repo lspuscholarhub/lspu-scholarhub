@@ -110,7 +110,7 @@ def chat():
     except Exception as e:
         return jsonify({
             'response':    ('Sorry, I encountered an error. Please try again or '
-                            'contact the scholarship office at (049) 576-1234.'),
+                            'contact the scholarship office at 0968-365-2615.'),
             'source':      'error',
             'category':    'error',
             'intent':      'error',

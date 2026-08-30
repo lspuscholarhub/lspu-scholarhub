@@ -42,12 +42,12 @@ def chatbot():
             'gpa requirement': 'Generally, you need a GPA of at least 2.5 for most scholarships, but Academic Excellence requires 1.75 or better.',
             
             # Contact and Help
-            'contact': 'You can reach us at: Email: info@lspu-scholarhub.edu, Phone: (049) 576-1234, or visit our office at the Student Affairs Building.',
+            'contact': 'You can reach us at: Email: lspu.scholarhub@gmail.com, Phone: 0968-365-2615, or visit our office at the Student Affairs Building.',
             'help': 'I can help you with: finding scholarships, application procedures, requirements, deadlines, and general information about our services.',
             'thank you': 'You\'re welcome! If you have more questions, feel free to ask anytime.',
             
             # Default responses
-            'default': 'I understand your question. For more specific information, please check our scholarship pages or contact our office at (049) 576-1234.',
+            'default': 'I understand your question. For more specific information, please check our scholarship pages or contact our office at 0968-365-2615.',
             'i don\'t understand': 'I apologize. Could you please rephrase your question? You can ask about scholarships, applications, requirements, or deadlines.',
         }
         

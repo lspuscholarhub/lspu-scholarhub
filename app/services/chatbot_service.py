@@ -177,8 +177,8 @@ def _build_system_prompt(user_id=None):
 - **University**: Laguna State Polytechnic University (LSPU), Sta. Cruz, Laguna, Philippines
 - **Scholarship Office**: Student Affairs Building, 2nd Floor
 - **Hours**: Monday–Friday, 8:00 AM – 5:00 PM
-- **Email**: scholarships@lspu.edu.ph
-- **Phone**: (049) 576-1234
+- **Email**: lspu.scholarhub@gmail.com
+- **Phone**: 0968-365-2615
 
 ## How LSPU ScholarHub Works
 1. Students register an account on the system.
@@ -376,7 +376,7 @@ def _rule_based_response(user_message, user_id=None):
     if intent == 'verification_inquiry':
         return ("**Account verification** is required before you can apply for scholarships.\n\n"
                 "To get verified:\n"
-                "1. Contact the scholarship office at **scholarships@lspu.edu.ph**\n"
+                "1. Contact the scholarship office at **lspu.scholarhub@gmail.com**\n"
                 "2. Or visit the **Student Affairs Building, 2nd Floor**\n"
                 "3. An admin will verify your account\n\n"
                 "Once verified, you'll be able to apply for any open scholarship.")
@@ -399,8 +399,8 @@ def _rule_based_response(user_message, user_id=None):
     if intent == 'contact_inquiry':
         return ("**Scholarship Office Contact:**\n"
                 "- 📍 Student Affairs Building, 2nd Floor, LSPU Sta. Cruz Campus\n"
-                "- 📧 scholarships@lspu.edu.ph\n"
-                "- 📞 (049) 576-1234\n"
+                "- 📧 lspu.scholarhub@gmail.com\n"
+                "- 📞 0968-365-2615\n"
                 "- 🕐 Monday–Friday, 8:00 AM – 5:00 PM")
 
     return ("I can help with: available scholarships, how to apply, eligibility, "
