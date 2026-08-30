@@ -181,6 +181,7 @@ def apply_scholarship(scholarship_id):
 
         # ── Build application data from user profile ───────────────────────
         gpa = user.gwa or 0
+        units = form.get('units_enrolled', '').strip()
         application_data = {
             'first_name':      user.first_name,
             'last_name':       user.last_name,
@@ -190,7 +191,11 @@ def apply_scholarship(scholarship_id):
             'course':          user.course or '',
             'year_level':      user.year_level or '',
             'gwa':             gpa,
+            'units_enrolled':  int(units) if units.isdigit() else None,
         }
+        # Update user's units if provided
+        if units.isdigit():
+            user.units_enrolled = int(units)
 
         # ── Save application ───────────────────────────────────────────────
         application = ScholarshipApplication(

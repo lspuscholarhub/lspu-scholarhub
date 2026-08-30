@@ -25,6 +25,7 @@ class DocumentService:
             'parents_income':   ['pdf', 'doc', 'docx'],
             'certificate':      ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
             'registration':     ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
+            'grades':           ['pdf', 'jpg', 'jpeg', 'png'],
             'general':          ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
         }
         

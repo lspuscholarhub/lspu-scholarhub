@@ -92,6 +92,12 @@
                 <label class="form-label fw-semibold small">Current GWA</label>
                 <input type="text" class="form-control" name="gpa" value="{{ user.gwa or '' }}" readonly style="background:#f8f9fa;">
               </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold small">Units Enrolled</label>
+                <input type="number" class="form-control" name="units_enrolled" min="0"
+                       placeholder="e.g. 21" value="{{ user.units_enrolled or '' }}">
+                <div class="form-text">Enter your current enrolled units.</div>
+              </div>
             </div>
           </div>
         </div>
