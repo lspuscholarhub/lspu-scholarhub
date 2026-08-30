@@ -108,7 +108,7 @@
           <thead class="table-light">
             <tr>
               <th>Student</th><th>Student ID</th><th>Year / Course</th>
-              <th>Town</th><th>Gender</th><th>GWA</th><th>Documents</th><th></th>
+              <th>Town</th><th>Gender</th><th>GWA</th><th>Units</th><th>Documents</th><th></th>
             </tr>
           </thead>
           <tbody>
@@ -161,6 +161,14 @@
                   {% endif %}
                 {% else %}
                   <span class="text-muted small">Not set</span>
+                {% endif %}
+              </td>
+              <!-- Units Enrolled -->
+              <td class="small text-center">
+                {% if s.units_enrolled %}
+                  <span class="badge bg-secondary">{{ s.units_enrolled }}</span>
+                {% else %}
+                  <span class="text-muted">—</span>
                 {% endif %}
               </td>
               <td class="small">
