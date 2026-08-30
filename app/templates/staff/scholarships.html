@@ -41,12 +41,6 @@
               </td>
               <td class="pe-4">
                 <div class="d-flex gap-1">
-                  <form method="POST" action="{{ url_for('staff.toggle_scholarship_visibility', sid=s.id) }}" class="d-inline">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button class="btn btn-sm {% if s.is_hidden %}btn-outline-success{% else %}btn-outline-secondary{% endif %}" title="{% if s.is_hidden %}Make Public{% else %}Hide{% endif %}">
-                      <i class="bi {% if s.is_hidden %}bi-eye{% else %}bi-eye-slash{% endif %}"></i>
-                    </button>
-                  </form>
                   <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editModal{{ s.id }}"><i class="bi bi-pencil"></i></button>
                   <form method="POST" action="{{ url_for('staff.delete_scholarship', sid=s.id) }}" class="d-inline" onsubmit="return confirm('Delete this scholarship?')">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
