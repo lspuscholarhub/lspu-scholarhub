@@ -26,7 +26,7 @@
               <td class="ps-4"><strong>{{ s.title }}</strong><br><small class="text-muted">{{ s.description[:60] }}…</small></td>
               <td>{% if s.award_amount %}₱{{ "{:,.0f}".format(s.award_amount) }}{% else %}<span class="text-muted">TBA</span>{% endif %}</td>
               <td>{{ s.current_applicants or 0 }}{% if s.max_applicants %}/{{ s.max_applicants }}{% endif %}</td>
-              <td class="small">{{ s.application_deadline.strftime('%b %d, %Y') }}</td>
+              <td class="small">{{ s.application_deadline.strftime('%b %d, %Y') if s.application_deadline else '—' }}</td>
               <td>
                 {% if s.status.value=='active' %}<span class="badge bg-success">Active</span>
                 {% elif s.status.value=='closed' %}<span class="badge bg-secondary">Closed</span>

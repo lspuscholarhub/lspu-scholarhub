@@ -207,7 +207,7 @@
               <td>
                 <strong>{{ row.scholarship.title }}</strong><br>
                 <small class="text-muted">
-                  Deadline: {{ row.scholarship.application_deadline.strftime('%b %d, %Y') }}
+                  Deadline: {{ row.scholarship.application_deadline.strftime('%b %d, %Y') if row.scholarship.application_deadline else '—' }}
                 </small>
               </td>
               <td>{{ row.total }}</td>

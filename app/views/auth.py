@@ -144,8 +144,10 @@ def _save_registration_file(file, user_student_id, file_type):
 def _send_credentials_email(user, temp_password):
     """Send login credentials to the newly registered student."""
     try:
+        from flask import url_for as _url_for
         from app.services.notification_service import notification_service
 
+        login_url = _url_for('auth.login', _external=True)
         subject = "Welcome to LSPU ScholarHub — Your Login Credentials"
         message = f"""
         <h2>Welcome to LSPU ScholarHub! 🎓</h2>
@@ -166,7 +168,7 @@ def _send_credentials_email(user, temp_password):
           </tr>
         </table>
         <p style="color:#dc3545;"><strong>⚠️ Important:</strong> Please log in and change your password immediately under <em>My Account → Profile</em>.</p>
-        <p>You can log in at: <a href="http://localhost:5000/auth/login">http://localhost:5000/auth/login</a></p>
+        <p>You can log in at: <a href="{login_url}">{login_url}</a></p>
         <p>If you have any questions, contact us at <a href="mailto:scholarships@lspu.edu.ph">scholarships@lspu.edu.ph</a> or call (049) 576-1234.</p>
         <p>Best regards,<br><strong>LSPU Scholarship Office</strong></p>
         """

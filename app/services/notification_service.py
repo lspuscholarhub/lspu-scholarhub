@@ -24,7 +24,40 @@ class NotificationService:
             'password': os.environ.get('MAIL_PASSWORD'),
             'use_tls': os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
         }
-    
+
+    def _get_base_url(self):
+        """Get the application's base URL for email links.
+
+        Priority:
+          1. BASE_URL environment variable (set in production)
+          2. RAILWAY_PUBLIC_DOMAIN (auto-set by Railway)
+          3. Flask url_for with _external=True (when request context is available)
+          4. Fallback to localhost:5000 (development only)
+        """
+        # Check for explicitly configured base URL
+        base_url = os.environ.get('BASE_URL', '').strip().rstrip('/')
+        if base_url:
+            return base_url
+
+        # Check Railway's auto-set domain variable
+        railway_domain = os.environ.get('RAILWAY_PUBLIC_DOMAIN', '').strip()
+        if railway_domain:
+            return f'https://{railway_domain}'
+
+        # Try to use Flask's url_for (requires request context)
+        try:
+            from flask import url_for
+            # url_for with _external=True generates the full URL
+            return url_for('main.index', _external=True).rstrip('/')
+        except RuntimeError:
+            # No request context (e.g., called from background thread)
+            pass
+        except Exception:
+            pass
+
+        # Fallback for development
+        return 'http://localhost:5000'
+
     def send_email(self, to_email, subject, message, template_data=None):
         """
         Send email notification.
@@ -511,7 +544,7 @@ class NotificationService:
         <p><strong>Deadline:</strong> {deadline_date.strftime('%B %d, %Y')}</p>
         <p><strong>Days Remaining:</strong> {days_left} days</p>
         <p>Don't miss this opportunity! Submit your application before the deadline.</p>
-        <p><a href="http://localhost:5000/scholarships" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Apply Now</a></p>
+        <p><a href="{self._get_base_url()}/scholarship/" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Apply Now</a></p>
         <p>Best regards,<br>LSPU Scholarship Committee</p>
         """
         
@@ -552,7 +585,7 @@ class NotificationService:
             <li>Receive notifications about important updates</li>
             <li>Chat with our AI assistant for instant help</li>
         </ul>
-        <p><a href="http://localhost:5000/scholarships" style="background-color: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Explore Scholarships</a></p>
+        <p><a href="{self._get_base_url()}/scholarship/" style="background-color: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Explore Scholarships</a></p>
         <p>If you have any questions, feel free to contact our scholarship office or use our 24/7 chatbot assistant.</p>
         <p>Best regards,<br>LSPU Scholarship Committee</p>
         """
@@ -561,7 +594,7 @@ class NotificationService:
         email_result = self.send_email(user_email, subject, message)
         
         # Send SMS
-        sms_message = f"LSPU: Welcome to ScholarHub! Explore scholarship opportunities at http://localhost:5000/scholarships"
+        sms_message = f"LSPU: Welcome to ScholarHub! Explore scholarship opportunities at {self._get_base_url()}/scholarship/"
         sms_result = self.send_sms(user_phone, sms_message)
         
         # Create in-app notification
