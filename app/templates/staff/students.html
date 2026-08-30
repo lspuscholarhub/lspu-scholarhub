@@ -46,7 +46,7 @@
           <thead class="table-light">
             <tr>
               <th>Name</th><th>Student ID</th><th>Course & Year</th>
-              <th>Email</th><th>Applications</th><th>Status</th>
+              <th>Email</th><th>GWA</th><th>Units</th><th>Applications</th><th>Status</th><th></th>
             </tr>
           </thead>
           <tbody>
@@ -62,6 +62,26 @@
                 {% if s.year_level %}<br>{{ s.year_level }}{% endif %}
               </td>
               <td class="small">{{ s.email }}</td>
+              <td class="small text-center">
+                {% if s.gwa %}
+                  {% if s.gwa <= 2.25 %}
+                    <span class="badge bg-success">{{ s.gwa }}</span>
+                  {% elif s.gwa <= 3.00 %}
+                    <span class="badge bg-warning text-dark">{{ s.gwa }}</span>
+                  {% else %}
+                    <span class="badge bg-danger">{{ s.gwa }}</span>
+                  {% endif %}
+                {% else %}
+                  <span class="text-muted small">—</span>
+                {% endif %}
+              </td>
+              <td class="small text-center">
+                {% if s.units_enrolled %}
+                  <span class="badge bg-secondary">{{ s.units_enrolled }}</span>
+                {% else %}
+                  <span class="text-muted">—</span>
+                {% endif %}
+              </td>
               <td class="small">
                 {% set app_count = s.applications|length %}
                 {{ app_count }} application{% if app_count != 1 %}s{% endif %}
@@ -77,7 +97,12 @@
                 {% if s.is_verified %}<span class="badge bg-success ms-1">Verified</span>
                 {% else %}<span class="badge bg-warning text-dark ms-1">Unverified</span>{% endif %}
               </td>
-            </tr>
+              <td>
+                <a href="{{ url_for('staff.student_profile', uid=s.id) }}"
+                   class="btn btn-sm btn-outline-primary">
+                  <i class="bi bi-eye me-1"></i>View
+                </a>
+              </td>
             {% endfor %}
           </tbody>
         </table>
