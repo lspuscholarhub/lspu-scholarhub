@@ -23,14 +23,15 @@
           <tbody>
             {% for s in scholarships %}
             <tr>
-              <td class="ps-4"><strong>{{ s.title }}</strong><br><small class="text-muted">{{ s.description[:60] }}…</small></td>
+              <td class="ps-4"><strong>{{ s.title }}</strong><br><small class="text-muted">{{ (s.description[:60] + '…') if s.description else '' }}</small></td>
               <td>{% if s.award_amount %}₱{{ "{:,.0f}".format(s.award_amount) }}{% else %}<span class="text-muted">TBA</span>{% endif %}</td>
               <td>{{ s.current_applicants or 0 }}{% if s.max_applicants %}/{{ s.max_applicants }}{% endif %}</td>
               <td class="small">{{ s.application_deadline.strftime('%b %d, %Y') if s.application_deadline else '—' }}</td>
               <td>
-                {% if s.status.value=='active' %}<span class="badge bg-success">Active</span>
-                {% elif s.status.value=='closed' %}<span class="badge bg-secondary">Closed</span>
-                {% else %}<span class="badge bg-warning text-dark">{{ s.status.value|title }}</span>{% endif %}
+                {% if s.status and s.status.value=='active' %}<span class="badge bg-success">Active</span>
+                {% elif s.status and s.status.value=='closed' %}<span class="badge bg-secondary">Closed</span>
+                {% elif s.status %}<span class="badge bg-warning text-dark">{{ s.status.value|title }}</span>
+                {% else %}<span class="badge bg-secondary">Unknown</span>{% endif %}
               </td>
               <td>
                 {% if s.is_hidden %}
@@ -156,9 +157,9 @@
             <div class="col-md-3"><label class="form-label fw-semibold">Deadline</label><input type="date" class="form-control" name="application_deadline" value="{{ s.application_deadline.strftime('%Y-%m-%d') if s.application_deadline else '' }}"></div>
             <div class="col-md-3"><label class="form-label fw-semibold">Status</label>
               <select class="form-select" name="status">
-                <option value="active" {% if s.status.value=='active' %}selected{% endif %}>Active</option>
-                <option value="inactive" {% if s.status.value=='inactive' %}selected{% endif %}>Inactive</option>
-                <option value="closed" {% if s.status.value=='closed' %}selected{% endif %}>Closed</option>
+                <option value="active" {% if s.status and s.status.value=='active' %}selected{% endif %}>Active</option>
+                <option value="inactive" {% if s.status and s.status.value=='inactive' %}selected{% endif %}>Inactive</option>
+                <option value="closed" {% if s.status and s.status.value=='closed' %}selected{% endif %}>Closed</option>
               </select>
             </div>
           </div>

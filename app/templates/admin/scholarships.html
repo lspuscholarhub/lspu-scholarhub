@@ -43,12 +43,14 @@
               </td>
               <td class="small">{{ s.application_deadline.strftime('%b %d, %Y') if s.application_deadline else '—' }}</td>
               <td>
-                {% if s.status.value == 'active' %}
+                {% if s.status and s.status.value == 'active' %}
                   <span class="badge bg-success"><i class="bi bi-circle-fill me-1" style="font-size:.5rem;"></i>Open</span>
-                {% elif s.status.value == 'closed' %}
+                {% elif s.status and s.status.value == 'closed' %}
                   <span class="badge bg-secondary"><i class="bi bi-circle-fill me-1" style="font-size:.5rem;"></i>Closed</span>
-                {% else %}
+                {% elif s.status %}
                   <span class="badge bg-warning text-dark">{{ s.status.value|title }}</span>
+                {% else %}
+                  <span class="badge bg-secondary">Unknown</span>
                 {% endif %}
               </td>
               <td class="pe-4 text-end">
@@ -56,10 +58,10 @@
                   <!-- Open/Close toggle -->
                   <form method="POST" action="{{ url_for('admin.edit_scholarship', sid=s.id) }}" class="d-inline">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <input type="hidden" name="status" value="{% if s.status.value == 'active' %}closed{% else %}active{% endif %}">
-                    <button class="btn btn-sm {% if s.status.value == 'active' %}btn-outline-secondary{% else %}btn-outline-success{% endif %}"
-                            title="{% if s.status.value == 'active' %}Close Applications{% else %}Reopen Applications{% endif %}">
-                      {% if s.status.value == 'active' %}
+                    <input type="hidden" name="status" value="{% if s.status and s.status.value == 'active' %}closed{% else %}active{% endif %}">
+                    <button class="btn btn-sm {% if s.status and s.status.value == 'active' %}btn-outline-secondary{% else %}btn-outline-success{% endif %}"
+                            title="{% if s.status and s.status.value == 'active' %}Close Applications{% else %}Reopen Applications{% endif %}">
+                      {% if s.status and s.status.value == 'active' %}
                         <i class="bi bi-lock"></i>
                       {% else %}
                         <i class="bi bi-unlock"></i>
@@ -203,9 +205,9 @@
           <div class="mb-3">
             <label class="form-label fw-semibold">Status</label>
             <select class="form-select" name="status">
-              <option value="active" {% if s.status.value=='active' %}selected{% endif %}>Open (Accepting Applications)</option>
-              <option value="closed" {% if s.status.value=='closed' %}selected{% endif %}>Closed (Applications Finished)</option>
-              <option value="inactive" {% if s.status.value=='inactive' %}selected{% endif %}>Inactive</option>
+              <option value="active" {% if s.status and s.status.value=='active' %}selected{% endif %}>Open (Accepting Applications)</option>
+              <option value="closed" {% if s.status and s.status.value=='closed' %}selected{% endif %}>Closed (Applications Finished)</option>
+              <option value="inactive" {% if s.status and s.status.value=='inactive' %}selected{% endif %}>Inactive</option>
             </select>
           </div>
           <div class="border rounded p-3 bg-light">
