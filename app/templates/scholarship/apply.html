@@ -21,7 +21,7 @@
           <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
             <div>
               <h4 class="fw-bold mb-1">{{ scholarship.title }}</h4>
-              <p class="mb-0 opacity-75 small">{{ scholarship.description[:100] }}…</p>
+              <p class="mb-0 opacity-75 small">{{ (scholarship.description[:100] + '…') if scholarship.description else '' }}</p>
             </div>
             <div class="text-end">
               {% if scholarship.award_amount %}

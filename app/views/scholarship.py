@@ -162,12 +162,14 @@ def apply_scholarship(scholarship_id):
         if missing:
             flash(f'Please fill in all required fields: {", ".join(missing)}', 'error')
             return render_template('scholarship/apply.html',
-                                   scholarship=scholarship, user=user)
+                                   scholarship=scholarship, user=user,
+                                   editing=False, application=None)
 
         if not form.get('terms') or not form.get('privacy'):
             flash('You must agree to the terms and privacy policy.', 'error')
             return render_template('scholarship/apply.html',
-                                   scholarship=scholarship, user=user)
+                                   scholarship=scholarship, user=user,
+                                   editing=False, application=None)
 
         try:
             gpa = float(form['gpa'])
@@ -176,7 +178,8 @@ def apply_scholarship(scholarship_id):
         except ValueError:
             flash('GWA must be a number between 1.00 and 5.00.', 'error')
             return render_template('scholarship/apply.html',
-                                   scholarship=scholarship, user=user)
+                                   scholarship=scholarship, user=user,
+                                   editing=False, application=None)
 
         # Enforce essay minimum word count
         essay_text = form.get('essay', '').strip()
@@ -184,7 +187,8 @@ def apply_scholarship(scholarship_id):
         if word_count < 300:
             flash(f'Your essay must be at least 300 words (currently {word_count} words).', 'error')
             return render_template('scholarship/apply.html',
-                                   scholarship=scholarship, user=user)
+                                   scholarship=scholarship, user=user,
+                                   editing=False, application=None)
 
         application_data = {
             'first_name':      form['first_name'],
@@ -310,7 +314,8 @@ def apply_scholarship(scholarship_id):
         flash(f'Your application for "{scholarship.title}" has been submitted successfully!', 'success')
         return redirect(url_for('student.my_applications'))
 
-    return render_template('scholarship/apply.html', scholarship=scholarship, user=user)
+    return render_template('scholarship/apply.html', scholarship=scholarship, user=user,
+                           editing=False, application=None)
 
 
 # ── Student: my applications ──────────────────────────────────────────────────
