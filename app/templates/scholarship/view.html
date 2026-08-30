@@ -12,15 +12,17 @@
           <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
             <h1 class="card-title h3 mb-0">{{ scholarship.title }}</h1>
             <div class="text-end">
-              {% if scholarship.status.value == 'active' %}
+              {% if scholarship.status and scholarship.status.value == 'active' %}
                 <span class="badge bg-success fs-6">Active</span>
-              {% elif scholarship.status.value == 'closed' %}
+              {% elif scholarship.status and scholarship.status.value == 'closed' %}
                 <span class="badge bg-secondary fs-6">Closed</span>
-              {% else %}
+              {% elif scholarship.status %}
                 <span class="badge bg-warning text-dark fs-6">{{ scholarship.status.value|title }}</span>
+              {% else %}
+                <span class="badge bg-secondary fs-6">Unknown</span>
               {% endif %}
               <div class="mt-1 small text-muted">
-                Deadline: {{ scholarship.application_deadline.strftime('%b %d, %Y') }}
+                Deadline: {% if scholarship.application_deadline %}{{ scholarship.application_deadline.strftime('%b %d, %Y') }}{% else %}No deadline set{% endif %}
               </div>
             </div>
           </div>
@@ -90,29 +92,23 @@
 
           <!-- Required Documents -->
           <div class="mb-4">
-            <h4>Required Documents</h4>
-            <ul class="list-group">
-              <li class="list-group-item d-flex justify-content-between">
-                <span><i class="bi bi-file-earmark-pdf text-danger me-2"></i>Transcript of Records</span>
-                <span class="badge bg-danger">Required</span>
-              </li>
-              <li class="list-group-item d-flex justify-content-between">
-                <span><i class="bi bi-file-earmark-pdf text-danger me-2"></i>Certificate of Good Moral</span>
-                <span class="badge bg-danger">Required</span>
-              </li>
-              <li class="list-group-item d-flex justify-content-between">
-                <span><i class="bi bi-file-earmark-text text-danger me-2"></i>Application Essay (300 words)</span>
-                <span class="badge bg-danger">Required</span>
-              </li>
-              <li class="list-group-item d-flex justify-content-between">
-                <span><i class="bi bi-file-earmark-pdf text-warning me-2"></i>Birth Certificate</span>
-                <span class="badge bg-warning text-dark">Optional</span>
-              </li>
-              <li class="list-group-item d-flex justify-content-between">
-                <span><i class="bi bi-file-earmark-pdf text-warning me-2"></i>Academic Awards/Certificates</span>
-                <span class="badge bg-warning text-dark">Optional</span>
-              </li>
-            </ul>
+            <h4>How to Apply</h4>
+            <div class="alert alert-info border-0" style="background:#e8f4fd;">
+              <div class="d-flex align-items-start gap-3">
+                <i class="bi bi-info-circle-fill text-primary fs-4 flex-shrink-0 mt-1"></i>
+                <div>
+                  <p class="fw-semibold mb-2">Application is simple — just 2 steps:</p>
+                  <ol class="mb-2 ps-3">
+                    <li>Confirm your student information (auto-filled from your profile)</li>
+                    <li>Upload your <strong>most updated Copy of Grades</strong> (PDF or image)</li>
+                  </ol>
+                  <p class="mb-0 small text-muted">
+                    <i class="bi bi-shield-check me-1"></i>
+                    No essay, no transcript, no other documents needed. Just your grades!
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Actions -->

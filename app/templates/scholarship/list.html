@@ -42,14 +42,13 @@
               <span class="badge bg-secondary">Closed</span>
             {% endif %}
           </div>
-          <p class="card-text text-muted small flex-grow-1">{{ s.description[:120] }}…</p>
+          <p class="card-text text-muted small flex-grow-1">{{ (s.description[:120] if s.description else 'No description available') }}{% if s.description and s.description|length > 120 %}…{% endif %}</p>
           <div class="mb-3 small text-muted">
             <div><i class="bi bi-cash me-1"></i>
               {% if s.award_amount %}₱{{ "{:,.0f}".format(s.award_amount) }}{% else %}TBA{% endif %}
             </div>
             <div><i class="bi bi-calendar me-1"></i>
-              Deadline: {{ s.application_deadline.strftime('%b %d, %Y') }}
-              {% if days_left >= 0 %}({{ days_left }} days left){% else %}(Expired){% endif %}
+              Deadline: {% if s.application_deadline %}{{ s.application_deadline.strftime('%b %d, %Y') }}{% if days_left >= 0 %}({{ days_left }} days left){% else %}(Expired){% endif %}{% else %}No deadline set{% endif %}
             </div>
             {% if s.max_applicants %}
             <div><i class="bi bi-people me-1"></i>

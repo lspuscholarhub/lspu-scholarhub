@@ -104,7 +104,7 @@ def view_scholarship(scholarship_id):
             else:
                 already_applied = True  # active application exists
 
-    days_left = (scholarship.application_deadline - datetime.utcnow()).days
+    days_left = (scholarship.application_deadline - datetime.utcnow()).days if scholarship.application_deadline else None
     fill_pct  = 0
     if scholarship.max_applicants:
         fill_pct = int((scholarship.current_applicants or 0) / scholarship.max_applicants * 100)
@@ -303,68 +303,67 @@ def edit_application(app_id):
     if request.method == 'POST':
         form_data = application.application_data or {}
 
-        # Update editable fields
+        # Update editable fields (simplified form — no essay, no old document categories)
         for field in ['first_name', 'last_name', 'phone', 'course',
-                      'year_level', 'gpa', 'units_completed', 'essay']:
+                      'year_level', 'gwa', 'units_enrolled']:
             val = request.form.get(field, '').strip()
             if val:
-                form_data[field] = val
-
-        # Validate essay word count
-        essay_text = form_data.get('essay', '')
-        word_count = len(essay_text.split())
-        if word_count < 300:
-            flash(f'Essay must be at least 300 words (currently {word_count}).', 'error')
-            return render_template('scholarship/apply.html',
-                                   scholarship=application.scholarship,
-                                   user=user,
-                                   application=application,
-                                   editing=True)
+                if field == 'gwa':
+                    try:
+                        form_data[field] = float(val)
+                    except ValueError:
+                        pass
+                elif field == 'units_enrolled':
+                    try:
+                        form_data[field] = int(val)
+                    except ValueError:
+                        pass
+                else:
+                    form_data[field] = val
 
         application.application_data = form_data
 
-        # Handle optional document replacements
-        for field_name in ['transcript', 'good_moral', 'birth_cert', 'awards']:
-            file = request.files.get(field_name)
-            if file and file.filename:
-                result = document_service.save_file(file, user.id, field_name)
-                if result['success']:
-                    info = result['file_info']
-                    existing_doc = Document.query.filter_by(
-                        application_id=application.id,
-                        category=field_name
-                    ).first()
-                    if existing_doc:
-                        # Delete old file
-                        if existing_doc.cloudinary_public_id:
-                            from app.services.storage_service import delete_file as _del
-                            _del(public_id=existing_doc.cloudinary_public_id)
-                        elif existing_doc.file_path:
-                            document_service.delete_file(existing_doc.file_path)
-                        existing_doc.original_filename    = info['original_filename']
-                        existing_doc.stored_filename      = info['stored_filename']
-                        existing_doc.file_path            = info['file_path']
-                        existing_doc.file_size            = info['file_size']
-                        existing_doc.file_type            = info['file_type']
-                        existing_doc.cloudinary_url       = info.get('cloudinary_url')
-                        existing_doc.cloudinary_public_id = info.get('cloudinary_public_id')
-                        existing_doc.is_verified          = False
-                    else:
-                        new_doc = Document(
-                            user_id=user.id,
-                            application_id=application.id,
-                            original_filename=info['original_filename'],
-                            stored_filename=info['stored_filename'],
-                            file_path=info['file_path'],
-                            file_size=info['file_size'],
-                            category=field_name,
-                            file_type=info['file_type'],
-                            cloudinary_url=info.get('cloudinary_url'),
-                            cloudinary_public_id=info.get('cloudinary_public_id'),
-                        )
-                        db.session.add(new_doc)
+        # Handle optional grades file replacement
+        grades_file = request.files.get('grades_file')
+        if grades_file and grades_file.filename:
+            result = document_service.save_file(grades_file, user.id, 'grades')
+            if result['success']:
+                info = result['file_info']
+                existing_doc = Document.query.filter_by(
+                    application_id=application.id,
+                    category='grades'
+                ).first()
+                if existing_doc:
+                    # Delete old file from Cloudinary if applicable
+                    if existing_doc.cloudinary_public_id:
+                        from app.services.storage_service import delete_file as _del
+                        _del(public_id=existing_doc.cloudinary_public_id)
+                    elif existing_doc.file_path:
+                        document_service.delete_file(existing_doc.file_path)
+                    existing_doc.original_filename    = info['original_filename']
+                    existing_doc.stored_filename      = info['stored_filename']
+                    existing_doc.file_path            = info['file_path']
+                    existing_doc.file_size            = info['file_size']
+                    existing_doc.file_type            = info['file_type']
+                    existing_doc.cloudinary_url       = info.get('cloudinary_url')
+                    existing_doc.cloudinary_public_id = info.get('cloudinary_public_id')
+                    existing_doc.is_verified          = False
                 else:
-                    flash(f'Could not replace {field_name}: {result["message"]}', 'warning')
+                    new_doc = Document(
+                        user_id=user.id,
+                        application_id=application.id,
+                        original_filename=info['original_filename'],
+                        stored_filename=info['stored_filename'],
+                        file_path=info['file_path'],
+                        file_size=info['file_size'],
+                        category='grades',
+                        file_type=info['file_type'],
+                        cloudinary_url=info.get('cloudinary_url'),
+                        cloudinary_public_id=info.get('cloudinary_public_id'),
+                    )
+                    db.session.add(new_doc)
+            else:
+                flash(f'Could not replace grades: {result["message"]}', 'warning')
 
         db.session.commit()
         flash('Application updated successfully.', 'success')

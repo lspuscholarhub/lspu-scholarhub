@@ -910,10 +910,35 @@ def export_report():
 def download_document(doc_id):
     """Allow admin to download any student document."""
     import os
-    from flask import send_file as _send_file
+    from flask import send_file as _send_file, Response
     from app.models.document import Document
 
     doc = Document.query.get_or_404(doc_id)
+
+    # Cloudinary proxy
+    if doc.cloudinary_public_id or (doc.file_path and (doc.file_path.startswith('http://') or doc.file_path.startswith('https://'))):
+        try:
+            import urllib.request as _ur
+            fetch_url = doc.cloudinary_url or doc.file_path
+            if doc.cloudinary_public_id:
+                from app.services.storage_service import get_signed_url
+                res_type = 'image' if (doc.file_type or '').lower() in ('jpg','jpeg','png') else 'raw'
+                signed = get_signed_url(doc.cloudinary_public_id, resource_type=res_type)
+                if signed:
+                    fetch_url = signed
+            req = _ur.Request(fetch_url)
+            req.add_header('User-Agent', 'LSPU-ScholarHub/1.0')
+            with _ur.urlopen(req, timeout=30) as resp:
+                file_data = resp.read()
+            mime_map = {'pdf':'application/pdf','jpg':'image/jpeg','jpeg':'image/jpeg',
+                        'png':'image/png','doc':'application/msword',
+                        'docx':'application/vnd.openxmlformats-officedocument.wordprocessingml.document'}
+            mime = mime_map.get((doc.file_type or '').lower(), 'application/octet-stream')
+            return Response(file_data, mimetype=mime,
+                            headers={'Content-Disposition': f'attachment; filename="{doc.original_filename}"'})
+        except Exception as e:
+            flash(f'Could not download file: {e}', 'error')
+            return redirect(url_for('admin.manage_applications'))
 
     file_path = doc.file_path
     if not os.path.isabs(file_path):
@@ -934,10 +959,40 @@ def download_document(doc_id):
 def view_document(doc_id):
     """Allow admin to view/preview a document inline."""
     import os
-    from flask import send_file as _send_file
+    from flask import send_file as _send_file, Response
     from app.models.document import Document
 
     doc = Document.query.get_or_404(doc_id)
+
+    mime_map = {
+        'pdf': 'application/pdf',
+        'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png',
+        'doc': 'application/msword',
+        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    }
+    mime = mime_map.get((doc.file_type or '').lower(), 'application/octet-stream')
+
+    # Cloudinary proxy
+    if doc.cloudinary_public_id or (doc.file_path and (doc.file_path.startswith('http://') or doc.file_path.startswith('https://'))):
+        try:
+            import urllib.request as _ur
+            fetch_url = doc.cloudinary_url or doc.file_path
+            if doc.cloudinary_public_id:
+                from app.services.storage_service import get_signed_url
+                res_type = 'image' if (doc.file_type or '').lower() in ('jpg','jpeg','png') else 'raw'
+                signed = get_signed_url(doc.cloudinary_public_id, resource_type=res_type)
+                if signed:
+                    fetch_url = signed
+            req = _ur.Request(fetch_url)
+            req.add_header('User-Agent', 'LSPU-ScholarHub/1.0')
+            with _ur.urlopen(req, timeout=30) as resp:
+                file_data = resp.read()
+            return Response(file_data, mimetype=mime,
+                            headers={'Content-Disposition': f'inline; filename="{doc.original_filename}"',
+                                     'Content-Length': str(len(file_data))})
+        except Exception as e:
+            flash(f'Could not load file: {e}', 'error')
+            return redirect(url_for('admin.manage_applications'))
 
     file_path = doc.file_path
     if not os.path.isabs(file_path):
@@ -949,13 +1004,6 @@ def view_document(doc_id):
         flash('File not found on server.', 'error')
         return redirect(url_for('admin.manage_applications'))
 
-    mime_map = {
-        'pdf': 'application/pdf',
-        'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png',
-        'doc': 'application/msword',
-        'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    }
-    mime = mime_map.get((doc.file_type or '').lower(), 'application/octet-stream')
     return _send_file(file_path, mimetype=mime, as_attachment=False,
                       download_name=doc.original_filename)
 

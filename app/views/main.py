@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, session
+from app import db
 
 main_bp = Blueprint('main', __name__)
 
@@ -17,8 +18,16 @@ def index():
 
     all_active = (Scholarship.query
                   .filter_by(status=ScholarshipStatus.ACTIVE)
-                  .filter(Scholarship.application_deadline > datetime.utcnow())
-                  .order_by(Scholarship.application_deadline.asc())
+                  .filter(
+                      db.or_(
+                          Scholarship.application_deadline > datetime.utcnow(),
+                          Scholarship.application_deadline.is_(None)
+                      )
+                  )
+                  .order_by(
+                      db.case((Scholarship.application_deadline.is_(None), 1), else_=0),
+                      Scholarship.application_deadline.asc()
+                  )
                   .all())
 
     # Apply visibility filter:
@@ -32,11 +41,6 @@ def index():
         recent_scholarships = [s for s in all_active if s.is_visible_to(student_id)][:4]
 
     return render_template('index.html', recent_scholarships=recent_scholarships)
-
-@main_bp.route('/about')
-def about():
-    """About page"""
-    return render_template('about.html')
 
 @main_bp.route('/contact')
 def contact():
