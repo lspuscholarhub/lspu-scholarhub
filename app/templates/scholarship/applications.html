@@ -159,7 +159,7 @@
         {% endif %}
 
         <!-- Deadline warning for editable apps -->
-        {% if sv in ('pending','under_review') %}
+        {% if sv in ('pending','under_review') and app.scholarship.application_deadline %}
         {% set days_left = (app.scholarship.application_deadline - now).days %}
         {% if days_left >= 0 and days_left <= 7 %}
         <div class="mt-2 alert alert-warning py-1 px-2 small mb-0">

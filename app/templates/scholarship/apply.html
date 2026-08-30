@@ -27,6 +27,7 @@
               {% if scholarship.award_amount %}
               <div class="fs-4 fw-bold text-warning">₱{{ "{:,.0f}".format(scholarship.award_amount) }}</div>
               {% endif %}
+              {% if scholarship.application_deadline %}
               {% set days_left = (scholarship.application_deadline - now).days %}
               <div class="small opacity-75">
                 Deadline: {{ scholarship.application_deadline.strftime('%b %d, %Y') }}
@@ -38,6 +39,9 @@
                   <span class="badge bg-secondary ms-1">Expired</span>
                 {% endif %}
               </div>
+              {% else %}
+              <div class="small opacity-75">No deadline set</div>
+              {% endif %}
             </div>
           </div>
         </div>
