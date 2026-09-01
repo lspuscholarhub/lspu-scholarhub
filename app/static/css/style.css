@@ -356,3 +356,21 @@ footer { margin-top: auto; }
 ::-webkit-scrollbar-track { background: var(--sh-gray-50); }
 ::-webkit-scrollbar-thumb { background: var(--sh-gray-300); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--sh-gray-500); }
+
+/* ── Footer centering ────────────────────────────────────────────────────── */
+footer .container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+footer .d-flex {
+  justify-content: center;
+}
+
+/* ── Dashboard cards alignment ────────────────────────────────────────────── */
+.card-body.text-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}

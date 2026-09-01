@@ -312,46 +312,30 @@
 <!-- ── Footer — only for guests and students ──────────────────────────────── -->
 {% if not role or role == 'student' %}
 <footer class="mt-0" style="background:#1a3a6b;color:#e2e8f0;">
-  <div class="container py-4">
-    <div class="row align-items-center">
-      <div class="col-md-5 mb-3 mb-md-0">
-        <div class="d-flex align-items-center gap-2 mb-1">
-          <img src="{{ url_for('static', filename='images/lspu-logo.png') }}" alt="LSPU" style="height:28px;width:28px;object-fit:contain;">
-          <span class="fw-bold">LSPU ScholarHub</span>
-        </div>
-        <p class="small mb-0 opacity-75">
-          AI-Enabled Scholarship Management and Monitoring System<br>
-          Laguna State Polytechnic University
-        </p>
-      </div>
-      <div class="col-md-4 mb-3 mb-md-0">
-        <p class="small mb-1 opacity-75">
-          <i class="bi bi-geo-alt me-1 text-warning"></i>
-          Student Affairs Building, 2nd Floor, LSPU Sta. Cruz
-        </p>
-        <p class="small mb-1 opacity-75">
-          <i class="bi bi-envelope me-1 text-warning"></i>
-          lspu.scholarhub@gmail.com
-        </p>
-        <p class="small mb-0 opacity-75">
-          <i class="bi bi-telephone me-1 text-warning"></i>
-          0968-365-2615 &nbsp;|&nbsp; Mon–Fri, 8AM–5PM
-        </p>
-      </div>
-      <div class="col-md-3 text-md-end">
-        {% if not role %}
-        <a href="{{ url_for('scholarship.list_scholarships') }}"
-           class="btn btn-outline-light btn-sm mb-2 me-1">
-          <i class="bi bi-search me-1"></i>Scholarships
-        </a>
-        <a href="{{ url_for('chatbot.chatbot_page') }}"
-           class="btn btn-warning btn-sm mb-2">
-          <i class="bi bi-robot me-1"></i>AI Assistant
-        </a>
-        {% endif %}
-      </div>
+  <div class="container py-4 text-center">
+    <div class="d-flex align-items-center justify-content-center gap-2 mb-2">
+      <img src="{{ url_for('static', filename='images/lspu-logo.png') }}" alt="LSPU" style="height:28px;width:28px;object-fit:contain;">
+      <span class="fw-bold">LSPU ScholarHub</span>
     </div>
-    <hr style="border-color:rgba(255,255,255,.15);margin:16px 0 12px;">
+    <p class="small mb-3 opacity-75">
+      AI-Enabled Scholarship Management and Monitoring System<br>
+      Laguna State Polytechnic University
+    </p>
+    <div class="d-flex justify-content-center gap-4 flex-wrap mb-3">
+      <span class="small opacity-75">
+        <i class="bi bi-geo-alt me-1 text-warning"></i>
+        Student Affairs Building, 2nd Floor, LSPU Sta. Cruz
+      </span>
+      <span class="small opacity-75">
+        <i class="bi bi-envelope me-1 text-warning"></i>
+        lspu.scholarhub@gmail.com
+      </span>
+      <span class="small opacity-75">
+        <i class="bi bi-telephone me-1 text-warning"></i>
+        0968-365-2615
+      </span>
+    </div>
+    <hr style="border-color:rgba(255,255,255,.15);margin:12px auto;max-width:600px;">
     <p class="text-center small mb-0 opacity-50">
       &copy; {{ now.year }} Laguna State Polytechnic University. All rights reserved.
     </p>
