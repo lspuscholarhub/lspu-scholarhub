@@ -136,82 +136,100 @@ def apply_scholarship(scholarship_id):
     if request.method == 'POST':
         form = request.form
 
-        if not form.get('terms') or not form.get('privacy'):
-            flash('You must agree to the terms and privacy policy.', 'error')
+        try:
+            if not form.get('terms') or not form.get('privacy'):
+                flash('You must agree to the terms and privacy policy.', 'error')
+                return render_template('scholarship/apply.html',
+                                       scholarship=scholarship, user=user,
+                                       editing=False, application=None)
+
+            # ── Build application data from user profile ───────────────────────
+            gpa = user.gwa or 0
+            units = form.get('units_enrolled', '').strip()
+            application_data = {
+                'first_name':      user.first_name,
+                'last_name':       user.last_name,
+                'student_id':      user.student_id,
+                'email':           user.email,
+                'phone':           user.phone_number or '',
+                'course':          user.course or '',
+                'year_level':      user.year_level or '',
+                'gwa':             gpa,
+                'units_enrolled':  int(units) if units.isdigit() else None,
+                'gender':          user.gender or '',
+                'birthday':        user.birthday.isoformat() if user.birthday else '',
+                'town':            user.town or '',
+                'province':        user.province or '',
+            }
+            # Update user's units if provided
+            if units.isdigit():
+                user.units_enrolled = int(units)
+
+            # ── Collect custom form field responses ──────────────────────────
+            try:
+                if scholarship.custom_form_fields:
+                    custom_responses = []
+                    for i, field in enumerate(scholarship.custom_form_fields):
+                        value = form.get(f'custom_{i}', '').strip()
+                        if field.get('required') and not value:
+                            flash(f'Please fill in: {field["label"]}', 'error')
+                            return render_template('scholarship/apply.html',
+                                                   scholarship=scholarship, user=user,
+                                                   editing=False, application=None)
+                        custom_responses.append({
+                            'label': field['label'],
+                            'value': value,
+                        })
+                    application_data['custom_fields'] = custom_responses
+            except Exception:
+                pass  # custom_form_fields column may not exist yet
+
+            # ── Save application ───────────────────────────────────────────────
+            application = ScholarshipApplication(
+                scholarship_id=scholarship_id,
+                applicant_id=user.id,
+                application_data=application_data,
+                documents=[],
+                status=ApplicationStatus.PENDING,
+            )
+            db.session.add(application)
+            db.session.flush()
+
+            # Update applicant counter
+            scholarship.current_applicants = (scholarship.current_applicants or 0) + 1
+
+            db.session.commit()
+
+            # ── Notifications (non-critical — don't crash on failure) ──────────
+            try:
+                notification_service.send_scholarship_application_received(
+                    user.email, user.phone_number or '', user.id, scholarship.title,
+                )
+            except Exception as e:
+                import logging as _log
+                _log.getLogger(__name__).warning(f'Notification failed (non-fatal): {e}')
+
+            try:
+                from app.services.audit_service import log_action
+                log_action('application.submit',
+                           f'Student {user.get_full_name()} ({user.student_id}) submitted application '
+                           f'#{application.id} for "{scholarship.title}". GWA: {gpa}.',
+                           category='application', target_type='application', target_id=application.id)
+            except Exception as e:
+                import logging as _log
+                _log.getLogger(__name__).warning(f'Audit log failed (non-fatal): {e}')
+
+            flash(f'Your application for "{scholarship.title}" has been submitted!', 'success')
+            return redirect(url_for('student.my_applications'))
+
+        except Exception as e:
+            import logging as _log
+            _log.getLogger(__name__).error(f'Application submit error: {e}', exc_info=True)
+            db.session.rollback()
+            flash(f'An error occurred while submitting your application. Please try again.', 'error')
             return render_template('scholarship/apply.html',
                                    scholarship=scholarship, user=user,
                                    editing=False, application=None)
-
-        # ── Build application data from user profile ───────────────────────
-        gpa = user.gwa or 0
-        units = form.get('units_enrolled', '').strip()
-        application_data = {
-            'first_name':      user.first_name,
-            'last_name':       user.last_name,
-            'student_id':      user.student_id,
-            'email':           user.email,
-            'phone':           user.phone_number or '',
-            'course':          user.course or '',
-            'year_level':      user.year_level or '',
-            'gwa':             gpa,
-            'units_enrolled':  int(units) if units.isdigit() else None,
-            'gender':          user.gender or '',
-            'birthday':        user.birthday.isoformat() if user.birthday else '',
-            'town':            user.town or '',
-            'province':        user.province or '',
-        }
-        # Update user's units if provided
-        if units.isdigit():
-            user.units_enrolled = int(units)
-
-        # ── Collect custom form field responses ──────────────────────────
-        try:
-            if scholarship.custom_form_fields:
-                custom_responses = []
-                for i, field in enumerate(scholarship.custom_form_fields):
-                    value = form.get(f'custom_{i}', '').strip()
-                    if field.get('required') and not value:
-                        flash(f'Please fill in: {field["label"]}', 'error')
-                        return render_template('scholarship/apply.html',
-                                               scholarship=scholarship, user=user,
-                                               editing=False, application=None)
-                    custom_responses.append({
-                        'label': field['label'],
-                        'value': value,
-                    })
-                application_data['custom_fields'] = custom_responses
-        except Exception:
-            pass  # custom_form_fields column may not exist yet
-
-        # ── Save application ───────────────────────────────────────────────
-        application = ScholarshipApplication(
-            scholarship_id=scholarship_id,
-            applicant_id=user.id,
-            application_data=application_data,
-            documents=[],
-            status=ApplicationStatus.PENDING,
-        )
-        db.session.add(application)
-        db.session.flush()
-
-        # Update applicant counter
-        scholarship.current_applicants = (scholarship.current_applicants or 0) + 1
-
-        db.session.commit()
-
-        # ── Notifications ──────────────────────────────────────────────────
-        notification_service.send_scholarship_application_received(
-            user.email, user.phone_number or '', user.id, scholarship.title,
-        )
-
-        from app.services.audit_service import log_action
-        log_action('application.submit',
-                   f'Student {user.get_full_name()} ({user.student_id}) submitted application '
-                   f'#{application.id} for "{scholarship.title}". GWA: {gpa}.',
-                   category='application', target_type='application', target_id=application.id)
-
-        flash(f'Your application for "{scholarship.title}" has been submitted!', 'success')
-        return redirect(url_for('student.my_applications'))
 
     # Ensure custom_form_fields is accessible even if column doesn't exist yet
     try:
