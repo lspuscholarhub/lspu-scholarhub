@@ -157,7 +157,7 @@ def apply_scholarship(scholarship_id):
                 'gwa':             gpa,
                 'units_enrolled':  int(units) if units.isdigit() else None,
                 'gender':          user.gender or '',
-                'birthday':        user.birthday.isoformat() if user.birthday else '',
+                'birthday':        user.date_of_birth.isoformat() if user.date_of_birth else '',
                 'town':            user.town or '',
                 'province':        user.province or '',
             }
