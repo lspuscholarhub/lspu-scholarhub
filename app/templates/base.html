@@ -117,6 +117,11 @@
           </a>
         </li>
         <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('staff.manage_batches') }}">
+            <i class="bi bi-collection me-1"></i>Batches
+          </a>
+        </li>
+        <li class="nav-item">
           <a class="nav-link" href="{{ url_for('staff.monitoring') }}">
             <i class="bi bi-activity me-1"></i>Monitoring
           </a>
@@ -124,6 +129,11 @@
         <li class="nav-item">
           <a class="nav-link" href="{{ url_for('staff.reports') }}">
             <i class="bi bi-graph-up me-1"></i>Reports
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="{{ url_for('staff.notifications') }}">
+            <i class="bi bi-megaphone me-1"></i>Announcements
           </a>
         </li>
         {% endif %}

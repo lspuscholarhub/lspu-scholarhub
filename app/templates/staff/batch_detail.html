@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}{{ batch.batch_name }} — Staff{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <div>
+      <nav aria-label="breadcrumb">
+        <ol class="breadcrumb mb-1">
+          <li class="breadcrumb-item"><a href="{{ url_for('staff.manage_batches') }}">Batches</a></li>
+          <li class="breadcrumb-item active">{{ batch.batch_name }}</li>
+        </ol>
+      </nav>
+      <h1 class="h3 fw-bold mb-0">{{ batch.batch_name }}</h1>
+      <p class="text-muted small mb-0">{{ batch.scholarship.title }}</p>
+    </div>
+    <a href="{{ url_for('staff.manage_batches', scholarship_id=batch.scholarship_id) }}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left me-1"></i>Back to Batches
+    </a>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm text-center" style="border-radius:12px;">
+        <div class="card-body py-3">
+          <div class="fs-3 fw-bold text-primary">{{ batch.total_scholars }}</div>
+          <div class="small text-muted">Total Scholars</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm text-center" style="border-radius:12px;">
+        <div class="card-body py-3">
+          <div class="fs-3 fw-bold text-info">{{ batch.total_male }}</div>
+          <div class="small text-muted">Male</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm text-center" style="border-radius:12px;">
+        <div class="card-body py-3">
+          <div class="fs-3 fw-bold text-warning">{{ batch.total_female }}</div>
+          <div class="small text-muted">Female</div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm text-center" style="border-radius:12px;">
+        <div class="card-body py-3">
+          <div class="fs-3 fw-bold text-success">₱{{ "{:,.0f}".format(batch.total_amount or 0) }}</div>
+          <div class="small text-muted">Total Amount</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Batch Info -->
+  <div class="card border-0 shadow-sm mb-4" style="border-radius:12px;">
+    <div class="card-body">
+      <div class="row g-3">
+        <div class="col-md-3">
+          <div class="small text-muted">Status</div>
+          <span class="badge {% if batch.status=='open' %}bg-primary{% elif batch.status=='closed' %}bg-secondary{% else %}bg-success{% endif %}">
+            {{ batch.status|title }}
+          </span>
+        </div>
+        <div class="col-md-3">
+          <div class="small text-muted">Academic Period</div>
+          <div class="fw-semibold">{{ batch.academic_period.display_name if batch.academic_period else 'N/A' }}</div>
+        </div>
+        <div class="col-md-3">
+          <div class="small text-muted">Amount per Scholar</div>
+          <div class="fw-semibold">₱{{ "{:,.0f}".format(batch.amount_per_scholar) if batch.amount_per_scholar else 'Not set' }}</div>
+        </div>
+        <div class="col-md-3">
+          <div class="small text-muted">Created</div>
+          <div class="fw-semibold">{{ batch.created_at.strftime('%b %d, %Y') if batch.created_at else 'N/A' }}</div>
+        </div>
+      </div>
+      {% if batch.notes %}
+      <div class="mt-3">
+        <div class="small text-muted">Notes</div>
+        <div>{{ batch.notes }}</div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Scholars List -->
+  <div class="card border-0 shadow-sm" style="border-radius:12px;">
+    <div class="card-header bg-white border-0 pt-3 pb-0 px-4 d-flex justify-content-between align-items-center">
+      <h5 class="fw-bold mb-0"><i class="bi bi-people me-2 text-primary"></i>Scholars ({{ applications|length }})</h5>
+      {% if applications %}
+      <a href="{{ url_for('staff.export_batch', batch_id=batch.id) }}" class="btn btn-sm btn-outline-success">
+        <i class="bi bi-download me-1"></i>Export Excel
+      </a>
+      {% endif %}
+    </div>
+    <div class="card-body px-4 pb-3">
+      {% if applications %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr style="font-size:.78rem;text-transform:uppercase;letter-spacing:.5px;">
+              <th class="text-muted">#</th>
+              <th class="text-muted">Seq.</th>
+              <th class="text-muted">Student</th>
+              <th class="text-muted">Student ID</th>
+              <th class="text-muted">Course</th>
+              <th class="text-muted">Year</th>
+              <th class="text-muted">GWA</th>
+              <th class="text-muted">Gender</th>
+              <th class="text-muted">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for app in applications %}
+            {% set student = app.applicant %}
+            <tr>
+              <td class="text-muted small">{{ loop.index }}</td>
+              <td>
+                <span class="badge bg-secondary">{{ app.seq_number or '—' }}</span>
+              </td>
+              <td>
+                <a href="{{ url_for('staff.student_profile', uid=student.id) }}" class="text-decoration-none fw-semibold">
+                  {{ student.last_name }}, {{ student.first_name }}
+                </a>
+                {% if student.middle_name %}<br><small class="text-muted">{{ student.middle_name }}</small>{% endif %}
+              </td>
+              <td class="small">{{ student.student_id or '—' }}</td>
+              <td class="small">{{ student.course or '—' }}</td>
+              <td class="small">{{ student.year_level or '—' }}</td>
+              <td>
+                {% if student.gwa %}
+                <span class="fw-semibold {% if student.gwa <= 1.5 %}text-success{% elif student.gwa <= 2.5 %}text-primary{% elif student.gwa <= 3.0 %}text-warning{% else %}text-danger{% endif %}">
+                  {{ "%.2f"|format(student.gwa) }}
+                </span>
+                {% else %}<span class="text-muted">—</span>{% endif %}
+              </td>
+              <td>
+                {% if student.gender == 'Male' %}<span class="badge bg-info">Male</span>
+                {% elif student.gender == 'Female' %}<span class="badge bg-warning text-dark">Female</span>
+                {% else %}<span class="text-muted">—</span>{% endif %}
+              </td>
+              <td class="fw-semibold small">
+                {% if app.amount_received %}₱{{ "{:,.0f}".format(app.amount_received) }}
+                {% elif batch.amount_per_scholar %}₱{{ "{:,.0f}".format(batch.amount_per_scholar) }}
+                {% else %}—{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-5">
+        <i class="bi bi-people display-4 text-muted"></i>
+        <p class="mt-3 text-muted">No scholars assigned to this batch yet.</p>
+        <a href="{{ url_for('staff.manage_batches', scholarship_id=batch.scholarship_id) }}" class="btn btn-primary btn-sm">
+          <i class="bi bi-person-plus me-1"></i>Assign Scholars
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

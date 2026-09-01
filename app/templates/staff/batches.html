@@ -96,6 +96,9 @@
           {% endif %}
           <!-- Actions -->
           <div class="d-flex gap-2 flex-wrap">
+            <a href="{{ url_for('staff.batch_detail', batch_id=batch.id) }}" class="btn btn-sm btn-primary">
+              <i class="bi bi-people me-1"></i>View Students ({{ batch.total_scholars }})
+            </a>
             <a href="{{ url_for('staff.export_batch', batch_id=batch.id) }}" class="btn btn-sm btn-outline-success">
               <i class="bi bi-download me-1"></i>Export Excel
             </a>

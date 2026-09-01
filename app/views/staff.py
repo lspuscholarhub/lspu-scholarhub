@@ -1427,3 +1427,20 @@ def export_batch(batch_id):
     filename = f'{batch.scholarship.title[:20]}_{batch.batch_name}.xlsx'.replace(' ', '_')
     return _send_file(buf, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                       as_attachment=True, download_name=filename)
+
+
+@staff_bp.route('/batches/<int:batch_id>')
+@role_required('staff')
+def batch_detail(batch_id):
+    """View the list of scholars assigned to a specific batch."""
+    from app.models import ScholarshipBatch
+    batch = ScholarshipBatch.query.get_or_404(batch_id)
+    # Get approved applications in this batch
+    applications = [
+        a for a in batch.applications
+        if a.status and a.status.value == 'approved'
+    ]
+    # Sort by last name
+    applications.sort(key=lambda a: (a.applicant.last_name or '').lower())
+    return render_template('staff/batch_detail.html',
+                           batch=batch, applications=applications)
