@@ -388,6 +388,41 @@ def profile():
 def update_profile():
     user = User.query.get(session['user_id'])
 
+    # Handle document upload/replace from profile page
+    doc_type = request.form.get('doc_type', '')
+    if doc_type in ('cor', 'grades'):
+        from app.services.document_service import document_service
+        from app.services.storage_service import delete_file as _del_storage
+        file = request.files.get(f'{doc_type}_file')
+        if file and file.filename:
+            result = document_service.save_file(file, user.id, doc_type)
+            if result['success']:
+                info = result['file_info']
+                # Delete old file if exists
+                old_path = user.cor_file_path if doc_type == 'cor' else user.grades_file_path
+                old_cid  = user.cor_cloudinary_id if doc_type == 'cor' else user.grades_cloudinary_id
+                if old_cid:
+                    try: _del_storage(public_id=old_cid)
+                    except Exception: pass
+                elif old_path and not old_path.startswith('http'):
+                    try: document_service.delete_file(old_path)
+                    except Exception: pass
+                # Update user record
+                if doc_type == 'cor':
+                    user.cor_file_path = info['file_path']
+                    user.cor_cloudinary_id = info.get('cloudinary_public_id')
+                else:
+                    user.grades_file_path = info['file_path']
+                    user.grades_cloudinary_id = info.get('cloudinary_public_id')
+                db.session.commit()
+                label = 'Certificate of Registration' if doc_type == 'cor' else 'Copy of Grades'
+                flash(f'{label} uploaded successfully.', 'success')
+            else:
+                flash(f'Upload failed: {result["message"]}', 'error')
+        else:
+            flash('Please select a file to upload.', 'error')
+        return redirect(url_for('student.profile'))
+
     # Only update non-readonly fields
     user.first_name   = request.form.get('first_name', user.first_name).strip().title()
     user.last_name    = request.form.get('last_name',  user.last_name).strip().title()
