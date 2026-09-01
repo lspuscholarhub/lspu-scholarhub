@@ -350,9 +350,12 @@ def batch_review():
             processed += 1
 
     # Auto-assign approved applications to batches
+    batch_info = ''
     if approved_apps:
         from app.services.batch_service import auto_assign_multiple
         batch_results = auto_assign_multiple(approved_apps)
+        if batch_results:
+            batch_info = ' Batches: ' + ', '.join(f'{k} → {v}' for k, v in batch_results.items())
 
     db.session.commit()
 
@@ -378,7 +381,7 @@ def batch_review():
                f'IDs: {", ".join(app_ids[:10])}{"…" if len(app_ids) > 10 else ""}. '
                f'Notes: {notes}',
                category='application')
-    flash(f'{processed} application(s) {new_status.value.replace("_", " ")}.', 'success')
+    flash(f'{processed} application(s) {new_status.value.replace("_", " ")}.{batch_info}', 'success')
     return redirect(url_for('admin.manage_applications'))
 
 

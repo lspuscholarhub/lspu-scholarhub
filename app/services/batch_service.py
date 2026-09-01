@@ -14,6 +14,56 @@ from app import db
 logger = logging.getLogger(__name__)
 
 
+def _get_or_create_current_period():
+    """
+    Return the current academic period, or create one automatically based on the current date.
+    This ensures auto-batching works even if no periods have been set up yet.
+    """
+    from app.models import AcademicPeriod
+
+    period = AcademicPeriod.get_current()
+    if period:
+        return period
+
+    # Auto-create a period based on current date
+    now = datetime.utcnow()
+    year = now.year
+    month = now.month
+
+    if month >= 8 and month <= 12:
+        semester = '1st Semester'
+        academic_year = f'{year}-{year + 1}'
+    elif month >= 1 and month <= 5:
+        semester = '2nd Semester'
+        academic_year = f'{year - 1}-{year}'
+    else:
+        semester = 'Summer'
+        academic_year = f'{year - 1}-{year}'
+
+    # Check if this period already exists (just not marked current)
+    period = AcademicPeriod.query.filter_by(
+        academic_year=academic_year,
+        semester=semester,
+    ).first()
+
+    if not period:
+        period = AcademicPeriod(
+            academic_year=academic_year,
+            semester=semester,
+            is_current=True,
+        )
+        db.session.add(period)
+        db.session.flush()
+        logger.info(f'Auto-created academic period: {period.display_name}')
+    else:
+        # Mark it as current
+        AcademicPeriod.query.update({'is_current': False})
+        period.is_current = True
+        db.session.flush()
+
+    return period
+
+
 def auto_assign_to_batch(application):
     """
     Automatically assign an approved application to the appropriate batch.
@@ -25,17 +75,17 @@ def auto_assign_to_batch(application):
     Returns:
         The ScholarshipBatch the application was assigned to, or None on failure.
     """
-    from app.models import AcademicPeriod, ScholarshipBatch
+    from app.models import ScholarshipBatch
     from app.models.scholarship import ApplicationStatus
 
     if application.status != ApplicationStatus.APPROVED:
         return None
 
     try:
-        # Get current academic period
-        current_period = AcademicPeriod.get_current()
+        # Get or create current academic period
+        current_period = _get_or_create_current_period()
         if not current_period:
-            logger.warning('No current academic period set — cannot auto-assign batch.')
+            logger.warning('Could not determine or create academic period.')
             return None
 
         scholarship = application.scholarship

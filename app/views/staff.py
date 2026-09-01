@@ -262,6 +262,9 @@ def review_application(app_id):
         # Auto-assign to batch
         from app.services.batch_service import auto_assign_to_batch
         batch = auto_assign_to_batch(application)
+        batch_msg = f' → Assigned to {batch.batch_name}.' if batch else ''
+    else:
+        batch_msg = ''
 
     db.session.commit()
 
@@ -278,7 +281,7 @@ def review_application(app_id):
         + (f' Notes: {notes}' if notes else ''),
         category='application', target_type='application', target_id=app_id,
     )
-    flash(f'Application #{app_id} marked as {new_status.value.replace("_"," ")}.', 'success')
+    flash(f'Application #{app_id} marked as {new_status.value.replace("_"," ")}.{batch_msg}', 'success')
     return redirect(url_for('staff.review_applications'))
 
 
@@ -312,9 +315,12 @@ def batch_review():
             processed += 1
 
     # Auto-assign approved applications to batches
+    batch_info = ''
     if approved_apps:
         from app.services.batch_service import auto_assign_multiple
-        auto_assign_multiple(approved_apps)
+        results = auto_assign_multiple(approved_apps)
+        if results:
+            batch_info = ' Batches: ' + ', '.join(f'{k} → {v}' for k, v in results.items())
 
     db.session.commit()
 
@@ -338,7 +344,7 @@ def batch_review():
     log_action('application.batch_' + action,
                f'Staff {session.get("username")} batch-{action}d {processed} application(s).',
                category='application')
-    flash(f'{processed} application(s) {new_status.value.replace("_"," ")}.', 'success')
+    flash(f'{processed} application(s) {new_status.value.replace("_"," ")}.{batch_info}', 'success')
     return redirect(url_for('staff.review_applications'))
 
 
