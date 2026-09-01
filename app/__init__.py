@@ -60,6 +60,22 @@ def create_app(config_name=None):
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     os.makedirs('logs', exist_ok=True)
 
+    # ── Auto-migrate: add missing columns ─────────────────────────────────
+    # db.create_all() only creates new tables, not new columns.
+    # This safely adds columns that were added to models after initial deploy.
+    with app.app_context():
+        from sqlalchemy import inspect, text
+        inspector = inspect(db.engine)
+        try:
+            columns = [c['name'] for c in inspector.get_columns('scholarships')]
+            if 'custom_form_fields' not in columns:
+                db.session.execute(text(
+                    'ALTER TABLE scholarships ADD COLUMN custom_form_fields JSON NULL'
+                ))
+                db.session.commit()
+        except Exception:
+            pass  # table may not exist yet — db.create_all() will handle it
+
     # ── Inactivity timeout ────────────────────────────────────────────────
     # Log out users who have been inactive for more than 30 minutes.
     # Checked on every request — if last_active is older than timeout, clear session.
