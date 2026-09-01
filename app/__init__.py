@@ -67,20 +67,26 @@ def create_app(config_name=None):
         import logging
         _migrate_log = logging.getLogger('migrate')
         try:
-            from sqlalchemy import inspect, text
+            from sqlalchemy import text
             with db.engine.connect() as conn:
-                inspector = inspect(conn)
-                columns = [c['name'] for c in inspector.get_columns('scholarships')]
-                if 'custom_form_fields' not in columns:
+                # Check if column exists using raw SQL (works with all DB backends)
+                result = conn.execute(text(
+                    "SELECT COUNT(*) FROM information_schema.columns "
+                    "WHERE table_schema = DATABASE() "
+                    "AND table_name = 'scholarships' "
+                    "AND column_name = 'custom_form_fields'"
+                ))
+                exists = result.scalar() > 0
+                if not exists:
                     conn.execute(text(
                         'ALTER TABLE scholarships ADD COLUMN custom_form_fields JSON NULL'
                     ))
                     conn.commit()
-                    _migrate_log.info('Added custom_form_fields column to scholarships table.')
+                    _migrate_log.info('SUCCESS: Added custom_form_fields column to scholarships.')
                 else:
-                    _migrate_log.info('custom_form_fields column already exists.')
+                    _migrate_log.info('OK: custom_form_fields column already exists.')
         except Exception as e:
-            _migrate_log.warning(f'Auto-migration check failed (non-fatal): {e}')
+            _migrate_log.error(f'MIGRATION FAILED: {e}')  # Log the actual error
 
     # ── Inactivity timeout ────────────────────────────────────────────────
     # Log out users who have been inactive for more than 30 minutes.

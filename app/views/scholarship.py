@@ -213,6 +213,12 @@ def apply_scholarship(scholarship_id):
         flash(f'Your application for "{scholarship.title}" has been submitted!', 'success')
         return redirect(url_for('student.my_applications'))
 
+    # Ensure custom_form_fields is accessible even if column doesn't exist yet
+    try:
+        _ = scholarship.custom_form_fields
+    except Exception:
+        scholarship.custom_form_fields = None
+
     return render_template('scholarship/apply.html', scholarship=scholarship, user=user,
                            editing=False, application=None)
 
