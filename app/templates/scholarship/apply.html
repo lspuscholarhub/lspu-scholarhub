@@ -29,19 +29,6 @@
               {% if scholarship.award_amount %}
               <div class="fs-4 fw-bold text-warning">₱{{ "{:,.0f}".format(scholarship.award_amount) }}</div>
               {% endif %}
-              {% if scholarship.application_deadline %}
-              {% set days_left = (scholarship.application_deadline - now).days %}
-              <div class="small opacity-75">
-                Deadline: {{ scholarship.application_deadline.strftime('%b %d, %Y') }}
-                {% if days_left >= 0 %}
-                  <span class="badge {% if days_left <= 3 %}bg-danger{% elif days_left <= 7 %}bg-warning text-dark{% else %}bg-success{% endif %} ms-1">
-                    {{ days_left }}d left
-                  </span>
-                {% else %}
-                  <span class="badge bg-secondary ms-1">Expired</span>
-                {% endif %}
-              </div>
-              {% endif %}
             </div>
           </div>
         </div>
@@ -89,6 +76,18 @@
                 <input type="text" class="form-control" name="year_level" value="{{ user.year_level or '' }}" readonly style="background:#f8f9fa;">
               </div>
               <div class="col-md-6">
+                <label class="form-label fw-semibold small">Gender</label>
+                <input type="text" class="form-control" name="gender" value="{{ user.gender or '' }}" readonly style="background:#f8f9fa;">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold small">Birthday</label>
+                <input type="text" class="form-control" name="birthday" value="{{ user.birthday.strftime('%b %d, %Y') if user.birthday else '' }}" readonly style="background:#f8f9fa;">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold small">Town / Province</label>
+                <input type="text" class="form-control" name="address" value="{{ (user.town or '') + (', ' + user.province if user.province else '') }}" readonly style="background:#f8f9fa;">
+              </div>
+              <div class="col-md-6">
                 <label class="form-label fw-semibold small">Current GWA</label>
                 <input type="text" class="form-control" name="gpa" value="{{ user.gwa or '' }}" readonly style="background:#f8f9fa;">
               </div>
@@ -102,7 +101,47 @@
           </div>
         </div>
 
-        <!-- ══ SECTION 2: Upload Grades ═══════════════════════════════ -->
+        <!-- ══ SECTION 2: Custom Form Fields (if any) ═══════════════ -->
+        {% if scholarship.custom_form_fields %}
+        <div class="card shadow-sm border-0 mb-4" style="border-radius:12px;">
+          <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
+            <h5 class="fw-bold mb-1">
+              <i class="bi bi-ui-checks me-2 text-primary"></i>Additional Information
+            </h5>
+            <p class="text-muted small mb-3">Please answer the following questions for this scholarship.</p>
+          </div>
+          <div class="card-body px-4 pb-4">
+            <div class="row g-3">
+              {% for field in scholarship.custom_form_fields %}
+              <div class="{% if field.type == 'dropdown' or field.type == 'number' %}col-md-6{% else %}col-12{% endif %}">
+                <label class="form-label fw-semibold small">
+                  {{ field.label }}
+                  {% if field.required %}<span class="text-danger">*</span>{% endif %}
+                </label>
+                {% if field.type == 'text' %}
+                <input type="text" class="form-control" name="custom_{{ loop.index0 }}"
+                       {% if field.required %}required{% endif %}
+                       placeholder="Enter {{ field.label|lower }}">
+                {% elif field.type == 'number' %}
+                <input type="number" class="form-control" name="custom_{{ loop.index0 }}"
+                       {% if field.required %}required{% endif %}
+                       placeholder="Enter {{ field.label|lower }}">
+                {% elif field.type == 'dropdown' %}
+                <select class="form-select" name="custom_{{ loop.index0 }}" {% if field.required %}required{% endif %}>
+                  <option value="">Select...</option>
+                  {% for opt in field.options %}
+                  <option value="{{ opt }}">{{ opt }}</option>
+                  {% endfor %}
+                </select>
+                {% endif %}
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- ══ SECTION 3: Upload Grades ═══════════════════════════════ -->
         <div class="card shadow-sm border-0 mb-4" style="border-radius:12px;">
           <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
             <h5 class="fw-bold mb-1">
@@ -137,7 +176,7 @@
           </div>
         </div>
 
-        <!-- ══ SECTION 3: Certification ═══════════════════════════════ -->
+        <!-- ══ SECTION 4: Certification ═══════════════════════════════ -->
         <div class="card shadow-sm border-0 mb-4" style="border-radius:12px;">
           <div class="card-body px-4 py-3">
             <div class="form-check mb-2">

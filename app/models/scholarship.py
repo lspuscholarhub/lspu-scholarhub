@@ -36,6 +36,7 @@ class Scholarship(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
     is_hidden = db.Column(db.Boolean, default=False, nullable=False)
     allowed_student_ids = db.Column(db.Text, nullable=True)
+    custom_form_fields = db.Column(db.JSON, nullable=True)  # Custom form fields for this scholarship
 
     applications = db.relationship('ScholarshipApplication', backref='scholarship',
                                    lazy=True, cascade='all, delete-orphan')

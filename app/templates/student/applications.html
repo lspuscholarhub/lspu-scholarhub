@@ -317,10 +317,19 @@
             {% else %}
             <p class="text-muted small">No academic data on record.</p>
             {% endif %}
+
+            {% if app.application_data and app.application_data.get('custom_fields') %}
+            <hr>
+            <h6 class="fw-bold small"><i class="bi bi-ui-checks me-2 text-primary"></i>Additional Information</h6>
+            <table class="table table-sm table-borderless mb-0">
+              {% for cf in app.application_data.custom_fields %}
+              <tr><td class="text-muted small" style="width:40%">{{ cf.label }}</td>
+                  <td class="small fw-semibold">{{ cf.value or '—' }}</td></tr>
+              {% endfor %}
+            </table>
+            {% endif %}
           </div>
         </div>
-
-        {# Essay section removed — no longer part of simplified application #}
 
         <!-- Documents -->
         <div>

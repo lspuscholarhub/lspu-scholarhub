@@ -253,10 +253,17 @@
             {% endif %}
           </div>
         </div>
-        {% if app.application_data and app.application_data.essay %}
+        {% if app.application_data and app.application_data.custom_fields %}
         <hr>
-        <h6>Essay</h6>
-        <p class="small bg-light p-3 rounded">{{ app.application_data.essay }}</p>
+        <h6><i class="bi bi-ui-checks me-2 text-primary"></i>Custom Form Responses</h6>
+        <div class="bg-light p-3 rounded">
+          {% for cf in app.application_data.custom_fields %}
+          <div class="mb-2">
+            <strong class="small">{{ cf.label }}:</strong>
+            <span class="small">{{ cf.value or '—' }}</span>
+          </div>
+          {% endfor %}
+        </div>
         {% endif %}
         {% if app.review_notes %}
         <hr>

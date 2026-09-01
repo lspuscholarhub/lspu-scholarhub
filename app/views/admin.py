@@ -91,6 +91,26 @@ def manage_scholarships():
 @role_required('admin')
 def create_scholarship():
     try:
+        # Build custom form fields from submitted data
+        field_labels = request.form.getlist('field_label[]')
+        field_types = request.form.getlist('field_type[]')
+        field_options_raw = request.form.getlist('field_options[]')
+        field_required_list = request.form.getlist('field_required[]')
+        custom_fields = []
+        for i, label in enumerate(field_labels):
+            if not label.strip():
+                continue
+            ftype = field_types[i] if i < len(field_types) else 'text'
+            options = None
+            if ftype == 'dropdown' and i < len(field_options_raw):
+                options = [o.strip() for o in field_options_raw[i].split(',') if o.strip()]
+            custom_fields.append({
+                'label': label.strip(),
+                'type': ftype,
+                'required': str(i) in field_required_list if i < len(field_required_list) else True,
+                'options': options,
+            })
+
         s = Scholarship(
             title                = request.form['title'],
             category             = request.form.get('category', 'General'),
@@ -103,6 +123,7 @@ def create_scholarship():
             application_deadline = datetime.strptime(request.form['application_deadline'], '%Y-%m-%d') if request.form.get('application_deadline') else None,
             status               = ScholarshipStatus.ACTIVE,
             created_by           = session['user_id'],
+            custom_form_fields   = custom_fields if custom_fields else None,
         )
         s.is_hidden = bool(request.form.get('is_hidden'))
         s.allowed_student_ids = request.form.get('allowed_student_ids', '').strip() or None
@@ -145,6 +166,28 @@ def edit_scholarship(sid):
             if sid.strip()
         )
         s.allowed_student_ids = cleaned or None
+
+        # Build custom form fields from submitted data
+        field_labels = request.form.getlist('field_label[]')
+        field_types = request.form.getlist('field_type[]')
+        field_options_raw = request.form.getlist('field_options[]')
+        field_required_list = request.form.getlist('field_required[]')
+        custom_fields = []
+        for i, label in enumerate(field_labels):
+            if not label.strip():
+                continue
+            ftype = field_types[i] if i < len(field_types) else 'text'
+            options = None
+            if ftype == 'dropdown' and i < len(field_options_raw):
+                options = [o.strip() for o in field_options_raw[i].split(',') if o.strip()]
+            custom_fields.append({
+                'label': label.strip(),
+                'type': ftype,
+                'required': str(i) in field_required_list if i < len(field_required_list) else True,
+                'options': options,
+            })
+        s.custom_form_fields = custom_fields if custom_fields else None
+
         db.session.commit()
         from app.services.audit_service import log_action
         log_action('scholarship.edit', f'Scholarship "{s.title}" updated.',
