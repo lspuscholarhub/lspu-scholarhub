@@ -77,14 +77,7 @@
                 {% if user.cor_file_path %}Replace{% else %}Upload{% endif %}
               </button>
             </form>
-            {% if user.cor_file_path %}
-            <div class="mt-2">
-              <a href="{{ url_for('student.view_document', doc_type='cor') }}"
-                 class="text-decoration-none small" target="_blank">
-                <i class="bi bi-eye me-1"></i>View current file
-              </a>
-            </div>
-            {% endif %}
+
           </div>
 
           <!-- Grades -->
@@ -105,14 +98,7 @@
                 {% if user.grades_file_path %}Replace{% else %}Upload{% endif %}
               </button>
             </form>
-            {% if user.grades_file_path %}
-            <div class="mt-2">
-              <a href="{{ url_for('student.view_document', doc_type='grades') }}"
-                 class="text-decoration-none small" target="_blank">
-                <i class="bi bi-eye me-1"></i>View current file
-              </a>
-            </div>
-            {% endif %}
+
           </div>
 
           <p class="text-muted small mt-3 mb-0">

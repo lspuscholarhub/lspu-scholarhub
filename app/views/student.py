@@ -528,22 +528,29 @@ def verify_phone():
 @role_required('student')
 def upload_gwa():
     """
-    Students can upload their Copy of Grades PDF to update their GWA.
-    The system extracts the GWA via OCR and saves it to their profile.
-    Used when GWA is pending at registration or needs updating each semester.
+    Students can upload their Copy of Grades PDF or COR.
+    Handles both document types based on doc_type form field.
     """
     user = User.query.get(session['user_id'])
 
     if request.method == 'POST':
-        file = request.files.get('grades_file')
+        doc_type = request.form.get('doc_type', 'grades')
+
+        if doc_type == 'cor':
+            file = request.files.get('cor_file')
+            label = 'Certificate of Registration'
+        else:
+            file = request.files.get('grades_file')
+            label = 'Copy of Grades'
+
         if not file or not file.filename:
-            flash('Please select a PDF file to upload.', 'error')
+            flash(f'Please select a file to upload for {label}.', 'error')
             return redirect(url_for('student.upload_gwa'))
 
         ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
         allowed_exts = {'pdf', 'jpg', 'jpeg', 'png'}
         if ext not in allowed_exts:
-            flash('Please upload a PDF or image file (JPG/PNG) of your Copy of Grades.', 'error')
+            flash(f'Please upload a PDF or image file (JPG/PNG) for {label}.', 'error')
             return redirect(url_for('student.upload_gwa'))
 
         file_bytes = file.read()
@@ -553,13 +560,14 @@ def upload_gwa():
         from datetime import datetime
         from werkzeug.utils import secure_filename
         from app.services.storage_service import upload_file as _upload
+        from app.services.storage_service import delete_file as _del_storage
         filename = secure_filename(
-            f"grades_{user.student_id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.{ext}"
+            f"{doc_type}_{user.student_id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.{ext}"
         )
         upload_result = _upload(file_bytes, filename, f"registration/{user.id}")
         if upload_result['success']:
             file_path  = upload_result['url']
-            grades_cid = upload_result.get('public_id')
+            cloud_id   = upload_result.get('public_id')
         else:
             # Local fallback
             upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'registration')
@@ -567,7 +575,30 @@ def upload_gwa():
             file_path = os.path.join(upload_dir, filename)
             with open(file_path, 'wb') as f:
                 f.write(file_bytes)
-            grades_cid = None
+            cloud_id = None
+
+        # Delete old file if replacing
+        if doc_type == 'cor':
+            old_path = user.cor_file_path
+            old_cid  = user.cor_cloudinary_id
+        else:
+            old_path = user.grades_file_path
+            old_cid  = user.grades_cloudinary_id
+
+        if old_cid:
+            try: _del_storage(public_id=old_cid)
+            except Exception: pass
+        elif old_path and not old_path.startswith('http'):
+            try: os.remove(old_path)
+            except Exception: pass
+
+        # Update user record
+        if doc_type == 'cor':
+            user.cor_file_path = file_path
+            user.cor_cloudinary_id = cloud_id
+            db.session.commit()
+            flash(f'{label} uploaded successfully.', 'success')
+            return redirect(url_for('student.upload_gwa'))
 
         # Run OCR to extract GWA
         try:
@@ -593,7 +624,7 @@ def upload_gwa():
                 old_gwa = user.gwa
                 user.gwa = round(extracted_gwa, 2)
                 user.grades_file_path = file_path
-                user.grades_cloudinary_id = grades_cid
+                user.grades_cloudinary_id = cloud_id
                 user.grades_updated_at = datetime.utcnow()
                 # Auto-populate units_enrolled if extracted
                 extracted_units = result.get('units_enrolled')
