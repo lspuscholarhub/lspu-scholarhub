@@ -64,17 +64,23 @@ def create_app(config_name=None):
     # db.create_all() only creates new tables, not new columns.
     # This safely adds columns that were added to models after initial deploy.
     with app.app_context():
-        from sqlalchemy import inspect, text
-        inspector = inspect(db.engine)
+        import logging
+        _migrate_log = logging.getLogger('migrate')
         try:
-            columns = [c['name'] for c in inspector.get_columns('scholarships')]
-            if 'custom_form_fields' not in columns:
-                db.session.execute(text(
-                    'ALTER TABLE scholarships ADD COLUMN custom_form_fields JSON NULL'
-                ))
-                db.session.commit()
-        except Exception:
-            pass  # table may not exist yet — db.create_all() will handle it
+            from sqlalchemy import inspect, text
+            with db.engine.connect() as conn:
+                inspector = inspect(conn)
+                columns = [c['name'] for c in inspector.get_columns('scholarships')]
+                if 'custom_form_fields' not in columns:
+                    conn.execute(text(
+                        'ALTER TABLE scholarships ADD COLUMN custom_form_fields JSON NULL'
+                    ))
+                    conn.commit()
+                    _migrate_log.info('Added custom_form_fields column to scholarships table.')
+                else:
+                    _migrate_log.info('custom_form_fields column already exists.')
+        except Exception as e:
+            _migrate_log.warning(f'Auto-migration check failed (non-fatal): {e}')
 
     # ── Inactivity timeout ────────────────────────────────────────────────
     # Log out users who have been inactive for more than 30 minutes.

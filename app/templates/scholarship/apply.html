@@ -83,7 +83,7 @@
                 <label class="form-label fw-semibold small">Birthday</label>
                 <input type="date" class="form-control" name="birthday"
                        value="{{ user.birthday.strftime('%Y-%m-%d') if user.birthday else '' }}"
-                       readonly style="background:#f8f9fa;">
+                       style="background:#f8f9fa;">
               </div>
               <div class="col-md-6">
                 <label class="form-label fw-semibold small">Town / Province</label>
@@ -104,7 +104,7 @@
         </div>
 
         <!-- ══ SECTION 2: Custom Form Fields (if any) ═══════════════ -->
-        {% if scholarship.custom_form_fields %}
+        {% if scholarship.custom_form_fields is not none and scholarship.custom_form_fields | length > 0 %}
         <div class="card shadow-sm border-0 mb-4" style="border-radius:12px;">
           <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
             <h5 class="fw-bold mb-1">

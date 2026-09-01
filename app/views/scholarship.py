@@ -165,20 +165,23 @@ def apply_scholarship(scholarship_id):
             user.units_enrolled = int(units)
 
         # ── Collect custom form field responses ──────────────────────────
-        if scholarship.custom_form_fields:
-            custom_responses = []
-            for i, field in enumerate(scholarship.custom_form_fields):
-                value = form.get(f'custom_{i}', '').strip()
-                if field.get('required') and not value:
-                    flash(f'Please fill in: {field["label"]}', 'error')
-                    return render_template('scholarship/apply.html',
-                                           scholarship=scholarship, user=user,
-                                           editing=False, application=None)
-                custom_responses.append({
-                    'label': field['label'],
-                    'value': value,
-                })
-            application_data['custom_fields'] = custom_responses
+        try:
+            if scholarship.custom_form_fields:
+                custom_responses = []
+                for i, field in enumerate(scholarship.custom_form_fields):
+                    value = form.get(f'custom_{i}', '').strip()
+                    if field.get('required') and not value:
+                        flash(f'Please fill in: {field["label"]}', 'error')
+                        return render_template('scholarship/apply.html',
+                                               scholarship=scholarship, user=user,
+                                               editing=False, application=None)
+                    custom_responses.append({
+                        'label': field['label'],
+                        'value': value,
+                    })
+                application_data['custom_fields'] = custom_responses
+        except Exception:
+            pass  # custom_form_fields column may not exist yet
 
         # ── Save application ───────────────────────────────────────────────
         application = ScholarshipApplication(
