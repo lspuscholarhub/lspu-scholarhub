@@ -309,50 +309,60 @@
 
 <!-- ── Footer — only for guests and students ──────────────────────────────── -->
 {% if not role or role == 'student' %}
-<footer class="mt-0" style="background:#1a3a6b;color:#e2e8f0;">
-  <div class="container py-4">
-    <div class="row align-items-center">
-      <div class="col-md-5 mb-3 mb-md-0">
-        <div class="d-flex align-items-center gap-2 mb-1">
-          <img src="{{ url_for('static', filename='images/lspu-logo.png') }}" alt="LSPU" style="height:28px;width:28px;object-fit:contain;">
-          <span class="fw-bold">LSPU ScholarHub</span>
+<footer style="background:linear-gradient(135deg,#0f2442 0%,#1a3a6b 100%);color:#cbd5e1;">
+  <div class="container py-5">
+    <div class="row g-4 mb-4">
+      <div class="col-lg-4 text-center text-lg-start">
+        <div class="d-flex align-items-center justify-content-center justify-content-lg-start gap-2 mb-3">
+          <img src="{{ url_for('static', filename='images/lspu-logo.png') }}" alt="LSPU" style="height:32px;width:32px;object-fit:contain;">
+          <span class="fw-bold fs-6">LSPU <span class="text-warning">ScholarHub</span></span>
         </div>
-        <p class="small mb-0 opacity-75">
+        <p class="small mb-0" style="opacity:.7;line-height:1.6;">
           AI-Enabled Scholarship Management and Monitoring System<br>
           Laguna State Polytechnic University
         </p>
       </div>
-      <div class="col-md-4 mb-3 mb-md-0">
-        <p class="small mb-1 opacity-75">
-          <i class="bi bi-geo-alt me-1 text-warning"></i>
-          Student Affairs Building, 2nd Floor, LSPU Sta. Cruz
+      <div class="col-lg-4 text-center">
+        <h6 class="fw-bold text-white mb-3" style="font-size:.85rem;">Contact Us</h6>
+        <p class="small mb-2" style="opacity:.7;">
+          <i class="bi bi-geo-alt-fill text-warning me-2"></i>
+          Student Affairs Building, 2nd Floor<br>LSPU Sta. Cruz Campus
         </p>
-        <p class="small mb-1 opacity-75">
-          <i class="bi bi-envelope me-1 text-warning"></i>
+        <p class="small mb-2" style="opacity:.7;">
+          <i class="bi bi-envelope-fill text-warning me-2"></i>
           lspu.scholarhub@gmail.com
         </p>
-        <p class="small mb-0 opacity-75">
-          <i class="bi bi-telephone me-1 text-warning"></i>
-          0968-365-2615 &nbsp;|&nbsp; Mon–Fri, 8AM–5PM
+        <p class="small mb-0" style="opacity:.7;">
+          <i class="bi bi-telephone-fill text-warning me-2"></i>
+          0968-365-2615
         </p>
       </div>
-      <div class="col-md-3 text-md-end">
+      <div class="col-lg-4 text-center text-lg-end">
+        <h6 class="fw-bold text-white mb-3" style="font-size:.85rem;">Office Hours</h6>
+        <p class="small mb-2" style="opacity:.7;">
+          <i class="bi bi-clock-fill text-warning me-2"></i>
+          Monday - Friday<br>8:00 AM - 5:00 PM
+        </p>
         {% if not role %}
-        <a href="{{ url_for('scholarship.list_scholarships') }}"
-           class="btn btn-outline-light btn-sm mb-2 me-1">
-          <i class="bi bi-search me-1"></i>Scholarships
-        </a>
-        <a href="{{ url_for('chatbot.chatbot_page') }}"
-           class="btn btn-warning btn-sm mb-2">
-          <i class="bi bi-robot me-1"></i>AI Assistant
-        </a>
+        <div class="d-flex gap-2 justify-content-center justify-content-lg-end mt-3">
+          <a href="{{ url_for('scholarship.list_scholarships') }}"
+             class="btn btn-outline-light btn-sm" style="border-radius:8px;">
+            <i class="bi bi-search me-1"></i>Browse Scholarships
+          </a>
+        </div>
         {% endif %}
       </div>
     </div>
-    <hr style="border-color:rgba(255,255,255,.15);margin:16px 0 12px;">
-    <p class="text-center small mb-0 opacity-50">
-      &copy; {{ now.year }} Laguna State Polytechnic University. All rights reserved.
-    </p>
+    <hr style="border-color:rgba(255,255,255,.1);margin:0;">
+    <div class="d-flex justify-content-between align-items-center pt-3 flex-wrap gap-2">
+      <p class="small mb-0" style="opacity:.5;">
+        &copy; {{ now.year }} Laguna State Polytechnic University. All rights reserved.
+      </p>
+      <div class="d-flex gap-3">
+        <span class="small" style="opacity:.5;">Privacy Policy</span>
+        <span class="small" style="opacity:.5;">Terms of Service</span>
+      </div>
+    </div>
   </div>
 </footer>
 {% endif %}
