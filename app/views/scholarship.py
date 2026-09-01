@@ -142,23 +142,6 @@ def apply_scholarship(scholarship_id):
                                    scholarship=scholarship, user=user,
                                    editing=False, application=None)
 
-        # ── Upload grades file ────────────────────────────────────────────
-        grades_file = request.files.get('grades_file')
-        if not grades_file or not grades_file.filename:
-            flash('Please upload your Copy of Grades.', 'error')
-            return render_template('scholarship/apply.html',
-                                   scholarship=scholarship, user=user,
-                                   editing=False, application=None)
-
-        grades_result = document_service.save_file(grades_file, user.id, 'grades')
-        if not grades_result['success']:
-            flash(f'Could not upload grades: {grades_result["message"]}', 'error')
-            return render_template('scholarship/apply.html',
-                                   scholarship=scholarship, user=user,
-                                   editing=False, application=None)
-
-        grades_info = grades_result['file_info']
-
         # ── Build application data from user profile ───────────────────────
         gpa = user.gwa or 0
         units = form.get('units_enrolled', '').strip()
@@ -207,21 +190,6 @@ def apply_scholarship(scholarship_id):
         )
         db.session.add(application)
         db.session.flush()
-
-        # Save grades document record
-        doc = Document(
-            user_id=user.id,
-            application_id=application.id,
-            original_filename=grades_info['original_filename'],
-            stored_filename=grades_info['stored_filename'],
-            file_path=grades_info['file_path'],
-            file_size=grades_info['file_size'],
-            category='grades',
-            file_type=grades_info['file_type'],
-            cloudinary_url=grades_info.get('cloudinary_url'),
-            cloudinary_public_id=grades_info.get('cloudinary_public_id'),
-        )
-        db.session.add(doc)
 
         # Update applicant counter
         scholarship.current_applicants = (scholarship.current_applicants or 0) + 1
@@ -322,48 +290,6 @@ def edit_application(app_id):
                     form_data[field] = val
 
         application.application_data = form_data
-
-        # Handle optional grades file replacement
-        grades_file = request.files.get('grades_file')
-        if grades_file and grades_file.filename:
-            result = document_service.save_file(grades_file, user.id, 'grades')
-            if result['success']:
-                info = result['file_info']
-                existing_doc = Document.query.filter_by(
-                    application_id=application.id,
-                    category='grades'
-                ).first()
-                if existing_doc:
-                    # Delete old file from Cloudinary if applicable
-                    if existing_doc.cloudinary_public_id:
-                        from app.services.storage_service import delete_file as _del
-                        _del(public_id=existing_doc.cloudinary_public_id)
-                    elif existing_doc.file_path:
-                        document_service.delete_file(existing_doc.file_path)
-                    existing_doc.original_filename    = info['original_filename']
-                    existing_doc.stored_filename      = info['stored_filename']
-                    existing_doc.file_path            = info['file_path']
-                    existing_doc.file_size            = info['file_size']
-                    existing_doc.file_type            = info['file_type']
-                    existing_doc.cloudinary_url       = info.get('cloudinary_url')
-                    existing_doc.cloudinary_public_id = info.get('cloudinary_public_id')
-                    existing_doc.is_verified          = False
-                else:
-                    new_doc = Document(
-                        user_id=user.id,
-                        application_id=application.id,
-                        original_filename=info['original_filename'],
-                        stored_filename=info['stored_filename'],
-                        file_path=info['file_path'],
-                        file_size=info['file_size'],
-                        category='grades',
-                        file_type=info['file_type'],
-                        cloudinary_url=info.get('cloudinary_url'),
-                        cloudinary_public_id=info.get('cloudinary_public_id'),
-                    )
-                    db.session.add(new_doc)
-            else:
-                flash(f'Could not replace grades: {result["message"]}', 'warning')
 
         db.session.commit()
         flash('Application updated successfully.', 'success')

@@ -34,7 +34,7 @@
         </div>
       </div>
 
-      <form method="POST" enctype="multipart/form-data" id="applyForm" novalidate>
+      <form method="POST" id="applyForm" novalidate>
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
         <!-- ══ SECTION 1: Your Information (pre-filled, read-only) ═══ -->
@@ -81,7 +81,9 @@
               </div>
               <div class="col-md-6">
                 <label class="form-label fw-semibold small">Birthday</label>
-                <input type="text" class="form-control" name="birthday" value="{{ user.birthday.strftime('%b %d, %Y') if user.birthday else '' }}" readonly style="background:#f8f9fa;">
+                <input type="date" class="form-control" name="birthday"
+                       value="{{ user.birthday.strftime('%Y-%m-%d') if user.birthday else '' }}"
+                       readonly style="background:#f8f9fa;">
               </div>
               <div class="col-md-6">
                 <label class="form-label fw-semibold small">Town / Province</label>
@@ -141,42 +143,7 @@
         </div>
         {% endif %}
 
-        <!-- ══ SECTION 3: Upload Grades ═══════════════════════════════ -->
-        <div class="card shadow-sm border-0 mb-4" style="border-radius:12px;">
-          <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
-            <h5 class="fw-bold mb-1">
-              <i class="bi bi-file-earmark-arrow-up me-2 text-primary"></i>Upload Grades
-            </h5>
-            <p class="text-muted small mb-3">Upload your most updated Copy of Grades for this application.</p>
-          </div>
-          <div class="card-body px-4 pb-4">
-            <div class="mb-3">
-              <label class="form-label fw-semibold small">
-                Copy of Grades <span class="text-danger">*</span>
-              </label>
-              <input type="file" class="form-control" name="grades_file" id="gradesFile"
-                     accept=".pdf,.jpg,.jpeg,.png" required>
-              <div class="form-text">
-                PDF, JPG, or PNG — max 16 MB. Must be your latest grades from the current semester.
-              </div>
-              <div id="fileError" class="text-danger small mt-1 d-none"></div>
-            </div>
-            <div id="filePreview" class="d-none mt-3">
-              <div class="d-flex align-items-center gap-2 p-3 bg-light rounded">
-                <i class="bi bi-file-earmark-check text-success fs-4"></i>
-                <div class="flex-grow-1">
-                  <div class="fw-semibold small" id="fileName"></div>
-                  <div class="text-muted" style="font-size:.75rem;" id="fileSize"></div>
-                </div>
-                <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearFile()">
-                  <i class="bi bi-x"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- ══ SECTION 4: Certification ═══════════════════════════════ -->
+        <!-- ══ SECTION 3: Certification ═══════════════════════════════ -->
         <div class="card shadow-sm border-0 mb-4" style="border-radius:12px;">
           <div class="card-body px-4 py-3">
             <div class="form-check mb-2">
@@ -214,46 +181,6 @@
 
 {% block scripts %}
 <script>
-// File preview
-const fileInput = document.getElementById('gradesFile');
-const preview = document.getElementById('filePreview');
-const fileName = document.getElementById('fileName');
-const fileSize = document.getElementById('fileSize');
-const fileError = document.getElementById('fileError');
-
-fileInput.addEventListener('change', function() {
-  fileError.classList.add('d-none');
-  const file = this.files[0];
-  if (!file) { preview.classList.add('d-none'); return; }
-
-  // Validate
-  const ext = file.name.split('.').pop().toLowerCase();
-  if (!['pdf','jpg','jpeg','png'].includes(ext)) {
-    fileError.textContent = 'Invalid file type. Use PDF, JPG, or PNG.';
-    fileError.classList.remove('d-none');
-    this.value = '';
-    preview.classList.add('d-none');
-    return;
-  }
-  if (file.size > 16 * 1024 * 1024) {
-    fileError.textContent = 'File too large. Maximum is 16 MB.';
-    fileError.classList.remove('d-none');
-    this.value = '';
-    preview.classList.add('d-none');
-    return;
-  }
-
-  fileName.textContent = file.name;
-  fileSize.textContent = (file.size / 1024).toFixed(1) + ' KB';
-  preview.classList.remove('d-none');
-});
-
-function clearFile() {
-  fileInput.value = '';
-  preview.classList.add('d-none');
-}
-
-// Submit validation
 document.getElementById('applyForm').addEventListener('submit', function(e) {
   if (!this.checkValidity()) {
     e.preventDefault();
