@@ -2480,6 +2480,21 @@ def export_batch(batch_id):
                      download_name=filename)
 
 
+@admin_bp.route('/batches/<int:batch_id>')
+@role_required('admin')
+def batch_detail(batch_id):
+    """View the list of scholars assigned to a specific batch."""
+    from app.models import ScholarshipBatch
+    batch = ScholarshipBatch.query.get_or_404(batch_id)
+    applications = [
+        a for a in batch.applications
+        if a.status and a.status.value == 'approved'
+    ]
+    applications.sort(key=lambda a: (a.applicant.last_name or '').lower())
+    return render_template('admin/batch_detail.html',
+                           batch=batch, applications=applications)
+
+
 # ── Temporary email test route (admin only) ───────────────────────────────────
 
 @admin_bp.route('/test-email')

@@ -278,7 +278,6 @@ def download_document(doc_id):
 
 
 @student_bp.route('/documents/<int:doc_id>/view')
-@student_bp.route('/documents/<int:doc_id>/view')
 @role_required('student')
 def view_document(doc_id):
     """Render a viewer page for any document type."""
