@@ -111,7 +111,7 @@
   <!-- Table -->
   <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
-      {% if students %}
+      {% if students.items %}
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light">
@@ -121,7 +121,7 @@
             </tr>
           </thead>
           <tbody>
-            {% for s in students %}
+            {% for s in students.items %}
             <tr>
               <td>
                 <strong>{{ s.get_full_name() }}</strong><br>
@@ -212,5 +212,27 @@
       {% endif %}
     </div>
   </div>
+
+  {% if students.pages > 1 %}
+  <nav class="mt-4 d-flex justify-content-center">
+    <ul class="pagination">
+      <li class="page-item {% if not students.has_prev %}disabled{% endif %}">
+        <a class="page-link" href="{{ url_for('admin.student_directory', page=students.prev_num, q=q, year=year, course=course, gender=gender, sort=sort, gwa_flag=gwa_flag) }}">&laquo;</a>
+      </li>
+      {% for p in students.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+        {% if p %}
+        <li class="page-item {% if p == students.page %}active{% endif %}">
+          <a class="page-link" href="{{ url_for('admin.student_directory', page=p, q=q, year=year, course=course, gender=gender, sort=sort, gwa_flag=gwa_flag) }}">{{ p }}</a>
+        </li>
+        {% else %}
+        <li class="page-item disabled"><span class="page-link">…</span></li>
+        {% endif %}
+      {% endfor %}
+      <li class="page-item {% if not students.has_next %}disabled{% endif %}">
+        <a class="page-link" href="{{ url_for('admin.student_directory', page=students.next_num, q=q, year=year, course=course, gender=gender, sort=sort, gwa_flag=gwa_flag) }}">&raquo;</a>
+      </li>
+    </ul>
+  </nav>
+  {% endif %}
 </div>
 {% endblock %}

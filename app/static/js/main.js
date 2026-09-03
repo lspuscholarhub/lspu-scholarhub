@@ -77,12 +77,38 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // ── Loading-state buttons ─────────────────────────────────────────────
+    // Add class="btn-loading" to any submit button to show a spinner on click.
     document.querySelectorAll('.btn-loading').forEach(btn => {
         btn.addEventListener('click', function () {
+            const form = this.closest('form');
+            if (form && !form.checkValidity()) return; // let HTML5 validation handle it
             const orig = this.innerHTML;
-            this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Loading…';
+            this.dataset.originalHtml = orig;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Submitting…';
             this.disabled = true;
-            setTimeout(() => { this.innerHTML = orig; this.disabled = false; }, 3000);
+            // Re-enable after 10s as a safety net (form submission may redirect)
+            setTimeout(() => {
+                this.innerHTML = this.dataset.originalHtml || orig;
+                this.disabled = false;
+            }, 10000);
+        });
+    });
+
+    // ── Auto-add spinner to form submissions ──────────────────────────────
+    // Any form with class="auto-spinner" will show a loading state on submit.
+    document.querySelectorAll('form.auto-spinner').forEach(form => {
+        form.addEventListener('submit', function () {
+            const btn = this.querySelector('button[type="submit"]');
+            if (btn && !btn.disabled) {
+                const orig = btn.innerHTML;
+                btn.dataset.originalHtml = orig;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Submitting…';
+                btn.disabled = true;
+                setTimeout(() => {
+                    btn.innerHTML = btn.dataset.originalHtml || orig;
+                    btn.disabled = false;
+                }, 10000);
+            }
         });
     });
 

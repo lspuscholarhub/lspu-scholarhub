@@ -6,6 +6,7 @@ Powered by Google Gemini with persistent chat history.
 import os
 from datetime import datetime
 from flask import Blueprint, render_template, request, jsonify, session
+from app import db
 
 chatbot_bp = Blueprint('chatbot', __name__)
 
@@ -143,8 +144,12 @@ def get_faqs():
         from app.models.scholarship import ScholarshipStatus
         count = (Scholarship.query
                  .filter_by(status=ScholarshipStatus.ACTIVE)
-                 .filter(Scholarship.application_deadline > datetime.utcnow())
-                 .count())
+                 .filter(
+                     db.or_(
+                         Scholarship.application_deadline > datetime.utcnow(),
+                         Scholarship.application_deadline.is_(None)
+                     )
+                 ).count())
     except Exception:
         count = 0
 

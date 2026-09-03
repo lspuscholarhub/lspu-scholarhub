@@ -1,7 +1,19 @@
-from flask import Blueprint, render_template, session, request, flash, redirect, url_for
+from flask import Blueprint, render_template, session, request, flash, redirect, url_for, jsonify
 from app import db
 
 main_bp = Blueprint('main', __name__)
+
+@main_bp.route('/health')
+def health():
+    """Health check endpoint for uptime monitoring."""
+    try:
+        from sqlalchemy import text
+        with db.engine.connect() as conn:
+            conn.execute(text('SELECT 1'))
+        return jsonify({'status': 'healthy', 'database': 'connected'}), 200
+    except Exception as e:
+        return jsonify({'status': 'unhealthy', 'error': str(e)}), 503
+
 
 @main_bp.route('/')
 def index():

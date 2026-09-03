@@ -629,7 +629,8 @@ def student_directory():
     else:
         query = query.order_by(User.last_name.asc())
 
-    students = query.all()
+    page = request.args.get('page', 1, type=int)
+    students = query.paginate(page=page, per_page=20, error_out=False)
     all_s    = User.query.filter_by(user_type='student').all()
     with_gwa = [s for s in all_s if s.gwa is not None]
     at_risk  = [s for s in with_gwa if s.gwa > GWA_THRESHOLD]

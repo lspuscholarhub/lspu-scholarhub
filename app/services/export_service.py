@@ -123,7 +123,7 @@ def _build_scholarships_data(filters=None):
             'Approved':      str(sum(1 for a in apps if a.status == ApplicationStatus.APPROVED)),
             'Pending':       str(sum(1 for a in apps if a.status == ApplicationStatus.PENDING)),
             'Rejected':      str(sum(1 for a in apps if a.status == ApplicationStatus.REJECTED)),
-            'Deadline':      s.application_deadline.strftime('%Y-%m-%d'),
+            'Deadline':      s.application_deadline.strftime('%Y-%m-%d') if s.application_deadline else '—',
             'Status':        s.status.value.title(),
         })
     return rows

@@ -122,13 +122,36 @@ def create_app(config_name=None):
     # ── Template globals ──────────────────────────────────────────────────
     from datetime import datetime as _dt
 
+    # Shared constants
+    LSPU_COURSES = sorted([
+        'Bachelor of Science in Information Technology',
+        'Bachelor of Science in Computer Science',
+        'Bachelor of Science in Civil Engineering',
+        'Bachelor of Science in Electrical Engineering',
+        'Bachelor of Science in Mechanical Engineering',
+        'Bachelor of Science in Chemistry',
+        'Bachelor of Science in Mathematics',
+        'Bachelor of Science in Nursing',
+        'Bachelor of Science in Accountancy',
+        'Bachelor of Science in Business Administration Major In Financial Management',
+        'Bachelor of Elementary Education',
+        'Bachelor of Secondary Education Major In English',
+        'Bachelor of Science in Hospitality Management',
+        'Bachelor of Science in Psychology',
+    ])
+
     @app.context_processor
     def inject_globals():
         from flask import session as _session
+        from app.utils.gwa_utils import get_gwa_label, get_gwa_badge_class, GWA_THRESHOLD
         return {
             'now': _dt.utcnow(),
             'session': _session,
             'ApplicationStatus': None,   # imported per-template via model
+            'LSPU_COURSES': LSPU_COURSES,
+            'get_gwa_label': get_gwa_label,
+            'get_gwa_badge_class': get_gwa_badge_class,
+            'GWA_THRESHOLD': GWA_THRESHOLD,
         }
 
     return app

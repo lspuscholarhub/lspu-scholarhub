@@ -16,6 +16,7 @@ import os
 import json
 import logging
 from datetime import datetime
+from app import db
 
 logger = logging.getLogger(__name__)
 
@@ -77,8 +78,16 @@ def _scholarship_context():
 
         scholarships = (Scholarship.query
                         .filter_by(status=ScholarshipStatus.ACTIVE)
-                        .filter(Scholarship.application_deadline > datetime.utcnow())
-                        .order_by(Scholarship.application_deadline.asc())
+                        .filter(
+                            db.or_(
+                                Scholarship.application_deadline > datetime.utcnow(),
+                                Scholarship.application_deadline.is_(None)
+                            )
+                        )
+                        .order_by(
+                            db.case((Scholarship.application_deadline.is_(None), 1), else_=0),
+                            Scholarship.application_deadline.asc()
+                        )
                         .all())
 
         if not scholarships:
@@ -87,14 +96,14 @@ def _scholarship_context():
         lines = ["=== OPEN SCHOLARSHIPS (live from database) ==="]
         for s in scholarships:
             award    = f"₱{float(s.award_amount):,.2f}" if s.award_amount else "TBA"
-            deadline = s.application_deadline.strftime('%B %d, %Y')
-            days     = (s.application_deadline - datetime.utcnow()).days
+            deadline = s.application_deadline.strftime('%B %d, %Y') if s.application_deadline else 'No deadline'
+            days     = (s.application_deadline - datetime.utcnow()).days if s.application_deadline else None
             filled   = s.current_applicants or 0
             capacity = f"{filled}/{s.max_applicants}" if s.max_applicants else f"{filled} (no limit)"
             lines += [
                 f"\n[{s.id}] {s.title}",
                 f"  Award       : {award}",
-                f"  Deadline    : {deadline} ({days} days left)",
+                f"  Deadline    : {deadline}{f' ({days} days left)' if days is not None else ''}",
                 f"  Slots       : {capacity}",
                 f"  Eligibility : {s.eligibility_criteria}",
                 f"  Benefits    : {s.benefits}",
@@ -297,15 +306,20 @@ def _rule_based_response(user_message, user_id=None):
         try:
             scholarships = (Scholarship.query
                             .filter_by(status=ScholarshipStatus.ACTIVE)
-                            .filter(Scholarship.application_deadline > datetime.utcnow())
-                            .all())
+                            .filter(
+                                db.or_(
+                                    Scholarship.application_deadline > datetime.utcnow(),
+                                    Scholarship.application_deadline.is_(None)
+                                )
+                            ).all())
             if not scholarships:
                 return "There are currently no open scholarships. Please check back later or visit the Scholarships page."
             lines = []
             for i, s in enumerate(scholarships, 1):
                 award = f"₱{float(s.award_amount):,.0f}" if s.award_amount else "TBA"
-                days  = (s.application_deadline - datetime.utcnow()).days
-                lines.append(f"{i}. **{s.title}** — {award} | {days} days left")
+                days  = (s.application_deadline - datetime.utcnow()).days if s.application_deadline else None
+                suffix = f" | {days} days left" if days is not None else ''
+                lines.append(f"{i}. **{s.title}** — {award}{suffix}")
             return "**Currently open scholarships:**\n" + "\n".join(lines) + "\n\nVisit the Scholarships page to view details and apply."
         except Exception:
             pass
@@ -315,11 +329,19 @@ def _rule_based_response(user_message, user_id=None):
         try:
             scholarships = (Scholarship.query
                             .filter_by(status=ScholarshipStatus.ACTIVE)
-                            .filter(Scholarship.application_deadline > datetime.utcnow())
-                            .all())
+                            .filter(
+                                db.or_(
+                                    Scholarship.application_deadline > datetime.utcnow(),
+                                    Scholarship.application_deadline.is_(None)
+                                )
+                            ).all())
             if scholarships:
-                lines = [f"• **{s.title}**: {s.application_deadline.strftime('%B %d, %Y')} ({(s.application_deadline - datetime.utcnow()).days} days left)"
-                         for s in scholarships]
+                lines = []
+                for s in scholarships:
+                    if s.application_deadline:
+                        lines.append(f"• **{s.title}**: {s.application_deadline.strftime('%B %d, %Y')} ({(s.application_deadline - datetime.utcnow()).days} days left)")
+                    else:
+                        lines.append(f"• **{s.title}**: No deadline set")
                 return "**Application deadlines:**\n" + "\n".join(lines) + "\n\nMake sure to submit before the deadline!"
         except Exception:
             pass
@@ -329,8 +351,12 @@ def _rule_based_response(user_message, user_id=None):
         try:
             scholarships = (Scholarship.query
                             .filter_by(status=ScholarshipStatus.ACTIVE)
-                            .filter(Scholarship.application_deadline > datetime.utcnow())
-                            .all())
+                            .filter(
+                                db.or_(
+                                    Scholarship.application_deadline > datetime.utcnow(),
+                                    Scholarship.application_deadline.is_(None)
+                                )
+                            ).all())
             if scholarships:
                 lines = [f"• **{s.title}**: ₱{float(s.award_amount):,.0f}" if s.award_amount
                          else f"• **{s.title}**: TBA"
@@ -386,8 +412,12 @@ def _rule_based_response(user_message, user_id=None):
         try:
             scholarships = (Scholarship.query
                             .filter_by(status=ScholarshipStatus.ACTIVE)
-                            .filter(Scholarship.application_deadline > datetime.utcnow())
-                            .all())
+                            .filter(
+                                db.or_(
+                                    Scholarship.application_deadline > datetime.utcnow(),
+                                    Scholarship.application_deadline.is_(None)
+                                )
+                            ).all())
             if scholarships:
                 lines = [f"• **{s.title}**: {s.eligibility_criteria[:100]}{'…' if len(s.eligibility_criteria) > 100 else ''}"
                          for s in scholarships]

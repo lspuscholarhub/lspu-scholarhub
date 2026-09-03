@@ -832,6 +832,52 @@ def update_profile():
     return redirect(url_for('admin.profile'))
 
 
+# ── System Settings ─────────────────────────────────────────────────────────
+
+@admin_bp.route('/settings')
+@role_required('admin')
+def settings():
+    """System settings page — manage academic periods and configuration."""
+    from app.models import AcademicPeriod, ScholarshipBatch
+    periods = AcademicPeriod.query.order_by(AcademicPeriod.id.desc()).all()
+    current = AcademicPeriod.get_current()
+    return render_template('admin/settings.html', periods=periods, current=current)
+
+
+@admin_bp.route('/settings/period/create', methods=['POST'])
+@role_required('admin')
+def create_academic_period():
+    from app.models import AcademicPeriod
+    year = request.form.get('academic_year', '').strip()
+    sem  = request.form.get('semester', '').strip()
+    if not year or not sem:
+        flash('Academic year and semester are required.', 'error')
+        return redirect(url_for('admin.settings'))
+    period = AcademicPeriod(academic_year=year, semester=sem, is_current=True)
+    # Unset any existing current period
+    AcademicPeriod.query.update({'is_current': False})
+    db.session.add(period)
+    db.session.commit()
+    log_action('settings.period_create',
+               f'Admin created academic period: {period.display_name}',
+               category='system')
+    flash(f'Academic period "{period.display_name}" created and set as current.', 'success')
+    return redirect(url_for('admin.settings'))
+
+
+@admin_bp.route('/settings/period/<int:pid>/set-current', methods=['POST'])
+@role_required('admin')
+def set_current_period(pid):
+    from app.models import AcademicPeriod
+    AcademicPeriod.set_current(pid)
+    period = AcademicPeriod.query.get(pid)
+    log_action('settings.period_set_current',
+               f'Admin set current period to {period.display_name}',
+               category='system')
+    flash(f'Current period set to "{period.display_name}".', 'success')
+    return redirect(url_for('admin.settings'))
+
+
 # ── Reports & Export ──────────────────────────────────────────────────────────
 
 @admin_bp.route('/reports')
@@ -1175,7 +1221,8 @@ def student_directory():
     else:
         query = query.order_by(User.last_name.asc(), User.first_name.asc())
 
-    students = query.all()
+    page = request.args.get('page', 1, type=int)
+    students = query.paginate(page=page, per_page=20, error_out=False)
 
     all_students = User.query.filter_by(user_type='student').all()
     with_gwa     = [s for s in all_students if s.gwa is not None]
