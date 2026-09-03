@@ -1043,6 +1043,13 @@ def update_profile():
     user.phone_number = request.form.get('phone_number', user.phone_number)
     new_pw = request.form.get('new_password', '').strip()
     if new_pw:
+        current_pw = request.form.get('current_password', '').strip()
+        if not current_pw:
+            flash('Please enter your current password to set a new one.', 'error')
+            return redirect(url_for('staff.profile'))
+        if not user.check_password(current_pw):
+            flash('Current password is incorrect. Password was not changed.', 'error')
+            return redirect(url_for('staff.profile'))
         if len(new_pw) < 8:
             flash('Password must be at least 8 characters.', 'error')
             return redirect(url_for('staff.profile'))

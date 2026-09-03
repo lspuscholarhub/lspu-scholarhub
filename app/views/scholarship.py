@@ -417,7 +417,7 @@ def download_document(doc_id):
     # Students can only download their own docs; staff/admin can download any
     if session.get('user_type') == 'student' and doc.user_id != session['user_id']:
         flash('Access denied.', 'error')
-        return redirect(url_for('student.documents'))
+        return redirect(url_for('student.profile'))
 
     file_path = doc.file_path
     if not os.path.isabs(file_path):

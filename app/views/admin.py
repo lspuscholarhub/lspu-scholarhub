@@ -810,6 +810,13 @@ def update_profile():
 
     new_pw = request.form.get('new_password', '').strip()
     if new_pw:
+        current_pw = request.form.get('current_password', '').strip()
+        if not current_pw:
+            flash('Please enter your current password to set a new one.', 'error')
+            return redirect(url_for('admin.profile'))
+        if not user.check_password(current_pw):
+            flash('Current password is incorrect. Password was not changed.', 'error')
+            return redirect(url_for('admin.profile'))
         if len(new_pw) < 8:
             flash('Password must be at least 8 characters.', 'error')
             return redirect(url_for('admin.profile'))

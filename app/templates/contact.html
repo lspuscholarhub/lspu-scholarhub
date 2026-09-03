@@ -1,59 +1,115 @@
 {% extends "base.html" %}
-
-{% block title %}Contact - LSPU ScholarHub{% endblock %}
-
+{% block title %}Contact — LSPU ScholarHub{% endblock %}
 {% block content %}
 <div class="container py-5">
-    <div class="row">
-        <div class="col-lg-8 mx-auto">
-            <div class="card shadow">
-                <div class="card-body p-5">
-                    <h1 class="card-title text-center mb-4">Contact Us</h1>
-                    
-                    <div class="row mb-4">
-                        <div class="col-md-6">
-                            <h4>Office Information</h4>
-                            <p><strong>Address:</strong><br>
-                            Student Affairs Building<br>
-                            Laguna State Polytechnic University<br>
-                            Main Campus, Sta. Cruz, Laguna</p>
-                            
-                            <p><strong>Phone:</strong> 0968-365-2615</p>
-                            <p><strong>Email:</strong> lspu.scholarhub@gmail.com</p>
-                            <p><strong>Office Hours:</strong><br>
-                            Monday - Friday: 8:00 AM - 5:00 PM<br>
-                            Saturday: 8:00 AM - 12:00 PM</p>
-                        </div>
-                        
-                        <div class="col-md-6">
-                            <h4>Quick Links</h4>
-                            <div class="list-group">
-                                <a href="{{ url_for('scholarship.list_scholarships') }}" class="list-group-item list-group-item-action">
-                                    Browse Scholarships
-                                </a>
-                                <a href="{{ url_for('auth.register') }}" class="list-group-item list-group-item-action">
-                                    Create Account
-                                </a>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-4">
-                        <h4>Get in Touch</h4>
-                        <p>Have questions about scholarships or need assistance with your application? Our team is here to help!</p>
-                        
-                        <div class="alert alert-info">
-                            <strong>💡 Tip:</strong> You can also use our AI chatbot available on every page for instant answers to common questions.
-                        </div>
-                    </div>
-                    
-                    <div class="text-center mt-4">
-                        <a href="{{ url_for('main.index') }}" class="btn btn-primary btn-lg me-2">Back to Home</a>
-                        <a href="{{ url_for('scholarship.list_scholarships') }}" class="btn btn-success btn-lg">View Scholarships</a>
-                    </div>
-                </div>
+  <div class="row g-4">
+    <!-- Contact Info -->
+    <div class="col-lg-5">
+      <div class="card border-0 shadow-sm" style="border-radius:12px;">
+        <div class="card-body p-4">
+          <h3 class="fw-bold mb-4">Contact Us</h3>
+
+          <div class="d-flex gap-3 mb-4">
+            <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                 style="width:48px;height:48px;">
+              <i class="bi bi-geo-alt-fill text-primary"></i>
             </div>
+            <div>
+              <div class="fw-semibold">Address</div>
+              <div class="text-muted small">Student Affairs Building, 2nd Floor<br>LSPU Sta. Cruz, Laguna</div>
+            </div>
+          </div>
+
+          <div class="d-flex gap-3 mb-4">
+            <div class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                 style="width:48px;height:48px;">
+              <i class="bi bi-envelope-fill text-success"></i>
+            </div>
+            <div>
+              <div class="fw-semibold">Email</div>
+              <div class="text-muted small">lspu.scholarhub@gmail.com</div>
+            </div>
+          </div>
+
+          <div class="d-flex gap-3 mb-4">
+            <div class="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                 style="width:48px;height:48px;">
+              <i class="bi bi-telephone-fill text-warning"></i>
+            </div>
+            <div>
+              <div class="fw-semibold">Phone</div>
+              <div class="text-muted small">0968-365-2615</div>
+            </div>
+          </div>
+
+          <div class="d-flex gap-3">
+            <div class="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
+                 style="width:48px;height:48px;">
+              <i class="bi bi-clock-fill text-info"></i>
+            </div>
+            <div>
+              <div class="fw-semibold">Office Hours</div>
+              <div class="text-muted small">Monday – Friday, 8:00 AM – 5:00 PM</div>
+            </div>
+          </div>
         </div>
+      </div>
     </div>
+
+    <!-- Contact Form -->
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm" style="border-radius:12px;">
+        <div class="card-body p-4">
+          <h3 class="fw-bold mb-2">Send Us a Message</h3>
+          <p class="text-muted small mb-4">Have questions about scholarships or need assistance? Fill out the form below and we'll get back to you.</p>
+
+          <form method="POST" action="{{ url_for('main.contact') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Full Name</label>
+                <input type="text" class="form-control" name="name" required
+                       placeholder="Juan Dela Cruz"
+                       value="{{ session.get('username', '') }}">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Email Address</label>
+                <input type="email" class="form-control" name="email" required
+                       placeholder="you@student.lspu.edu">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Student ID (optional)</label>
+                <input type="text" class="form-control" name="student_id"
+                       placeholder="0123-1714">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small fw-semibold">Subject</label>
+                <select class="form-select" name="subject" required>
+                  <option value="">Select a topic...</option>
+                  <option value="Application Inquiry">Application Inquiry</option>
+                  <option value="Scholarship Information">Scholarship Information</option>
+                  <option value="Document Upload Issue">Document Upload Issue</option>
+                  <option value="Account Problem">Account Problem</option>
+                  <option value="GWA / Grades Concern">GWA / Grades Concern</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label small fw-semibold">Message</label>
+                <textarea class="form-control" name="message" rows="5" required
+                          placeholder="Type your message here..."></textarea>
+              </div>
+              <div class="col-12">
+                <button type="submit" class="btn btn-primary px-4">
+                  <i class="bi bi-send me-1"></i>Send Message
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}

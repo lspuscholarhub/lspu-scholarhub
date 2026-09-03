@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, session
+from flask import Blueprint, render_template, session, request, flash, redirect, url_for
 from app import db
 
 main_bp = Blueprint('main', __name__)
@@ -42,7 +42,48 @@ def index():
 
     return render_template('index.html', recent_scholarships=recent_scholarships)
 
-@main_bp.route('/contact')
+@main_bp.route('/contact', methods=['GET', 'POST'])
 def contact():
-    """Contact page"""
+    """Contact page with form that emails the scholarship office."""
+    if request.method == 'POST':
+        name       = request.form.get('name', '').strip()
+        email      = request.form.get('email', '').strip()
+        student_id = request.form.get('student_id', '').strip()
+        subject    = request.form.get('subject', '').strip()
+        message    = request.form.get('message', '').strip()
+
+        if not all([name, email, subject, message]):
+            flash('Please fill in all required fields.', 'error')
+            return redirect(url_for('main.contact'))
+
+        # Send email to the scholarship office
+        try:
+            from app.services.notification_service import notification_service
+            sid_line = f'<br><strong>Student ID:</strong> {student_id}' if student_id else ''
+            html = f"""
+            <h2>📩 New Contact Form Message</h2>
+            <table style="border-collapse:collapse;">
+              <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">From:</td><td>{name}</td></tr>
+              <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Email:</td><td><a href="mailto:{email}">{email}</a></td></tr>
+              {sid_line}
+              <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Subject:</td><td>{subject}</td></tr>
+            </table>
+            <hr>
+            <p>{message}</p>
+            <hr>
+            <p style="color:#888;font-size:.85rem;">Sent via LSPU ScholarHub Contact Form</p>
+            """
+            notification_service.send_email(
+                'lspu.scholarhub@gmail.com',
+                f'[ScholarHub Contact] {subject} — {name}',
+                html,
+            )
+            flash('Your message has been sent! We will get back to you soon.', 'success')
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(f'Contact form email failed: {e}')
+            flash('Your message was received. We will get back to you soon.', 'success')
+
+        return redirect(url_for('main.contact'))
+
     return render_template('contact.html')

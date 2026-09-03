@@ -164,57 +164,8 @@ def mark_all_read():
 @student_bp.route('/documents')
 @role_required('student')
 def documents():
-    user  = User.query.get(session['user_id'])
-    docs  = (Document.query
-             .filter_by(user_id=user.id)
-             .order_by(Document.uploaded_at.desc())
-             .all())
-
-    total_size  = sum(d.file_size or 0 for d in docs)
-    verified    = sum(1 for d in docs if d.is_verified)
-    pending_v   = sum(1 for d in docs if not d.is_verified)
-
-    return render_template(
-        'student/documents.html',
-        documents=docs,
-        total_size=total_size,
-        verified=verified,
-        pending_v=pending_v,
-    )
-
-
-@student_bp.route('/documents/upload', methods=['POST'])
-@role_required('student')
-def upload_document():
-    user = User.query.get(session['user_id'])
-    file = request.files.get('document_file')
-    desc = request.form.get('document_description', '').strip()
-
-    if not file or not file.filename:
-        flash('Please select a file to upload.', 'error')
-        return redirect(url_for('student.documents'))
-
-    # Use 'general' as the default category since we removed the category picker
-    result = document_service.save_file(file, user.id, 'general')
-    if not result['success']:
-        flash(result['message'], 'error')
-        return redirect(url_for('student.documents'))
-
-    info = result['file_info']
-    doc  = Document(
-        user_id=user.id,
-        original_filename=info['original_filename'],
-        stored_filename=info['stored_filename'],
-        file_path=info['file_path'],
-        file_size=info['file_size'],
-        category='general',
-        file_type=info['file_type'],
-        description=desc or info['original_filename'],
-    )
-    db.session.add(doc)
-    db.session.commit()
-    flash(f'"{info["original_filename"]}" uploaded successfully.', 'success')
-    return redirect(url_for('student.documents'))
+    """Legacy documents page — redirects to profile."""
+    return redirect(url_for('student.profile'))
 
 
 @student_bp.route('/documents/<int:doc_id>/delete', methods=['POST'])
@@ -223,13 +174,13 @@ def delete_document(doc_id):
     doc = Document.query.get_or_404(doc_id)
     if doc.user_id != session['user_id']:
         flash('Access denied.', 'error')
-        return redirect(url_for('student.documents'))
+        return redirect(url_for('student.profile'))
 
     document_service.delete_file(doc.file_path)
     db.session.delete(doc)
     db.session.commit()
     flash('Document deleted.', 'success')
-    return redirect(url_for('student.documents'))
+    return redirect(url_for('student.profile'))
 
 
 @student_bp.route('/documents/<int:doc_id>/download')
@@ -240,7 +191,7 @@ def download_document(doc_id):
     doc = Document.query.get_or_404(doc_id)
     if doc.user_id != session['user_id']:
         flash('Access denied.', 'error')
-        return redirect(url_for('student.documents'))
+        return redirect(url_for('student.profile'))
 
     # Cloudinary proxy
     if doc.cloudinary_public_id:
@@ -262,7 +213,7 @@ def download_document(doc_id):
                             headers={'Content-Disposition': f'attachment; filename="{doc.original_filename}"'})
         except Exception as e:
             flash(f'Could not download file: {e}', 'error')
-            return redirect(url_for('student.documents'))
+            return redirect(url_for('student.profile'))
 
     file_path = doc.file_path
     if not os.path.isabs(file_path):
@@ -271,7 +222,7 @@ def download_document(doc_id):
 
     if not os.path.exists(file_path):
         flash('File not found on server.', 'error')
-        return redirect(url_for('student.documents'))
+        return redirect(url_for('student.profile'))
 
     return _send_file(file_path, as_attachment=True,
                       download_name=doc.original_filename)
@@ -285,7 +236,7 @@ def view_document(doc_id):
     doc = Document.query.get_or_404(doc_id)
     if doc.user_id != session['user_id']:
         flash('Access denied.', 'error')
-        return redirect(url_for('student.documents'))
+        return redirect(url_for('student.profile'))
 
     file_path = doc.file_path
     if not os.path.isabs(file_path):
@@ -294,7 +245,7 @@ def view_document(doc_id):
 
     if not os.path.exists(file_path):
         flash('File not found on server.', 'error')
-        return redirect(url_for('student.documents'))
+        return redirect(url_for('student.profile'))
 
     return render_template('student/document_viewer.html',
                            doc=doc,
@@ -310,7 +261,7 @@ def serve_document_raw(doc_id):
     doc = Document.query.get_or_404(doc_id)
     if doc.user_id != session['user_id']:
         flash('Access denied.', 'error')
-        return redirect(url_for('student.documents'))
+        return redirect(url_for('student.profile'))
 
     mime_map = {
         'pdf':  'application/pdf',
@@ -341,7 +292,7 @@ def serve_document_raw(doc_id):
                             })
         except Exception as e:
             flash(f'Could not load file: {e}', 'error')
-            return redirect(url_for('student.documents'))
+            return redirect(url_for('student.profile'))
 
     file_path = doc.file_path
     if not os.path.isabs(file_path):
@@ -350,7 +301,7 @@ def serve_document_raw(doc_id):
 
     if not os.path.exists(file_path):
         flash('File not found.', 'error')
-        return redirect(url_for('student.documents'))
+        return redirect(url_for('student.profile'))
 
     return _send_file(file_path, mimetype=mime, as_attachment=force_download,
                       download_name=doc.original_filename)

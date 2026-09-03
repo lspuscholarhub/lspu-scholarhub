@@ -26,7 +26,7 @@ class Scholarship(db.Model):
     description = db.Column(db.Text, nullable=False)
     eligibility_criteria = db.Column(db.Text, nullable=False)
     benefits = db.Column(db.Text, nullable=False)
-    application_deadline = db.Column(db.DateTime, nullable=False)
+    application_deadline = db.Column(db.DateTime, nullable=True)
     award_amount = db.Column(DECIMAL(10, 2))
     max_applicants = db.Column(db.Integer)
     current_applicants = db.Column(db.Integer, default=0)
