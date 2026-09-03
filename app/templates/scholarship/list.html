@@ -46,7 +46,11 @@
             <a href="{{ url_for('scholarship.view_scholarship', scholarship_id=s.id) }}"
                class="btn btn-outline-primary btn-sm">View Details</a>
             {% if session.get('user_type') == 'student' %}
-              {% if s.id in applied_ids %}
+              {% if is_current_scholar %}
+                <span class="badge bg-secondary" title="You are currently a scholar under '{{ active_scholarship_title }}'">
+                  <i class="bi bi-lock-fill me-1"></i>Current Scholar
+                </span>
+              {% elif s.id in applied_ids %}
                 <span class="badge bg-info">Already Applied</span>
               {% elif s.id in withdrawn_ids %}
                 {% if s.is_application_open() %}

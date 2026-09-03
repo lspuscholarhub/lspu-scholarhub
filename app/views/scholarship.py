@@ -43,6 +43,8 @@ def list_scholarships():
     # Collect IDs the student already applied to (non-withdrawn)
     applied_ids = set()
     withdrawn_ids = set()
+    is_current_scholar = False
+    active_scholarship_title = None
     if session.get('user_type') == 'student':
         for a in ScholarshipApplication.query.filter_by(applicant_id=session['user_id']).all():
             if a.status == ApplicationStatus.WITHDRAWN:
@@ -50,11 +52,22 @@ def list_scholarships():
             else:
                 applied_ids.add(a.scholarship_id)
 
+        # Check if student is already an approved scholar
+        approved_app = ScholarshipApplication.query.filter(
+            ScholarshipApplication.applicant_id == session['user_id'],
+            ScholarshipApplication.status == ApplicationStatus.APPROVED,
+        ).first()
+        if approved_app:
+            is_current_scholar = True
+            active_scholarship_title = approved_app.scholarship.title
+
     return render_template(
         'scholarship/list.html',
         scholarships=scholarships,
         applied_ids=applied_ids,
         withdrawn_ids=withdrawn_ids,
+        is_current_scholar=is_current_scholar,
+        active_scholarship_title=active_scholarship_title,
         q=q,
     )
 
@@ -73,6 +86,8 @@ def view_scholarship(scholarship_id):
 
     already_applied = False
     can_reapply     = False
+    is_current_scholar = False
+    active_scholarship_title = None
     if session.get('user_type') == 'student':
         existing = ScholarshipApplication.query.filter_by(
             scholarship_id=scholarship_id,
@@ -84,6 +99,15 @@ def view_scholarship(scholarship_id):
             else:
                 already_applied = True  # active application exists
 
+        # Check if student is already an approved scholar of any program
+        approved_app = ScholarshipApplication.query.filter(
+            ScholarshipApplication.applicant_id == session['user_id'],
+            ScholarshipApplication.status == ApplicationStatus.APPROVED,
+        ).first()
+        if approved_app:
+            is_current_scholar = True
+            active_scholarship_title = approved_app.scholarship.title
+
     days_left = (scholarship.application_deadline - datetime.utcnow()).days if scholarship.application_deadline else None
     fill_pct  = 0
     if scholarship.max_applicants:
@@ -94,6 +118,8 @@ def view_scholarship(scholarship_id):
         scholarship=scholarship,
         already_applied=already_applied,
         can_reapply=can_reapply,
+        is_current_scholar=is_current_scholar,
+        active_scholarship_title=active_scholarship_title,
         days_left=days_left,
         fill_pct=fill_pct,
     )
@@ -118,6 +144,16 @@ def apply_scholarship(scholarship_id):
         flash('Your account must be verified before you can apply for scholarships. '
               'Please contact the scholarship office or wait for admin verification.', 'warning')
         return redirect(url_for('scholarship.view_scholarship', scholarship_id=scholarship_id))
+
+    # Guard: only one active scholarship allowed at a time
+    active_scholarship = ScholarshipApplication.query.filter(
+        ScholarshipApplication.applicant_id == user.id,
+        ScholarshipApplication.status == ApplicationStatus.APPROVED,
+    ).first()
+    if active_scholarship:
+        flash(f'You are already a scholar under "{active_scholarship.scholarship.title}". '
+              'You can only hold one scholarship at a time.', 'warning')
+        return redirect(url_for('student.my_applications'))
 
     # Guard: no duplicate active applications (withdrawn = allowed to re-apply)
     existing = ScholarshipApplication.query.filter_by(
