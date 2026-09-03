@@ -5,9 +5,10 @@
 <div class="container-fluid px-4 py-4">
 
   <!-- Header -->
-  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-3">
     <div>
       <h1 class="h3 fw-bold mb-1">Staff Dashboard</h1>
+      <p class="text-muted" style="font-size:.72rem;">Last updated: {{ now.strftime('%b %d, %Y %I:%M %p') if now else '' }}</p>
       <p class="text-muted small mb-0">Scholarship management overview</p>
     </div>
     {% if current_period %}

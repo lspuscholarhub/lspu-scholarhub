@@ -3,6 +3,15 @@
 
 {% block content %}
 <div class="container-fluid py-4">
+
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-3">
+      <li class="breadcrumb-item"><a href="{{ url_for('staff.dashboard') }}">Dashboard</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Student Directory</li>
+    </ol>
+  </nav>
+
   <h1 class="h3 mb-4">Student Directory</h1>
 
   <!-- Stats -->
@@ -22,7 +31,7 @@
     <div class="col-md-3">
       <div class="card border-0 shadow-sm text-center py-3">
         <h2 class="text-danger mb-0">{{ at_risk_count }}</h2>
-        <small class="text-muted">At Risk (GWA &lt; {{ GWA_THRESHOLD }})</small>
+        <small class="text-muted">At Risk (GWA &gt; 3.00)</small>
       </div>
     </div>
     <div class="col-md-3">
@@ -37,16 +46,15 @@
   <div class="card border-0 shadow-sm mb-4">
     <div class="card-body">
       <form method="GET" class="auto-filter">
-        <!-- Row 1: Search + Year + Course + Gender -->
         <div class="row g-2 mb-2">
           <div class="col-md-4">
-            <label class="form-label small fw-semibold">Search</label>
-            <input type="text" name="q" value="{{ q }}" class="form-control"
+            <label class="form-label small fw-semibold" for="sd-search">Search</label>
+            <input type="text" id="sd-search" name="q" value="{{ q }}" class="form-control"
                    placeholder="Name or Student ID…">
           </div>
           <div class="col-md-2">
-            <label class="form-label small fw-semibold">Year Level</label>
-            <select name="year" class="form-select">
+            <label class="form-label small fw-semibold" for="sd-year">Year Level</label>
+            <select id="sd-year" name="year" class="form-select">
               <option value="">All Years</option>
               {% for y in ['1st Year','2nd Year','3rd Year','4th Year'] %}
               <option value="{{ y }}" {% if year==y %}selected{% endif %}>{{ y }}</option>
@@ -54,8 +62,8 @@
             </select>
           </div>
           <div class="col-md-3">
-            <label class="form-label small fw-semibold">Course / Program</label>
-            <select name="course" class="form-select">
+            <label class="form-label small fw-semibold" for="sd-course">Course / Program</label>
+            <select id="sd-course" name="course" class="form-select">
               <option value="">All Courses</option>
               {% for c in courses %}
               <option value="{{ c }}" {% if course==c %}selected{% endif %}>{{ c }}</option>
@@ -63,29 +71,28 @@
             </select>
           </div>
           <div class="col-md-3">
-            <label class="form-label small fw-semibold">Gender</label>
-            <select name="gender" class="form-select">
+            <label class="form-label small fw-semibold" for="sd-gender">Gender</label>
+            <select id="sd-gender" name="gender" class="form-select">
               <option value="" {% if gender=='' %}selected{% endif %}>All Genders</option>
               <option value="Male"   {% if gender=='Male'   %}selected{% endif %}>Male</option>
               <option value="Female" {% if gender=='Female' %}selected{% endif %}>Female</option>
             </select>
           </div>
         </div>
-        <!-- Row 2: Sort + GWA + Reset -->
         <div class="row g-2 align-items-end">
           <div class="col-md-3">
-            <label class="form-label small fw-semibold">Sort By</label>
-            <select name="sort" class="form-select">
+            <label class="form-label small fw-semibold" for="sd-sort">Sort By</label>
+            <select id="sd-sort" name="sort" class="form-select">
               <option value="name"     {% if sort=='name'     %}selected{% endif %}>Name (A–Z)</option>
               <option value="gwa_desc" {% if sort=='gwa_desc' %}selected{% endif %}>GWA High → Low</option>
               <option value="gwa_asc"  {% if sort=='gwa_asc'  %}selected{% endif %}>GWA Low → High</option>
             </select>
           </div>
           <div class="col-md-3">
-            <label class="form-label small fw-semibold">GWA Status</label>
-            <select name="gwa_flag" class="form-select">
+            <label class="form-label small fw-semibold" for="sd-gwa">GWA Status</label>
+            <select id="sd-gwa" name="gwa_flag" class="form-select">
               <option value=""        {% if gwa_flag==''        %}selected{% endif %}>All</option>
-              <option value="at_risk" {% if gwa_flag=='at_risk' %}selected{% endif %}>⚠ Conditional Failure / Failed</option>
+              <option value="at_risk" {% if gwa_flag=='at_risk' %}selected{% endif %}>At Risk (GWA &gt; 3.00)</option>
             </select>
           </div>
           <div class="col-md-3"></div>
@@ -108,23 +115,22 @@
           <thead class="table-light">
             <tr>
               <th>Student</th><th>Student ID</th><th>Year / Course</th>
-              <th>Town</th><th>Gender</th><th>GWA</th><th>Units</th><th>Documents</th><th></th>
+              <th>Gender</th><th>GWA</th><th>Units</th><th>Documents</th><th></th>
             </tr>
           </thead>
           <tbody>
             {% for s in students.items %}
             <tr>
-              <td>
+              <td data-label="Student">
                 <strong>{{ s.get_full_name() }}</strong><br>
                 <small class="text-muted">{{ s.email }}</small>
               </td>
-              <td class="small">{{ s.student_id or '—' }}</td>
-              <td class="small">
+              <td data-label="ID" class="small">{{ s.student_id or '—' }}</td>
+              <td data-label="Year / Course" class="small">
                 {{ s.year_level or '—' }}
                 {% if s.course %}<br><span class="text-muted">{{ s.course }}</span>{% endif %}
               </td>
-              <td class="small">{{ s.town or '—' }}</td>
-              <td class="small">
+              <td data-label="Gender" class="small">
                 {% if s.gender == 'Male' %}
                   <span class="badge" style="background:#e8f0fe;color:#0d6efd;">
                     <i class="bi bi-gender-male me-1"></i>Male
@@ -135,58 +141,60 @@
                   </span>
                 {% else %}—{% endif %}
               </td>
-              <td>
+              <td data-label="GWA">
                 {% if s.gwa %}
                   {% if s.gwa <= 1.25 %}
                     <span class="badge bg-success">{{ s.gwa }}</span>
                     <small class="text-success d-block">Excellent</small>
                   {% elif s.gwa <= 1.75 %}
                     <span class="badge bg-success">{{ s.gwa }}</span>
-                    <small class="text-success d-block">Very Satisfactory</small>
+                    <small class="text-success d-block">Very Good</small>
                   {% elif s.gwa <= 2.25 %}
                     <span class="badge bg-success">{{ s.gwa }}</span>
                     <small class="text-success d-block">Satisfactory</small>
                   {% elif s.gwa <= 2.75 %}
                     <span class="badge bg-info">{{ s.gwa }}</span>
-                    <small class="text-info d-block">Fairly Satisfactory</small>
+                    <small class="text-info d-block">Fair</small>
                   {% elif s.gwa <= 3.00 %}
                     <span class="badge bg-warning text-dark">{{ s.gwa }}</span>
                     <small class="text-warning d-block">Passed</small>
                   {% elif s.gwa <= 4.00 %}
                     <span class="badge" style="background-color:#fd7e14;color:#fff;">{{ s.gwa }}</span>
-                    <small class="d-block" style="color:#fd7e14;">Conditional Failure</small>
+                    <small class="d-block" style="color:#fd7e14;">At Risk</small>
                   {% else %}
                     <span class="badge bg-danger">{{ s.gwa }}</span>
-                    <small class="text-danger d-block">Failed — At Risk</small>
+                    <small class="text-danger d-block">Failed</small>
                   {% endif %}
                 {% else %}
                   <span class="text-muted small">Not set</span>
                 {% endif %}
               </td>
-              <!-- Units Enrolled -->
-              <td class="small text-center">
+              <td data-label="Units" class="small text-center">
                 {% if s.units_enrolled %}
                   <span class="badge bg-secondary">{{ s.units_enrolled }}</span>
                 {% else %}
                   <span class="text-muted">—</span>
                 {% endif %}
               </td>
-              <td class="small">
+              <td data-label="Docs" class="small">
                 {% if s.cor_file_path %}
                   <a href="{{ url_for('staff.view_reg_document', uid=s.id, doc_type='cor') }}"
-                     target="_blank" class="badge bg-primary text-decoration-none me-1">COR</a>
+                     target="_blank" class="badge bg-primary text-decoration-none me-1"
+                     data-bs-toggle="tooltip" title="View Certificate of Registration">COR</a>
                 {% endif %}
                 {% if s.grades_file_path %}
                   <a href="{{ url_for('staff.view_reg_document', uid=s.id, doc_type='grades') }}"
-                     target="_blank" class="badge bg-info text-decoration-none">Grades</a>
+                     target="_blank" class="badge bg-info text-decoration-none"
+                     data-bs-toggle="tooltip" title="View Copy of Grades">Grades</a>
                 {% endif %}
                 {% if not s.cor_file_path and not s.grades_file_path %}
                   <span class="text-muted">—</span>
                 {% endif %}
               </td>
-              <td>
+              <td data-label="Action">
                 <a href="{{ url_for('staff.student_profile', uid=s.id) }}"
-                   class="btn btn-sm btn-outline-primary">
+                   class="btn btn-sm btn-outline-primary"
+                   data-bs-toggle="tooltip" title="View student profile">
                   <i class="bi bi-eye me-1"></i>View
                 </a>
               </td>
@@ -196,9 +204,15 @@
         </table>
       </div>
       {% else %}
-      <div class="text-center py-5 text-muted">
-        <i class="bi bi-people display-4"></i>
-        <p class="mt-3">No students found{% if q %} for "{{ q }}"{% endif %}.</p>
+      <div class="card-body empty-state">
+        <i class="bi bi-people"></i>
+        <h5>No students found{% if q %} for "{{ q }}"{% endif %}</h5>
+        <p>{% if q %}Try a different search term.{% else %}Students will appear here after they register.{% endif %}</p>
+        {% if q %}
+        <a href="{{ url_for('staff.student_directory') }}" class="btn btn-outline-primary btn-sm">
+          <i class="bi bi-x-circle me-1"></i>Clear Search
+        </a>
+        {% endif %}
       </div>
       {% endif %}
     </div>
@@ -206,7 +220,7 @@
 
   {# ── Pagination ─────────────────────────────────────────────────── #}
   {% if students.pages > 1 %}
-  <nav class="mt-4 d-flex justify-content-center">
+  <nav class="mt-4 d-flex justify-content-center" aria-label="Student directory pagination">
     <ul class="pagination">
       <li class="page-item {% if not students.has_prev %}disabled{% endif %}">
         <a class="page-link" href="{{ url_for('staff.student_directory', page=students.prev_num, q=q, year=year, course=course, gender=gender, sort=sort, gwa_flag=gwa_flag) }}">&laquo;</a>
@@ -227,4 +241,13 @@
   </nav>
   {% endif %}
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Initialize tooltips
+document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) {
+  new bootstrap.Tooltip(el);
+});
+</script>
 {% endblock %}

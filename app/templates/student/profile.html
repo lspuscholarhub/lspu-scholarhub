@@ -4,6 +4,14 @@
 {% block content %}
 <div class="container py-5">
 
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-3">
+      <li class="breadcrumb-item"><a href="{{ url_for('student.dashboard') }}">Dashboard</a></li>
+      <li class="breadcrumb-item active" aria-current="page">My Profile</li>
+    </ol>
+  </nav>
+
   {# First-login password change banner #}
   {% if session.get('first_login') %}
   <div class="alert alert-warning d-flex align-items-center gap-3 mb-4 shadow-sm" role="alert">

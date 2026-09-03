@@ -3,6 +3,14 @@
 
 {% block content %}
 <div class="container py-5">
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-3">
+      <li class="breadcrumb-item"><a href="{{ url_for('student.dashboard') }}">Dashboard</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Upload Documents</li>
+    </ol>
+  </nav>
+
   <div class="row justify-content-center">
     <div class="col-md-7 col-lg-6">
       <div class="card shadow border-0" style="border-radius:12px;">

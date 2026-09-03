@@ -2,6 +2,15 @@
 {% block title %}Monitoring & Tracking - Staff{% endblock %}
 {% block content %}
 <div class="container-fluid py-4">
+
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-3">
+      <li class="breadcrumb-item"><a href="{{ url_for('staff.dashboard') }}">Dashboard</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Monitoring & Tracking</li>
+    </ol>
+  </nav>
+
   <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
       <h1 class="h3 fw-bold mb-0">Monitoring & Tracking</h1>
@@ -42,19 +51,19 @@
           <tbody>
             {% for alert in renewal_alerts %}
             <tr>
-              <td class="ps-4"><strong>{{ alert.app.applicant.get_full_name() }}</strong><br><small class="text-muted">{{ alert.app.applicant.student_id }}</small></td>
-              <td class="small">{{ alert.app.scholarship.title }}</td>
-              <td class="small">{{ alert.app.approved_at.strftime('%b %d, %Y') if alert.app.approved_at else '—' }}</td>
-              <td class="small">{{ alert.due.strftime('%b %d, %Y') }}</td>
-              <td>
+              <td class="ps-4" data-label="Scholar"><strong>{{ alert.app.applicant.get_full_name() }}</strong><br><small class="text-muted">{{ alert.app.applicant.student_id }}</small></td>
+              <td data-label="Scholarship" class="small">{{ alert.app.scholarship.title }}</td>
+              <td data-label="Approved" class="small">{{ alert.app.approved_at.strftime('%b %d, %Y') if alert.app.approved_at else '—' }}</td>
+              <td data-label="Due" class="small">{{ alert.due.strftime('%b %d, %Y') }}</td>
+              <td data-label="Days Left">
                 <span class="badge {% if alert.days_left <= 7 %}bg-danger{% elif alert.days_left <= 14 %}bg-warning text-dark{% else %}bg-info text-dark{% endif %}">
                   {{ alert.days_left }}d
                 </span>
               </td>
-              <td class="pe-4">
+              <td data-label="Action" class="pe-4">
                 <form method="POST" action="{{ url_for('staff.send_renewal_reminder', app_id=alert.app.id) }}" class="d-inline">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button class="btn btn-sm btn-outline-warning" {% if alert.app.renewal_notified_at %}title="Last sent: {{ alert.app.renewal_notified_at.strftime('%b %d') }}"{% endif %}>
+                  <button class="btn btn-sm btn-outline-warning" data-bs-toggle="tooltip" title="Send renewal reminder via email/SMS">
                     <i class="bi bi-envelope me-1"></i>Send Reminder
                   </button>
                 </form>
@@ -73,8 +82,8 @@
     <div class="card-body">
       <form method="GET" class="auto-filter row g-2 align-items-end">
         <div class="col-md-3">
-          <label class="form-label small fw-semibold">Scholar Status</label>
-          <select name="scholar_status" class="form-select">
+          <label class="form-label small fw-semibold" for="mon-status">Scholar Status</label>
+          <select id="mon-status" name="scholar_status" class="form-select">
             <option value="">All Statuses</option>
             {% for val, label in [('active','Good Standing'),('at_risk','At Risk'),('probation','Probation'),('termination_warning','Termination Warning')] %}
             <option value="{{ val }}" {% if status_filter==val %}selected{% endif %}>{{ label }}</option>
@@ -82,8 +91,8 @@
           </select>
         </div>
         <div class="col-md-3">
-          <label class="form-label small fw-semibold">Course / Program</label>
-          <select name="course" class="form-select">
+          <label class="form-label small fw-semibold" for="mon-course">Course / Program</label>
+          <select id="mon-course" name="course" class="form-select">
             <option value="">All Courses</option>
             {% for c in courses %}
             <option value="{{ c }}" {% if course_filter==c %}selected{% endif %}>{{ c }}</option>
@@ -91,8 +100,8 @@
           </select>
         </div>
         <div class="col-md-2">
-          <label class="form-label small fw-semibold">Compliance</label>
-          <select name="compliance" class="form-select">
+          <label class="form-label small fw-semibold" for="mon-comp">Compliance</label>
+          <select id="mon-comp" name="compliance" class="form-select">
             <option value="">All</option>
             <option value="compliant" {% if compliance_filter=='compliant' %}selected{% endif %}>Compliant</option>
             <option value="non_compliant" {% if compliance_filter=='non_compliant' %}selected{% endif %}>Non-Compliant</option>
@@ -123,38 +132,39 @@
             {% for app in scholars %}
             {% set student = app.applicant %}
             <tr>
-              <td class="ps-4">
+              <td class="ps-4" data-label="Scholar">
                 <strong>{{ student.get_full_name() }}</strong><br>
                 <small class="text-muted">{{ student.student_id or student.email }}</small>
                 {% if student.course %}<br><small class="text-muted">{{ student.course }} · {{ student.year_level or '' }}</small>{% endif %}
               </td>
-              <td class="small">{{ app.scholarship.title }}</td>
-              <td>
+              <td data-label="Scholarship" class="small">{{ app.scholarship.title }}</td>
+              <td data-label="GWA">
                 {% if student.gwa %}
                   {% if student.gwa <= 1.25 %}<span class="badge bg-success">{{ student.gwa }}</span><small class="text-success d-block">Excellent</small>
-                  {% elif student.gwa <= 1.75 %}<span class="badge bg-success">{{ student.gwa }}</span><small class="text-success d-block">Very Satisfactory</small>
+                  {% elif student.gwa <= 1.75 %}<span class="badge bg-success">{{ student.gwa }}</span><small class="text-success d-block">Very Good</small>
                   {% elif student.gwa <= 2.25 %}<span class="badge bg-success">{{ student.gwa }}</span><small class="text-success d-block">Satisfactory</small>
-                  {% elif student.gwa <= 2.75 %}<span class="badge bg-info text-dark">{{ student.gwa }}</span><small class="text-info d-block">Fairly Satisfactory</small>
+                  {% elif student.gwa <= 2.75 %}<span class="badge bg-info text-dark">{{ student.gwa }}</span><small class="text-info d-block">Fair</small>
                   {% elif student.gwa <= 3.00 %}<span class="badge bg-warning text-dark">{{ student.gwa }}</span><small class="text-warning d-block">Passed</small>
-                  {% elif student.gwa < 4.00 %}<span class="badge" style="background:#fd7e14;color:#fff;">{{ student.gwa }}</span><small class="d-block" style="color:#fd7e14;">Conditional Failure</small>
+                  {% elif student.gwa < 4.00 %}<span class="badge" style="background:#fd7e14;color:#fff;">{{ student.gwa }}</span><small class="d-block" style="color:#fd7e14;">At Risk</small>
                   {% else %}<span class="badge bg-danger">{{ student.gwa }}</span><small class="text-danger d-block">Failed</small>{% endif %}
                 {% else %}<span class="text-muted small">Not set</span>{% endif %}
               </td>
-              <td>
+              <td data-label="Status">
                 {% if app.scholar_status == 'active' %}<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Good Standing</span>
                 {% elif app.scholar_status == 'at_risk' %}<span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>At Risk</span>
                 {% elif app.scholar_status == 'probation' %}<span class="badge" style="background:#fd7e14;color:#fff;"><i class="bi bi-exclamation-circle me-1"></i>Probation</span>
                 {% elif app.scholar_status == 'termination_warning' %}<span class="badge bg-danger"><i class="bi bi-x-octagon me-1"></i>Termination Warning</span>
                 {% else %}<span class="badge bg-secondary">{{ app.scholar_status or '—' }}</span>{% endif %}
               </td>
-              <td>
+              <td data-label="Compliance">
                 {% if app.compliance_status == 'compliant' %}<span class="badge bg-success"><i class="bi bi-check me-1"></i>Compliant</span>
                 {% else %}<span class="badge bg-danger"><i class="bi bi-x me-1"></i>Non-Compliant</span>{% endif %}
                 {% if app.last_compliance_check %}<br><small class="text-muted">Checked {{ app.last_compliance_check.strftime('%b %d') }}</small>{% endif %}
               </td>
-              <td class="small">{{ app.approved_at.strftime('%b %d, %Y') if app.approved_at else '—' }}</td>
-              <td class="pe-4">
-                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#updateModal{{ app.id }}">
+              <td data-label="Approved" class="small">{{ app.approved_at.strftime('%b %d, %Y') if app.approved_at else '—' }}</td>
+              <td data-label="Action" class="pe-4">
+                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#updateModal{{ app.id }}"
+                        data-bs-toggle="tooltip" title="Update GWA or status">
                   <i class="bi bi-pencil me-1"></i>Update
                 </button>
               </td>
@@ -164,9 +174,15 @@
         </table>
       </div>
       {% else %}
-      <div class="text-center py-5 text-muted">
-        <i class="bi bi-people display-4"></i>
-        <p class="mt-3">No approved scholars found{% if status_filter or course_filter %} matching the current filters{% endif %}.</p>
+      <div class="card-body empty-state">
+        <i class="bi bi-people"></i>
+        <h5>No approved scholars found</h5>
+        <p>{% if status_filter or course_filter %}Try adjusting your filters.{% else %}Scholars will appear here once applications are approved.{% endif %}</p>
+        {% if status_filter or course_filter %}
+        <a href="{{ url_for('staff.monitoring') }}" class="btn btn-outline-primary btn-sm">
+          <i class="bi bi-x-circle me-1"></i>Clear Filters
+        </a>
+        {% endif %}
       </div>
       {% endif %}
     </div>
@@ -176,12 +192,12 @@
 <!-- Update Modals -->
 {% for app in scholars %}
 {% set student = app.applicant %}
-<div class="modal fade" id="updateModal{{ app.id }}" tabindex="-1">
+<div class="modal fade" id="updateModal{{ app.id }}" tabindex="-1" aria-labelledby="updateModalLabel{{ app.id }}">
   <div class="modal-dialog modal-lg">
     <div class="modal-content" style="border-radius:12px;">
       <div class="modal-header">
-        <h5 class="modal-title fw-bold">Update Scholar — {{ student.get_full_name() }}</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <h5 class="modal-title fw-bold" id="updateModalLabel{{ app.id }}">Update Scholar — {{ student.get_full_name() }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
         <div class="row g-3 mb-3">
@@ -255,4 +271,12 @@
   </div>
 </div>
 {% endfor %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) {
+  new bootstrap.Tooltip(el);
+});
+</script>
 {% endblock %}

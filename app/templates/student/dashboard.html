@@ -9,6 +9,7 @@
     <h1 class="h4 fw-bold mb-1">Welcome, {{ user.first_name }}</h1>
     <p class="text-muted small mb-0">
       {{ user.student_id }} · {{ user.course or 'No course set' }} · {{ user.year_level or '' }}
+      {% if now %} · Last updated: {{ now.strftime('%b %d, %Y') }}{% endif %}
     </p>
   </div>
 
@@ -33,15 +34,6 @@
   </div>
   {% endif %}
 
-  <!-- Reminder to update documents -->
-  <div class="alert alert-info d-flex align-items-center gap-3 mb-4 py-3" role="alert" style="border-radius:12px;">
-    <i class="bi bi-info-circle fs-4"></i>
-    <div class="flex-grow-1">
-      Please keep your documents up to date.
-      <a href="{{ url_for('student.profile') }}" class="alert-link">Upload your latest COR and Grades</a>.
-    </div>
-  </div>
-
   <!-- TOP ROW: Stats + GWA -->
   <div class="row g-3 mb-4">
     <!-- Stats cards -->
@@ -51,9 +43,8 @@
           ('Applications',  total_apps,             '#0d6efd', 'bi-file-earmark-text', url_for('student.my_applications')),
           ('Approved',      approved_count,         '#198754', 'bi-check-circle-fill', url_for('student.my_applications')),
           ('Pending',       pending_count,          '#fd7e14', 'bi-hourglass-split', url_for('student.my_applications')),
-          ('Available',     new_scholarships_count, '#6f42c1', 'bi-mortarboard-fill', url_for('scholarship.list_scholarships')),
         ] %}
-        <div class="col-6 col-md-3">
+        <div class="col-4">
           <a href="{{ link }}" class="text-decoration-none">
             <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
               <div class="card-body p-3 text-center">
@@ -113,7 +104,7 @@
     </div>
   </div>
 
-  <!-- QUICK ACTIONS -->
+  <!-- QUICK ACTIONS — centered -->
   <div class="d-flex justify-content-center gap-3 mb-4">
     <a href="{{ url_for('student.my_applications') }}" class="text-decoration-none" style="width:200px;">
       <div class="card border-0 shadow-sm h-100 text-center py-3" style="border-radius:12px;">
@@ -138,125 +129,70 @@
     </a>
   </div>
 
-  <!-- TWO-COLUMN: Recent Apps + Scholarships -->
-  <div class="row g-4 mb-4">
-    <!-- Recent Applications -->
-    <div class="col-lg-7">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h6 class="fw-bold mb-0">Recent Applications</h6>
-        {% if recent_apps %}
-        <a href="{{ url_for('student.my_applications') }}" class="text-decoration-none small">View All</a>
-        {% endif %}
-      </div>
-      {% if recent_apps %}
-      <div class="card border-0 shadow-sm" style="border-radius:12px;">
-        <div class="card-body p-0">
-          <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-              <thead class="table-light">
-                <tr>
-                  <th class="ps-3 small">Scholarship</th>
-                  <th class="small">Submitted</th>
-                  <th class="pe-3 small">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for app in recent_apps %}
-                <tr>
-                  <td class="ps-3">
-                    <div class="fw-semibold small">{{ app.scholarship.title[:35] }}</div>
-                  </td>
-                  <td class="text-muted small">{{ app.submitted_at.strftime('%b %d, %Y') }}</td>
-                  <td class="pe-3">
-                    {% set sv = app.status.value %}
-                    {% if sv == 'approved' %}<span class="badge bg-success">Approved</span>
-                    {% elif sv == 'rejected' %}<span class="badge bg-danger">Rejected</span>
-                    {% elif sv == 'under_review' %}<span class="badge bg-info text-dark">Under Review</span>
-                    {% elif sv == 'withdrawn' %}<span class="badge bg-secondary">Withdrawn</span>
-                    {% else %}<span class="badge bg-warning text-dark">Pending</span>{% endif %}
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-      {% else %}
-      <div class="card border-0 shadow-sm" style="border-radius:12px;">
-        <div class="card-body text-center py-5">
-          <i class="bi bi-inbox fs-1 text-muted mb-3 d-block"></i>
-          <p class="text-muted mb-0">You haven't applied to any scholarships yet.</p>
-        </div>
-      </div>
-      {% endif %}
-    </div>
-
-    <!-- Available Scholarships -->
-    <div class="col-lg-5">
-      <div class="d-flex justify-content-between align-items-center mb-3">
-        <h6 class="fw-bold mb-0">Available Scholarships</h6>
-        {% if new_scholarships %}
-        <a href="{{ url_for('scholarship.list_scholarships') }}" class="text-decoration-none small">View All</a>
-        {% endif %}
-      </div>
-      {% if new_scholarships %}
-      <div class="d-flex flex-column gap-3">
-        {% for s in new_scholarships %}
-        <div class="card border-0 shadow-sm" style="border-radius:12px;border-left:3px solid #0d6efd;">
-          <div class="card-body p-3">
-            <div class="d-flex justify-content-between align-items-start">
-              <div class="flex-grow-1">
-                <h6 class="fw-bold small mb-1">{{ s.title }}</h6>
-                <div class="text-muted" style="font-size:.75rem;">
-                  {% if s.award_amount %}₱{{ "{:,.0f}".format(s.award_amount) }}{% else %}TBA{% endif %}
-                  · {% if s.application_deadline %}Due {{ s.application_deadline.strftime('%b %d') }}{% else %}Open{% endif %}
-                </div>
-              </div>
-              <a href="{{ url_for('scholarship.apply_scholarship', scholarship_id=s.id) }}"
-                 class="btn btn-sm btn-primary" style="font-size:.72rem;">
-                Apply
-              </a>
-            </div>
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-      {% else %}
-      <div class="card border-0 shadow-sm" style="border-radius:12px;">
-        <div class="card-body text-center py-5">
-          <i class="bi bi-mortarboard fs-1 text-muted mb-3 d-block"></i>
-          <p class="text-muted small mb-0">No new scholarships available right now.</p>
-        </div>
-      </div>
-      {% endif %}
-    </div>
-  </div>
-
-  <!-- ANNOUNCEMENTS -->
-  {% if recent_notifications %}
+  <!-- Recent Applications -->
   <div class="mb-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-      <h6 class="fw-bold mb-0">Recent Announcements</h6>
-      <a href="{{ url_for('student.notifications') }}" class="text-decoration-none small">View All</a>
+      <h6 class="fw-bold mb-0">Recent Applications</h6>
+      {% if recent_apps %}
+      <a href="{{ url_for('student.my_applications') }}" class="text-decoration-none small">View All</a>
+      {% endif %}
     </div>
-    <div class="row g-3">
-      {% for n in recent_notifications[:3] %}
-      <div class="col-md-4">
-        <div class="card border-0 shadow-sm h-100 {% if not n.is_read %}border-start border-warning border-3{% endif %}" style="border-radius:12px;">
-          <div class="card-body p-3">
-            <div class="d-flex justify-content-between align-items-start mb-1">
-              <h6 class="fw-semibold small mb-0">{{ n.title[:40] }}</h6>
-              <small class="text-muted ms-2 flex-shrink-0" style="font-size:.7rem;">{{ n.sent_at.strftime('%b %d') }}</small>
-            </div>
-            <p class="text-muted mb-0" style="font-size:.78rem;">{{ n.message[:100] }}{% if n.message|length > 100 %}...{% endif %}</p>
-          </div>
+    {% if recent_apps %}
+    <div class="card border-0 shadow-sm" style="border-radius:12px;">
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+              <tr>
+                <th class="ps-3 small">Scholarship</th>
+                <th class="small">Submitted</th>
+                <th class="pe-3 small">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for app in recent_apps %}
+              <tr>
+                <td class="ps-3">
+                  <div class="fw-semibold small">{{ app.scholarship.title[:35] }}</div>
+                </td>
+                <td class="text-muted small">{{ app.submitted_at.strftime('%b %d, %Y') }}</td>
+                <td class="pe-3">
+                  {% set sv = app.status.value %}
+                  {% if sv == 'approved' %}<span class="badge bg-success">Approved</span>
+                  {% elif sv == 'rejected' %}<span class="badge bg-danger">Rejected</span>
+                  {% elif sv == 'under_review' %}<span class="badge bg-info text-dark">Under Review</span>
+                  {% elif sv == 'withdrawn' %}<span class="badge bg-secondary">Withdrawn</span>
+                  {% else %}<span class="badge bg-warning text-dark">Pending</span>{% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
       </div>
-      {% endfor %}
+    </div>
+    {% else %}
+    <div class="card border-0 shadow-sm" style="border-radius:12px;">
+      <div class="card-body empty-state py-4">
+        <i class="bi bi-inbox"></i>
+        <h5>No applications yet</h5>
+        <p>Browse available scholarships and submit your first application.</p>
+        <a href="{{ url_for('scholarship.list_scholarships') }}" class="btn btn-primary btn-sm">
+          <i class="bi bi-search me-1"></i>Browse Scholarships
+        </a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Reminder to update documents -->
+  <div class="alert alert-info d-flex align-items-center gap-3 mb-4 py-3" role="alert" style="border-radius:12px;">
+    <i class="bi bi-info-circle fs-4"></i>
+    <div class="flex-grow-1">
+      Please keep your documents up to date.
+      <a href="{{ url_for('student.profile') }}" class="alert-link">Upload your latest COR and Grades</a>.
     </div>
   </div>
-  {% endif %}
 
 </div>
 {% endblock %}

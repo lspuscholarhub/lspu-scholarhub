@@ -129,6 +129,40 @@ body {
 }
 .table-responsive { border-radius: var(--sh-radius-md); }
 
+/* ── Mobile card layouts for tables ─────────────────────────────────────── */
+@media (max-width: 768px) {
+  .table-responsive .table thead { display: none; }
+  .table-responsive .table tbody tr {
+    display: block;
+    margin-bottom: 1rem;
+    border: 1px solid var(--sh-gray-200);
+    border-radius: var(--sh-radius-md);
+    padding: .75rem;
+    background: #fff;
+  }
+  .table-responsive .table tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: .4rem .25rem;
+    border-bottom: 1px solid var(--sh-gray-100);
+    font-size: .82rem;
+  }
+  .table-responsive .table tbody td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--sh-gray-500);
+    font-size: .72rem;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    flex-shrink: 0;
+    margin-right: .5rem;
+  }
+  .table-responsive .table tbody td:last-child {
+    border-bottom: none;
+  }
+}
+
 /* ── Badges ───────────────────────────────────────────────────────────────── */
 .badge {
   font-weight: 600;
@@ -157,6 +191,20 @@ body {
 }
 .modal-body { padding: 1.5rem; }
 .modal-footer { border-top: 1px solid var(--sh-gray-200); padding: 1rem 1.5rem; }
+
+/* Full-screen modals on mobile */
+@media (max-width: 576px) {
+  .modal-dialog {
+    margin: .5rem;
+    max-width: calc(100vw - 1rem);
+  }
+  .modal-content {
+    border-radius: var(--sh-radius-md);
+  }
+  .modal-body { padding: 1rem; }
+  .modal-header { padding: 1rem; }
+  .modal-footer { padding: .75rem 1rem; flex-wrap: wrap; }
+}
 
 /* ── Navbar ───────────────────────────────────────────────────────────────── */
 .navbar { min-height: 60px; }
@@ -287,6 +335,7 @@ body {
 
 /* ── Footer ───────────────────────────────────────────────────────────────── */
 footer { margin-top: auto; }
+footer .container { max-width: 1140px; }
 
 /* ── Hero Section (homepage) ──────────────────────────────────────────────── */
 .hero-section {
@@ -312,6 +361,58 @@ footer { margin-top: auto; }
 }
 .fade-in-up { animation: fadeInUp .5s ease-out; }
 
+/* ── Breadcrumbs ──────────────────────────────────────────────────────────── */
+.breadcrumb {
+  background: transparent;
+  padding: 0;
+  margin-bottom: .5rem;
+  font-size: .82rem;
+}
+.breadcrumb-item a {
+  color: var(--sh-accent);
+  text-decoration: none;
+}
+.breadcrumb-item a:hover { text-decoration: underline; }
+.breadcrumb-item.active { color: var(--sh-gray-500); }
+
+/* ── Application tabs (modal) ─────────────────────────────────────────────── */
+.nav-tabs .nav-link {
+  font-size: .82rem;
+  font-weight: 600;
+  color: var(--sh-gray-500);
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: .6rem 1rem;
+}
+.nav-tabs .nav-link.active {
+  color: var(--sh-accent);
+  border-bottom-color: var(--sh-accent);
+  background: transparent;
+}
+
+/* ── Empty state boxes ────────────────────────────────────────────────────── */
+.empty-state {
+  text-align: center;
+  padding: 3rem 1.5rem;
+}
+.empty-state i {
+  font-size: 3rem;
+  color: var(--sh-gray-300);
+  margin-bottom: 1rem;
+  display: block;
+}
+.empty-state h5 {
+  color: var(--sh-gray-500);
+  font-weight: 600;
+  margin-bottom: .5rem;
+}
+.empty-state p {
+  color: var(--sh-gray-500);
+  font-size: .85rem;
+  max-width: 360px;
+  margin: 0 auto 1rem;
+}
+
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .hero-section .display-4 { font-size: 1.8rem; }
@@ -319,18 +420,17 @@ footer { margin-top: auto; }
   .stat-card .stat-icon { width: 40px; height: 40px; font-size: 1.1rem; }
   .quick-action-btn { padding: .75rem .5rem; }
   .quick-action-btn i { font-size: 1.2rem; }
-  .table { font-size: .8rem; }
-  .table thead th { font-size: .7rem; padding: .5rem .6rem; }
-  .table tbody td { padding: .5rem .6rem; }
   .card-body { padding: 1rem; }
-  .modal-body { padding: 1rem; }
   .btn { font-size: .82rem; padding: .4rem .8rem; }
+  footer .row > div { text-align: center !important; }
+  footer .row > div .btn { margin: .25rem !important; }
 }
 
 @media (max-width: 576px) {
   .container-fluid { padding-left: .75rem; padding-right: .75rem; }
   .stat-card .stat-value { font-size: 1.2rem; }
   .period-badge { font-size: .72rem; padding: .4rem .75rem; }
+  .navbar .nav-link { font-size: .8rem; padding: .45rem .6rem; }
 }
 
 /* ── Utility: border-left colors (legacy compat) ──────────────────────────── */
@@ -357,20 +457,20 @@ footer { margin-top: auto; }
 ::-webkit-scrollbar-thumb { background: var(--sh-gray-300); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--sh-gray-500); }
 
-/* ── Footer centering ────────────────────────────────────────────────────── */
-footer .container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+/* ── Loading state for buttons ────────────────────────────────────────────── */
+.btn-loading { position: relative; pointer-events: none; }
+.btn-loading::after {
+  content: '';
+  position: absolute;
+  width: 16px; height: 16px;
+  top: 50%; left: 50%;
+  margin: -8px 0 0 -8px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
 }
-footer .d-flex {
-  justify-content: center;
-}
+.btn-loading span { visibility: hidden; }
 
-/* ── Dashboard cards alignment ────────────────────────────────────────────── */
-.card-body.text-center {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
+/* ── Tooltip overrides ────────────────────────────────────────────────────── */
+[data-bs-toggle="tooltip"] { cursor: help; }

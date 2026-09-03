@@ -2,6 +2,15 @@
 {% block title %}Manage Scholarships - Staff{% endblock %}
 {% block content %}
 <div class="container-fluid py-4">
+
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-3">
+      <li class="breadcrumb-item"><a href="{{ url_for('staff.dashboard') }}">Dashboard</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Manage Scholarships</li>
+    </ol>
+  </nav>
+
   <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
       <h1 class="h3 fw-bold mb-0">Manage Scholarships</h1>
@@ -23,27 +32,29 @@
           <tbody>
             {% for s in scholarships %}
             <tr>
-              <td class="ps-4"><strong>{{ s.title }}</strong><br><small class="text-muted">{{ (s.description[:60] + '…') if s.description else '' }}</small></td>
-              <td>{% if s.award_amount %}₱{{ "{:,.0f}".format(s.award_amount) }}{% else %}<span class="text-muted">TBA</span>{% endif %}</td>
-              <td>{{ s.current_applicants or 0 }}{% if s.max_applicants %}/{{ s.max_applicants }}{% endif %}</td>
-              <td>
+              <td class="ps-4" data-label="Title"><strong>{{ s.title }}</strong><br><small class="text-muted">{{ (s.description[:60] + '…') if s.description else '' }}</small></td>
+              <td data-label="Award">{% if s.award_amount %}₱{{ "{:,.0f}".format(s.award_amount) }}{% else %}<span class="text-muted">TBA</span>{% endif %}</td>
+              <td data-label="Slots">{{ s.current_applicants or 0 }}{% if s.max_applicants %}/{{ s.max_applicants }}{% endif %}</td>
+              <td data-label="Status">
                 {% if s.status and s.status.value=='active' %}<span class="badge bg-success">Active</span>
                 {% elif s.status and s.status.value=='closed' %}<span class="badge bg-secondary">Closed</span>
                 {% elif s.status %}<span class="badge bg-warning text-dark">{{ s.status.value|title }}</span>
                 {% else %}<span class="badge bg-secondary">Unknown</span>{% endif %}
               </td>
-              <td>
+              <td data-label="Visibility">
                 {% if s.is_hidden %}
                   {% if s.allowed_student_ids %}<span class="badge bg-warning text-dark"><i class="bi bi-people me-1"></i>Selected</span>
                   {% else %}<span class="badge bg-danger"><i class="bi bi-eye-slash me-1"></i>Hidden</span>{% endif %}
                 {% else %}<span class="badge bg-success"><i class="bi bi-eye me-1"></i>Public</span>{% endif %}
               </td>
-              <td class="pe-4">
+              <td data-label="Actions" class="pe-4">
                 <div class="d-flex gap-1">
-                  <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editModal{{ s.id }}"><i class="bi bi-pencil"></i></button>
-                  <form method="POST" action="{{ url_for('staff.delete_scholarship', sid=s.id) }}" class="d-inline" onsubmit="return confirm('Delete this scholarship?')">
+                  <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editModal{{ s.id }}"
+                          data-bs-toggle="tooltip" title="Edit scholarship"><i class="bi bi-pencil"></i></button>
+                  <form method="POST" action="{{ url_for('staff.delete_scholarship', sid=s.id) }}" class="d-inline"
+                        onsubmit="return confirm('Are you sure you want to delete this scholarship? This cannot be undone.')">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" data-bs-toggle="tooltip" title="Delete scholarship"><i class="bi bi-trash"></i></button>
                   </form>
                 </div>
               </td>
@@ -53,19 +64,26 @@
         </table>
       </div>
       {% else %}
-      <div class="text-center py-5"><i class="bi bi-mortarboard display-4 text-muted"></i><p class="mt-3 text-muted">No scholarships yet.</p></div>
+      <div class="card-body empty-state">
+        <i class="bi bi-mortarboard"></i>
+        <h5>No scholarships yet</h5>
+        <p>Create your first scholarship program to start accepting applications.</p>
+        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addModal">
+          <i class="bi bi-plus-circle me-1"></i>Add Scholarship
+        </button>
+      </div>
       {% endif %}
     </div>
   </div>
 </div>
 
 <!-- Add Modal -->
-<div class="modal fade" id="addModal" tabindex="-1">
+<div class="modal fade" id="addModal" tabindex="-1" aria-labelledby="addModalLabel">
   <div class="modal-dialog modal-lg">
     <div class="modal-content" style="border-radius:12px;">
       <div class="modal-header">
-        <h5 class="modal-title fw-bold">Add New Scholarship</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <h5 class="modal-title fw-bold" id="addModalLabel">Add New Scholarship</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <form method="POST" action="{{ url_for('staff.create_scholarship') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -141,10 +159,10 @@
 </div>
 
 {% for s in scholarships %}
-<div class="modal fade" id="editModal{{ s.id }}" tabindex="-1">
+<div class="modal fade" id="editModal{{ s.id }}" tabindex="-1" aria-labelledby="editModalLabel{{ s.id }}">
   <div class="modal-dialog modal-lg">
     <div class="modal-content" style="border-radius:12px;">
-      <div class="modal-header"><h5 class="modal-title fw-bold">Edit — {{ s.title }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-header"><h5 class="modal-title fw-bold" id="editModalLabel{{ s.id }}">Edit — {{ s.title }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
       <form method="POST" action="{{ url_for('staff.edit_scholarship', sid=s.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-body">
@@ -201,7 +219,7 @@
                       </div>
                     </div>
                     <div class="col-md-1 text-end">
-                      <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.card').remove()"><i class="bi bi-x"></i></button>
+                      <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.card').remove()" aria-label="Remove field"><i class="bi bi-x"></i></button>
                     </div>
                   </div>
                 </div>
@@ -233,6 +251,11 @@
 
 {% block scripts %}
 <script>
+// Initialize tooltips
+document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) {
+  new bootstrap.Tooltip(el);
+});
+
 let fieldCount = 0;
 
 function addFormField(prefix) {
@@ -265,7 +288,7 @@ function addFormField(prefix) {
             </div>
           </div>
           <div class="col-md-1 text-end">
-            <button type="button" class="btn btn-sm btn-outline-danger" onclick="document.getElementById('field_${id}').remove()"><i class="bi bi-x"></i></button>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="document.getElementById('field_${id}').remove()" aria-label="Remove field"><i class="bi bi-x"></i></button>
           </div>
         </div>
       </div>
