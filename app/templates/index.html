@@ -6,7 +6,7 @@
   main { padding: 0 !important; margin: 0 !important; background: transparent !important; flex-grow: 0 !important; }
   .landing-hero {
     position: relative;
-    min-height: calc(100vh - 60px);
+    min-height: 78vh;
     display: flex;
     align-items: center;
     background: url("{{ url_for('static', filename='images/lspu-campus.jpg') }}") center/cover no-repeat;
@@ -19,11 +19,30 @@
     z-index: 1;
   }
   .landing-hero .container { position: relative; z-index: 2; }
+  .step-icon {
+    width: 52px; height: 52px;
+    border-radius: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    background: #e8f1ff;
+    color: var(--sh-accent);
+  }
+  .home-card {
+    border-radius: 12px;
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .home-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 .5rem 1.25rem rgba(13,60,140,.12) !important;
+  }
 </style>
 {% endblock %}
 
 {% block content %}
 
+<!-- ═══════════ HERO ═══════════ -->
 <div class="landing-hero text-white">
   <div class="container py-5">
     <div class="row align-items-center">
@@ -43,19 +62,24 @@
           and manage scholar records — all in one platform.
         </p>
         <div class="d-flex flex-wrap gap-3">
-          <a href="{{ url_for('scholarship.list_scholarships') }}"
-             class="btn btn-light btn-lg fw-semibold px-4" style="border-radius:var(--sh-radius-md);">
-            <i class="bi bi-search me-2"></i>Browse Scholarships
-          </a>
           {% if not session.get('user_id') %}
           <a href="{{ url_for('auth.register') }}"
-             class="btn btn-outline-light btn-lg px-4" style="border-radius:var(--sh-radius-md);">
+             class="btn btn-light btn-lg fw-semibold px-4" style="border-radius:var(--sh-radius-md);">
             <i class="bi bi-person-plus me-2"></i>Register Now
           </a>
-          {% elif session.get('user_type') == 'student' %}
-          <a href="{{ url_for('chatbot.chatbot_page') }}"
+          <a href="{{ url_for('scholarship.list_scholarships') }}"
              class="btn btn-outline-light btn-lg px-4" style="border-radius:var(--sh-radius-md);">
-            <i class="bi bi-robot me-2"></i>AI Assistant
+            <i class="bi bi-search me-2"></i>Browse Scholarships
+          </a>
+          {% elif session.get('user_type') == 'student' %}
+          <a href="{{ url_for('student.dashboard') }}"
+             class="btn btn-light btn-lg fw-semibold px-4" style="border-radius:var(--sh-radius-md);">
+            <i class="bi bi-speedometer2 me-2"></i>Go to Dashboard
+          </a>
+          {% else %}
+          <a href="{{ url_for('staff.dashboard' if session.get('user_type') == 'staff' else 'admin.dashboard') }}"
+             class="btn btn-light btn-lg fw-semibold px-4" style="border-radius:var(--sh-radius-md);">
+            <i class="bi bi-speedometer2 me-2"></i>Go to Dashboard
           </a>
           {% endif %}
         </div>
@@ -63,5 +87,108 @@
     </div>
   </div>
 </div>
+
+<!-- ═══════════ OPEN SCHOLARSHIPS ═══════════ -->
+<section class="py-5">
+  <div class="container">
+    <div class="d-flex justify-content-between align-items-end mb-4 flex-wrap gap-2">
+      <div>
+        <h2 class="h3 fw-bold mb-1">Open Scholarships</h2>
+        <p class="text-muted small mb-0">Programs currently accepting applications</p>
+      </div>
+      <a href="{{ url_for('scholarship.list_scholarships') }}" class="btn btn-outline-primary btn-sm">
+        View All <i class="bi bi-arrow-right ms-1"></i>
+      </a>
+    </div>
+
+    {% if recent_scholarships %}
+    <div class="row g-4">
+      {% for s in recent_scholarships %}
+      <div class="col-md-6 col-lg-3">
+        <div class="card h-100 shadow-sm border-0 home-card">
+          <div class="card-body d-flex flex-column p-4">
+            <span class="badge bg-success align-self-start mb-2">
+              <i class="bi bi-circle-fill me-1" style="font-size:.4rem;vertical-align:middle;"></i>Open
+            </span>
+            <h6 class="fw-bold mb-2">{{ s.title }}</h6>
+            <p class="text-muted small flex-grow-1 mb-3">
+              {{ (s.description[:90] if s.description else 'No description available') }}{% if s.description and s.description|length > 90 %}…{% endif %}
+            </p>
+            <div class="small text-muted mb-3">
+              <div class="mb-1"><i class="bi bi-cash me-1"></i>
+                {% if s.award_amount %}₱{{ "{:,.0f}".format(s.award_amount) }}{% else %}Award TBA{% endif %}
+              </div>
+              <div><i class="bi bi-calendar me-1"></i>
+                {% if s.application_deadline %}Deadline {{ s.application_deadline.strftime('%b %d, %Y') }}{% else %}No deadline — open until slots fill{% endif %}
+              </div>
+            </div>
+            <a href="{{ url_for('scholarship.view_scholarship', scholarship_id=s.id) }}"
+               class="btn btn-outline-primary btn-sm mt-auto">
+              View Details
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-5 border rounded-3" style="background:#f8f9fa;">
+      <i class="bi bi-mortarboard text-muted" style="font-size:2.5rem;"></i>
+      <p class="text-muted mt-3 mb-0">No scholarship programs are open right now.<br>
+        <span class="small">Please check back soon or contact the scholarship office.</span></p>
+    </div>
+    {% endif %}
+  </div>
+</section>
+
+<!-- ═══════════ HOW IT WORKS ═══════════ -->
+<section class="py-5" style="background:#f8f9fa;">
+  <div class="container">
+    <h2 class="h3 fw-bold text-center mb-1">How It Works</h2>
+    <p class="text-muted text-center small mb-5">Four simple steps to become a scholar</p>
+    <div class="row g-4">
+      <div class="col-md-6 col-lg-3 text-center">
+        <div class="step-icon mb-3"><i class="bi bi-person-plus"></i></div>
+        <h6 class="fw-bold">1. Create an Account</h6>
+        <p class="text-muted small mb-0">Register with your student details and verify your email.</p>
+      </div>
+      <div class="col-md-6 col-lg-3 text-center">
+        <div class="step-icon mb-3"><i class="bi bi-file-earmark-arrow-up"></i></div>
+        <h6 class="fw-bold">2. Upload Documents</h6>
+        <p class="text-muted small mb-0">Submit your Certificate of Registration and Copy of Grades.</p>
+      </div>
+      <div class="col-md-6 col-lg-3 text-center">
+        <div class="step-icon mb-3"><i class="bi bi-pencil-square"></i></div>
+        <h6 class="fw-bold">3. Apply</h6>
+        <p class="text-muted small mb-0">Choose an open scholarship and submit your application.</p>
+      </div>
+      <div class="col-md-6 col-lg-3 text-center">
+        <div class="step-icon mb-3"><i class="bi bi-patch-check"></i></div>
+        <h6 class="fw-bold">4. Get Approved</h6>
+        <p class="text-muted small mb-0">Track your status and receive notifications on updates.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ CTA BAND ═══════════ -->
+{% if not session.get('user_id') %}
+<section class="py-5 text-white" style="background:linear-gradient(135deg,#1a3a6b 0%,#0d6efd 100%);">
+  <div class="container text-center py-2">
+    <h2 class="h3 fw-bold mb-2">Ready to apply for a scholarship?</h2>
+    <p class="mb-4" style="opacity:.85;">Create your free account and start your application today.</p>
+    <div class="d-flex justify-content-center flex-wrap gap-3">
+      <a href="{{ url_for('auth.register') }}"
+         class="btn btn-light fw-semibold px-4" style="border-radius:var(--sh-radius-md);">
+        <i class="bi bi-person-plus me-2"></i>Register Now
+      </a>
+      <a href="{{ url_for('main.contact') }}"
+         class="btn btn-outline-light px-4" style="border-radius:var(--sh-radius-md);">
+        <i class="bi bi-envelope me-2"></i>Contact the Office
+      </a>
+    </div>
+  </div>
+</section>
+{% endif %}
 
 {% endblock %}
