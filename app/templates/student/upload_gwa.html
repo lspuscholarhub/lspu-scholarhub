@@ -1,129 +1,300 @@
 {% extends "base.html" %}
-{% block title %}Upload Documents - LSPU ScholarHub{% endblock %}
+{% block title %}My Documents - LSPU ScholarHub{% endblock %}
 
 {% block content %}
-<div class="container py-5">
+<div class="container py-4">
+
   <!-- Breadcrumb -->
   <nav aria-label="breadcrumb">
     <ol class="breadcrumb mb-3">
       <li class="breadcrumb-item"><a href="{{ url_for('student.dashboard') }}">Dashboard</a></li>
-      <li class="breadcrumb-item active" aria-current="page">Upload Documents</li>
+      <li class="breadcrumb-item active" aria-current="page">My Documents</li>
     </ol>
   </nav>
 
-  <div class="row justify-content-center">
-    <div class="col-md-7 col-lg-6">
-      <div class="card shadow border-0" style="border-radius:12px;">
-        <div class="card-body p-4 p-md-5">
+  <!-- Header -->
+  <div class="d-flex justify-content-between align-items-start mb-1">
+    <div>
+      <h1 class="h3 fw-bold mb-1">My Documents</h1>
+      <p class="text-muted small mb-0">Keep your Certificate of Registration and Copy of Grades up to date.</p>
+    </div>
+    {% if user.gwa %}
+    <div class="text-end d-none d-md-block">
+      <div class="text-muted" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;">Current GWA</div>
+      <div class="fw-bold text-primary" style="font-size:1.5rem;line-height:1;">{{ user.gwa }}</div>
+    </div>
+    {% endif %}
+  </div>
 
-          <!-- Header -->
-          <div class="text-center mb-4">
-            <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex
-                        align-items-center justify-content-center mb-3"
-                 style="width:64px;height:64px;">
-              <i class="bi bi-folder2-open text-primary fs-3"></i>
-            </div>
-            <h2 class="fw-bold mb-1">Upload Documents</h2>
-            <p class="text-muted small">
-              Upload your Certificate of Registration (COR) and Copy of Grades to keep your records updated.
-            </p>
+  <!-- Status overview strip -->
+  <div class="row g-2 mb-4 mt-1">
+    <div class="col-6">
+      <div class="d-flex align-items-center gap-2 border rounded p-2 px-3" style="background:#fff;border-radius:10px;">
+        {% if user.cor_file_path %}
+        <i class="bi bi-check-circle-fill text-success"></i>
+        <span class="small fw-semibold">COR submitted</span>
+        {% else %}
+        <i class="bi bi-exclamation-circle-fill text-warning"></i>
+        <span class="small fw-semibold">COR not yet submitted</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="col-6">
+      <div class="d-flex align-items-center gap-2 border rounded p-2 px-3" style="background:#fff;border-radius:10px;">
+        {% if user.grades_file_path %}
+        <i class="bi bi-check-circle-fill text-success"></i>
+        <span class="small fw-semibold">Grades submitted</span>
+        {% else %}
+        <i class="bi bi-exclamation-circle-fill text-warning"></i>
+        <span class="small fw-semibold">Grades not yet submitted</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- ═══════════════ STEP 1: COR ═══════════════ -->
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 h-100" style="border-radius:12px;">
+        <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge rounded-circle d-inline-flex align-items-center justify-content-center text-white"
+                  style="width:26px;height:26px;background:var(--sh-accent);font-size:.8rem;">1</span>
+            <h6 class="fw-bold mb-0">Certificate of Registration</h6>
           </div>
+          <p class="text-muted small mt-2 mb-0">
+            Proof of your enrollment for the current semester. Issued by the registrar after enrollment.
+          </p>
+        </div>
+        <div class="card-body px-4 pb-4">
 
-          <!-- Current status -->
-          {% if user.gwa %}
-          <div class="alert alert-info py-3 px-4 mb-4">
+          {% if user.cor_file_path %}
+          <!-- Current file summary -->
+          <div class="border rounded p-3 mb-3" style="background:#f8f9fa;border-radius:10px;">
             <div class="d-flex align-items-center gap-3">
-              <i class="bi bi-info-circle-fill text-info fs-4"></i>
-              <div>
-                <div class="fw-semibold">
-                  Current GWA: <strong>{{ user.gwa }}</strong>
-                  {% if user.grades_semester %} — {{ user.grades_semester }}{% endif %}
-                </div>
-                <div class="small text-muted">
-                  Upload updated grades to refresh your GWA.
+              <i class="bi bi-file-earmark-pdf text-danger" style="font-size:2rem;"></i>
+              <div class="flex-grow-1 min-width-0">
+                <div class="small fw-semibold text-truncate">Certificate of Registration</div>
+                <div class="text-muted" style="font-size:.75rem;">
+                  <i class="bi bi-check-circle-fill text-success me-1"></i>On file — ready for applications
                 </div>
               </div>
+            </div>
+            <div class="d-flex gap-2 mt-3">
+              <a href="{{ url_for('student.view_registration_document', doc_type='cor') }}"
+                 target="_blank" class="btn btn-sm btn-outline-primary flex-grow-1">
+                <i class="bi bi-eye me-1"></i>View
+              </a>
+              <a href="{{ url_for('student.view_registration_document', doc_type='cor') }}"
+                 download class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-download"></i>
+              </a>
             </div>
           </div>
           {% endif %}
 
-          <!-- COR Upload -->
-          <div class="border rounded p-3 mb-4" style="background:#f8f9fa;">
-            <div class="d-flex align-items-center gap-2 mb-2">
-              <i class="bi bi-file-earmark-pdf text-danger fs-5"></i>
-              <div>
-                <h6 class="fw-bold mb-0">Certificate of Registration (COR)</h6>
-                <small class="text-muted">PDF, JPG, or PNG — max 5MB</small>
-              </div>
-              {% if user.cor_file_path %}
-              <span class="badge bg-success ms-auto">Uploaded</span>
-              {% endif %}
-            </div>
-            <form method="POST" enctype="multipart/form-data" class="d-flex gap-2">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <input type="hidden" name="doc_type" value="cor">
-              <input type="file" class="form-control form-control-sm" name="cor_file"
+          <!-- Dropzone -->
+          <form method="POST" action="{{ url_for('student.upload_gwa') }}" enctype="multipart/form-data"
+                class="upload-dropzone" id="corDropzone">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="doc_type" value="cor">
+            <label class="dropzone-area" for="corInput"
+                   style="background:{% if user.cor_file_path %}#fff{% else %}#f8f9fa{% endif %};border:2px dashed {% if user.cor_file_path %}var(--sh-gray-300){% else %}var(--sh-accent){% endif %};">
+              <input type="file" class="d-none" name="cor_file" id="corInput"
                      accept=".pdf,.jpg,.jpeg,.png" required>
-              <button type="submit" class="btn btn-primary btn-sm flex-shrink-0">
-                <i class="bi bi-upload me-1"></i>{% if user.cor_file_path %}Replace{% else %}Upload{% endif %}
-              </button>
-            </form>
-            {% if user.cor_file_path %}
-            <div class="form-text mt-1">
-              <i class="bi bi-check-circle text-success me-1"></i>Current file uploaded. Upload a new one to replace it.
-            </div>
-            {% endif %}
-          </div>
-
-          <!-- Grades Upload -->
-          <div class="border rounded p-3 mb-4" style="background:#f8f9fa;">
-            <div class="d-flex align-items-center gap-2 mb-2">
-              <i class="bi bi-file-earmark-text text-primary fs-5"></i>
-              <div>
-                <h6 class="fw-bold mb-0">Copy of Grades</h6>
-                <small class="text-muted">PDF, JPG, or PNG — max 5MB</small>
+              <i class="bi {% if user.cor_file_path %}bi-arrow-repeat text-muted{% else %}bi-cloud-arrow-up text-primary{% endif %}"
+                 style="font-size:1.6rem;"></i>
+              <div class="small fw-semibold mt-1">
+                {% if user.cor_file_path %}Replace current file{% else %}Drop your COR here{% endif %}
               </div>
-              {% if user.grades_file_path %}
-              <span class="badge bg-success ms-auto">Uploaded</span>
-              {% endif %}
+              <div class="text-muted" style="font-size:.72rem;">or click to browse — PDF, JPG, PNG (max 5MB)</div>
+            </label>
+            <div class="file-selected small text-success mt-2 d-none">
+              <i class="bi bi-check-circle me-1"></i><span class="file-name fw-semibold"></span>
             </div>
-            <form method="POST" enctype="multipart/form-data" class="d-flex gap-2">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <input type="hidden" name="doc_type" value="grades">
-              <input type="file" class="form-control form-control-sm" name="grades_file"
+            <button type="submit" class="btn btn-primary btn-sm w-100 mt-2 d-none submit-upload">
+              <i class="bi bi-upload me-1"></i>{% if user.cor_file_path %}Replace COR{% else %}Upload COR{% endif %}
+            </button>
+          </form>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════ STEP 2: Grades ═══════════════ -->
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0 h-100" style="border-radius:12px;">
+        <div class="card-header bg-white border-bottom-0 pt-4 px-4">
+          <div class="d-flex align-items-center gap-2">
+            <span class="badge rounded-circle d-inline-flex align-items-center justify-content-center text-white"
+                  style="width:26px;height:26px;background:var(--sh-success,#198754);font-size:.8rem;">2</span>
+            <h6 class="fw-bold mb-0">Copy of Grades</h6>
+          </div>
+          <p class="text-muted small mt-2 mb-0">
+            Your latest grades. Your GWA is <strong>read automatically</strong> from this document.
+          </p>
+        </div>
+        <div class="card-body px-4 pb-4">
+
+          {% if user.grades_file_path %}
+          <!-- Current file summary -->
+          <div class="border rounded p-3 mb-3" style="background:#f8f9fa;border-radius:10px;">
+            <div class="d-flex align-items-center gap-3">
+              <i class="bi bi-file-earmark-text text-primary" style="font-size:2rem;"></i>
+              <div class="flex-grow-1 min-width-0">
+                <div class="small fw-semibold text-truncate">Copy of Grades</div>
+                <div class="text-muted" style="font-size:.75rem;">
+                  {% if user.grades_semester %}{{ user.grades_semester }} &middot;{% endif %}
+                  GWA <strong>{{ user.gwa if user.gwa else 'pending review' }}</strong>
+                </div>
+              </div>
+            </div>
+            <div class="d-flex gap-2 mt-3">
+              <a href="{{ url_for('student.view_registration_document', doc_type='grades') }}"
+                 target="_blank" class="btn btn-sm btn-outline-primary flex-grow-1">
+                <i class="bi bi-eye me-1"></i>View
+              </a>
+              <a href="{{ url_for('student.view_registration_document', doc_type='grades') }}"
+                 download class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-download"></i>
+              </a>
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Dropzone -->
+          <form method="POST" action="{{ url_for('student.upload_gwa') }}" enctype="multipart/form-data"
+                class="upload-dropzone" id="gradesDropzone">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="doc_type" value="grades">
+            <label class="dropzone-area" for="gradesInput"
+                   style="background:{% if user.grades_file_path %}#fff{% else %}#f8f9fa{% endif %};border:2px dashed {% if user.grades_file_path %}var(--sh-gray-300){% else %}var(--sh-accent){% endif %};">
+              <input type="file" class="d-none" name="grades_file" id="gradesInput"
                      accept=".pdf,.jpg,.jpeg,.png" required>
-              <button type="submit" class="btn btn-primary btn-sm flex-shrink-0">
-                <i class="bi bi-upload me-1"></i>{% if user.grades_file_path %}Replace{% else %}Upload{% endif %}
-              </button>
-            </form>
-            {% if user.grades_file_path %}
-            <div class="form-text mt-1">
-              <i class="bi bi-check-circle text-success me-1"></i>Current file uploaded. Upload a new one to replace it.
-              Your GWA will be automatically extracted from the document.
+              <i class="bi {% if user.grades_file_path %}bi-arrow-repeat text-muted{% else %}bi-cloud-arrow-up text-primary{% endif %}"
+                 style="font-size:1.6rem;"></i>
+              <div class="small fw-semibold mt-1">
+                {% if user.grades_file_path %}Replace current file{% else %}Drop your grades here{% endif %}
+              </div>
+              <div class="text-muted" style="font-size:.72rem;">or click to browse — PDF, JPG, PNG (max 5MB)</div>
+            </label>
+            <div class="file-selected small text-success mt-2 d-none">
+              <i class="bi bi-check-circle me-1"></i><span class="file-name fw-semibold"></span>
             </div>
-            {% endif %}
-          </div>
+            <button type="submit" class="btn btn-primary btn-sm w-100 mt-2 d-none submit-upload">
+              <i class="bi bi-upload me-1"></i>{% if user.grades_file_path %}Replace Grades{% else %}Upload Grades{% endif %}
+            </button>
+          </form>
 
-          <!-- Info -->
-          <div class="alert alert-light border py-2 px-3 small mb-4">
-            <i class="bi bi-info-circle me-1 text-primary"></i>
-            <strong>Note:</strong>
-            <ul class="mb-0 mt-1 ps-3">
-              <li>Uploading grades will automatically update your GWA</li>
-              <li>Your Student ID on the document must match your account</li>
-              <li>If GWA can't be extracted, staff will review it manually</li>
-            </ul>
+          {% if user.grades_file_path and user.gwa %}
+          <div class="alert alert-success py-2 px-3 small mt-3 mb-0">
+            <i class="bi bi-check-circle me-1"></i>
+            Your GWA of <strong>{{ user.gwa }}</strong> was read from this document.
+            {% if user.grades_updated_at %}<span class="text-muted">({{ user.grades_updated_at.strftime('%b %d, %Y') }})</span>{% endif %}
           </div>
-
-          <div class="text-center">
-            <a href="{{ url_for('student.dashboard') }}" class="text-muted small text-decoration-none">
-              <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
-            </a>
+          {% elif user.grades_file_path and not user.gwa %}
+          <div class="alert alert-warning py-2 px-3 small mt-3 mb-0">
+            <i class="bi bi-hourglass-split me-1"></i>
+            The office is still reading your GWA from this document — check back soon.
           </div>
+          {% endif %}
 
         </div>
       </div>
     </div>
   </div>
+
+  <!-- Help -->
+  <div class="card border-0 mt-4" style="border-radius:12px;background:#f8f9fa;">
+    <div class="card-body py-3 px-4">
+      <div class="row g-3 small">
+        <div class="col-md-4">
+          <div class="fw-semibold mb-1"><i class="bi bi-lightbulb text-warning me-1"></i>Tips for a clear upload</div>
+          <ul class="text-muted mb-0 ps-3">
+            <li>Make sure the whole document is visible</li>
+            <li>Your name and student ID must be readable</li>
+          </ul>
+        </div>
+        <div class="col-md-4">
+          <div class="fw-semibold mb-1"><i class="bi bi-shield-check text-success me-1"></i>Who sees your files</div>
+          <span class="text-muted">Only you and the scholarship office staff reviewing applications.</span>
+        </div>
+        <div class="col-md-4">
+          <div class="fw-semibold mb-1"><i class="bi bi-patch-question text-primary me-1"></i>Need help?</div>
+          <span class="text-muted">Contact the office at lspu.scholarhub@gmail.com or call 0968-365-2615.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+  .dropzone-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 1.75rem 1rem;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+    width: 100%;
+  }
+  .dropzone-area:hover,
+  .dropzone-area.dragover {
+    border-color: var(--sh-accent) !important;
+    background: #f0f6ff !important;
+  }
+  .min-width-0 { min-width: 0; }
+</style>
+<script>
+  document.querySelectorAll('.upload-dropzone').forEach(function (form) {
+    var input    = form.querySelector('input[type="file"]');
+    var area     = form.querySelector('.dropzone-area');
+    var selected = form.querySelector('.file-selected');
+    var submit   = form.querySelector('.submit-upload');
+
+    // Click label opens picker (label[for] already does this, but keep explicit)
+    area.addEventListener('click', function () { input.click(); });
+
+    // Show selected file + reveal submit button
+    input.addEventListener('change', function () {
+      if (input.files.length) {
+        selected.querySelector('.file-name').textContent = input.files[0].name;
+        selected.classList.remove('d-none');
+        submit.classList.remove('d-none');
+        submit.classList.add('d-block');
+      } else {
+        selected.classList.add('d-none');
+        submit.classList.add('d-none');
+        submit.classList.remove('d-block');
+      }
+    });
+
+    // Drag & drop
+    ['dragenter', 'dragover'].forEach(function (evt) {
+      area.addEventListener(evt, function (e) {
+        e.preventDefault();
+        area.classList.add('dragover');
+      });
+    });
+    ['dragleave', 'drop'].forEach(function (evt) {
+      area.addEventListener(evt, function (e) {
+        e.preventDefault();
+        area.classList.remove('dragover');
+      });
+    });
+    area.addEventListener('drop', function (e) {
+      if (e.dataTransfer.files.length) {
+        input.files = e.dataTransfer.files;
+        input.dispatchEvent(new Event('change'));
+      }
+    });
+  });
+</script>
 {% endblock %}

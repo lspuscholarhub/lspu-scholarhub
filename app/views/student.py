@@ -168,6 +168,69 @@ def documents():
     return redirect(url_for('student.profile'))
 
 
+@student_bp.route('/registration-document/<doc_type>')
+@role_required('student')
+def view_registration_document(doc_type):
+    """Serve the student's own COR or Grades file inline (view in browser)."""
+    import os
+    from flask import send_file as _send_file, Response
+    if doc_type not in ('cor', 'grades'):
+        return redirect(url_for('student.upload_gwa'))
+
+    user      = User.query.get(session['user_id'])
+    file_path = user.cor_file_path if doc_type == 'cor' else user.grades_file_path
+    cloud_id  = user.cor_cloudinary_id if doc_type == 'cor' else user.grades_cloudinary_id
+
+    if not file_path:
+        flash('No document uploaded yet.', 'warning')
+        return redirect(url_for('student.upload_gwa'))
+
+    ext   = file_path.rsplit('.', 1)[-1].lower() if '.' in file_path else 'pdf'
+    mime_map = {'pdf':'application/pdf','jpg':'image/jpeg','jpeg':'image/jpeg','png':'image/png'}
+    mime  = mime_map.get(ext, 'application/pdf')
+    label = 'COR' if doc_type == 'cor' else 'Grades'
+    fname = f"{user.student_id}_{label}.{ext}"
+
+    # Cloudinary URL — proxy through Flask so signed/private files display
+    if file_path.startswith('http://') or file_path.startswith('https://'):
+        try:
+            import urllib.request as _ur
+            is_image  = ext in ('jpg', 'jpeg', 'png') or '/image/upload/' in file_path
+            fetch_url = file_path
+            if cloud_id:
+                from app.services.storage_service import get_signed_url
+                signed = get_signed_url(cloud_id, resource_type='image' if is_image else 'raw')
+                if signed:
+                    fetch_url = signed
+            req = _ur.Request(fetch_url)
+            req.add_header('User-Agent', 'LSPU-ScholarHub/1.0')
+            with _ur.urlopen(req, timeout=30) as resp:
+                file_data = resp.read()
+            if is_image and mime == 'application/pdf':
+                mime = 'image/jpeg' if ext in ('jpg', 'jpeg') else 'image/png'
+            return Response(
+                file_data,
+                mimetype=mime,
+                headers={
+                    'Content-Disposition': f'inline; filename="{fname}"',
+                    'Content-Length': str(len(file_data)),
+                }
+            )
+        except Exception as e:
+            flash(f'Could not open file: {e}', 'error')
+            return redirect(url_for('student.upload_gwa'))
+
+    # Local file
+    if not os.path.isabs(file_path):
+        file_path = os.path.join(current_app.root_path, '..', file_path)
+    file_path = os.path.normpath(file_path)
+    if not os.path.exists(file_path):
+        flash('File not found on server.', 'error')
+        return redirect(url_for('student.upload_gwa'))
+
+    return _send_file(file_path, mimetype=mime, download_name=fname)
+
+
 @student_bp.route('/documents/<int:doc_id>/delete', methods=['POST'])
 @role_required('student')
 def delete_document(doc_id):
@@ -371,7 +434,7 @@ def update_profile():
                 flash(f'Upload failed: {result["message"]}', 'error')
         else:
             flash('Please select a file to upload.', 'error')
-        return redirect(url_for('student.profile'))
+        return redirect(url_for('student.upload_gwa'))
 
     # Only update non-readonly fields
     user.first_name   = request.form.get('first_name', user.first_name).strip().title()
@@ -632,6 +695,6 @@ def upload_gwa():
                 'warning'
             )
 
-        return redirect(url_for('student.profile'))
+        return redirect(url_for('student.upload_gwa'))
 
     return render_template('student/upload_gwa.html', user=user)
