@@ -323,17 +323,33 @@
 <!-- ── Footer — only for guests and students ──────────────────────────────── -->
 {% if not role or role == 'student' %}
 <footer class="mt-0" style="background:#1a3a6b;color:#e2e8f0;">
-  <div class="container-fluid px-4 py-4">
+  <div class="container py-4">
     <div class="row align-items-start">
-      <div class="col-lg-5 col-md-6 mb-3 mb-md-0">
+      <div class="col-lg-6 col-md-6 mb-3 mb-md-0">
         <div class="d-flex align-items-center gap-2 mb-1">
           <img src="{{ url_for('static', filename='images/lspu-logo.png') }}" alt="LSPU" style="height:28px;width:28px;object-fit:contain;">
           <span class="fw-bold">LSPU ScholarHub</span>
         </div>
-        <p class="small mb-2 opacity-75">
+        <p class="small mb-0 opacity-75">
           AI-Enabled Scholarship Management and Monitoring System<br>
           Laguna State Polytechnic University
         </p>
+        {% if not role %}
+        <div class="mt-3">
+          <a href="{{ url_for('scholarship.list_scholarships') }}"
+             class="btn btn-outline-light btn-sm me-1"
+             aria-label="Browse Scholarships">
+            <i class="bi bi-search me-1"></i>Scholarships
+          </a>
+          <a href="{{ url_for('chatbot.chatbot_page') }}"
+             class="btn btn-warning btn-sm"
+             aria-label="Open AI Assistant">
+            <i class="bi bi-robot me-1"></i>AI Assistant
+          </a>
+        </div>
+        {% endif %}
+      </div>
+      <div class="col-lg-6 col-md-6 mb-3 mb-md-0">
         <p class="small mb-1 opacity-75">
           <i class="bi bi-geo-alt me-1 text-warning"></i>
           Student Affairs Building, 2nd Floor, LSPU Sta. Cruz
@@ -346,20 +362,6 @@
           <i class="bi bi-telephone me-1 text-warning"></i>
           0968-365-2615 &nbsp;|&nbsp; Mon–Fri, 8AM–5PM
         </p>
-      </div>
-      <div class="col-lg-7 col-md-6 text-md-end">
-        {% if not role %}
-        <a href="{{ url_for('scholarship.list_scholarships') }}"
-           class="btn btn-outline-light btn-sm mb-2 me-1"
-           aria-label="Browse Scholarships">
-          <i class="bi bi-search me-1"></i>Scholarships
-        </a>
-        <a href="{{ url_for('chatbot.chatbot_page') }}"
-           class="btn btn-warning btn-sm mb-2"
-           aria-label="Open AI Assistant">
-          <i class="bi bi-robot me-1"></i>AI Assistant
-        </a>
-        {% endif %}
       </div>
     </div>
     <hr style="border-color:rgba(255,255,255,.15);margin:16px 0 12px;">
