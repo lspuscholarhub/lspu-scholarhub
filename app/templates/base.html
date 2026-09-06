@@ -26,7 +26,7 @@
 {% set role = session.get('user_type') %}
 {% set unread_count = session.get('unread_notification_count', 0) %}
 <nav class="navbar navbar-expand-lg navbar-dark"
-     style="background:{% if role == 'admin' %}linear-gradient(135deg,#7f1d1d 0%,#dc2626 100%){% elif role == 'staff' %}linear-gradient(135deg,#14532d 0%,#16a34a 100%){% else %}linear-gradient(135deg,#1a3a6b 0%,#0d6efd 100%){% endif %};
+     style="background:linear-gradient(135deg,#1a3a6b 0%,#0d6efd 100%);
             box-shadow:0 2px 10px rgba(0,0,0,.2);">
   <div class="container-fluid px-4">
 
@@ -373,8 +373,7 @@
 {% endif %}
 
 <!-- ── Back to Top button ──────────────────────────────────────────────────── -->
-<button id="backToTop" class="btn btn-primary position-fixed shadow-lg d-none"
-        style="bottom:24px;right:24px;border-radius:50%;width:44px;height:44px;z-index:9990;font-size:1.1rem;"
+<button id="backToTop" class="btn btn-primary position-fixed shadow-lg d-none back-to-top-btn"
         aria-label="Back to top"
         onclick="window.scrollTo({top:0,behavior:'smooth'})">
   <i class="bi bi-arrow-up"></i>

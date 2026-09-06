@@ -412,6 +412,49 @@ footer .container { max-width: 1140px; }
   max-width: 360px;
   margin: 0 auto 1rem;
 }
+/* Compact CTA inside empty states — overrides Bootstrap .btn-lg and oversized custom buttons */
+.empty-state .btn,
+.empty-state .btn-lg {
+  display: inline-flex;
+  align-items: center;
+  gap: .4rem;
+  padding: .5rem 1.1rem;
+  font-size: .875rem;
+  font-weight: 600;
+  width: auto;
+  min-width: 0;
+  line-height: 1.4;
+}
+.empty-state .btn i {
+  font-size: 1rem;
+  display: inline;
+  margin-bottom: 0;
+  color: inherit;
+}
+
+/* ── Back-to-top button — perfectly centered arrow ────────────────────────── */
+.back-to-top-btn {
+  bottom: 24px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  padding: 0;
+  border: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9990;
+}
+.back-to-top-btn:not(.d-none) {
+  display: flex;
+}
+.back-to-top-btn i {
+  margin: 0;
+  line-height: 1;
+  transform: translateY(-1px);
+  font-size: 1.15rem;
+}
 
 /* ── Responsive ───────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
