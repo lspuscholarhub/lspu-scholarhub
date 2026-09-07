@@ -67,16 +67,14 @@ def my_applications():
     apps = (ScholarshipApplication.query
             .filter_by(applicant_id=user.id)
             .order_by(ScholarshipApplication.submitted_at.desc())
-            .all())
-
-    total     = len(apps)
+            .all())    total     = len(apps)
     approved  = sum(1 for a in apps if a.status == ApplicationStatus.APPROVED)
     pending   = sum(1 for a in apps if a.status in (ApplicationStatus.PENDING,
                                                      ApplicationStatus.UNDER_REVIEW))
-    rejected  = sum(1 for a in apps if a.status == ApplicationStatus.REJECTED)
-    total_award = sum(
-        float(a.scholarship.award_amount or 0)
-        for a in apps if a.status == ApplicationStatus.APPROVED
+    # A student can hold only one scholarship — surface the current award (or None)
+    current_scholarship = next(
+        (a.scholarship for a in apps if a.status == ApplicationStatus.APPROVED),
+        None,
     )
 
     return render_template(
@@ -85,8 +83,7 @@ def my_applications():
         total=total,
         approved=approved,
         pending=pending,
-        rejected=rejected,
-        total_award=total_award,
+        current_scholarship=current_scholarship,
     )
 
 

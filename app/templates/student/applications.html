@@ -45,10 +45,17 @@
     </div>
     <div class="col-6 col-md-3">
       <div class="card border-0 shadow-sm text-center py-3" style="border-radius:12px;">
-        <div class="fs-2 fw-bold text-info">
-          {% if total_award > 0 %}₱{{ "{:,.0f}".format(total_award) }}{% else %}—{% endif %}
-        </div>
+        {% if current_scholarship %}
+        <div class="fs-2 fw-bold text-info">1</div>
         <div class="small text-muted">Total Awards</div>
+        <div class="small fw-semibold text-info text-truncate px-3 mt-1"
+             title="{{ current_scholarship.title }}">
+          <i class="bi bi-award-fill me-1"></i>{{ current_scholarship.title }}
+        </div>
+        {% else %}
+        <div class="fs-2 fw-bold text-info">0</div>
+        <div class="small text-muted">Total Awards</div>
+        {% endif %}
       </div>
     </div>
   </div>
