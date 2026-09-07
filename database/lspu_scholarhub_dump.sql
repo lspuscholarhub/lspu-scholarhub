@@ -136,6 +136,7 @@ CREATE TABLE `scholarships` (
   `title`                varchar(200)                                                   NOT NULL,
   `category`             varchar(50)                                                    DEFAULT 'General',
   `scholarship_type`     enum('Financial Assistance','Merit Scholarship','Grant','Other') DEFAULT 'Financial Assistance',
+  `funding_type`         enum('public','private')                                       NOT NULL DEFAULT 'public',
   `description`          text                                                           DEFAULT NULL,
   `eligibility_criteria` text                                                           DEFAULT NULL,
   `benefits`             text                                                           DEFAULT NULL,

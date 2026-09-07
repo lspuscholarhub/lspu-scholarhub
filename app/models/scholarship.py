@@ -23,6 +23,8 @@ class Scholarship(db.Model):
     category = db.Column(db.String(50), default='General')
     scholarship_type = db.Column(db.Enum('Financial Assistance', 'Merit Scholarship', 'Grant', 'Other'),
                                  default='Financial Assistance')
+    funding_type = db.Column(db.Enum('public', 'private'), default='public', nullable=False,
+                             server_default='public')  # public: only one held at a time; private: combinable
     description = db.Column(db.Text, nullable=False)
     eligibility_criteria = db.Column(db.Text, nullable=False)
     benefits = db.Column(db.Text, nullable=False)

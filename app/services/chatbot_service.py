@@ -194,8 +194,7 @@ def _build_system_prompt(user_id=None):
 1. **Register** — the student signs up with their school email and verifies via a One-Time PIN (OTP) sent by email. Verification is automatic after the OTP — no admin approval needed to apply.
 2. **Upload documents once** — in **My Documents**, the student uploads their **Certificate of Registration (COR)** and **Copy of Grades**. The system reads the GWA from the grades automatically.
 3. **Browse** — the **Scholarships** page lists open programs with award, deadline (if any), and remaining slots.
-4. **Apply** — the form is pre-filled with the student's profile (name, course, year level, GWA, birthday, contact info). Each program may add its own **custom questions**. There is **no essay** and no document upload during application — COR and grades are already on file.
-5. **One scholarship at a time** — a student holding an approved scholarship cannot apply to another program until it ends or is withdrawn.
+4. **Apply** — the form is pre-filled with the student's profile (name, course, year level, GWA, birthday, contact info). Each program may add its own **custom questions**. There is **no essay** and no document upload during application — COR and grades are already on file.5. **Public vs private scholarships** — a student may hold only **ONE public (government-funded)** scholarship at a time. **Private** scholarships are combinable — a student may hold several private programs, and private ones alongside their public scholarship.
 6. **Review** — staff/admin approve or reject; the student is notified via in-app alert, email, and SMS (when configured).
 7. **Auto-batching** — approved scholars are automatically placed in the batch named after their program for the current academic period.
 8. **Monitoring** — each term, staff check every scholar's GWA: **Good Standing**, **At Risk**, **Probation**, **Termination Warning**. Students are alerted when their performance drops.
@@ -367,8 +366,7 @@ def _rule_based_response(user_message, user_id=None):
                 "2. Upload your **COR** and **Copy of Grades** once in **My Documents**\n"
                 "3. Open the **Scholarships** page and pick an open program\n"
                 "4. Click **Apply** — your profile is pre-filled; just answer the program's custom questions\n"
-                "5. Submit and track it in **My Applications**\n\n"
-                "No essay needed. You can hold only one scholarship at a time.")
+                "5. Submit and track it in **My Applications**\n\n"                "No essay needed. You may hold only one PUBLIC scholarship at a time, but private scholarships can be combined with it and with each other.")
 
     # Documents
     if intent == 'document_inquiry':

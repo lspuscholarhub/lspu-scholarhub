@@ -111,6 +111,7 @@ def create_scholarship():
             eligibility_criteria=request.form.get('eligibility_criteria', '').strip() or None,
             benefits=request.form.get('benefits', '').strip() or None,
             scholarship_type=request.form.get('scholarship_type', 'Financial Assistance'),
+            funding_type=request.form.get('funding_type', 'public'),
             award_amount=request.form.get('award_amount') or None,
             max_applicants=request.form.get('max_applicants') or None,
             application_deadline=deadline,
@@ -139,6 +140,9 @@ def edit_scholarship(sid):
     try:
         s.title = request.form.get('title', s.title)
         s.category = request.form.get('category', s.category)
+        ft = request.form.get('funding_type')
+        if ft in ('public', 'private'):
+            s.funding_type = ft
         s.description = request.form.get('description', s.description)
         s.eligibility_criteria = request.form.get('eligibility_criteria', s.eligibility_criteria)
         s.benefits = request.form.get('benefits', s.benefits)
@@ -295,6 +299,22 @@ def review_application(app_id):
         flash('Invalid action.', 'error')
         return redirect(url_for('staff.review_applications'))
 
+    # Guard: a student may hold only ONE public scholarship at a time
+    if action == 'approve' and application.scholarship.funding_type == 'public':
+        held_public = (ScholarshipApplication.query
+                       .join(Scholarship, ScholarshipApplication.scholarship_id == Scholarship.id)
+                       .filter(
+                           ScholarshipApplication.applicant_id == application.applicant_id,
+                           ScholarshipApplication.status == ApplicationStatus.APPROVED,
+                           Scholarship.funding_type == 'public',
+                           ScholarshipApplication.id != application.id,
+                       ).first())
+        if held_public:
+            flash(f'Cannot approve: {application.applicant.get_full_name()} already holds the '
+                  f'public scholarship "{held_public.scholarship.title}". Only one public '
+                  'scholarship is allowed per student.', 'error')
+            return redirect(url_for('staff.review_applications'))
+
     application.status      = new_status
     application.reviewed_by = session['user_id']
     application.reviewed_at = datetime.utcnow()
@@ -346,9 +366,23 @@ def batch_review():
         return redirect(url_for('staff.review_applications'))
     processed = 0
     approved_apps = []
+    skipped_public = 0
     for app_id in app_ids:
         app = ScholarshipApplication.query.get(int(app_id))
         if app:
+            # Guard: skip approving a public scholarship for a student who already holds one
+            if (action == 'approve' and app.scholarship.funding_type == 'public'):
+                held_public = (ScholarshipApplication.query
+                               .join(Scholarship, ScholarshipApplication.scholarship_id == Scholarship.id)
+                               .filter(
+                                   ScholarshipApplication.applicant_id == app.applicant_id,
+                                   ScholarshipApplication.status == ApplicationStatus.APPROVED,
+                                   Scholarship.funding_type == 'public',
+                                   ScholarshipApplication.id != app.id,
+                               ).first())
+                if held_public:
+                    skipped_public += 1
+                    continue
             app.status = new_status
             app.reviewed_by = session['user_id']
             app.reviewed_at = datetime.utcnow()
@@ -392,7 +426,9 @@ def batch_review():
     log_action('application.batch_' + action,
                f'Staff {session.get("username")} batch-{action}d {processed} application(s).',
                category='application')
-    flash(f'{processed} application(s) {new_status.value.replace("_"," ")}.{batch_info}', 'success')
+    flash(f'{processed} application(s) {new_status.value.replace("_"," ")}.{batch_info}'
+          + (f' {skipped_public} skipped — student already holds a public scholarship.' if skipped_public else ''),
+          'success' if not skipped_public else 'warning')
     return redirect(url_for('staff.review_applications'))
 
 

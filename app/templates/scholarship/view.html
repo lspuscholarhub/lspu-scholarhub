@@ -11,6 +11,15 @@
           <!-- Header -->
           <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
             <h1 class="card-title h3 mb-0">{{ scholarship.title }}</h1>
+            {% if scholarship.funding_type == 'private' %}
+              <span class="badge bg-info text-dark fs-6" title="Can be combined with your other scholarships">
+                <i class="bi bi-building me-1"></i>Private
+              </span>
+            {% else %}
+              <span class="badge bg-dark fs-6" title="Only one public scholarship may be held at a time">
+                <i class="bi bi-bank2 me-1"></i>Public
+              </span>
+            {% endif %}
             <div class="text-end">
               {% if scholarship.status and scholarship.status.value == 'active' %}
                 <span class="badge bg-success fs-6">Active</span>
@@ -118,14 +127,15 @@
             </a>
             <div>
               {% if session.get('user_type') == 'student' %}
-                {% if is_current_scholar %}
+                {% if scholarship.funding_type == 'public' and holds_public %}
                   <span class="btn btn-secondary disabled">
-                    <i class="bi bi-lock-fill me-1"></i>Current Scholar
+                    <i class="bi bi-lock-fill me-1"></i>Public Limit Reached
                   </span>
                   <div class="mt-2">
                     <small class="text-muted">
                       <i class="bi bi-info-circle me-1"></i>
-                      You are currently a scholar under "{{ active_scholarship_title }}". You can only hold one scholarship at a time.
+                      You already hold the public scholarship "{{ active_scholarship_title }}".
+                      Only one public scholarship is allowed — private programs remain open to you.
                     </small>
                   </div>
                 {% elif already_applied %}
