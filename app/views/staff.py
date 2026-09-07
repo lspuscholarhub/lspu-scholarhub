@@ -242,8 +242,11 @@ def review_applications():
             User.student_id.ilike(f'%{q}%'),
         ))
 
-    # First-come-first-served: oldest applications appear first
-    applications = query.order_by(ScholarshipApplication.submitted_at.asc()).all()
+    # First-come-first-served: oldest applications appear first (paginated)
+    page       = request.args.get('page', 1, type=int)
+    pagination = (query.order_by(ScholarshipApplication.submitted_at.asc())
+                      .paginate(page=page, per_page=20, error_out=False))
+    applications = pagination.items
     scholarships = Scholarship.query.order_by(Scholarship.title).all()
     courses = sorted({
         u.course for u in User.query.filter(
@@ -265,6 +268,7 @@ def review_applications():
         scholarships=scholarships,
         courses=courses,
         stats=stats,
+        pagination=pagination,
         status_filter=status_filter,
         scholarship_filter=scholarship_filter,
         course_filter=course_filter,
