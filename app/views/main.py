@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, session, request, flash, redirect, url_for, jsonify
-from app import db
+from app import db, limiter
 
 main_bp = Blueprint('main', __name__)
 
@@ -55,6 +55,7 @@ def index():
     return render_template('index.html', recent_scholarships=recent_scholarships)
 
 @main_bp.route('/contact', methods=['GET', 'POST'])
+@limiter.limit('10 per hour')
 def contact():
     """Contact page with form that emails the scholarship office."""
     if request.method == 'POST':

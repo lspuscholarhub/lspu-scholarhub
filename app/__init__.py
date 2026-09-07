@@ -4,6 +4,8 @@ from flask_migrate import Migrate
 from flask_mail import Mail
 from flask_jwt_extended import JWTManager
 from flask_wtf.csrf import CSRFProtect
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from config.config import config
 import os
 
@@ -13,6 +15,7 @@ migrate = Migrate()
 mail = Mail()
 jwt = JWTManager()
 csrf = CSRFProtect()
+limiter = Limiter(key_func=get_remote_address, storage_uri="memory://")
 
 
 def create_app(config_name=None):
@@ -33,6 +36,21 @@ def create_app(config_name=None):
     mail.init_app(app)
     jwt.init_app(app)
     csrf.init_app(app)
+    limiter.init_app(app)
+
+    # Friendly handling when a rate limit is hit
+    @app.errorhandler(429)
+    def ratelimit_handler(e):
+        from flask import jsonify, request as _req, flash as _flash
+        from flask import redirect as _redir
+        if _req.path.startswith('/chatbot') or _req.is_json:
+            return jsonify({
+                'error':    'Too many requests. Please wait a moment and try again.',
+                'response': 'You are sending messages too quickly — please wait a moment and try again.',
+                'source':   'ratelimit',
+            }), 429
+        _flash('Too many attempts. Please wait a few minutes and try again.', 'warning')
+        return _redir(_req.referrer or '/auth/login')
 
     # Register blueprints
     from app.views.main import main_bp
@@ -144,6 +162,17 @@ def create_app(config_name=None):
     def inject_globals():
         from flask import session as _session
         from app.utils.gwa_utils import get_gwa_label, get_gwa_badge_class, GWA_THRESHOLD
+
+        # Real unread notification count for the navbar bell badge
+        unread = 0
+        if _session.get('user_id'):
+            try:
+                from app.models.notification import Notification
+                unread = Notification.query.filter_by(
+                    user_id=_session['user_id'], is_read=False).count()
+            except Exception:
+                unread = 0
+
         return {
             'now': _dt.utcnow(),
             'session': _session,
@@ -152,6 +181,7 @@ def create_app(config_name=None):
             'get_gwa_label': get_gwa_label,
             'get_gwa_badge_class': get_gwa_badge_class,
             'GWA_THRESHOLD': GWA_THRESHOLD,
+            'unread_count': unread,
         }
 
     return app

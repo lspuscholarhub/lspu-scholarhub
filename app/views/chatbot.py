@@ -6,7 +6,7 @@ Powered by Google Gemini with persistent chat history.
 import os
 from datetime import datetime
 from flask import Blueprint, render_template, request, jsonify, session
-from app import db
+from app import db, limiter
 
 chatbot_bp = Blueprint('chatbot', __name__)
 
@@ -65,6 +65,7 @@ def chatbot_page():
 
 
 @chatbot_bp.route('/chat', methods=['POST'])
+@limiter.limit('60 per hour')
 def chat():
     """Handle a chat message, persist it, and return an AI response."""
     try:

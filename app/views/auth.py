@@ -18,7 +18,7 @@ from datetime import datetime, timedelta
 from flask import (Blueprint, render_template, request, flash,
                    redirect, url_for, session)
 from flask_jwt_extended import create_access_token
-from app import db
+from app import db, limiter
 from app.models import User
 
 auth_bp = Blueprint('auth', __name__)
@@ -181,6 +181,7 @@ def _send_credentials_email(user, temp_password):
 # ── Login ─────────────────────────────────────────────────────────────────────
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
+@limiter.limit('30 per 5 minutes')
 def login():
     """Login with email OR student_id plus password."""
     if request.method == 'POST':
@@ -238,6 +239,7 @@ def login():
 # ── Register ──────────────────────────────────────────────────────────────────
 
 @auth_bp.route('/register', methods=['GET', 'POST'])
+@limiter.limit('20 per hour')
 def register():
     """
     Step 1 of registration: validate form data, send OTP, store pending data in session.
@@ -624,6 +626,7 @@ def verify_otp():
 
 
 @auth_bp.route('/verify-otp/resend', methods=['POST'])
+@limiter.limit('10 per 15 minutes')
 def resend_otp():
     """Resend a fresh OTP to the pending email."""
     pending = session.get('pending_registration')

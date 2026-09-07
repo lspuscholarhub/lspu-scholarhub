@@ -277,39 +277,6 @@ def apply_scholarship(scholarship_id):
                            editing=False, application=None)
 
 
-# ── Student: my applications ──────────────────────────────────────────────────
-
-@scholarship_bp.route('/my-applications')
-@role_required('student')
-def my_applications():
-    """View the logged-in student's applications."""
-    user = User.query.get(session['user_id'])
-    apps = (ScholarshipApplication.query
-            .filter_by(applicant_id=user.id)
-            .order_by(ScholarshipApplication.submitted_at.desc())
-            .all())
-
-    total     = len(apps)
-    approved  = sum(1 for a in apps if a.status == ApplicationStatus.APPROVED)
-    pending   = sum(1 for a in apps if a.status in (ApplicationStatus.PENDING,
-                                                     ApplicationStatus.UNDER_REVIEW))
-    rejected  = sum(1 for a in apps if a.status == ApplicationStatus.REJECTED)
-    total_award = sum(
-        float(a.scholarship.award_amount or 0)
-        for a in apps if a.status == ApplicationStatus.APPROVED
-    )
-
-    return render_template(
-        'scholarship/applications.html',
-        applications=apps,
-        total=total,
-        approved=approved,
-        pending=pending,
-        rejected=rejected,
-        total_award=total_award,
-    )
-
-
 # ── Edit application (before deadline) ───────────────────────────────────────
 
 @scholarship_bp.route('/application/<int:app_id>/edit', methods=['GET', 'POST'])
