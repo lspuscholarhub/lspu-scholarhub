@@ -23,37 +23,6 @@
     </a>
   </div>
 
-  <!-- Stats -->
-  <div class="row g-3 mb-4">
-    <div class="col-4">
-      <div class="card border-0 shadow-sm text-center py-3" style="border-radius:12px;">
-        <div class="fs-2 fw-bold text-primary">{{ total }}</div>
-        <div class="small text-muted">Total</div>
-      </div>
-    </div>
-    <div class="col-4">
-      <div class="card border-0 shadow-sm text-center py-3" style="border-radius:12px;">
-        <div class="fs-2 fw-bold text-warning">{{ pending }}</div>
-        <div class="small text-muted">Pending / Review</div>
-      </div>
-    </div>
-    <div class="col-4">
-      <div class="card border-0 shadow-sm text-center py-3" style="border-radius:12px;">
-        {% if current_scholarship %}
-        <div class="fs-2 fw-bold text-info">1</div>
-        <div class="small text-muted">Total Awards</div>
-        <div class="small fw-semibold text-info text-truncate px-3 mt-1"
-             title="{{ current_scholarship.title }}">
-          <i class="bi bi-award-fill me-1"></i>{{ current_scholarship.title }}
-        </div>
-        {% else %}
-        <div class="fs-2 fw-bold text-info">0</div>
-        <div class="small text-muted">Total Awards</div>
-        {% endif %}
-      </div>
-    </div>
-  </div>
-
   {% if applications %}
 
   <!-- Application cards -->
