@@ -160,7 +160,7 @@ def get_faqs():
             "What documents do I need?":                  "documents",
             "How do I check my application status?":      "status",
             "What are the eligibility requirements?":     "scholarship",
-            "How do I get my account verified?":          "account",
+            "Can I apply to more than one scholarship?":  "application",
             "What is the application deadline?":          "scholarship",
             "Where is the scholarship office?":           "contact",
         },

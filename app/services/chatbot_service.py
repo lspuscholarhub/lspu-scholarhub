@@ -137,7 +137,7 @@ def _user_context(user_id):
             "\n=== CURRENT USER (personalise your response to this student) ===",
             f"Name       : {user.get_full_name()}",
             f"Username   : {user.username}",
-            f"Verified   : {'YES — can apply for scholarships' if user.is_verified else 'NO — cannot apply until verified by admin'}",
+            f"Verified   : {'YES — can apply for scholarships' if user.is_verified else 'NO — account not yet verified (OTP is sent at registration)'}",
             f"Course     : {user.course or 'Not set'}",
             f"Year Level : {user.year_level or 'Not set'}",
             f"Student ID : {user.student_id or 'Not set'}",
@@ -171,7 +171,8 @@ def _build_system_prompt(user_id=None):
   - If the user writes in English → respond in English
   - If the user mixes English and Filipino → respond in the same mix
   - Examples: "pwede ba akong mag-apply?" → respond in Filipino. "Can I apply?" → respond in English.
-- You NEVER make up information. If unsure, direct the user to the scholarship office.
+- **Never make up information.** If unsure, direct the user to the scholarship office.
+- **Base answers on THIS system.** Describe the process exactly as written in 'How LSPU ScholarHub Works' below — never generic scholarship advice from other schools or programs.
 
 ## How to Respond
 - **Be concise and direct.** Answer the question first, then add only what's truly necessary.
@@ -189,32 +190,28 @@ def _build_system_prompt(user_id=None):
 - **Email**: lspu.scholarhub@gmail.com
 - **Phone**: 0968-365-2615
 
-## How LSPU ScholarHub Works
-1. Students register an account on the system.
-2. An **admin must verify** the student account before they can apply.
-3. Verified students browse scholarships and click **Apply Now**.
-4. Students fill out the application form and upload required documents.
-5. Staff/Admin review applications and approve or reject them.
-6. Students receive **in-app and email notifications** about their status.
+## How LSPU ScholarHub Works (describe THIS process — not generic scholarship advice)
+1. **Register** — the student signs up with their school email and verifies via a One-Time PIN (OTP) sent by email. Verification is automatic after the OTP — no admin approval needed to apply.
+2. **Upload documents once** — in **My Documents**, the student uploads their **Certificate of Registration (COR)** and **Copy of Grades**. The system reads the GWA from the grades automatically.
+3. **Browse** — the **Scholarships** page lists open programs with award, deadline (if any), and remaining slots.
+4. **Apply** — the form is pre-filled with the student's profile (name, course, year level, GWA, birthday, contact info). Each program may add its own **custom questions**. There is **no essay** and no document upload during application — COR and grades are already on file.
+5. **One scholarship at a time** — a student holding an approved scholarship cannot apply to another program until it ends or is withdrawn.
+6. **Review** — staff/admin approve or reject; the student is notified via in-app alert, email, and SMS (when configured).
+7. **Auto-batching** — approved scholars are automatically placed in the batch named after their program for the current academic period.
+8. **Monitoring** — each term, staff check every scholar's GWA: **Good Standing**, **At Risk**, **Probation**, **Termination Warning**. Students are alerted when their performance drops.
 
-## Required Documents
-| Document | Status |
-|---|---|
-| Transcript of Records (PDF/DOC) | **Required** |
-| Certificate of Good Moral Character (PDF/DOC) | **Required** |
-| Application Essay (min. 300 words) | **Required** |
-| Birth Certificate | Optional |
-| Academic Awards/Certificates | Optional |
-- Max file size: **5MB** per file
-- Accepted formats: PDF, DOC, DOCX, JPG, PNG
+## Requirements (the ONLY ones in this system)
+- **Account** — registered and OTP-verified.
+- **Documents on file** — Certificate of Registration (COR) and Copy of Grades, uploaded in **My Documents** (PDF, JPG, or PNG; replaceable anytime).
+- **Application form** — answer the program's custom questions only. **No essay is ever required.**
+- **Eligibility** — the program must be open (active, before its deadline if set, slots remaining) and the student's GWA must satisfy the program's criteria.
+- **Limit** — one active scholarship per student.
 
-## Application Essay Tips (share these when relevant)
-- Be specific about your goals and why you need the scholarship
-- Mention your academic achievements and extracurricular activities
-- Explain how the scholarship will help you achieve your dreams
-- Be honest and personal — reviewers appreciate genuine stories
-- Proofread carefully before submitting
-- Aim for 400–500 words even though 300 is the minimum
+## Where things are in the system
+- **Scholarships** — browse programs and apply
+- **My Applications** — track status; edit or withdraw pending applications
+- **My Documents** — upload or replace COR and Copy of Grades
+- **Notifications** — in-app alerts of every status change
 
 ## Application Status Meanings
 - **Pending** — Received, waiting for review
@@ -224,12 +221,10 @@ def _build_system_prompt(user_id=None):
 - **Withdrawn** — Student withdrew the application
 
 ## NLP Instructions
-- Detect the user's **intent** and answer it fully and thoroughly
-- Extract **entities** from the message (scholarship names, GPA values, course, year level)
-- If the user mentions their GPA, course, or year level — use that to recommend specific scholarships from the live data and explain why they qualify
-- If the user seems worried or stressed, be extra reassuring and supportive
-- If the user asks a vague question, ask a clarifying question to give better help
-- Always be proactive — if you answer one question, anticipate what they might ask next and address it
+- Detect the user's **intent** and answer it directly
+- Extract **entities** from the message (scholarship names, GWA values, course, year level)
+- If the user mentions their GWA, course, or year level — use that to recommend specific scholarships from the live data and explain why they qualify
+- If the user seems worried or stressed, be reassuring in one sentence, then answer
 
 {scholarship_ctx}
 
@@ -262,11 +257,11 @@ def _detect_intent(text):
         return 'eligibility_inquiry'
     if any(w in t for w in ['how to apply', 'paano mag-apply', 'apply', 'mag-apply']):
         return 'application_process'
-    if any(w in t for w in ['document', 'upload', 'file', 'transcript', 'good moral']):
+    if any(w in t for w in ['document', 'upload', 'file', 'copy of grades', 'certificate of registration', 'transcript', 'good moral']):
         return 'document_inquiry'
     if any(w in t for w in ['status', 'check', 'approved', 'rejected', 'pending', 'under review']):
         return 'status_inquiry'
-    if any(w in t for w in ['verify', 'verification', 'not verified', 'account']):
+    if any(w in t for w in ['verify', 'verified', 'verification', 'otp', 'one-time', 'account']):
         return 'verification_inquiry'
     if any(w in t for w in ['contact', 'office', 'phone', 'email', 'address', 'location']):
         return 'contact_inquiry'
@@ -367,45 +362,34 @@ def _rule_based_response(user_message, user_id=None):
 
     # Application process
     if intent == 'application_process':
-        return ("**How to apply for a scholarship:**\n"
-                "1. Make sure your account is **verified** by an admin\n"
-                "2. Go to the **Scholarships** page\n"
-                "3. Click **View Details** on a scholarship\n"
-                "4. Click **Apply Now** and fill out the form\n"
-                "5. Upload your **Transcript** and **Good Moral Certificate**\n"
-                "6. Write your application essay (min. 300 words)\n"
-                "7. Agree to terms and **Submit**\n\n"
-                "You can track your application under **My Account → My Applications**.")
+        return ("**How to apply:**\n"
+                "1. Register and verify via the OTP sent to your email\n"
+                "2. Upload your **COR** and **Copy of Grades** once in **My Documents**\n"
+                "3. Open the **Scholarships** page and pick an open program\n"
+                "4. Click **Apply** — your profile is pre-filled; just answer the program's custom questions\n"
+                "5. Submit and track it in **My Applications**\n\n"
+                "No essay needed. You can hold only one scholarship at a time.")
 
     # Documents
     if intent == 'document_inquiry':
-        return ("**Required documents:**\n"
-                "- ✅ Transcript of Records (PDF/DOC) — **Required**\n"
-                "- ✅ Certificate of Good Moral Character (PDF/DOC) — **Required**\n"
-                "- ✅ Application Essay (300+ words) — **Required**\n"
-                "- ⬜ Birth Certificate — Optional\n"
-                "- ⬜ Academic Awards/Certificates — Optional\n\n"
-                "Max file size: **5MB** per file. Formats: PDF, DOC, DOCX, JPG, PNG.")
+        return ("**Required documents (upload once in My Documents):**\n"
+                "- Certificate of Registration (COR)\n"
+                "- Copy of Grades — your GWA is read from this automatically\n\n"
+                "Formats: PDF, JPG, or PNG. Replace them anytime to update your records. "
+                "No essay or other files are required.")
 
     # Status
     if intent == 'status_inquiry':
-        return ("**To check your application status:**\n"
-                "Log in → **My Account** → **My Applications**\n\n"
-                "Status meanings:\n"
-                "- **Pending** — Waiting for review\n"
-                "- **Under Review** — Being reviewed by staff\n"
-                "- **Approved** — Congratulations! ✅\n"
-                "- **Rejected** — Not approved this time\n\n"
-                "You'll also receive email and in-app notifications when your status changes.")
+        return ("Track your applications under **My Applications** in the navbar.\n\n"
+                "Statuses: **Pending** (awaiting review) → **Under Review** → **Approved** or **Rejected**. "
+                "You can edit or withdraw while pending. You'll get in-app, email, and SMS "
+                "notifications on every change.")
 
     # Verification
     if intent == 'verification_inquiry':
-        return ("**Account verification** is required before you can apply for scholarships.\n\n"
-                "To get verified:\n"
-                "1. Contact the scholarship office at **lspu.scholarhub@gmail.com**\n"
-                "2. Or visit the **Student Affairs Building, 2nd Floor**\n"
-                "3. An admin will verify your account\n\n"
-                "Once verified, you'll be able to apply for any open scholarship.")
+        return ("Accounts are verified automatically with a **One-Time PIN (OTP)** sent to "
+                "your email when you register. Didn't get it? Use the resend option, or "
+                "contact the office at **lspu.scholarhub@gmail.com** / 0968-365-2615.")
 
     # Eligibility
     if intent == 'eligibility_inquiry':
@@ -531,7 +515,7 @@ def get_chatbot_response(user_message, conversation_history=None, user_id=None):
                 model=model_name,
                 contents=contents,
                 config=genai_types.GenerateContentConfig(
-                    temperature=0.7,
+                    temperature=0.5,
                     top_p=0.95,
                     max_output_tokens=1024,
                 )
