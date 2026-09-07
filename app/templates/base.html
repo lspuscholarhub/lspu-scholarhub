@@ -339,20 +339,6 @@
           AI-Enabled Scholarship Management and Monitoring System<br>
           Laguna State Polytechnic University
         </p>
-        {% if not role %}
-        <div class="mt-3">
-          <a href="{{ url_for('scholarship.list_scholarships') }}"
-             class="btn btn-outline-light btn-sm me-1"
-             aria-label="Browse Scholarships">
-            <i class="bi bi-search me-1"></i>Scholarships
-          </a>
-          <a href="{{ url_for('chatbot.chatbot_page') }}"
-             class="btn btn-warning btn-sm"
-             aria-label="Open AI Assistant">
-            <i class="bi bi-robot me-1"></i>AI Assistant
-          </a>
-        </div>
-        {% endif %}
       </div>
       <div class="col-lg-6 col-md-6 mb-3 mb-md-0">
         <p class="small mb-1 opacity-75">
