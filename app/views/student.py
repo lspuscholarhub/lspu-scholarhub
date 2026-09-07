@@ -68,7 +68,6 @@ def my_applications():
             .filter_by(applicant_id=user.id)
             .order_by(ScholarshipApplication.submitted_at.desc())
             .all())    total     = len(apps)
-    approved  = sum(1 for a in apps if a.status == ApplicationStatus.APPROVED)
     pending   = sum(1 for a in apps if a.status in (ApplicationStatus.PENDING,
                                                      ApplicationStatus.UNDER_REVIEW))
     # A student can hold only one scholarship — surface the current award (or None)
@@ -81,7 +80,6 @@ def my_applications():
         'student/applications.html',
         applications=apps,
         total=total,
-        approved=approved,
         pending=pending,
         current_scholarship=current_scholarship,
     )

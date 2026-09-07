@@ -25,25 +25,19 @@
 
   <!-- Stats -->
   <div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
+    <div class="col-4">
       <div class="card border-0 shadow-sm text-center py-3" style="border-radius:12px;">
         <div class="fs-2 fw-bold text-primary">{{ total }}</div>
         <div class="small text-muted">Total</div>
       </div>
     </div>
-    <div class="col-6 col-md-3">
-      <div class="card border-0 shadow-sm text-center py-3" style="border-radius:12px;">
-        <div class="fs-2 fw-bold text-success">{{ approved }}</div>
-        <div class="small text-muted">Approved</div>
-      </div>
-    </div>
-    <div class="col-6 col-md-3">
+    <div class="col-4">
       <div class="card border-0 shadow-sm text-center py-3" style="border-radius:12px;">
         <div class="fs-2 fw-bold text-warning">{{ pending }}</div>
         <div class="small text-muted">Pending / Review</div>
       </div>
     </div>
-    <div class="col-6 col-md-3">
+    <div class="col-4">
       <div class="card border-0 shadow-sm text-center py-3" style="border-radius:12px;">
         {% if current_scholarship %}
         <div class="fs-2 fw-bold text-info">1</div>
