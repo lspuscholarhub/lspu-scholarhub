@@ -1340,13 +1340,15 @@ def student_profile(uid):
 def view_student_document(doc_id):
     """Render a viewer page for a student document."""
     import os
-    from flask import current_app, redirect as _redirect
+    from flask import current_app
     from app.models.document import Document
     doc = Document.query.get_or_404(doc_id)
 
-    # If stored on Cloudinary, redirect directly to the URL
-    if doc.cloudinary_url:
-        return _redirect(doc.cloudinary_url)
+    # If stored on Cloudinary, go through the raw proxy route so the file
+    # displays INLINE — redirecting straight to Cloudinary makes the browser
+    # download it (Cloudinary serves raw files with Content-Disposition: attachment).
+    if doc.cloudinary_public_id or (doc.file_path and (doc.file_path.startswith('http://') or doc.file_path.startswith('https://'))):
+        return redirect(url_for('admin.serve_student_document_raw', doc_id=doc.id))
 
     file_path = doc.file_path
     if not os.path.isabs(file_path):
