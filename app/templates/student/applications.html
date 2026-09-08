@@ -32,7 +32,7 @@
     <div class="d-flex">
       <!-- Status color bar -->
       <div style="width:5px;min-height:100%;
-        background:{% if sv=='approved' %}#198754{% elif sv=='rejected' %}#dc3545{% elif sv=='under_review' %}#0dcaf0{% elif sv=='withdrawn' %}#6c757d{% else %}#ffc107{% endif %};">
+        background:{% if sv=='approved' %}#198754{% elif sv=='rejected' %}#dc3545{% elif sv=='withdrawn' %}#6c757d{% else %}#ffc107{% endif %};">
       </div>
       <div class="flex-grow-1 p-4">
 
@@ -44,8 +44,6 @@
                 <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Approved</span>
               {% elif sv == 'rejected' %}
                 <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Rejected</span>
-              {% elif sv == 'under_review' %}
-                <span class="badge bg-info text-dark"><i class="bi bi-hourglass-split me-1"></i>Under Review</span>
               {% elif sv == 'withdrawn' %}
                 <span class="badge bg-secondary"><i class="bi bi-dash-circle me-1"></i>Withdrawn</span>
               {% else %}
@@ -93,14 +91,12 @@
               {% endif %}
             </div>
           </div>
-        </div>
-
-        <!-- Status timeline -->
+        </div>        <!-- Status timeline -->
+        {% if sv in ('approved','rejected') %}
         <div class="mt-3 pt-3 border-top">
-          <div class="d-flex align-items-center gap-0">
+          <div class="d-flex align-items-center justify-content-center gap-0">
             {% set steps = [
               ('submitted',   'Submitted',   'bi-send',            sv in ('pending','under_review','approved','rejected')),
-              ('under_review','Under Review','bi-hourglass-split',  sv in ('under_review','approved','rejected')),
               ('decided',     'Decision',    'bi-check2-circle',   sv in ('approved','rejected')),
             ] %}
             {% for step_id, step_label, step_icon, step_done in steps %}
@@ -125,6 +121,7 @@
             {% endfor %}
           </div>
         </div>
+        {% endif %}
 
         <!-- Review notes -->
         {% if app.review_notes %}
@@ -218,11 +215,11 @@
 {% for app in applications %}
 {% set sv = app.status.value %}
 <div class="modal fade" id="detailModal{{ app.id }}" tabindex="-1" aria-labelledby="detailLabel{{ app.id }}">
-  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
     <div class="modal-content" style="border-radius:12px;overflow:hidden;">
 
       <div class="modal-header text-white"
-           style="background:{% if sv=='approved' %}#198754{% elif sv=='rejected' %}#dc3545{% elif sv=='under_review' %}#0dcaf0{% elif sv=='withdrawn' %}#6c757d{% else %}#ffc107{% endif %};">
+           style="background:{% if sv=='approved' %}#198754{% elif sv=='rejected' %}#dc3545{% elif sv=='withdrawn' %}#6c757d{% else %}#ffc107{% endif %};">
         <div>
           <h5 class="modal-title fw-bold mb-0" id="detailLabel{{ app.id }}">{{ app.scholarship.title }}</h5>
           <div class="small opacity-75">Application #{{ app.id }} · Submitted {{ app.submitted_at.strftime('%B %d, %Y') }}</div>
@@ -230,33 +227,13 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 
-      <!-- Tab Navigation -->
-      <ul class="nav nav-tabs px-4 pt-3" role="tablist">
-        <li class="nav-item" role="presentation">
-          <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#info{{ app.id }}" type="button" role="tab" aria-selected="true">
-            <i class="bi bi-person me-1"></i>Info
-          </button>
-        </li>
-        <li class="nav-item" role="presentation">
-          <button class="nav-link" data-bs-toggle="tab" data-bs-target="#docs{{ app.id }}" type="button" role="tab" aria-selected="false">
-            <i class="bi bi-file-earmark me-1"></i>Documents
-            {% if app.uploaded_documents %}<span class="badge bg-secondary ms-1">{{ app.uploaded_documents|length }}</span>{% endif %}
-          </button>
-        </li>
-      </ul>
-
       <div class="modal-body p-4">
-        <div class="tab-content">
-
-          <!-- Info Tab -->
-          <div class="tab-pane fade show active" id="info{{ app.id }}" role="tabpanel">
             <!-- Status + dates -->
-            <div class="row g-3 mb-4">
+            <div class="row g-3 mb-4 justify-content-center">
               <div class="col-md-4 text-center">
                 <div class="small text-muted mb-1">Status</div>
                 {% if sv == 'approved' %}<span class="badge bg-success fs-6"><i class="bi bi-check-circle me-1"></i>Approved</span>
                 {% elif sv == 'rejected' %}<span class="badge bg-danger fs-6"><i class="bi bi-x-circle me-1"></i>Rejected</span>
-                {% elif sv == 'under_review' %}<span class="badge bg-info text-dark fs-6"><i class="bi bi-hourglass-split me-1"></i>Under Review</span>
                 {% elif sv == 'withdrawn' %}<span class="badge bg-secondary fs-6"><i class="bi bi-dash-circle me-1"></i>Withdrawn</span>
                 {% else %}<span class="badge bg-warning text-dark fs-6"><i class="bi bi-clock me-1"></i>Pending</span>{% endif %}
               </div>
@@ -293,6 +270,10 @@
                       <td class="small fw-semibold">{{ app.application_data.get('email', '—') }}</td></tr>
                   <tr><td class="text-muted small">Phone</td>
                       <td class="small fw-semibold">{{ app.application_data.get('phone', '—') }}</td></tr>
+                  <tr><td class="text-muted small">Birthday</td>
+                      <td class="small fw-semibold">{{ (app.application_data.get('birthday') or '—') }}</td></tr>
+                  <tr><td class="text-muted small">Gender</td>
+                      <td class="small fw-semibold">{{ (app.application_data.get('gender') or '—') }}</td></tr>
                 </table>
                 {% else %}
                 <p class="text-muted small">No application data on record.</p>
@@ -327,50 +308,6 @@
                 {% endif %}
               </div>
             </div>
-          </div>
-
-          <!-- Documents Tab -->
-          <div class="tab-pane fade" id="docs{{ app.id }}" role="tabpanel">
-            <h6 class="fw-bold mb-3">Uploaded Documents</h6>
-            {% if app.uploaded_documents %}
-            <div class="list-group">
-              {% for doc in app.uploaded_documents %}
-              <div class="list-group-item d-flex justify-content-between align-items-center py-2">
-                <div>
-                  <i class="{{ doc.icon_class }} me-2"></i>
-                  <strong class="small">{{ doc.category.replace('_',' ')|title }}</strong>
-                  <span class="text-muted small ms-2">{{ doc.original_filename }}</span>
-                  <span class="badge bg-light text-muted border ms-1" style="font-size:.7rem;">{{ doc.file_size_display }}</span>
-                  {% if doc.is_verified %}
-                  <span class="badge bg-success ms-1" style="font-size:.7rem;"><i class="bi bi-check me-1"></i>Verified</span>
-                  {% else %}
-                  <span class="badge bg-warning text-dark ms-1" style="font-size:.7rem;"><i class="bi bi-clock me-1"></i>Pending</span>
-                  {% endif %}
-                </div>
-                <div class="d-flex gap-1">
-                  <a href="{{ url_for('student.view_document', doc_id=doc.id) }}"
-                     class="btn btn-sm btn-outline-primary" target="_blank"
-                     data-bs-toggle="tooltip" title="View document">
-                    <i class="bi bi-eye"></i>
-                  </a>
-                  <a href="{{ url_for('student.download_document', doc_id=doc.id) }}"
-                     class="btn btn-sm btn-outline-secondary"
-                     data-bs-toggle="tooltip" title="Download document">
-                    <i class="bi bi-download"></i>
-                  </a>
-                </div>
-              </div>
-              {% endfor %}
-            </div>
-            {% else %}
-            <div class="text-center py-4 text-muted">
-              <i class="bi bi-file-earmark-x fs-3 mb-2 d-block"></i>
-              <p class="small mb-0">No documents on record for this application.</p>
-            </div>
-            {% endif %}
-          </div>
-
-        </div>
       </div>
 
       <div class="modal-footer">

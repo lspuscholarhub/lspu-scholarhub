@@ -13,13 +13,13 @@
   <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
       <h1 class="h3 fw-bold mb-0">Review Applications</h1>
-      <p class="text-muted small mb-0">Approve, reject, or mark applications under review</p>
+      <p class="text-muted small mb-0">Applications awaiting your decision — approved and rejected records are under their own filter</p>
     </div>
   </div>
 
   <!-- Stats -->
   <div class="row g-3 mb-4">
-    {% for label, val, color in [('Total',stats.total,'primary'),('Pending',stats.pending,'warning'),('Under Review',stats.under_review,'info'),('Approved',stats.approved,'success'),('Rejected',stats.rejected,'danger')] %}
+    {% for label, val, color in [('Total',stats.total,'primary'),('Pending',stats.pending,'warning'),('Approved',stats.approved,'success'),('Rejected',stats.rejected,'danger')] %}
     <div class="col"><div class="card border-0 shadow-sm text-center py-2" style="border-radius:10px;">
       <div class="h5 mb-0 text-{{ color }}">{{ val }}</div><small class="text-muted">{{ label }}</small>
     </div></div>
@@ -37,8 +37,8 @@
         <div class="col-md-2">
           <label class="form-label small fw-semibold">Status</label>
           <select name="status" class="form-select">
-            <option value="">All Status</option>
-            {% for val, label in [('pending','Pending'),('under_review','Under Review'),('approved','Approved'),('rejected','Rejected'),('withdrawn','Withdrawn')] %}
+            <option value="all" {% if status_filter=='all' %}selected{% endif %}>All Status</option>
+            {% for val, label in [('pending','Pending'),('approved','Approved'),('rejected','Rejected'),('withdrawn','Withdrawn')] %}
             <option value="{{ val }}" {% if status_filter==val %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
           </select>
@@ -117,7 +117,6 @@
                   {% set sv = app.status.value %}
                   {% if sv=='approved' %}<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Approved</span>
                   {% elif sv=='rejected' %}<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Rejected</span>
-                  {% elif sv=='under_review' %}<span class="badge bg-info text-dark"><i class="bi bi-hourglass-split me-1"></i>Under Review</span>
                   {% elif sv=='withdrawn' %}<span class="badge bg-secondary"><i class="bi bi-dash-circle me-1"></i>Withdrawn</span>
                   {% else %}<span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Pending</span>{% endif %}
                 </td>
@@ -198,7 +197,6 @@
               {% set sv2 = app.status.value %}
               {% if sv2=='approved' %}<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Approved</span>
               {% elif sv2=='rejected' %}<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Rejected</span>
-              {% elif sv2=='under_review' %}<span class="badge bg-info text-dark"><i class="bi bi-hourglass-split me-1"></i>Under Review</span>
               {% elif sv2=='withdrawn' %}<span class="badge bg-secondary"><i class="bi bi-dash-circle me-1"></i>Withdrawn</span>
               {% else %}<span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Pending</span>{% endif %}
             </p>
@@ -288,7 +286,6 @@
           </div>
           <div class="d-flex gap-2 justify-content-end">
             <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
-            <button type="submit" name="action" value="under_review" class="btn btn-info btn-sm">Mark Under Review</button>
             <button type="submit" name="action" value="reject" class="btn btn-danger btn-sm">Reject</button>
             <button type="submit" name="action" value="approve" class="btn btn-success btn-sm">Approve</button>
           </div>

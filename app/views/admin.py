@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import (Blueprint, render_template, request, flash,
                    redirect, url_for, session, jsonify, send_file)
 from app import db
@@ -20,6 +20,9 @@ def dashboard():
 
     total_users         = User.query.count()
     total_students      = User.query.filter_by(user_type='student').count()
+    new_users           = User.query.filter(
+        User.created_at >= datetime.utcnow() - timedelta(days=30)
+    ).count()
     active_scholarships = Scholarship.query.filter_by(status=ScholarshipStatus.ACTIVE).count()
     total_applications  = ScholarshipApplication.query.count()
     pending_review      = ScholarshipApplication.query.filter(
@@ -63,6 +66,7 @@ def dashboard():
         'admin/dashboard.html',
         total_users=total_users,
         total_students=total_students,
+        new_users=new_users,
         active_scholarships=active_scholarships,
         total_applications=total_applications,
         pending_review=pending_review,
@@ -245,7 +249,8 @@ def delete_scholarship(sid):
 @admin_bp.route('/applications')
 @role_required('admin')
 def manage_applications():
-    status_filter      = request.args.get('status', '')
+    # Default to the actionable queue: only applications awaiting a decision.
+    status_filter      = request.args.get('status', 'pending')
     scholarship_filter = request.args.get('scholarship_id', '')
     course_filter      = request.args.get('course', '')
     year_filter        = request.args.get('year', '')
@@ -254,9 +259,14 @@ def manage_applications():
     query = ScholarshipApplication.query.join(
         User, ScholarshipApplication.applicant_id == User.id)
 
-    if status_filter:
+    if status_filter and status_filter != 'all':
         try:
-            query = query.filter(ScholarshipApplication.status == ApplicationStatus(status_filter))
+            if status_filter == 'pending':
+                # Pending and Under Review are treated as one state
+                query = query.filter(ScholarshipApplication.status.in_(
+                    [ApplicationStatus.PENDING, ApplicationStatus.UNDER_REVIEW]))
+            else:
+                query = query.filter(ScholarshipApplication.status == ApplicationStatus(status_filter))
         except ValueError:
             pass
     if scholarship_filter:
@@ -286,8 +296,9 @@ def manage_applications():
 
     stats = {
         'total':        ScholarshipApplication.query.count(),
-        'pending':      ScholarshipApplication.query.filter_by(status=ApplicationStatus.PENDING).count(),
-        'under_review': ScholarshipApplication.query.filter_by(status=ApplicationStatus.UNDER_REVIEW).count(),
+        'pending':      ScholarshipApplication.query.filter(ScholarshipApplication.status.in_(
+                            [ApplicationStatus.PENDING, ApplicationStatus.UNDER_REVIEW])).count(),
+        'under_review': 0,  # merged into pending
         'approved':     ScholarshipApplication.query.filter_by(status=ApplicationStatus.APPROVED).count(),
         'rejected':     ScholarshipApplication.query.filter_by(status=ApplicationStatus.REJECTED).count(),
     }
@@ -318,7 +329,6 @@ def review_application(app_id):
     status_map = {
         'approve':      ApplicationStatus.APPROVED,
         'reject':       ApplicationStatus.REJECTED,
-        'under_review': ApplicationStatus.UNDER_REVIEW,
     }
     new_status = status_map.get(action)
     if not new_status:

@@ -204,6 +204,15 @@ def apply_scholarship(scholarship_id):
             # ── Build application data from user profile ───────────────────────
             gpa = user.gwa or 0
             units = form.get('units_enrolled', '').strip()
+
+            # Persist birthday entered on the form to the user's profile
+            bday_raw = (form.get('birthday') or '').strip()
+            if bday_raw:
+                try:
+                    user.date_of_birth = datetime.strptime(bday_raw, '%Y-%m-%d').date()
+                except ValueError:
+                    pass
+
             application_data = {
                 'first_name':      user.first_name,
                 'last_name':       user.last_name,
@@ -322,6 +331,15 @@ def edit_application(app_id):
 
     if request.method == 'POST':
         form_data = application.application_data or {}
+
+        # Persist birthday to the user's profile
+        bday_raw = (request.form.get('birthday') or '').strip()
+        if bday_raw:
+            try:
+                user.date_of_birth = datetime.strptime(bday_raw, '%Y-%m-%d').date()
+                form_data['birthday'] = user.date_of_birth.isoformat()
+            except ValueError:
+                pass
 
         # Update editable fields (simplified form — no essay, no old document categories)
         for field in ['first_name', 'last_name', 'phone', 'course',

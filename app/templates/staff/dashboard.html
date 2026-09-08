@@ -24,13 +24,14 @@
     {% set metrics = [
       ('Pending Review',  to_review,       '#fd7e14', '#fff3e0', 'bi-clock-fill'),
       ('Reviewed Today',  reviewed_today,  '#198754', '#d1f2e0', 'bi-check-circle-fill'),
+      ('New Users',       new_users,       '#20c997', '#d5f5eb', 'bi-person-plus-fill'),
       ('Active Scholars', active_students, '#0d6efd', '#e8f0fe', 'bi-people-fill'),
       ('Approved',        approved_count,  '#198754', '#d1f2e0', 'bi-award-fill'),
       ('At Risk',         at_risk_count,   '#dc3545', '#fde8e8', 'bi-exclamation-triangle-fill'),
       ('Open Batches',    active_batches,  '#6f42c1', '#ede8f5', 'bi-collection-fill'),
     ] %}
     {% for label, value, color, bg, icon in metrics %}
-    <div class="col-xl-2 col-md-4 col-6">
+    <div class="col-6 col-md-4 col-xl">
       <div class="card stat-card shadow-sm h-100">
         <div class="card-body p-3">
           <div class="d-flex align-items-center gap-3">
@@ -150,7 +151,6 @@
                 {% set sv = app.status.value %}
                 {% if sv=='approved' %}<span class="badge bg-success" style="border-radius:6px;">Approved</span>
                 {% elif sv=='rejected' %}<span class="badge bg-danger" style="border-radius:6px;">Rejected</span>
-                {% elif sv=='under_review' %}<span class="badge bg-info text-dark" style="border-radius:6px;">Review</span>
                 {% else %}<span class="badge bg-warning text-dark" style="border-radius:6px;">Pending</span>{% endif %}
               </div>
             </div>

@@ -146,7 +146,7 @@ def _user_context(user_id):
             f"\nApplication Summary:",
             f"  Total     : {len(apps)}",
             f"  Pending   : {len(pending)} — {', '.join(a.scholarship.title for a in pending) or 'none'}",
-            f"  Under Review: {len(review)} — {', '.join(a.scholarship.title for a in review) or 'none'}",
+            f"  Pending   : {len(pending) + len(review)} — {', '.join(a.scholarship.title for a in pending + review) or 'none'}",
             f"  Approved  : {len(approved)} — {', '.join(a.scholarship.title for a in approved) or 'none'}",
             f"  Rejected  : {len(rejected)} — {', '.join(a.scholarship.title for a in rejected) or 'none'}",
         ]
@@ -214,7 +214,6 @@ def _build_system_prompt(user_id=None):
 
 ## Application Status Meanings
 - **Pending** — Received, waiting for review
-- **Under Review** — Staff is currently reviewing it
 - **Approved** — Congratulations! Application was approved
 - **Rejected** — Not approved this time; student may apply to other scholarships
 - **Withdrawn** — Student withdrew the application
@@ -366,7 +365,7 @@ def _rule_based_response(user_message, user_id=None):
                 "2. Upload your **COR** and **Copy of Grades** once in **My Documents**\n"
                 "3. Open the **Scholarships** page and pick an open program\n"
                 "4. Click **Apply** — your profile is pre-filled; just answer the program's custom questions\n"
-                "5. Submit and track it in **My Applications**\n\n"                "No essay needed. You may hold only one PUBLIC scholarship at a time, but private scholarships can be combined with it and with each other.")
+                "5. Submit and track it in **My Applications**\n\n"                "No essay needed. You may hold only one PUBLIC scholarship at a time, but private scholarships can be combined with it and with each other.")
 
     # Documents
     if intent == 'document_inquiry':
@@ -379,7 +378,7 @@ def _rule_based_response(user_message, user_id=None):
     # Status
     if intent == 'status_inquiry':
         return ("Track your applications under **My Applications** in the navbar.\n\n"
-                "Statuses: **Pending** (awaiting review) → **Under Review** → **Approved** or **Rejected**. "
+                "Statuses: **Pending** (awaiting review) → **Approved** or **Rejected**. "
                 "You can edit or withdraw while pending. You'll get in-app, email, and SMS "
                 "notifications on every change.")
 

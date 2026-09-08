@@ -160,7 +160,6 @@
                   {% set sv = app.status.value %}
                   {% if sv == 'approved' %}<span class="badge bg-success">Approved</span>
                   {% elif sv == 'rejected' %}<span class="badge bg-danger">Rejected</span>
-                  {% elif sv == 'under_review' %}<span class="badge bg-info text-dark">Under Review</span>
                   {% elif sv == 'withdrawn' %}<span class="badge bg-secondary">Withdrawn</span>
                   {% else %}<span class="badge bg-warning text-dark">Pending</span>{% endif %}
                 </td>
