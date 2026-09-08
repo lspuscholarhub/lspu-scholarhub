@@ -182,6 +182,29 @@
                         placeholder="0000-0001, 0000-0002"></textarea>
             </div>
           </div>
+
+          <!-- Announce to Students -->
+          <div class="border rounded p-3" style="background:#f8f9fa;">
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" name="announce_scholarship" value="1"
+                     id="addAnnounce" checked>
+              <label class="form-check-label fw-semibold" for="addAnnounce">
+                <i class="bi bi-megaphone me-1 text-primary"></i>Announce this program to all students
+              </label>
+              <div class="form-text">Sends an in-app notification to every active student once the program is created.</div>
+            </div>
+            <div id="announceMessageWrap">
+              <label class="form-label fw-semibold">Announcement Message <span class="text-muted fw-normal">(editable)</span></label>
+              <textarea class="form-control" name="announce_message" id="addAnnounceMessage" rows="3"></textarea>
+              <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" name="announce_sms" id="addAnnounceSms">
+                <label class="form-check-label small" for="addAnnounceSms">
+                  Also send as SMS
+                  <span class="text-muted">(to students with a saved phone number)</span>
+                </label>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -314,6 +337,27 @@
 
 {% block scripts %}
 <script>
+// ── Auto-fill announcement message from the scholarship title/description ──
+(function() {
+  const titleEl = document.querySelector('#addModal input[name="title"]');
+  const descEl  = document.querySelector('#addModal textarea[name="description"]');
+  const msgEl   = document.getElementById('addAnnounceMessage');
+  if (!titleEl || !msgEl) return;
+  let touched = false;
+  msgEl.addEventListener('input', () => { touched = true; });
+  function fill() {
+    if (touched) return;
+    const t = (titleEl.value || '').trim() || 'a new scholarship program';
+    const d = (descEl && descEl.value || '').trim();
+    msgEl.value = `A new scholarship program "${t}" is now open for applications! ` +
+      (d ? d + ' ' : '') +
+      'Log in to ScholarHub and go to Scholarships to apply.';
+  }
+  titleEl.addEventListener('input', fill);
+  if (descEl) descEl.addEventListener('input', fill);
+  fill();
+})();
+
 let fieldCount = 0;
 
 function addFormField(prefix) {

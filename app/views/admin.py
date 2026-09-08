@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from flask import (Blueprint, render_template, request, flash,
-                   redirect, url_for, session, jsonify, send_file)
+                   redirect, url_for, session, jsonify, send_file, current_app)
 from app import db
 from app.models import User, Scholarship, ScholarshipApplication, Notification
 from app.models.scholarship import ScholarshipStatus, ApplicationStatus
@@ -138,6 +138,41 @@ def create_scholarship():
         log_action('scholarship.create', f'Scholarship "{s.title}" created.',
                    category='scholarship', target_type='scholarship', target_id=s.id)
         flash(f'Scholarship "{s.title}" created successfully.', 'success')
+
+        # ── Optional announcement to all active students ─────────────────────
+        if request.form.get('announce_scholarship') == '1':
+            announce_title = f"New Scholarship: {s.title}"
+            announce_msg = (request.form.get('announce_message') or '').strip() or (
+                f'A new scholarship program "{s.title}" is now open for applications! '
+                f'Log in to ScholarHub and go to Scholarships to apply.'
+            )
+            do_sms = request.form.get('announce_sms') == '1'
+            try:
+                students = User.query.filter_by(user_type='student', is_active=True).all()
+                sms_sent = 0
+                for user in students:
+                    db.session.add(Notification(
+                        recipient_id=user.id,
+                        title=announce_title,
+                        message=announce_msg,
+                        notification_type=NotificationType.NEW_SCHOLARSHIP,
+                        channel=NotificationChannel.IN_APP,
+                    ))
+                    if do_sms and user.phone_number:
+                        result = notification_service.send_sms(
+                            user.phone_number, f"{announce_title}: {announce_msg}")
+                        if result.get('success'):
+                            sms_sent += 1
+                db.session.commit()
+                log_action('scholarship.announce',
+                           f'Announced scholarship "{s.title}" to {len(students)} student(s).',
+                           category='scholarship', target_type='scholarship', target_id=s.id)
+                flash(f'Announcement sent to {len(students)} student(s)'
+                      + (f' · SMS delivered to {sms_sent}' if do_sms else '') + '.', 'success')
+            except Exception as ae:
+                db.session.rollback()
+                current_app.logger.warning(f'Scholarship announcement failed (non-fatal): {ae}')
+                flash('Scholarship created, but the announcement could not be sent.', 'warning')
     except Exception as e:
         db.session.rollback()
         flash(f'Error creating scholarship: {e}', 'error')
