@@ -67,6 +67,24 @@ def create_app(config_name=None):
     csrf.init_app(app)
     limiter.init_app(app)
 
+    # Last-resort 500 handler: log the traceback, show a friendly page,
+    # and keep the worker alive instead of surfacing a bare error.
+    @app.errorhandler(500)
+    def internal_error(e):
+        import logging
+        from flask import jsonify, request as _req, flash as _flash
+        from flask import render_template as _render, redirect as _redir
+        logging.getLogger(__name__).exception('Unhandled 500 on %s', _req.path)
+        db.session.rollback()
+        if _req.path.startswith('/chatbot') or _req.path.startswith('/api') or _req.is_json:
+            return jsonify({'error': 'Something went wrong on our side. Please try again.'}), 500
+        _flash('Something went wrong on our side. Please try again — if it keeps '
+               'happening, contact the scholarship office.', 'error')
+        try:
+            return _redir(_req.referrer or '/'), 302
+        except Exception:
+            return _render('errors/500.html'), 500
+
     # Friendly handling when a rate limit is hit
     @app.errorhandler(429)
     def ratelimit_handler(e):

@@ -69,7 +69,10 @@ def chatbot_page():
 def chat():
     """Handle a chat message, persist it, and return an AI response."""
     try:
-        data         = request.get_json() or {}
+        data = request.get_json(silent=True)
+        if data is None:
+            # Not a JSON request — treat as a malformed/empty chat call
+            return jsonify({'error': 'Invalid request. Expected JSON.'}), 400
         user_message = data.get('message', '').strip()
         history      = data.get('history', [])
         user_id      = session.get('user_id')
