@@ -3,11 +3,11 @@ Shared GWA label utilities for LSPU ScholarHub.
 
 LSPU Grading Scale (lower = better):
   1.00 – 1.25  Excellent
-  1.26 – 1.75  Very Satisfactory
+  1.26 – 1.75  Very Good
   1.76 – 2.25  Satisfactory
-  2.26 – 2.75  Fairly Satisfactory
+  2.26 – 2.75  Fair
   2.76 – 3.00  Passed
-  3.01 – 3.99  Conditional Failure
+  3.01 – 3.99  At Risk
   4.00 – 5.00  Failed
 
 Thresholds used for scholar status:
@@ -28,15 +28,15 @@ def get_gwa_label(gwa):
     if gwa <= 1.25:
         return ('Excellent', 'text-success')
     if gwa <= 1.75:
-        return ('Very Satisfactory', 'text-success')
+        return ('Very Good', 'text-success')
     if gwa <= 2.25:
         return ('Satisfactory', 'text-success')
     if gwa <= 2.75:
-        return ('Fairly Satisfactory', 'text-info')
+        return ('Fair', 'text-info')
     if gwa <= 3.00:
         return ('Passed', 'text-warning')
     if gwa < 4.00:
-        return ('Conditional Failure', 'text-danger')
+        return ('At Risk', 'text-danger')
     return ('Failed', 'text-danger')
 
 

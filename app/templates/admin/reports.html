@@ -3,7 +3,13 @@
 
 {% block content %}
 <div class="container-fluid py-4">
-  <h1 class="h3 mb-4">Reports & Analytics</h1>
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-3">
+      <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Reports & Analytics</li>
+    </ol>
+  </nav>
+  <h1 class="h3 fw-bold mb-4">Reports & Analytics</h1>
 
   <!-- Summary stats -->
   <div class="row mb-4">

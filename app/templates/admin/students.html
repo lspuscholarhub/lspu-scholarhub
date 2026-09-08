@@ -3,8 +3,14 @@
 
 {% block content %}
 <div class="container-fluid py-4">
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-3">
+      <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Student Directory</li>
+    </ol>
+  </nav>
   <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="h3 mb-0">Student Directory</h1>
+    <h1 class="h3 fw-bold mb-0">Student Directory</h1>
     <form method="POST" action="{{ url_for('admin.rescan_units') }}"
           onsubmit="return confirm('Re-scan grades documents for all students missing units enrolled? This runs in the background.')">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -94,7 +100,7 @@
             <label class="form-label small fw-semibold">GWA Status</label>
             <select name="gwa_flag" class="form-select">
               <option value=""        {% if gwa_flag==''        %}selected{% endif %}>All</option>
-              <option value="at_risk" {% if gwa_flag=='at_risk' %}selected{% endif %}>⚠ Conditional Failure / Failed</option>
+              <option value="at_risk" {% if gwa_flag=='at_risk' %}selected{% endif %}>⚠ At Risk (GWA above 3.00)</option>
             </select>
           </div>
           <div class="col-md-3"></div>
@@ -151,22 +157,22 @@
                     <small class="text-success d-block">Excellent</small>
                   {% elif s.gwa <= 1.75 %}
                     <span class="badge bg-success">{{ s.gwa }}</span>
-                    <small class="text-success d-block">Very Satisfactory</small>
+                    <small class="text-success d-block">Very Good</small>
                   {% elif s.gwa <= 2.25 %}
                     <span class="badge bg-success">{{ s.gwa }}</span>
                     <small class="text-success d-block">Satisfactory</small>
                   {% elif s.gwa <= 2.75 %}
                     <span class="badge bg-info">{{ s.gwa }}</span>
-                    <small class="text-info d-block">Fairly Satisfactory</small>
+                    <small class="text-info d-block">Fair</small>
                   {% elif s.gwa <= 3.00 %}
                     <span class="badge bg-warning text-dark">{{ s.gwa }}</span>
                     <small class="text-warning d-block">Passed</small>
                   {% elif s.gwa <= 4.00 %}
                     <span class="badge" style="background-color:#fd7e14;color:#fff;">{{ s.gwa }}</span>
-                    <small class="d-block" style="color:#fd7e14;">Conditional Failure</small>
+                    <small class="d-block" style="color:#fd7e14;">At Risk</small>
                   {% else %}
                     <span class="badge bg-danger">{{ s.gwa }}</span>
-                    <small class="text-danger d-block">Failed — At Risk</small>
+                    <small class="text-danger d-block">Failed</small>
                   {% endif %}
                 {% else %}
                   <span class="text-muted small">Not set</span>

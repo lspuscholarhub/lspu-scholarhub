@@ -202,9 +202,9 @@
                   <td><span class="fw-bold text-success">{{ "%.2f"|format(student.gwa) }}</span></td>
                   <td>
                     {% if student.gwa <= 1.25 %}<span class="badge bg-success">Excellent</span>
-                    {% elif student.gwa <= 1.75 %}<span class="badge bg-info text-dark">Very Satisfactory</span>
-                    {% elif student.gwa <= 2.25 %}<span class="badge bg-primary">Satisfactory</span>
-                    {% elif student.gwa <= 2.75 %}<span class="badge bg-secondary">Fairly Satisfactory</span>
+                    {% elif student.gwa <= 1.75 %}<span class="badge bg-success">Very Good</span>
+                    {% elif student.gwa <= 2.25 %}<span class="badge bg-success">Satisfactory</span>
+                    {% elif student.gwa <= 2.75 %}<span class="badge bg-info text-dark">Fair</span>
                     {% elif student.gwa <= 3.00 %}<span class="badge bg-warning text-dark">Passed</span>
                     {% else %}<span class="badge bg-danger">At Risk</span>{% endif %}
                   </td>

@@ -138,7 +138,11 @@
           </table>
         </div>
         {% else %}
-        <div class="text-center py-5 text-muted"><i class="bi bi-inbox display-4"></i><p class="mt-3">No applications found.</p></div>
+        <div class="empty-state">
+          <i class="bi bi-inbox"></i>
+          <h5>No applications found</h5>
+          <p>Applications will appear here once students submit them.</p>
+        </div>
         {% endif %}
 
         {% if pagination.pages > 1 %}

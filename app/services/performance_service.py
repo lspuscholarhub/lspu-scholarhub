@@ -16,11 +16,11 @@ class PerformanceService:
     """
     LSPU Grading Scale (lower number = better grade):
       1.00–1.25  Excellent
-      1.50–1.75  Very Satisfactory
+      1.50–1.75  Very Good
       2.00–2.25  Satisfactory
-      2.50–2.75  Fairly Satisfactory
+      2.50–2.75  Fair
       3.00       Passed  ← boundary; above this is at-risk
-      4.00       Conditional Failure  ← probation
+      4.00       Failed  ← termination warning
       5.00       Failed               ← termination warning
 
     At-risk threshold: GWA > 3.00
@@ -30,7 +30,7 @@ class PerformanceService:
         self.GWA_GOOD_STANDING  = 3.00   # GWA <= 3.00 → good standing
         self.GWA_WARNING        = 3.00   # GWA > 3.00  → at-risk / warning
         self.GWA_PROBATION      = 3.75   # GWA > 3.75  → probation (between 3.00 and 4.00)
-        self.GWA_TERMINATION    = 4.00   # GWA >= 4.00 → termination warning (Conditional Failure / Failed)
+        self.GWA_TERMINATION    = 4.00   # GWA >= 4.00 → termination warning (Failed)
 
         # Compliance requirements
         self.RENEWAL_DEADLINE_DAYS = 30
@@ -119,7 +119,7 @@ class PerformanceService:
             
             # LSPU scale: lower = better; at-risk starts above 3.00
             if gwa >= self.GWA_TERMINATION:
-                new_status = 'termination_warning'   # 4.00+ (Conditional Failure / Failed)
+                new_status = 'termination_warning'   # 4.00+ (Failed)
             elif gwa > self.GWA_PROBATION:
                 new_status = 'probation'              # 3.75 < GWA < 4.00
             elif gwa > self.GWA_GOOD_STANDING:
@@ -153,7 +153,7 @@ class PerformanceService:
                 'type': 'termination_warning',
                 'severity': 'critical',
                 'message': (
-                    f'GWA of {gwa:.2f} is at Conditional Failure / Failed level. '
+                    f'GWA of {gwa:.2f} is at Failed level. '
                     'Scholarship is at risk of termination.'
                 )
             })

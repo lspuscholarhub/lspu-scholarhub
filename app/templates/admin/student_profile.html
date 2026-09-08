@@ -117,27 +117,27 @@
                   <i class="bi bi-journal-bookmark me-1"></i>{{ student.units_enrolled }} units enrolled
                 </div>
                 {% endif %}
-                {# LSPU Grading: 1.00-1.25 Excellent, 1.50-1.75 Very Satisfactory,
-                   2.00-2.25 Satisfactory, 2.50-2.75 Fairly Satisfactory,
-                   3.00 Passed, 4.00 Conditional Failure, 5.00 Failed #}
+                {# LSPU Grading: 1.00-1.25 Excellent, 1.50-1.75 Very Good,
+                   2.00-2.25 Satisfactory, 2.50-2.75 Fair,
+                   3.00 Passed, 4.00+ At Risk / Failed #}
                 {% if student.gwa <= 1.25 %}
                   <span class="badge bg-success mt-1">Excellent</span>
                 {% elif student.gwa <= 1.75 %}
-                  <span class="badge bg-success mt-1">Very Satisfactory</span>
+                  <span class="badge bg-success mt-1">Very Good</span>
                 {% elif student.gwa <= 2.25 %}
                   <span class="badge bg-success mt-1">Satisfactory</span>
                 {% elif student.gwa <= 2.75 %}
-                  <span class="badge bg-info mt-1">Fairly Satisfactory</span>
+                  <span class="badge bg-info mt-1">Fair</span>
                 {% elif student.gwa <= 3.00 %}
                   <span class="badge bg-warning text-dark mt-1">Passed</span>
                 {% elif student.gwa <= 4.00 %}
                   <span class="badge bg-orange mt-1"
                         style="background-color:#fd7e14;color:#fff;">
-                    <i class="bi bi-exclamation-triangle me-1"></i>Conditional Failure
+                    <i class="bi bi-exclamation-triangle me-1"></i>At Risk
                   </span>
                 {% else %}
                   <span class="badge bg-danger mt-1">
-                    <i class="bi bi-x-circle me-1"></i>Failed — At Risk
+                    <i class="bi bi-x-circle me-1"></i>Failed
                   </span>
                 {% endif %}
               {% else %}
@@ -149,9 +149,9 @@
               <p class="small text-muted mb-3">
                 Review the student's <strong>Copy of Grades</strong> document below,
                 then enter their GWA here.<br>
-                <strong>LSPU Grading:</strong> 1.00–1.25 Excellent · 1.50–1.75 Very Satisfactory ·
-                2.00–2.25 Satisfactory · 2.50–2.75 Fairly Satisfactory · 3.00 Passed ·
-                4.00 Conditional Failure · 5.00 Failed
+                <strong>LSPU Grading:</strong> 1.00–1.25 Excellent · 1.50–1.75 Very Good ·
+                2.00–2.25 Satisfactory · 2.50–2.75 Fair · 3.00 Passed ·
+                3.01–3.99 At Risk · 4.00–5.00 Failed
               </p>
               <form method="POST"
                     action="{{ url_for('admin.update_gwa', uid=student.id) }}"
