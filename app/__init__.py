@@ -15,7 +15,10 @@ migrate = Migrate()
 mail = Mail()
 jwt = JWTManager()
 csrf = CSRFProtect()
-limiter = Limiter(key_func=get_remote_address, storage_uri="memory://")
+# Storage backend is env-configurable: memory:// works for small deployments;
+# set LIMIT_STORAGE_URI to a redis:// URL when running multiple instances.
+limiter = Limiter(key_func=get_remote_address,
+                  storage_uri=os.environ.get('LIMIT_STORAGE_URI', 'memory://'))
 
 
 def create_app(config_name=None):
@@ -25,6 +28,32 @@ def create_app(config_name=None):
 
     app = Flask(__name__)
     app.config.from_object(config[config_name])
+
+    # Cap upload size: protects workers from memory/time blowups under load.
+    # Largest legitimate file is a Copy of Grades PDF — 10MB is generous.
+    app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024  # 10 MB
+
+    # Harden the DB connection pool for cloud MySQL (Railway).
+    # MUST be set before db.init_app():
+    # - pool_pre_ping: drop dead connections instead of erroring on them
+    # - pool_recycle:  refresh connections before MySQL's wait_timeout kills them
+    app.config.setdefault('SQLALCHEMY_ENGINE_OPTIONS', {
+        'pool_pre_ping': True,
+        'pool_recycle': 280,   # below Railway MySQL's default wait_timeout
+        'pool_size': 5,
+        'max_overflow': 10,
+    })
+
+    # Friendly handling when an upload exceeds the size cap
+    @app.errorhandler(413)
+    def too_large(e):
+        from flask import jsonify, request as _req, flash as _flash
+        from flask import redirect as _redir
+        if _req.is_json or _req.path.startswith('/chatbot'):
+            return jsonify({'error': 'File too large. Maximum size is 10MB.'}), 413
+        _flash('That file is too large — the maximum size is 10MB. '
+               'Please compress it or upload a smaller copy.', 'error')
+        return _redir(_req.referrer or '/')
 
     # Trust Railway's reverse proxy (fixes HTTPS detection and CSRF)
     from werkzeug.middleware.proxy_fix import ProxyFix
