@@ -52,8 +52,9 @@ def list_scholarships():
             else:
                 applied_ids.add(a.scholarship_id)
 
-        # Public scholarships are exclusive — check if student already holds one
-        approved_app = _approved_public_application(session['user_id'])
+        # Public scholarships are exclusive — check for an active one
+        # (pending, under review, or approved)
+        approved_app = _active_public_application(session['user_id'])
         if approved_app:
             holds_public = True
             active_scholarship_title = approved_app.scholarship.title
@@ -71,20 +72,26 @@ def list_scholarships():
 
 # ── Public/private scholarship rule ──────────────────────────────────────────
 
-def _approved_public_application(user_id):
-    """The student's approved PUBLIC scholarship application, if any.
+def _active_public_application(user_id, exclude_app_id=None):
+    """The student's ACTIVE public scholarship application, if any.
 
-    Rule: only ONE public (government-funded) scholarship may be held at a
-    time. Private scholarships are combinable — with the public one and with
-    each other.
+    Rule: a student may be pursuing only ONE public (government-funded)
+    scholarship at a time — that includes a pending/under-review application
+    or an approved award. Private scholarships are combinable — with the
+    public one and with each other.
     """
-    return (ScholarshipApplication.query
-            .join(Scholarship, ScholarshipApplication.scholarship_id == Scholarship.id)
-            .filter(
-                ScholarshipApplication.applicant_id == user_id,
-                ScholarshipApplication.status == ApplicationStatus.APPROVED,
-                Scholarship.funding_type == 'public',
-            ).first())
+    q = (ScholarshipApplication.query
+         .join(Scholarship, ScholarshipApplication.scholarship_id == Scholarship.id)
+         .filter(
+             ScholarshipApplication.applicant_id == user_id,
+             ScholarshipApplication.status.in_(
+                 [ApplicationStatus.PENDING, ApplicationStatus.UNDER_REVIEW,
+                  ApplicationStatus.APPROVED]),
+             Scholarship.funding_type == 'public',
+         ))
+    if exclude_app_id:
+        q = q.filter(ScholarshipApplication.id != exclude_app_id)
+    return q.first()
 
 
 @scholarship_bp.route('/<int:scholarship_id>')
@@ -114,8 +121,9 @@ def view_scholarship(scholarship_id):
             else:
                 already_applied = True  # active application exists
 
-        # Public scholarships are exclusive — check if student already holds one
-        approved_app = _approved_public_application(session['user_id'])
+        # Public scholarships are exclusive — check for an active one
+        # (pending, under review, or approved)
+        approved_app = _active_public_application(session['user_id'])
         if approved_app:
             holds_public = True
             active_scholarship_title = approved_app.scholarship.title
@@ -157,14 +165,16 @@ def apply_scholarship(scholarship_id):
               'Please contact the scholarship office or wait for admin verification.', 'warning')
         return redirect(url_for('scholarship.view_scholarship', scholarship_id=scholarship_id))
 
-    # Guard: only one PUBLIC scholarship may be held at a time —
-    # private programs are combinable with it and with each other.
+    # Guard: only ONE public scholarship application may be active at a time
+    # (pending, under review, or approved) — private programs are combinable.
     if scholarship.funding_type == 'public':
-        active_public = _approved_public_application(user.id)
+        active_public = _active_public_application(user.id)
         if active_public:
-            flash(f'You are already a scholar under "{active_public.scholarship.title}". '
-                  'Only one public scholarship is allowed at a time — but you may '
-                  'still apply to private scholarship programs.', 'warning')
+            st = active_public.status.value.replace('_', ' ')
+            flash(f'You already have a public scholarship application '
+                  f'("{active_public.scholarship.title}" — {st}). Only one public '
+                  'scholarship is allowed at a time — you may still apply to '
+                  'private scholarship programs.', 'warning')
             return redirect(url_for('student.my_applications'))
 
     # Guard: no duplicate active applications (withdrawn = allowed to re-apply)

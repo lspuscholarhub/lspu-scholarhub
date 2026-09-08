@@ -68,7 +68,9 @@
               <small class="text-muted">Filled</small>
             </div>
             <div class="col-6 col-md-3">
-              {% if days_left >= 0 %}
+              {% if days_left is none %}
+                <h5 class="text-info">Open</h5>
+              {% elif days_left >= 0 %}
                 <h5 class="text-info">{{ days_left }} days</h5>
               {% else %}
                 <h5 class="text-danger">Expired</h5>

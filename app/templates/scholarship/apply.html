@@ -20,7 +20,7 @@
         <div class="card-body p-4 text-white">
           <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
             <div>
-              <h4 class="fw-bold mb-1">{{ scholarship.title }}</h4>
+              <h4 class="fw-bold mb-1">{{ scholarship.title }}{% if editing %} <span class="badge bg-warning text-dark ms-1" style="font-size:.7rem;vertical-align:middle;">Editing</span>{% endif %}</h4>
               {% if scholarship.description %}
               <p class="mb-0 opacity-75 small">{{ scholarship.description[:120] }}{% if scholarship.description|length > 120 %}…{% endif %}</p>
               {% endif %}
@@ -165,12 +165,18 @@
 
         <!-- Submit -->
         <div class="d-flex justify-content-between align-items-center mb-5">
-          <a href="{{ url_for('scholarship.view_scholarship', scholarship_id=scholarship.id) }}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i>Back
+          <a href="{{ url_for('student.my_applications') if editing else url_for('scholarship.view_scholarship', scholarship_id=scholarship.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>{{ 'Back to My Applications' if editing else 'Back' }}
           </a>
+          {% if editing %}
+          <button type="submit" class="btn btn-primary btn-lg px-5 fw-semibold" id="submitBtn">
+            <i class="bi bi-arrow-repeat me-2"></i>Resubmit Application
+          </button>
+          {% else %}
           <button type="submit" class="btn btn-primary btn-lg px-5 fw-semibold" id="submitBtn">
             <i class="bi bi-send me-2"></i>Submit Application
           </button>
+          {% endif %}
         </div>
 
       </form>
