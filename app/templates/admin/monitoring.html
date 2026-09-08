@@ -5,7 +5,7 @@
   <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <div>
       <h1 class="h3 fw-bold mb-0">Monitoring & Tracking</h1>
-      <p class="text-muted small mb-0">Scholar performance, compliance, and renewal management</p>
+      <p class="text-muted small mb-0">Scholar performance and renewal management</p>
     </div>
   </div>
 
@@ -17,7 +17,6 @@
       ('At Risk',             stats.at_risk,      'warning',   'bi-exclamation-triangle-fill'),
       ('On Probation',        stats.probation,    'orange',    'bi-exclamation-circle-fill'),
       ('Termination Warning', stats.termination,  'danger',    'bi-x-octagon-fill'),
-      ('Non-Compliant',       stats.non_compliant,'secondary', 'bi-file-earmark-x-fill'),
     ] %}
     <div class="col-xl-2 col-md-4 col-6">
       <div class="card border-0 shadow-sm text-center py-3" style="border-radius:12px;">
@@ -92,6 +91,7 @@
           </select>
         </div>
         <div class="col-md-3">
+        <div class="col-md-2">
           <label class="form-label small fw-semibold">Course / Program</label>
           <select name="course" class="form-select">
             <option value="">All Courses</option>
@@ -100,15 +100,16 @@
             {% endfor %}
           </select>
         </div>
-        <div class="col-md-2">
-          <label class="form-label small fw-semibold">Compliance</label>
-          <select name="compliance" class="form-select">
-            <option value="">All</option>
-            <option value="compliant"     {% if compliance_filter=='compliant'     %}selected{% endif %}>Compliant</option>
-            <option value="non_compliant" {% if compliance_filter=='non_compliant' %}selected{% endif %}>Non-Compliant</option>
+        <div class="col-md-3">
+          <label class="form-label small fw-semibold">Scholar Status</label>
+          <select name="scholar_status" class="form-select">
+            <option value="">All Statuses</option>
+            {% for val, label in [('active','Good Standing'),('at_risk','At Risk'),('probation','Probation'),('termination_warning','Termination Warning')] %}
+            <option value="{{ val }}" {% if status_filter==val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
           </select>
         </div>
-        <div class="col-md-4 d-flex justify-content-end">
+        <div class="col-md-3 d-flex justify-content-end">
           <a href="{{ url_for('admin.monitoring') }}" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-x-circle me-1"></i>Reset
           </a>
@@ -126,7 +127,7 @@
           <thead class="table-light">
             <tr>
               <th class="ps-4">Scholar</th><th>Scholarship</th><th>GWA</th>
-              <th>Scholar Status</th><th>Compliance</th><th>Approved</th>
+              <th>Scholar Status</th><th>Approved</th>
               <th class="pe-4">Actions</th>
             </tr>
           </thead>
@@ -145,11 +146,11 @@
               <td>
                 {% if student.gwa %}
                   {% if student.gwa <= 1.25 %}<span class="badge bg-success">{{ student.gwa }}</span><small class="text-success d-block">Excellent</small>
-                  {% elif student.gwa <= 1.75 %}<span class="badge bg-success">{{ student.gwa }}</span><small class="text-success d-block">Very Satisfactory</small>
+                  {% elif student.gwa <= 1.75 %}<span class="badge bg-success">{{ student.gwa }}</span><small class="text-success d-block">Very Good</small>
                   {% elif student.gwa <= 2.25 %}<span class="badge bg-success">{{ student.gwa }}</span><small class="text-success d-block">Satisfactory</small>
-                  {% elif student.gwa <= 2.75 %}<span class="badge bg-info text-dark">{{ student.gwa }}</span><small class="text-info d-block">Fairly Satisfactory</small>
+                  {% elif student.gwa <= 2.75 %}<span class="badge bg-info text-dark">{{ student.gwa }}</span><small class="text-info d-block">Fair</small>
                   {% elif student.gwa <= 3.00 %}<span class="badge bg-warning text-dark">{{ student.gwa }}</span><small class="text-warning d-block">Passed</small>
-                  {% elif student.gwa < 4.00 %}<span class="badge" style="background:#fd7e14;color:#fff;">{{ student.gwa }}</span><small class="d-block" style="color:#fd7e14;">Conditional Failure</small>
+                  {% elif student.gwa < 4.00 %}<span class="badge" style="background:#fd7e14;color:#fff;">{{ student.gwa }}</span><small class="d-block" style="color:#fd7e14;">At Risk</small>
                   {% else %}<span class="badge bg-danger">{{ student.gwa }}</span><small class="text-danger d-block">Failed</small>{% endif %}
                 {% else %}<span class="text-muted small">Not set</span>{% endif %}
               </td>
@@ -159,11 +160,6 @@
                 {% elif app.scholar_status == 'probation' %}<span class="badge" style="background:#fd7e14;color:#fff;"><i class="bi bi-exclamation-circle me-1"></i>Probation</span>
                 {% elif app.scholar_status == 'termination_warning' %}<span class="badge bg-danger"><i class="bi bi-x-octagon me-1"></i>Termination Warning</span>
                 {% else %}<span class="badge bg-secondary">{{ app.scholar_status or '—' }}</span>{% endif %}
-              </td>
-              <td>
-                {% if app.compliance_status == 'compliant' %}<span class="badge bg-success"><i class="bi bi-check me-1"></i>Compliant</span>
-                {% else %}<span class="badge bg-danger"><i class="bi bi-x me-1"></i>Non-Compliant</span>{% endif %}
-                {% if app.last_compliance_check %}<br><small class="text-muted">Checked {{ app.last_compliance_check.strftime('%b %d') }}</small>{% endif %}
               </td>
               <td class="small">{{ app.approved_at.strftime('%b %d, %Y') if app.approved_at else '—' }}</td>
               <td class="pe-4">
@@ -207,8 +203,7 @@
           </div>
           <div class="col-md-6">
             <p class="mb-1"><strong>Current GWA:</strong> {{ student.gwa or 'Not set' }}</p>
-            <p class="mb-1"><strong>Scholar Status:</strong> {{ app.scholar_status or '—' }}</p>
-            <p class="mb-0"><strong>Compliance:</strong> {{ app.compliance_status or '—' }}</p>
+            <p class="mb-0"><strong>Scholar Status:</strong> {{ app.scholar_status or '—' }}</p>
           </div>
         </div>
 

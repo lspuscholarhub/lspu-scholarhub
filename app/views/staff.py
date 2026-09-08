@@ -440,7 +440,6 @@ def monitoring():
     """Scholar performance monitoring dashboard."""
     status_filter = request.args.get('scholar_status', '')
     course_filter = request.args.get('course', '')
-    compliance_filter = request.args.get('compliance', '')
 
     # All approved scholars
     query = ScholarshipApplication.query.filter(
@@ -451,8 +450,6 @@ def monitoring():
         query = query.filter(ScholarshipApplication.scholar_status == status_filter)
     if course_filter:
         query = query.filter(User.course.ilike(f'%{course_filter}%'))
-    if compliance_filter:
-        query = query.filter(ScholarshipApplication.compliance_status == compliance_filter)
 
     scholars = query.order_by(ScholarshipApplication.approved_at.desc()).all()
 
@@ -464,8 +461,6 @@ def monitoring():
         'at_risk':     sum(1 for a in all_approved if a.scholar_status == 'at_risk'),
         'probation':   sum(1 for a in all_approved if a.scholar_status == 'probation'),
         'termination': sum(1 for a in all_approved if a.scholar_status == 'termination_warning'),
-        'compliant':   sum(1 for a in all_approved if a.compliance_status == 'compliant'),
-        'non_compliant': sum(1 for a in all_approved if a.compliance_status == 'non_compliant'),
     }
 
     # Renewal alerts: approved scholars whose scholarship deadline is within 30 days
@@ -488,7 +483,6 @@ def monitoring():
         courses=courses,
         status_filter=status_filter,
         course_filter=course_filter,
-        compliance_filter=compliance_filter,
     )
 
 
