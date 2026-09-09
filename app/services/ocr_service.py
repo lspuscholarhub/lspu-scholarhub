@@ -223,7 +223,8 @@ def _extract_text_from_pdf(file_bytes: bytes) -> str:
 def _parse_text(text: str, doc_type: str = 'auto') -> dict:
     """Search extracted text for Student ID, Name, GWA, and Course."""
     result = {'student_id': None, 'name': None, 'gwa': None,
-              'course': None, 'units_enrolled': None, 'year_level': None}
+              'course': None, 'units_enrolled': None, 'year_level': None,
+              'date_of_birth': None, 'place_of_birth': None}
 
     is_cor    = 'Student No.' in text or 'CERTIFICATE OF REGISTRATION' in text.upper()
     is_grades = 'Student ID:' in text or 'REPORT OF GRADES' in text.upper() or 'GWA:' in text
@@ -318,21 +319,55 @@ def _parse_text(text: str, doc_type: str = 'auto') -> dict:
                 pass
 
     # Year Level — found on CORs (e.g. "Year Level : 2", "Year Level 3",
-    # "Course: BSIT   Year Level: 4", or "2nd Year" / "4th Year")
+    # "Course: BSIT   Year Level: 4", or "2nd Year" / "4th Year",
+    # or text-based: "Year Level : Fourth Year")
     year_map = {'1': '1st Year', '2': '2nd Year', '3': '3rd Year', '4': '4th Year', '5': '5th Year'}
+    year_text_map = {
+        'first': '1st Year', 'second': '2nd Year', 'third': '3rd Year',
+        'fourth': '4th Year', 'fifth': '5th Year'
+    }
     year_patterns = [
-        r'Year\s+Level\s*[:\-]?\s*(\d)',          # Year Level : 2
-        r'Year\s*[:\-]\s*(\d)',                    # Year: 2
-        r'Yr\.?\s*Level\s*[:\-]?\s*(\d)',         # Yr Level: 2
-        r'Grade\s+Year\s*[:\-]?\s*(\d)',           # Grade Year: 2
-        r'\b(\d)(?:st|nd|rd|th)\s+Year\b',         # 2nd Year, 4th Year
+        # Text-based: "Year Level : Fourth Year"
+        r'Year\s+Level\s*[:\-]?\s*(First|Second|Third|Fourth|Fifth)\s+Year',
+        # Numeric: "Year Level : 2"
+        r'Year\s+Level\s*[:\-]?\s*(\d)',
+        r'Year\s*[:\-]\s*(\d)',
+        r'Yr\.?\s*Level\s*[:\-]?\s*(\d)',
+        r'Grade\s+Year\s*[:\-]?\s*(\d)',
+        r'\b(\d)(?:st|nd|rd|th)\s+Year\b',
     ]
     for pat in year_patterns:
         m = re.search(pat, text, re.IGNORECASE)
         if m:
-            digit = m.group(1)
-            if digit in year_map:
-                result['year_level'] = year_map[digit]
+            value = m.group(1)
+            if value.isdigit():
+                if value in year_map:
+                    result['year_level'] = year_map[value]
+            elif value.lower() in year_text_map:
+                result['year_level'] = year_text_map[value.lower()]
+            break
+
+    # Date of Birth — found on Report of Grades (e.g. "Date of Birth: 10/16/2004")
+    dob_patterns = [
+        r'Date\s+of\s+Birth\s*[:\-]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})',
+        r'Birthday\s*[:\-]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})',
+        r'Birth\s+Date\s*[:\-]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})',
+    ]
+    for pat in dob_patterns:
+        m = re.search(pat, text, re.IGNORECASE)
+        if m:
+            result['date_of_birth'] = m.group(1)
+            break
+
+    # Place of Birth — found on Report of Grades
+    pob_patterns = [
+        r'Place\s+of\s+Birth\s*[:\-]?\s*(.+?)(?:\n|$)',
+        r'Birthplace\s*[:\-]?\s*(.+?)(?:\n|$)',
+    ]
+    for pat in pob_patterns:
+        m = re.search(pat, text, re.IGNORECASE)
+        if m:
+            result['place_of_birth'] = m.group(1).strip()
             break
 
     return result
@@ -352,6 +387,8 @@ GEMINI_INSTRUCTION = (
     '  Layout: Name: [name]\n'
     '          Student ID: [XXXX-XXXX]\n'
     '          Course: [full program name]\n'
+    '          Date of Birth: [MM/DD/YYYY]\n'
+    '          Place of Birth: [city/municipality]\n'
     '          GWA: [number]\n'
     '          Total Units / Units Enrolled: [number]\n\n'
     'Extract ALL values you can find. The course/program is REQUIRED.\n'
@@ -364,6 +401,9 @@ GEMINI_INSTRUCTION = (
     '  "gwa": 2.00 or null,\n'
     '  "units_enrolled": 21 or null,\n'
     '  "course": "Full course/program name or null",\n'
+    '  "year_level": "e.g. 4th Year or null",\n'
+    '  "date_of_birth": "MM/DD/YYYY format or null",\n'
+    '  "place_of_birth": "city/municipality or null",\n'
     '  "semester": "e.g. 2nd Semester or null",\n'
     '  "academic_year": "e.g. 2025-2026 or null"\n'
     '}\n'
@@ -511,7 +551,7 @@ def extract_document_data(file_bytes: bytes, file_ext: str) -> dict:
       - Images (JPG/PNG): sent directly to Gemini Vision (like Google Lens)
         Works with screenshots, photos of documents, scanned images.
 
-    Returns dict with keys: student_id, name, gwa, units_enrolled, course, raw_text, method, semester, academic_year
+    Returns dict with keys: student_id, name, gwa, units_enrolled, course, raw_text, method, semester, academic_year, date_of_birth, place_of_birth
     """
     result = {
         'student_id':    None,
@@ -524,6 +564,8 @@ def extract_document_data(file_bytes: bytes, file_ext: str) -> dict:
         'method':        'failed',
         'semester':      None,
         'academic_year': None,
+        'date_of_birth': None,
+        'place_of_birth': None,
     }
 
     allowed_exts = ('pdf', 'jpg', 'jpeg', 'png')
@@ -537,7 +579,7 @@ def extract_document_data(file_bytes: bytes, file_ext: str) -> dict:
         logger.info(f'Running Gemini Vision analysis for .{file_ext} image.')
         try:
             gemini = _extract_via_gemini(file_bytes, file_ext)
-            for key in ('student_id', 'name', 'gwa', 'units_enrolled', 'course', 'year_level', 'semester', 'academic_year'):
+            for key in ('student_id', 'name', 'gwa', 'units_enrolled', 'course', 'year_level', 'semester', 'academic_year', 'date_of_birth', 'place_of_birth'):
                 if gemini.get(key):
                     result[key] = gemini[key]
             result['method'] = (
@@ -565,7 +607,7 @@ def extract_document_data(file_bytes: bytes, file_ext: str) -> dict:
     logger.info(f'Running Gemini analysis for .{file_ext} document.')
     try:
         gemini = _extract_via_gemini(file_bytes, file_ext, raw_text)
-        for key in ('student_id', 'name', 'gwa', 'units_enrolled', 'course', 'year_level', 'semester', 'academic_year'):
+        for key in ('student_id', 'name', 'gwa', 'units_enrolled', 'course', 'year_level', 'semester', 'academic_year', 'date_of_birth', 'place_of_birth'):
             if gemini.get(key):
                 result[key] = gemini[key]
         result['method'] = (
