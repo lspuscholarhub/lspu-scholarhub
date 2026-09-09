@@ -153,6 +153,31 @@ def create_app(config_name=None):
         except Exception as e:
             _migrate_log.error(f'MIGRATION FAILED: {e}')  # Log the actual error
 
+    # Migration 2: M&E form deadline on academic periods
+    with app.app_context():
+        import logging
+        _migrate_log = logging.getLogger('migrate')
+        try:
+            from sqlalchemy import text
+            with db.engine.connect() as conn:
+                result = conn.execute(text(
+                    "SELECT COUNT(*) FROM information_schema.columns "
+                    "WHERE table_schema = DATABASE() "
+                    "AND table_name = 'academic_periods' "
+                    "AND column_name = 'me_form_deadline'"
+                ))
+                exists = result.scalar() > 0
+                if not exists:
+                    conn.execute(text(
+                        'ALTER TABLE academic_periods ADD COLUMN me_form_deadline DATE NULL'
+                    ))
+                    conn.commit()
+                    _migrate_log.info('SUCCESS: Added me_form_deadline column to academic_periods.')
+                else:
+                    _migrate_log.info('OK: me_form_deadline column already exists.')
+        except Exception as e:
+            _migrate_log.error(f'MIGRATION FAILED (me_form_deadline): {e}')
+
     # ── Inactivity timeout ────────────────────────────────────────────────
     # Log out users who have been inactive for more than 30 minutes.
     # Checked on every request — if last_active is older than timeout, clear session.

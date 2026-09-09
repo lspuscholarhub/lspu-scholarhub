@@ -16,6 +16,7 @@ class AcademicPeriod(db.Model):
     is_current    = db.Column(db.Boolean, default=False)
     start_date    = db.Column(db.Date, nullable=True)
     end_date      = db.Column(db.Date, nullable=True)
+    me_form_deadline = db.Column(db.Date, nullable=True)   # Monitoring & Evaluation form due date
     created_at    = db.Column(db.DateTime, default=datetime.utcnow)
 
     # Relationships

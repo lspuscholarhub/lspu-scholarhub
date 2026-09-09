@@ -1,6 +1,8 @@
+import os
 from datetime import datetime, timedelta
 from flask import (Blueprint, render_template, request, flash,
-                   redirect, url_for, session, jsonify, send_file, current_app)
+                   redirect, url_for, session, jsonify, send_file, current_app,
+                   send_from_directory)
 from app import db
 from app.models import User, Scholarship, ScholarshipApplication, Notification
 from app.models.scholarship import ScholarshipStatus, ApplicationStatus
@@ -580,12 +582,20 @@ def monitoring():
     courses = sorted({u.course for u in User.query.filter(
         User.user_type == 'student', User.course.isnot(None)).all() if u.course})
 
+    # M&E form submissions — latest per approved application
+    from app.models import MonitoringSubmission
+    me_forms = {}
+    for s in MonitoringSubmission.query.order_by(MonitoringSubmission.uploaded_at.desc()).all():
+        if s.application_id not in me_forms:
+            me_forms[s.application_id] = s
+
     return render_template(
         'admin/monitoring.html',
         scholars=scholars, stats=stats,
         renewal_alerts=renewal_alerts, courses=courses,
         status_filter=status_filter,
         course_filter=course_filter,
+        me_forms=me_forms,
     )
 
 
@@ -2870,3 +2880,69 @@ def rescan_units():
         'info'
     )
     return redirect(url_for('admin.student_directory'))
+
+
+# ── Monitoring & Evaluation form submissions ────────────────────────────────
+
+@admin_bp.route('/monitoring/<int:app_id>/me-form')
+@role_required('admin')
+def view_me_form(app_id):
+    """Admin views the scholar's submitted M&E form inline."""
+    from app.models import MonitoringSubmission
+    from app.services.storage_service import get_signed_url
+
+    subs = (MonitoringSubmission.query
+            .filter_by(application_id=app_id)
+            .order_by(MonitoringSubmission.uploaded_at.desc()).all())
+    if not subs:
+        flash('No Monitoring & Evaluation form submitted yet for this scholar.', 'warning')
+        return redirect(url_for('admin.monitoring'))
+    sub = subs[0]   # latest submission
+
+    if sub.cloudinary_public_id:
+        is_image = sub.file_type in ('jpg', 'jpeg', 'png')
+        signed = get_signed_url(sub.cloudinary_public_id,
+                                resource_type='image' if is_image else 'raw')
+        if signed:
+            return redirect(signed)
+    if sub.local_path and os.path.exists(sub.local_path):
+        from flask import send_file
+        return send_file(os.path.abspath(sub.local_path), as_attachment=False)
+    if sub.file_url and sub.file_url.startswith('http'):
+        return redirect(sub.file_url)
+    flash('The file could not be found. Please ask the scholar to re-upload.', 'warning')
+    return redirect(url_for('admin.monitoring'))
+
+
+@admin_bp.route('/settings/me-deadline', methods=['POST'])
+@role_required('admin')
+def set_me_deadline():
+    """Set/clear the M&E form submission deadline for the current period."""
+    from app.models import AcademicPeriod
+    period = AcademicPeriod.get_current()
+    if not period:
+        flash('Create a current academic period first.', 'warning')
+        return redirect(url_for('admin.settings'))
+
+    if request.form.get('clear'):
+        period.me_form_deadline = None
+        db.session.commit()
+        from app.services.audit_service import log_action
+        log_action('settings.me_deadline_clear', 'Cleared M&E form deadline')
+        flash('M&E form deadline cleared.', 'success')
+        return redirect(url_for('admin.settings'))
+
+    raw = request.form.get('me_form_deadline', '').strip()
+    if not raw:
+        flash('Please choose a date.', 'warning')
+        return redirect(url_for('admin.settings'))
+    try:
+        period.me_form_deadline = datetime.strptime(raw, '%Y-%m-%d').date()
+    except ValueError:
+        flash('Invalid date.', 'error')
+        return redirect(url_for('admin.settings'))
+    db.session.commit()
+    from app.services.audit_service import log_action
+    log_action('settings.me_deadline_set', f'M&E form deadline set to {raw}')
+    flash('M&E form deadline saved.', 'success')
+    return redirect(url_for('admin.settings'))

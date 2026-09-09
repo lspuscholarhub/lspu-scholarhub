@@ -1,6 +1,8 @@
+import os
 from datetime import datetime, timedelta
 from flask import (Blueprint, render_template, request, flash,
-                   redirect, url_for, session, send_file, jsonify, current_app)
+                   redirect, url_for, session, send_file, jsonify, current_app,
+                   send_from_directory)
 from app import db
 from app.models import User, Scholarship, ScholarshipApplication, Notification
 from app.models.scholarship import ScholarshipStatus, ApplicationStatus
@@ -526,6 +528,13 @@ def monitoring():
     courses = sorted({u.course for u in User.query.filter(
         User.user_type == 'student', User.course.isnot(None)).all() if u.course})
 
+    # M&E form submissions — latest per approved application
+    from app.models import MonitoringSubmission
+    me_forms = {}
+    for s in MonitoringSubmission.query.order_by(MonitoringSubmission.uploaded_at.desc()).all():
+        if s.application_id not in me_forms:
+            me_forms[s.application_id] = s
+
     return render_template(
         'staff/monitoring.html',
         scholars=scholars, stats=stats,
@@ -533,6 +542,7 @@ def monitoring():
         courses=courses,
         status_filter=status_filter,
         course_filter=course_filter,
+        me_forms=me_forms,
     )
 
 
@@ -1585,3 +1595,35 @@ def batch_detail(batch_id):
     applications.sort(key=lambda a: (a.applicant.last_name or '').lower())
     return render_template('staff/batch_detail.html',
                            batch=batch, applications=applications)
+
+
+# ── Monitoring & Evaluation form submissions ────────────────────────────────
+
+@staff_bp.route('/monitoring/<int:app_id>/me-form')
+@role_required('staff')
+def view_me_form(app_id):
+    """Staff views the scholar's submitted M&E form inline."""
+    from app.models import MonitoringSubmission
+    from app.services.storage_service import get_signed_url
+
+    subs = (MonitoringSubmission.query
+            .filter_by(application_id=app_id)
+            .order_by(MonitoringSubmission.uploaded_at.desc()).all())
+    if not subs:
+        flash('No Monitoring & Evaluation form submitted yet for this scholar.', 'warning')
+        return redirect(url_for('staff.monitoring'))
+    sub = subs[0]   # latest submission
+
+    if sub.cloudinary_public_id:
+        is_image = sub.file_type in ('jpg', 'jpeg', 'png')
+        signed = get_signed_url(sub.cloudinary_public_id,
+                                resource_type='image' if is_image else 'raw')
+        if signed:
+            return redirect(signed)
+    if sub.local_path and os.path.exists(sub.local_path):
+        from flask import send_file
+        return send_file(os.path.abspath(sub.local_path), as_attachment=False)
+    if sub.file_url and sub.file_url.startswith('http'):
+        return redirect(sub.file_url)
+    flash('The file could not be found. Please ask the scholar to re-upload.', 'warning')
+    return redirect(url_for('staff.monitoring'))

@@ -123,7 +123,7 @@
           <thead class="table-light">
             <tr>
               <th class="ps-4">Scholar</th><th>Scholarship</th><th>GWA</th>
-              <th>Scholar Status</th><th>Approved</th>
+              <th>Scholar Status</th><th>M&amp;E Form</th><th>Approved</th>
               <th class="pe-4">Actions</th>
             </tr>
           </thead>
@@ -156,6 +156,18 @@
                 {% elif app.scholar_status == 'probation' %}<span class="badge" style="background:#fd7e14;color:#fff;"><i class="bi bi-exclamation-circle me-1"></i>Probation</span>
                 {% elif app.scholar_status == 'termination_warning' %}<span class="badge bg-danger"><i class="bi bi-x-octagon me-1"></i>Termination Warning</span>
                 {% else %}<span class="badge bg-secondary">{{ app.scholar_status or '—' }}</span>{% endif %}
+              </td>
+              <td data-label="M&E Form">
+                {% set me_sub = me_forms.get(app.id) %}
+                {% if me_sub %}
+                  <a href="{{ url_for('admin.view_me_form', app_id=app.id) }}" target="_blank"
+                     class="badge bg-success text-decoration-none" title="View {{ me_sub.original_filename }} (uploaded {{ me_sub.uploaded_at.strftime('%b %d, %Y') }})">
+                    <i class="bi bi-file-earmark-check me-1"></i>Submitted
+                  </a>
+                  <small class="text-muted d-block">{{ me_sub.uploaded_at.strftime('%b %d, %Y') }}</small>
+                {% else %}
+                  <span class="badge bg-secondary"><i class="bi bi-file-earmark-x me-1"></i>Not submitted</span>
+                {% endif %}
               </td>
               <td class="small">{{ app.approved_at.strftime('%b %d, %Y') if app.approved_at else '—' }}</td>
               <td class="pe-4">

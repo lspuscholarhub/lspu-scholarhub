@@ -227,6 +227,30 @@ def my_scholarship():
                     'Please coordinate with the Scholarship Office — your grant may be at risk.')
         gwa_color = 'danger'
 
+    # M&E form submission for the current period (any approved application)
+    from app.models import MonitoringSubmission
+    me_submission = None
+    app_ids = [a.id for a in approved_apps]
+    if app_ids:
+        q = MonitoringSubmission.query.filter(
+            MonitoringSubmission.application_id.in_(app_ids))
+        if current_period:
+            q = q.filter((MonitoringSubmission.academic_period_id == current_period.id) |
+                         (MonitoringSubmission.academic_period_id.is_(None)))
+        me_submission = q.order_by(MonitoringSubmission.uploaded_at.desc()).first()
+
+    # Deadline state for the banner
+    me_deadline = current_period.me_form_deadline if current_period else None
+    me_state = 'none'          # none | submitted | due_soon | overdue | no_deadline
+    if me_submission:
+        me_state = 'submitted'
+    elif me_deadline:
+        from datetime import date as _date
+        days_left = (me_deadline - _date.today()).days
+        me_state = 'overdue' if days_left < 0 else ('due_soon' if days_left <= 14 else 'pending')
+    else:
+        me_state = 'no_deadline'
+
     return render_template('student/my_scholarship.html',
                            user=user,
                            scholarship_details=scholarship_details,
@@ -236,7 +260,10 @@ def my_scholarship():
                            gwa_hint=gwa_hint,
                            gwa_color=gwa_color,
                            current_period=current_period,
-                           grades_semester=grades_semester)
+                           grades_semester=grades_semester,
+                           me_submission=me_submission,
+                           me_deadline=me_deadline,
+                           me_state=me_state)
 
 
 @student_bp.route('/documents')
@@ -847,3 +874,136 @@ def upload_gwa():
         return redirect(url_for('student.upload_gwa'))
 
     return render_template('student/upload_gwa.html', user=user)
+
+
+# ── Monitoring & Evaluation Form ─────────────────────────────────────────────
+
+@student_bp.route('/monitoring-form/download')
+@role_required('student')
+def download_me_form():
+    """Download the blank LSPU Monitoring & Evaluation form (PDF)."""
+    from flask import send_file
+    form_path = os.path.join(current_app.root_path, 'static', 'forms',
+                             'monitoring_evaluation_form.pdf')
+    if not os.path.exists(form_path):
+        flash('The form is temporarily unavailable. Please contact the Scholarship Office.', 'error')
+        return redirect(url_for('student.my_scholarship'))
+    return send_file(form_path, mimetype='application/pdf', as_attachment=True,
+                     download_name='LSPU_Monitoring_and_Evaluation_Form.pdf')
+
+
+@student_bp.route('/monitoring-form/upload', methods=['POST'])
+@role_required('student')
+def upload_me_form():
+    """Upload the accomplished M&E form (photo or PDF). Replaces any previous
+    submission for the current semester."""
+    from app.services.storage_service import upload_file as _upload, delete_file as _delete
+    from app.models import MonitoringSubmission
+    from app.models.academic_period import AcademicPeriod
+
+    user = User.query.get(session['user_id'])
+
+    # Must have at least one approved scholarship
+    approved_app = (ScholarshipApplication.query
+                    .filter_by(applicant_id=user.id, status=ApplicationStatus.APPROVED)
+                    .first())
+    if not approved_app:
+        flash('You can only submit the Monitoring & Evaluation form after your '
+              'scholarship is approved.', 'error')
+        return redirect(url_for('student.my_scholarship'))
+
+    file = request.files.get('me_form')
+    if not file or not file.filename:
+        flash('Please choose a file to upload.', 'error')
+        return redirect(url_for('student.my_scholarship'))
+
+    filename = file.filename
+    ext = filename.rsplit('.', 1)[-1].lower() if '.' in filename else ''
+    if ext not in ('pdf', 'jpg', 'jpeg', 'png'):
+        flash('Invalid file type. Please upload a PDF or an image (JPG/PNG).', 'error')
+        return redirect(url_for('student.my_scholarship'))
+
+    file_bytes = file.read()
+    if len(file_bytes) > 5 * 1024 * 1024:
+        flash('File is larger than 5MB. Please upload a smaller file.', 'error')
+        return redirect(url_for('student.my_scholarship'))
+    if len(file_bytes) == 0:
+        flash('The selected file is empty.', 'error')
+        return redirect(url_for('student.my_scholarship'))
+
+    current_period = AcademicPeriod.get_current()
+
+    # Replace any previous submission for this period (keep only the latest)
+    existing = MonitoringSubmission.query.filter_by(
+        user_id=user.id, application_id=approved_app.id,
+        academic_period_id=current_period.id if current_period else None,
+    ).all()
+    # Also catch legacy rows where period was None
+    if not current_period:
+        existing += MonitoringSubmission.query.filter_by(
+            user_id=user.id, application_id=approved_app.id, academic_period_id=None).all()
+
+    result = _upload(file_bytes, filename, folder=f'monitoring_forms/user_{user.id}')
+    if not result.get('success'):
+        flash('Upload failed. Please try again.', 'error')
+        return redirect(url_for('student.my_scholarship'))
+
+    # Delete old files
+    for old in existing:
+        if old.cloudinary_public_id:
+            try:
+                _delete(public_id=old.cloudinary_public_id)
+            except Exception:
+                pass
+        elif old.local_path:
+            try:
+                _delete(file_path=old.local_path)
+            except Exception:
+                pass
+        db.session.delete(old)
+    if existing:
+        db.session.commit()
+
+    sub = MonitoringSubmission(
+        user_id=user.id,
+        application_id=approved_app.id,
+        academic_period_id=current_period.id if current_period else None,
+        original_filename=filename,
+        file_url=result.get('url'),
+        cloudinary_public_id=result.get('public_id'),
+        local_path=result.get('url') if result.get('provider') == 'local' else None,
+        file_type=ext,
+        file_size=len(file_bytes),
+    )
+    db.session.add(sub)
+    db.session.commit()
+
+    flash('Your Monitoring & Evaluation form has been submitted. Thank you!', 'success')
+    return redirect(url_for('student.my_scholarship'))
+
+
+@student_bp.route('/monitoring-form/<int:sub_id>/view')
+@role_required('student')
+def view_me_form(sub_id):
+    """Student views their own submitted M&E form inline."""
+    from app.models import MonitoringSubmission
+    from app.services.storage_service import get_signed_url
+
+    sub = MonitoringSubmission.query.get_or_404(sub_id)
+    if sub.user_id != session['user_id']:
+        flash('You can only view your own submission.', 'error')
+        return redirect(url_for('student.my_scholarship'))
+
+    if sub.cloudinary_public_id:
+        is_image = sub.file_type in ('jpg', 'jpeg', 'png')
+        signed = get_signed_url(sub.cloudinary_public_id,
+                                resource_type='image' if is_image else 'raw')
+        if signed:
+            return redirect(signed)
+    if sub.local_path and os.path.exists(sub.local_path):
+        from flask import send_file
+        return send_file(os.path.abspath(sub.local_path), as_attachment=False)
+    if sub.file_url and sub.file_url.startswith('http'):
+        return redirect(sub.file_url)
+    flash('File not found. Please upload your form again.', 'warning')
+    return redirect(url_for('student.my_scholarship'))

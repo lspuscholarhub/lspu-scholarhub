@@ -7,7 +7,8 @@ from .gwa_history import GwaHistory
 from .academic_period import AcademicPeriod
 from .scholarship_batch import ScholarshipBatch
 from .chat_history import ChatHistory
+from .monitoring_submission import MonitoringSubmission
 
 __all__ = ['User', 'Scholarship', 'ScholarshipApplication', 'Notification',
            'Document', 'AuditLog', 'GwaHistory', 'AcademicPeriod', 'ScholarshipBatch',
-           'ChatHistory']
+           'ChatHistory', 'MonitoringSubmission']
