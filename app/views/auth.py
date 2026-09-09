@@ -206,7 +206,8 @@ def login():
             user.last_login = datetime.utcnow()
             db.session.commit()
 
-            # Non-permanent session — expires when browser is closed
+            # Regenerate session to prevent session fixation attacks
+            session.clear()
             session.permanent = False
             session['user_id']     = user.id
             session['username']    = user.username
@@ -835,8 +836,10 @@ def reset_password(token):
             flash('Please fill in both password fields.', 'error')
             return render_template('auth/reset_password.html', token=token)
 
-        if len(new_password) < 8:
-            flash('Password must be at least 8 characters long.', 'error')
+        from app.services.password_validator import validate_password
+        pw_valid, pw_error = validate_password(new_password)
+        if not pw_valid:
+            flash(pw_error, 'error')
             return render_template('auth/reset_password.html', token=token)
 
         if new_password != confirm_password:

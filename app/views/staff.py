@@ -1159,8 +1159,10 @@ def update_profile():
         if not user.check_password(current_pw):
             flash('Current password is incorrect. Password was not changed.', 'error')
             return redirect(url_for('staff.profile'))
-        if len(new_pw) < 8:
-            flash('Password must be at least 8 characters.', 'error')
+        from app.services.password_validator import validate_password
+        pw_valid, pw_error = validate_password(new_pw)
+        if not pw_valid:
+            flash(pw_error, 'error')
             return redirect(url_for('staff.profile'))
         user.set_password(new_pw)
     db.session.commit()
