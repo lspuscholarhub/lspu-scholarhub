@@ -258,10 +258,28 @@ def register():
         province    = request.form.get('province',     '').strip() or None
         course      = request.form.get('course',       '').strip()
         year_level  = request.form.get('year_level',   '').strip()
+        birthday    = request.form.get('birthday',     '').strip()
 
         # ── Required fields (middle_name, gender, town, province are optional) ─
-        if not all([first_name, last_name, email, student_id, phone, course, year_level]):
+        if not all([first_name, last_name, email, student_id, phone, course, year_level, birthday]):
             flash('Please fill in all required fields.', 'error')
+            return render_template('auth/register.html')
+
+        # ── Birthday: valid date, not in the future, sane age range ─────────
+        birthday_date = None
+        try:
+            birthday_date = datetime.strptime(birthday, '%Y-%m-%d').date()
+        except ValueError:
+            flash('Please provide a valid birthday.', 'error')
+            return render_template('auth/register.html')
+        today = datetime.utcnow().date()
+        if birthday_date >= today:
+            flash('Birthday must be a date in the past.', 'error')
+            return render_template('auth/register.html')
+        age = today.year - birthday_date.year - (
+            (today.month, today.day) < (birthday_date.month, birthday_date.day))
+        if age < 15 or age > 100:
+            flash('Please double-check your birthday — the age you entered looks incorrect.', 'error')
             return render_template('auth/register.html')
 
         # ── Student ID: exactly XXXX-XXXX format ─────────────────────────────
@@ -413,6 +431,16 @@ def register():
 
         auto_gwa = verification.get('gwa')
 
+        # Units enrolled — pulled from the grades PDF (verification already read it).
+        # GWA and units come from the same document the office needs anyway.
+        auto_units = None
+        grades_data = verification.get('grades_data') or {}
+        if grades_data.get('units_enrolled'):
+            try:
+                auto_units = int(grades_data['units_enrolled'])
+            except (ValueError, TypeError):
+                auto_units = None
+
         # ── Generate and send OTP ─────────────────────────────────────────────
         otp = _generate_otp()
         full_name = f"{first_name.title()} {last_name.title()}"
@@ -427,6 +455,7 @@ def register():
             'student_id':           student_id,
             'phone':                phone,
             'gender':               gender,
+            'birthday':             birthday_date.isoformat() if birthday_date else None,
             'town':                 town,
             'province':             province,
             'course':               course,
@@ -436,6 +465,7 @@ def register():
             'cor_cloudinary_id':    cor_cloudinary_id,
             'grades_cloudinary_id': grades_cloudinary_id,
             'auto_gwa':             auto_gwa,
+            'auto_units':           auto_units,
             'otp':                  otp,
             'otp_expires':          (datetime.utcnow() + timedelta(minutes=OTP_EXPIRY_MINUTES)).isoformat(),
             'attempts':             0,
@@ -500,12 +530,15 @@ def verify_otp():
                 middle_name=pending.get('middle_name'),
                 phone_number=pending['phone'],
                 gender=pending.get('gender'),
+                date_of_birth=datetime.strptime(pending['birthday'], '%Y-%m-%d').date()
+                              if pending.get('birthday') else None,
                 town=pending.get('town'),
                 province=pending.get('province'),
                 student_id=pending['student_id'],
                 course=pending['course'],
                 year_level=pending['year_level'],
                 gwa=pending.get('auto_gwa'),       # extracted from grades PDF during verification
+                units_enrolled=pending.get('auto_units'),   # extracted from grades PDF
                 user_type='student',
                 is_active=True,
                 is_verified=True,

@@ -222,7 +222,8 @@ def _extract_text_from_pdf(file_bytes: bytes) -> str:
 
 def _parse_text(text: str, doc_type: str = 'auto') -> dict:
     """Search extracted text for Student ID, Name, GWA, and Course."""
-    result = {'student_id': None, 'name': None, 'gwa': None, 'course': None}
+    result = {'student_id': None, 'name': None, 'gwa': None,
+              'course': None, 'units_enrolled': None}
 
     is_cor    = 'Student No.' in text or 'CERTIFICATE OF REGISTRATION' in text.upper()
     is_grades = 'Student ID:' in text or 'REPORT OF GRADES' in text.upper() or 'GWA:' in text
@@ -297,6 +298,23 @@ def _parse_text(text: str, doc_type: str = 'auto') -> dict:
                     and 'LEVEL' not in candidate.upper()):
                 result['course'] = candidate
                 break
+
+    # Units enrolled — native PDFs (Gemini already extracts this for scans)
+    units_patterns = [
+        r'(?:Total\s+)?Units?\s+Enrolled\s*[:\-]?\s*(\d{1,3})',
+        r'Total\s+Units\s*[:\-]?\s*(\d{1,3})',
+        r'Units?\s*[:\-]\s*(\d{1,3})',
+    ]
+    for pat in units_patterns:
+        m = re.search(pat, text, re.IGNORECASE)
+        if m:
+            try:
+                val = int(m.group(1))
+                if 1 <= val <= 99:   # sane semester load
+                    result['units_enrolled'] = val
+                    break
+            except ValueError:
+                pass
 
     return result
 

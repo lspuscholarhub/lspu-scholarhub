@@ -79,7 +79,7 @@
               </div>
             </div>
 
-            <!-- Gender + Location row -->
+            <!-- Gender + Birthday + Location row -->
             <div class="row g-3 mb-3">
               <div class="col-md-4">
                 <label class="form-label fw-semibold">Gender</label>
@@ -89,6 +89,11 @@
                   <option value="Male" {% if sel_gender=='Male' %}selected{% endif %}>Male</option>
                   <option value="Female" {% if sel_gender=='Female' %}selected{% endif %}>Female</option>
                 </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label fw-semibold">Birthday <span class="text-danger">*</span></label>
+                <input type="date" class="form-control" name="birthday" id="birthdayInput" required
+                       value="{{ fd.birthday if fd else '' }}">
               </div>
               <div class="col-md-4">
                 <label class="form-label fw-semibold">Town / Municipality</label>
@@ -466,6 +471,12 @@
   }
   corInput.addEventListener('change',    () => checkFile(corInput));
   gradesInput.addEventListener('change', () => checkFile(gradesInput));
+
+  // ── Birthday: block future dates in the picker ───────────────────────────
+  const birthdayInput = document.getElementById('birthdayInput');
+  if (birthdayInput) {
+    birthdayInput.max = new Date().toISOString().split('T')[0];
+  }
 
   // ── Submit ────────────────────────────────────────────────────────────────
   form.addEventListener('submit', function (e) {

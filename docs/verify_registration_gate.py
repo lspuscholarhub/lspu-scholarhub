@@ -90,6 +90,16 @@ FAKE_MATCHING_PDF = build_pdf([
     '1st Semester, S.Y. 2026-2027',
 ])
 
+FAKE_MATCHING_GRADES_PDF = build_pdf([
+    'Laguna State Polytechnic University',
+    'REPORT OF GRADES',
+    'Student ID: 2099-0001',
+    'Name: Test Registration Gate',
+    'Course: BS Information Technology',
+    'GWA: 1.75',
+    'Total Units Enrolled: 24',
+])
+
 FORM = {
     'first_name': 'Test',
     'last_name': 'Registration Gate',
@@ -97,6 +107,7 @@ FORM = {
     'student_id': '2099-0001',
     'phone_number': '09123456789',
     'gender': 'Male',
+    'birthday': '2005-06-15',
     'town': 'Sta. Cruz',
     'province': 'Laguna',
     'course': 'BS Information Technology',
@@ -104,9 +115,13 @@ FORM = {
 }
 
 
-def post_registration(client, pdf_bytes, filename='cor.pdf'):
+def post_registration(client, pdf_bytes, filename='cor.pdf', grades_bytes=None,
+                      grades_filename='grades.pdf', year_level='1st Year'):
     data = dict(FORM)
+    data['year_level'] = year_level
     data['cor_file'] = (io.BytesIO(pdf_bytes), filename)
+    if grades_bytes:
+        data['grades_file'] = (io.BytesIO(grades_bytes), grades_filename)
     return client.post('/auth/register', data=data, content_type='multipart/form-data',
                        follow_redirects=False)
 
@@ -141,8 +156,11 @@ with app.test_client() as c3:
           f'status={r3.status_code}')
 
 # 4. Valid matching PDF → passes gate, lands on OTP page
+#    Use 2nd Year so grades (GWA + units extraction) is exercised too
 with app.test_client() as c4:
-    r4 = post_registration(c4, FAKE_MATCHING_PDF, 'cor.pdf')
+    r4 = post_registration(c4, FAKE_MATCHING_PDF, 'cor.pdf',
+                           grades_bytes=FAKE_MATCHING_GRADES_PDF,
+                           year_level='2nd Year')
     with app.app_context():
         pending = session_data = c4.get_cookie('session')  # just ensure no crash
     page = r4.data.decode('utf-8', errors='ignore')
@@ -166,9 +184,14 @@ with app.test_client() as c4:
                 if created:
                     check('Account flagged ocr_verified=True', created.ocr_verified is True,
                           f'ocr_verified={created.ocr_verified}')
-                    check('GWA auto-populated (None ok for 1st yr, no grades)',
-                          created.gwa is None or isinstance(created.gwa, (int, float)),
+                    check('Birthday saved to profile',
+                          str(created.date_of_birth) == '2005-06-15',
+                          f'date_of_birth={created.date_of_birth}')
+                    check('GWA auto-populated from grades PDF', created.gwa == 1.75,
                           f'gwa={created.gwa}')
+                    check('Units enrolled auto-populated from grades PDF',
+                          created.units_enrolled == 24,
+                          f'units_enrolled={created.units_enrolled}')
 
 # ── Cleanup ────────────────────────────────────────────────────────────────────
 with app.app_context():
