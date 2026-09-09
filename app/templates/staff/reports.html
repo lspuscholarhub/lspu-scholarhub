@@ -38,7 +38,9 @@
           <h6 class="m-0 fw-bold text-primary small">Application Status Distribution</h6>
         </div>
         <div class="card-body p-3">
-          <canvas id="statusChart" height="160"></canvas>
+          <div style="position:relative;height:260px;">
+            <canvas id="statusChart"></canvas>
+          </div>
         </div>
       </div>
     </div>
@@ -48,7 +50,9 @@
           <h6 class="m-0 fw-bold text-primary small">Approval Rate</h6>
         </div>
         <div class="card-body p-3 d-flex flex-column align-items-center justify-content-center">
-          <canvas id="approvalChart" height="140"></canvas>
+          <div style="position:relative;height:220px;width:100%;">
+            <canvas id="approvalChart"></canvas>
+          </div>
           <p class="mt-2 text-muted small text-center mb-0">
             {{ approved }} / {{ total_apps }} approved
           </p>
@@ -61,7 +65,9 @@
           <h6 class="m-0 fw-bold text-primary small">Scholar Performance</h6>
         </div>
         <div class="card-body p-3 d-flex flex-column align-items-center justify-content-center">
-          <canvas id="scholarStatusChart" height="140"></canvas>
+          <div style="position:relative;height:220px;width:100%;">
+            <canvas id="scholarStatusChart"></canvas>
+          </div>
         </div>
       </div>
     </div>
@@ -77,7 +83,9 @@
           </h6>
         </div>
         <div class="card-body p-3">
-          <canvas id="gwaChart" height="180"></canvas>
+          <div style="position:relative;height:240px;">
+            <canvas id="gwaChart"></canvas>
+          </div>
         </div>
       </div>
     </div>
@@ -90,7 +98,9 @@
           </h6>
         </div>
         <div class="card-body p-3">
-          <canvas id="schChart" height="180"></canvas>
+          <div style="position:relative;height:260px;">
+            <canvas id="schChart"></canvas>
+          </div>
         </div>
       </div>
       {% endif %}
@@ -278,7 +288,7 @@ new Chart(document.getElementById('statusChart'), {
     datasets: [{ label: 'Applications', data: [{{ approved }}, {{ pending }}, {{ rejected }}],
       backgroundColor: ['#1cc88a', '#f6c23e', '#e74a3b'], borderRadius: 4 }]
   },
-  options: { responsive: true, plugins: { legend: { display: false } },
+  options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
     scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
 });
 new Chart(document.getElementById('approvalChart'), {
@@ -286,7 +296,7 @@ new Chart(document.getElementById('approvalChart'), {
   data: { labels: ['Approved', 'Not Approved'],
     datasets: [{ data: [{{ approved }}, {{ total_apps - approved }}],
       backgroundColor: ['#1cc88a', '#e9ecef'], borderWidth: 0 }] },
-  options: { cutout: '70%', plugins: { legend: { position: 'bottom' },
+  options: { responsive: true, maintainAspectRatio: false, cutout: '70%', plugins: { legend: { position: 'bottom' },
     tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}` } } } }
 });
 new Chart(document.getElementById('gwaChart'), {
@@ -295,7 +305,7 @@ new Chart(document.getElementById('gwaChart'), {
     datasets: [{ label: 'Students', data: {{ gwa_data|safe }},
       backgroundColor: ['#1cc88a','#36b9cc','#4e73df','#858796','#f6c23e','#fd7e14','#e74a3b'],
       borderRadius: 4 }] },
-  options: { indexAxis: 'y', responsive: true, plugins: { legend: { display: false } },
+  options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
     scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } } }
 });
 new Chart(document.getElementById('scholarStatusChart'), {
@@ -303,7 +313,7 @@ new Chart(document.getElementById('scholarStatusChart'), {
   data: { labels: ['Good Standing', 'At Risk', 'Probation', 'Termination Warning'],
     datasets: [{ data: {{ scholar_status_data|safe }},
       backgroundColor: ['#1cc88a', '#f6c23e', '#fd7e14', '#e74a3b'], borderWidth: 2 }] },
-  options: { cutout: '60%', plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } }
+  options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'bottom', labels: { font: { size: 11 } } } } }
 });
 {% if scholarship_stats %}
 new Chart(document.getElementById('schChart'), {
@@ -314,7 +324,7 @@ new Chart(document.getElementById('schChart'), {
       { label: 'Pending',  data: {{ sch_pending|safe }},  backgroundColor: '#f6c23e', borderRadius: 2 },
       { label: 'Rejected', data: {{ sch_rejected|safe }}, backgroundColor: '#e74a3b', borderRadius: 2 },
     ] },
-  options: { responsive: true,
+  options: { responsive: true, maintainAspectRatio: false,
     scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, ticks: { stepSize: 1 } } },
     plugins: { legend: { position: 'top' } } }
 });
