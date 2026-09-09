@@ -1047,7 +1047,8 @@ def reports():
 
     total_users     = User.query.count()
     total_students  = User.query.filter_by(user_type='student').count()
-    total_staff     = User.query.filter_by(user_type='staff').count()        active_scholars = ScholarshipApplication.query.filter_by(
+    total_staff     = User.query.filter_by(user_type='staff').count()
+    active_scholars = ScholarshipApplication.query.filter_by(
         status=ApplicationStatus.APPROVED, scholar_status='active').count()
 
     scholarships = Scholarship.query.all()

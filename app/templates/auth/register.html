@@ -220,7 +220,7 @@
               <select class="form-select" name="year_level" id="yearLevel" required>
                 <option value="">— Select Year Level —</option>
                 {% set sel_year = fd.year_level if fd else '' %}
-                {% for y in ['1st Year','2nd Year','3rd Year','4th Year'] %}
+                {% for y in ['1st Year','2nd Year','3rd Year','4th Year','5th Year','Irregular','Graduate'] %}
                 <option value="{{ y }}" {% if sel_year==y %}selected{% endif %}>{{ y }}</option>
                 {% endfor %}
               </select>
@@ -366,7 +366,7 @@
   const phoneInput    = document.getElementById('phoneInput');
   const sidInput      = document.getElementById('studentIdInput');
 
-  const UPPERCLASS = new Set(['2nd Year', '3rd Year', '4th Year']);
+  const UPPERCLASS = new Set(['2nd Year', '3rd Year', '4th Year', '5th Year', 'Irregular', 'Graduate']);
 
   // ── Restore document section state if year level is pre-selected ─────────
   function applyYearLevel(year) {

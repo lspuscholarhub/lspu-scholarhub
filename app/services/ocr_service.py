@@ -319,7 +319,7 @@ def _parse_text(text: str, doc_type: str = 'auto') -> dict:
 
     # Year Level — found on CORs (e.g. "Year Level : 2", "Year Level 3",
     # "Course: BSIT   Year Level: 4", or "2nd Year" / "4th Year")
-    year_map = {'1': '1st Year', '2': '2nd Year', '3': '3rd Year', '4': '4th Year'}
+    year_map = {'1': '1st Year', '2': '2nd Year', '3': '3rd Year', '4': '4th Year', '5': '5th Year'}
     year_patterns = [
         r'Year\s+Level\s*[:\-]?\s*(\d)',          # Year Level : 2
         r'Year\s*[:\-]\s*(\d)',                    # Year: 2

@@ -619,7 +619,7 @@
               <label class="form-label fw-semibold">Year Level</label>
               <select class="form-select" name="year_level">
                 <option value="">—</option>
-                {% for y in ['1st Year','2nd Year','3rd Year','4th Year'] %}
+                {% for y in ['1st Year','2nd Year','3rd Year','4th Year','5th Year','Irregular','Graduate'] %}
                 <option value="{{ y }}" {% if student.year_level==y %}selected{% endif %}>{{ y }}</option>
                 {% endfor %}
               </select>
