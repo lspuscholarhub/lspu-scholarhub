@@ -463,13 +463,7 @@ def register():
             except Exception:
                 pass
         if year_level not in ('Irregular', 'Graduate'):
-            if not detected_year:
-                _cleanup_cor_and_grades()
-                flash('Could not detect the year level from your COR. '
-                      'Please make sure your COR PDF is clear and legible, then try again.', 'error')
-                return render_template('auth/register.html',
-                                       form_data=request.form, ocr_errors=None)
-            if detected_year != year_level:
+            if detected_year and detected_year != year_level:
                 _cleanup_cor_and_grades()
                 flash(f'Your COR shows {detected_year} but you selected {year_level}. '
                       f'Please select the correct year level to continue.', 'error')
