@@ -13,8 +13,9 @@ app = create_app()
 app.config['WTF_CSRF_ENABLED'] = False
 
 SCHOLARSHIP_IDS = [29, 30, 31]   # private, public, public
-STUDENT_ID = 165  # an existing active student in the live DB
-STAFF_ID = 52
+# Testing policy (docs/test_accounts.py): ONLY these accounts may be used.
+STUDENT_ID = 150  # 0123-1714 — approved test student
+STAFF_ID = 53     # Alfonso
 ADMIN_ID = 1
 
 # (url, roles_allowed) — role None means public/guest
@@ -78,7 +79,7 @@ with app.app_context():
     for b in ScholarshipBatch.query.all():
         extra.append((f'/staff/batches/{b.id}', 'staff'))
         extra.append((f'/admin/batches/{b.id}', 'admin'))
-    for u in User.query.filter_by(user_type='student').limit(3).all():
+    for u in User.query.filter(User.id.in_([68, 51, 150])).all():
         extra.append((f'/staff/students/{u.id}', 'staff'))
         extra.append((f'/admin/students/{u.id}', 'admin'))
 

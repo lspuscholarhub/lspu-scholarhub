@@ -46,14 +46,14 @@ with app.test_client() as c:
     post_check('guest', '/chatbot/chat', {'message': 'hello'})
 
     # ── Student flows ─────────────────────────────────────────────────────────
-    # Look up LIVE ids — the old hardcoded scholarship 30 / student 49 no longer exist
+    # Testing policy (docs/test_accounts.py): use ONLY approved test accounts.
     with app.app_context():
-        from app.models import Scholarship, User
+        from app.models import Scholarship
+        from docs.test_accounts import PRIMARY_STUDENT_ID
         _s = Scholarship.query.filter_by(status='active').first() or Scholarship.query.first()
-        _u = User.query.filter_by(user_type='student', is_active=True).first()
-        assert _s and _u, 'live DB needs at least one scholarship and one student'
+        assert _s, 'live DB needs at least one scholarship'
         LIVE_SCHOLARSHIP_ID = _s.id
-        LIVE_STUDENT_ID = _u.id
+        LIVE_STUDENT_ID = PRIMARY_STUDENT_ID  # 0123-1714, approved test student
 
     login(LIVE_STUDENT_ID, 'student', 'student')
     # apply without agreeing to terms → validation flash, no DB write
@@ -79,8 +79,14 @@ with app.test_client() as c:
     post_check('student', '/student/notifications/mark-all-read', {})
     # chatbot
     post_check('student', '/chatbot/chat', {'message': 'what documents do i need'})
-    # profile update with unchanged data
-    post_check('student', '/student/profile/update', {'first_name': 'Test', 'last_name': 'User'})
+    # profile update — post the account's CURRENT values back unchanged (policy:
+    # never modify test-account data)
+    with app.app_context():
+        from app.models import User
+        from docs.test_accounts import PRIMARY_STUDENT_ID
+        _tu = User.query.get(PRIMARY_STUDENT_ID)
+        _profile = {'first_name': _tu.first_name, 'last_name': _tu.last_name}
+    post_check('student', '/student/profile/update', _profile)
 
     # ── Staff flows ───────────────────────────────────────────────────────────
     login(52, 'staff', 'Jessa')
