@@ -121,10 +121,11 @@
                   {% else %}<span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Pending</span>{% endif %}
                 </td>
                 <td>
-                  {% if app.scholar_tag %}
-                    {% if app.scholar_tag=='active' %}<span class="badge bg-success">Active</span>
-                    {% elif app.scholar_tag=='at_risk' %}<span class="badge bg-warning text-dark">At Risk</span>
-                    {% elif app.scholar_tag=='probation' %}<span class="badge bg-orange text-white" style="background:#fd7e14;">Probation</span>
+                  {% if app.scholar_status %}
+                    {% if app.scholar_status=='active' %}<span class="badge bg-success">Good Standing</span>
+                    {% elif app.scholar_status=='at_risk' %}<span class="badge bg-warning text-dark">At Risk</span>
+                    {% elif app.scholar_status=='probation' %}<span class="badge bg-warning text-dark">Probation</span>
+                    {% elif app.scholar_status=='termination_warning' %}<span class="badge bg-danger">Termination Warning</span>
                     {% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
                   {% else %}—{% endif %}
                 </td>

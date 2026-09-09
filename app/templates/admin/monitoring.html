@@ -227,19 +227,11 @@
             <form method="POST" action="{{ url_for('admin.update_scholar_status', app_id=app.id) }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <div class="row g-3">
-                <div class="col-md-6">
+                <div class="col-md-12">
                   <label class="form-label small fw-semibold">Scholar Status</label>
                   <select class="form-select" name="scholar_status">
                     {% for val, label in [('active','Good Standing'),('at_risk','At Risk'),('probation','Probation'),('termination_warning','Termination Warning')] %}
                     <option value="{{ val }}" {% if app.scholar_status==val %}selected{% endif %}>{{ label }}</option>
-                    {% endfor %}
-                  </select>
-                </div>
-                <div class="col-md-6">
-                  <label class="form-label small fw-semibold">Scholar Tag</label>
-                  <select class="form-select" name="scholar_tag">
-                    {% for val, label in [('active','Active'),('at_risk','At Risk'),('probation','Probation'),('inactive','Inactive')] %}
-                    <option value="{{ val }}" {% if app.scholar_tag==val %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
                   </select>
                 </div>

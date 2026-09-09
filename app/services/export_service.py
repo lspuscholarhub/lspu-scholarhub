@@ -96,7 +96,7 @@ def _build_applications_data(filters=None):
             'GPA':          _safe(ad.get('gpa')),
             'Scholarship':  a.scholarship.title,
             'Status':       a.status.value.replace('_', ' ').title(),
-            'Scholar Tag':  _safe(a.scholar_tag).title(),
+            'Scholar Status': _safe(a.scholar_status).replace('_', ' ').title(),
             'Submitted':    a.submitted_at.strftime('%Y-%m-%d'),
             'Reviewed':     a.reviewed_at.strftime('%Y-%m-%d') if a.reviewed_at else '—',
             'Notes':        _safe(a.review_notes),
@@ -182,7 +182,7 @@ def _build_approved_data(filters=None):
             'GPA':           _safe(ad.get('gpa')),
             'Scholarship':   a.scholarship.title,
             'Award (₱)':     f'{float(a.scholarship.award_amount):,.2f}' if a.scholarship.award_amount else '—',
-            'Scholar Tag':   _safe(a.scholar_tag).title(),
+            'Scholar Status': _safe(a.scholar_status).replace('_', ' ').title(),
             'Approved On':   a.final_decision_date.strftime('%Y-%m-%d') if a.final_decision_date else '—',
             'Reviewer Notes':_safe(a.review_notes),
         })

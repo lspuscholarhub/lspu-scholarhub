@@ -374,7 +374,6 @@ def review_application(app_id):
     application.final_decision_date = datetime.utcnow() if action in ('approve', 'reject') else None
 
     if action == 'approve':
-        application.scholar_tag   = tag if tag in ('active','at_risk','probation','inactive') else 'active'
         application.scholar_status = 'active'
         application.approved_at   = datetime.utcnow()
         application.is_active     = True
@@ -441,7 +440,6 @@ def batch_review():
             app.review_notes = notes
             app.final_decision_date = datetime.utcnow()
             if action == 'approve':
-                app.scholar_tag    = 'active'
                 app.scholar_status = 'active'
                 app.approved_at    = datetime.utcnow()
                 app.is_active      = True
@@ -541,21 +539,18 @@ def monitoring():
 @staff_bp.route('/monitoring/<int:app_id>/update-status', methods=['POST'])
 @role_required('staff')
 def update_scholar_status(app_id):
-    """Manually update a scholar's performance status and tag."""
+    """Manually update a scholar's performance status."""
     app = ScholarshipApplication.query.get_or_404(app_id)
     new_status = request.form.get('scholar_status', 'active')
-    new_tag    = request.form.get('scholar_tag', 'active')
     notes      = request.form.get('notes', '').strip()
 
     valid_statuses = ('active', 'at_risk', 'probation', 'termination_warning')
-    valid_tags     = ('active', 'at_risk', 'probation', 'inactive')
 
-    if new_status not in valid_statuses or new_tag not in valid_tags:
+    if new_status not in valid_statuses:
         flash('Invalid status value.', 'error')
         return redirect(url_for('staff.monitoring'))
 
     app.scholar_status    = new_status
-    app.scholar_tag       = new_tag
     app.status_updated_at = datetime.utcnow()
     if notes:
         app.review_notes = (app.review_notes or '') + f'\n[{datetime.utcnow().strftime("%Y-%m-%d")}] {notes}'
@@ -618,13 +613,10 @@ def update_scholar_gwa(app_id):
         new_tag    = 'probation'
     elif gwa > 3.00:
         new_status = 'at_risk'
-        new_tag    = 'at_risk'
     else:
         new_status = 'active'
-        new_tag    = 'active'
 
     app.scholar_status    = new_status
-    app.scholar_tag       = new_tag
     app.status_updated_at = datetime.utcnow()
     db.session.commit()
 

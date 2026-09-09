@@ -399,7 +399,6 @@ def review_application(app_id):
     application.final_decision_date = datetime.utcnow() if action in ('approve', 'reject') else None
 
     if action == 'approve':
-        application.scholar_tag    = request.form.get('tag', 'active')
         application.scholar_status = 'active'
         application.approved_at    = datetime.utcnow()
         application.is_active      = True
@@ -474,7 +473,6 @@ def batch_review():
             app.review_notes        = notes
             app.final_decision_date = datetime.utcnow()
             if action == 'approve':
-                app.scholar_tag    = 'active'
                 app.scholar_status = 'active'
                 app.approved_at    = datetime.utcnow()
                 app.is_active      = True
@@ -529,7 +527,7 @@ def tag_scholar(app_id):
     if tag not in ('active', 'at_risk', 'probation', 'inactive'):
         flash('Invalid tag.', 'error')
         return redirect(url_for('admin.manage_applications'))
-    application.scholar_tag = tag
+    application.scholar_status = tag
     db.session.commit()
     from app.services.audit_service import log_action
     log_action('application.tag',
@@ -597,15 +595,12 @@ def update_scholar_status(app_id):
     from app.services.notification_service import notification_service as ns
     app = ScholarshipApplication.query.get_or_404(app_id)
     new_status = request.form.get('scholar_status', 'active')
-    new_tag    = request.form.get('scholar_tag', 'active')
     notes      = request.form.get('notes', '').strip()
     valid_s    = ('active', 'at_risk', 'probation', 'termination_warning')
-    valid_t    = ('active', 'at_risk', 'probation', 'inactive')
-    if new_status not in valid_s or new_tag not in valid_t:
+    if new_status not in valid_s:
         flash('Invalid status.', 'error')
         return redirect(url_for('admin.monitoring'))
     app.scholar_status    = new_status
-    app.scholar_tag       = new_tag
     app.status_updated_at = datetime.utcnow()
     if notes:
         app.review_notes = (app.review_notes or '') + f'\n[{datetime.utcnow().strftime("%Y-%m-%d")}] {notes}'
@@ -649,11 +644,10 @@ def update_scholar_gwa(app_id):
     student = app.applicant
     student.gwa = round(gwa, 2)
     if gwa >= 4.00:   new_status, new_tag = 'termination_warning', 'inactive'
-    elif gwa > 3.75:  new_status, new_tag = 'probation', 'probation'
-    elif gwa > 3.00:  new_status, new_tag = 'at_risk', 'at_risk'
-    else:             new_status, new_tag = 'active', 'active'
+    elif gwa > 3.75:  new_status = 'probation'
+    elif gwa > 3.00:  new_status = 'at_risk'
+    else:             new_status = 'active'
     app.scholar_status    = new_status
-    app.scholar_tag       = new_tag
     app.status_updated_at = datetime.utcnow()
     db.session.commit()
     alerts = performance_service._check_performance_alerts(student.id, gwa)
@@ -1053,9 +1047,8 @@ def reports():
 
     total_users     = User.query.count()
     total_students  = User.query.filter_by(user_type='student').count()
-    total_staff     = User.query.filter_by(user_type='staff').count()
-    active_scholars = ScholarshipApplication.query.filter_by(
-        status=ApplicationStatus.APPROVED, scholar_tag='active').count()
+    total_staff     = User.query.filter_by(user_type='staff').count()        active_scholars = ScholarshipApplication.query.filter_by(
+        status=ApplicationStatus.APPROVED, scholar_status='active').count()
 
     scholarships = Scholarship.query.all()
     scholarship_stats = []
@@ -2374,7 +2367,6 @@ def run_reminders():
                       else 'probation' if student.gwa > 3.75
                       else 'at_risk')
         app.scholar_status    = new_status
-        app.scholar_tag       = new_status if new_status != 'termination_warning' else 'inactive'
         app.status_updated_at = datetime.utcnow()
         notification_service.create_in_app_notification(
             student.id,
