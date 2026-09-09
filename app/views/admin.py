@@ -13,14 +13,14 @@ from app.utils.decorators import role_required
 admin_bp = Blueprint('admin', __name__)
 
 
-# ── Campus Context (University Admin) ──────────────────────────────────────
+# ── Campus Context (Super Admin) ──────────────────────────────────────
 
 @admin_bp.route('/campus-context/<int:campus_id>')
 @role_required('admin')
 def set_campus_context(campus_id):
     """Set the campus context for university admin. campus_id=0 means all campuses."""
     from flask import session as _session
-    if _session.get('user_type') not in ('university_admin', 'admin'):
+    if _session.get('user_type') not in ('super_admin', 'admin'):
         flash('You do not have permission to change campus context.', 'error')
         return redirect(url_for('admin.dashboard'))
 
@@ -752,15 +752,15 @@ def manage_users():
     if role:
         query = query.filter_by(user_type=role)
 
-    # Campus filtering: university admin can filter, campus_admin sees own campus
+    # Campus filtering: university admin can filter, admin sees own campus
     user_type = session.get('user_type', '')
-    if user_type == 'university_admin':
+    if user_type == 'super_admin':
         campus_ctx = session.get('campus_context')
         if campus_ctx:
             query = query.filter(User.campus_id == campus_ctx)
         elif campus_filter:
             query = query.filter(User.campus_id == int(campus_filter))
-    elif user_type in ('campus_admin', 'staff'):
+    elif user_type in ('admin', 'staff'):
         user = User.query.get(session.get('user_id'))
         if user and user.campus_id:
             query = query.filter(User.campus_id == user.campus_id)
@@ -790,7 +790,7 @@ def edit_user(uid):
 
     # Role change (with the same safety rules as the quick-change route)
     new_role = request.form.get('role', '').strip()
-    if new_role and new_role in ('student', 'staff', 'admin', 'university_admin', 'campus_admin') and new_role != user.user_type:
+    if new_role and new_role in ('student', 'staff', 'admin', 'super_admin', 'admin') and new_role != user.user_type:
         if user.id == session['user_id']:
             flash('You cannot change your own role. Ask another admin to do it.', 'error')
             return redirect(url_for('admin.manage_users'))
@@ -837,7 +837,7 @@ def change_user_role(uid):
     user = User.query.get_or_404(uid)
     new_role = request.form.get('role', '').strip()
 
-    if new_role not in ('student', 'staff', 'admin', 'university_admin', 'campus_admin'):
+    if new_role not in ('student', 'staff', 'admin', 'super_admin', 'admin'):
         flash('Invalid role selected.', 'error')
         return redirect(url_for('admin.manage_users'))
 

@@ -101,7 +101,7 @@
             </select>
             <div class="form-text">Students can hold only ONE public scholarship, but any number of private ones.</div>
           </div>
-          {% if session.get('user_type') == 'university_admin' %}
+          {% if session.get('user_type') == 'super_admin' %}
           <div class="row g-3 mb-3">
             <div class="col-md-6">
               <label class="form-label fw-semibold">Scope</label>

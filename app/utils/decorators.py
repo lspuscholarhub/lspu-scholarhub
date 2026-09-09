@@ -39,17 +39,17 @@ def role_required(*roles):
         @role_required('admin', 'staff')
 
     Role aliases:
-        'admin' also matches 'university_admin' and 'campus_admin'
-        'staff' also matches 'campus_admin'
+        'admin' also matches 'super_admin' and 'admin'
+        'staff' also matches 'admin'
     """
     # Expand role aliases
     expanded = set()
     for r in roles:
         expanded.add(r)
         if r == 'admin':
-            expanded.update(('university_admin', 'campus_admin'))
+            expanded.update(('super_admin', 'admin'))
         if r == 'staff':
-            expanded.add('campus_admin')
+            expanded.add('admin')
 
     def decorator(f):
         @wraps(f)

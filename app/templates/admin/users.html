@@ -62,8 +62,8 @@
                 {% endif %}
               </td>
               <td>
-                {% if u.user_type=='university_admin' %}<span class="badge bg-danger">University Admin</span>
-                {% elif u.user_type=='campus_admin' %}<span class="badge bg-danger">Campus Admin</span>
+                {% if u.user_type=='super_admin' %}<span class="badge bg-danger">Super Admin</span>
+                {% elif u.user_type=='admin' %}<span class="badge bg-danger">Admin</span>
                 {% elif u.user_type=='admin' %}<span class="badge bg-danger">Admin</span>
                 {% elif u.user_type=='staff' %}<span class="badge bg-warning text-dark">Staff</span>
                 {% else %}<span class="badge bg-primary">Student</span>{% endif %}
@@ -75,7 +75,7 @@
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <select name="role" class="form-select form-select-sm" style="width:auto;"
                           aria-label="Change role">
-                    {% for r in ['student', 'staff', 'campus_admin', 'admin', 'university_admin'] %}
+                    {% for r in ['student', 'staff', 'admin', 'admin', 'super_admin'] %}
                     <option value="{{ r }}" {% if u.user_type == r %}selected{% endif %}>{{ r|title }}</option>
                     {% endfor %}
                   </select>

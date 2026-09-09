@@ -39,14 +39,14 @@ def list_scholarships():
             Scholarship.campus_id == user_campus_id,
             Scholarship.campus_id.is_(None)   # university-wide
         ))
-    elif user_type in ('staff', 'campus_admin') and user_campus_id:
-        # Staff/campus_admin see their campus + university-wide
+    elif user_type in ('staff', 'admin') and user_campus_id:
+        # Staff/admin see their campus + university-wide
         from sqlalchemy import or_
         query = query.filter(or_(
             Scholarship.campus_id == user_campus_id,
             Scholarship.campus_id.is_(None)
         ))
-    # university_admin sees all (no filter)
+    # super_admin sees all (no filter)
 
     all_scholarships = query.order_by(Scholarship.application_deadline.asc()).all()
 
@@ -55,7 +55,7 @@ def list_scholarships():
     if user_type == 'student' and user:
         student_id = user.student_id
 
-    if user_type in ('admin', 'university_admin', 'staff', 'campus_admin'):
+    if user_type in ('admin', 'super_admin', 'staff', 'admin'):
         scholarships = all_scholarships
     else:
         scholarships = [s for s in all_scholarships if s.is_visible_to(student_id)]

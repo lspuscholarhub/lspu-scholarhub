@@ -226,13 +226,13 @@
         {% if session.get('user_id') %}
 
         {# Role badge #}
-        {% if role == 'university_admin' %}
+        {% if role == 'super_admin' %}
           <li class="nav-item d-none d-lg-flex align-items-center me-1">
-            <span class="badge bg-danger px-2 py-1" style="font-size:.68rem;">University Admin</span>
+            <span class="badge bg-danger px-2 py-1" style="font-size:.68rem;">Super Admin</span>
           </li>
-        {% elif role == 'campus_admin' %}
+        {% elif role == 'admin' %}
           <li class="nav-item d-none d-lg-flex align-items-center me-1">
-            <span class="badge bg-danger px-2 py-1" style="font-size:.68rem;">Campus Admin</span>
+            <span class="badge bg-danger px-2 py-1" style="font-size:.68rem;">Admin</span>
           </li>
         {% elif role == 'admin' %}
           <li class="nav-item d-none d-lg-flex align-items-center me-1">
@@ -246,7 +246,7 @@
 
         {# Campus badge / selector #}
         {% if session.get('user_id') and role != 'guest' %}
-          {% if role == 'university_admin' %}
+          {% if role == 'super_admin' %}
             {# University admin: campus selector dropdown #}
             <li class="nav-item dropdown d-none d-lg-flex align-items-center me-1">
               <a class="nav-link dropdown-toggle badge bg-info text-dark px-2 py-1"

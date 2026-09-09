@@ -219,7 +219,7 @@ def login():
             if user.campus_id:
                 session['campus_id'] = user.campus_id
                 session['campus_name'] = user.campus.name if user.campus else ''
-            if user.user_type == 'university_admin':
+            if user.user_type == 'super_admin':
                 session.pop('campus_context', None)
                 session.pop('campus_context_name', None)
 
@@ -233,7 +233,7 @@ def login():
 
             flash(f'Welcome back, {user.first_name}!', 'success')
 
-            if user.user_type in ('admin', 'university_admin', 'campus_admin'):
+            if user.user_type in ('admin', 'super_admin', 'admin'):
                 return redirect(url_for('admin.dashboard'))
             elif user.user_type == 'staff':
                 return redirect(url_for('staff.dashboard'))

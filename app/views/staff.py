@@ -111,7 +111,7 @@ def create_scholarship():
 
         # Campus assignment
         user_type = session.get('user_type', '')
-        if user_type == 'university_admin':
+        if user_type == 'super_admin':
             scope = request.form.get('scope', 'campus')
             campus_id_val = int(request.form.get('campus_id') or 0) or None
             if scope == 'university':

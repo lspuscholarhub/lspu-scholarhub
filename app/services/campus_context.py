@@ -31,17 +31,17 @@ def get_campus_context():
     user_type = user.user_type
 
     # University admin can switch campus context
-    if user_type == 'university_admin':
+    if user_type == 'super_admin':
         return session.get('campus_context')   # None means "show all campuses"
 
     # Everyone else is scoped to their own campus
     return user.campus_id
 
 
-def is_university_admin():
+def is_super_admin():
     """Check if the current user is a university admin."""
     user = get_current_user()
-    return user and user.user_type == 'university_admin'
+    return user and user.user_type == 'super_admin'
 
 
 def get_all_campuses():
