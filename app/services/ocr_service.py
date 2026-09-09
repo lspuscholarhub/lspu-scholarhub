@@ -223,7 +223,7 @@ def _extract_text_from_pdf(file_bytes: bytes) -> str:
 def _parse_text(text: str, doc_type: str = 'auto') -> dict:
     """Search extracted text for Student ID, Name, GWA, and Course."""
     result = {'student_id': None, 'name': None, 'gwa': None,
-              'course': None, 'units_enrolled': None}
+              'course': None, 'units_enrolled': None, 'year_level': None}
 
     is_cor    = 'Student No.' in text or 'CERTIFICATE OF REGISTRATION' in text.upper()
     is_grades = 'Student ID:' in text or 'REPORT OF GRADES' in text.upper() or 'GWA:' in text
@@ -316,6 +316,20 @@ def _parse_text(text: str, doc_type: str = 'auto') -> dict:
                     break
             except ValueError:
                 pass
+
+    # Year Level — found on CORs (e.g. "Year Level : 2" or "Year Level 3")
+    year_patterns = [
+        r'Year\s+Level\s*[:\-]?\s*(\d)',
+        r'Year\s*[:\-]\s*(\d)',
+    ]
+    year_map = {'1': '1st Year', '2': '2nd Year', '3': '3rd Year', '4': '4th Year'}
+    for pat in year_patterns:
+        m = re.search(pat, text, re.IGNORECASE)
+        if m:
+            digit = m.group(1)
+            if digit in year_map:
+                result['year_level'] = year_map[digit]
+            break
 
     return result
 
@@ -501,6 +515,7 @@ def extract_document_data(file_bytes: bytes, file_ext: str) -> dict:
         'gwa':           None,
         'units_enrolled': None,
         'course':        None,
+        'year_level':    None,
         'raw_text':      '',
         'method':        'failed',
         'semester':      None,
@@ -518,7 +533,7 @@ def extract_document_data(file_bytes: bytes, file_ext: str) -> dict:
         logger.info(f'Running Gemini Vision analysis for .{file_ext} image.')
         try:
             gemini = _extract_via_gemini(file_bytes, file_ext)
-            for key in ('student_id', 'name', 'gwa', 'units_enrolled', 'course', 'semester', 'academic_year'):
+            for key in ('student_id', 'name', 'gwa', 'units_enrolled', 'course', 'year_level', 'semester', 'academic_year'):
                 if gemini.get(key):
                     result[key] = gemini[key]
             result['method'] = (
@@ -546,7 +561,7 @@ def extract_document_data(file_bytes: bytes, file_ext: str) -> dict:
     logger.info(f'Running Gemini analysis for .{file_ext} document.')
     try:
         gemini = _extract_via_gemini(file_bytes, file_ext, raw_text)
-        for key in ('student_id', 'name', 'gwa', 'units_enrolled', 'course', 'semester', 'academic_year'):
+        for key in ('student_id', 'name', 'gwa', 'units_enrolled', 'course', 'year_level', 'semester', 'academic_year'):
             if gemini.get(key):
                 result[key] = gemini[key]
         result['method'] = (

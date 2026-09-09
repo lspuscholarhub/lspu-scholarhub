@@ -449,6 +449,23 @@ def register():
 
         auto_gwa = verification.get('gwa')
 
+        # ── Year level validation against COR ──────────────────────────────────
+        cor_data = verification.get('cor_data') or {}
+        detected_year = cor_data.get('year_level')
+        if detected_year and detected_year != year_level:
+            from app.services.storage_service import delete_file as _delete_file
+            try:
+                if cor_cloudinary_id or (cor_path and os.path.exists(cor_path)):
+                    _delete_file(public_id=cor_cloudinary_id, file_path=None if cor_cloudinary_id else cor_path)
+                if grades_cloudinary_id or (grades_path and os.path.exists(grades_path)):
+                    _delete_file(public_id=grades_cloudinary_id, file_path=None if grades_cloudinary_id else grades_path)
+            except Exception:
+                pass
+            flash(f'Your COR shows {detected_year} but you selected {year_level}. '
+                  f'Please select the correct year level to continue.', 'error')
+            return render_template('auth/register.html',
+                                   form_data=request.form, ocr_errors=None)
+
         # Units enrolled — pulled from the grades PDF (verification already read it).
         # GWA and units come from the same document the office needs anyway.
         auto_units = None

@@ -753,6 +753,10 @@ def upload_gwa():
         if doc_type == 'cor':
             user.cor_file_path = file_path
             user.cor_cloudinary_id = cloud_id
+            # Auto-update year level if the new COR shows a different year
+            detected_year = verified_data.get('year_level')
+            if detected_year and detected_year != user.year_level:
+                user.year_level = detected_year
             db.session.commit()
             flash(f'{label} uploaded successfully.', 'success')
             return redirect(url_for('student.upload_gwa'))
