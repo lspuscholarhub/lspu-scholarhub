@@ -149,26 +149,22 @@ def mark_all_read():
 @student_bp.route('/my-scholarship')
 @role_required('student')
 def my_scholarship():
-    """The student's approved scholarship program — details, status, batch,
-    amount received, and renewal/compliance guidance."""
+    """ALL of the student's approved scholarships — details, status, batch,
+    amount received, and renewal/compliance guidance per program."""
     user = User.query.get(session['user_id'])
 
-    approved_app = (ScholarshipApplication.query
-                    .filter_by(applicant_id=user.id,
-                               status=ApplicationStatus.APPROVED)
-                    .order_by(ScholarshipApplication.approved_at.desc())
-                    .first())
+    approved_apps = (ScholarshipApplication.query
+                     .filter_by(applicant_id=user.id,
+                                status=ApplicationStatus.APPROVED)
+                     .order_by(ScholarshipApplication.approved_at.desc())
+                     .all())
 
-    if not approved_app:
+    if not approved_apps:
         flash('You do not have an approved scholarship yet. '
               'Approved programs will appear here.', 'info')
         return redirect(url_for('student.my_applications'))
 
-    program = approved_app.scholarship
-    batch   = approved_app.batch
-    period  = batch.academic_period if batch else None
-
-    # Scholar standing labels
+    # Per-application details
     status_labels = {
         'active':              ('Good Standing', 'success'),
         'at_risk':             ('At Risk', 'warning'),
@@ -176,21 +172,41 @@ def my_scholarship():
         'termination_warning': ('Termination Warning', 'danger'),
         'inactive':            ('Inactive', 'secondary'),
     }
-    standing_label, standing_color = status_labels.get(
-        (approved_app.scholar_status or 'active').lower(), ('Active', 'secondary'))
-
     compliance_labels = {
         'compliant':     ('Compliant', 'success'),
         'non_compliant': ('Not Compliant', 'danger'),
         'pending':       ('For Review', 'warning'),
     }
-    compliance_label, compliance_color = compliance_labels.get(
-        (approved_app.compliance_status or 'compliant').lower(), ('For Review', 'warning'))
+    scholarship_details = []
+    for a in approved_apps:
+        program = a.scholarship
+        batch   = a.batch
+        period  = batch.academic_period if batch else None
+        standing_label, standing_color = status_labels.get(
+            (a.scholar_status or 'active').lower(), ('Active', 'secondary'))
+        compliance_label, compliance_color = compliance_labels.get(
+            (a.compliance_status or 'compliant').lower(), ('For Review', 'warning'))
+        scholarship_details.append({
+            'app': a, 'program': program, 'batch': batch, 'period': period,
+            'standing_label': standing_label, 'standing_color': standing_color,
+            'compliance_label': compliance_label, 'compliance_color': compliance_color,
+        })
 
-    # Renewal guidance: what the office expects this semester
+    # Overall standing — worst status across all scholarships
+    worst_color = 'success'
+    worst_label = 'Good Standing'
+    color_rank = {'danger': 0, 'warning': 1, 'success': 2, 'secondary': 3}
+    for sd in scholarship_details:
+        rc = color_rank.get(sd['standing_color'], 3)
+        wc = color_rank.get(worst_color, 3)
+        if rc < wc:
+            worst_color = sd['standing_color']
+            worst_label = sd['standing_label']
+
+    # Renewal guidance (user-level, shared across scholarships)
     from app.models.academic_period import AcademicPeriod
     current_period = AcademicPeriod.get_current()
-    grades_semester = user.grades_semester  # last semester the office has grades for
+    grades_semester = user.grades_semester
 
     gwa_val = float(user.gwa) if user.gwa is not None else None
     if gwa_val is None:
@@ -213,14 +229,9 @@ def my_scholarship():
 
     return render_template('student/my_scholarship.html',
                            user=user,
-                           app=approved_app,
-                           program=program,
-                           batch=batch,
-                           period=period,
-                           standing_label=standing_label,
-                           standing_color=standing_color,
-                           compliance_label=compliance_label,
-                           compliance_color=compliance_color,
+                           scholarship_details=scholarship_details,
+                           standing_label=worst_label,
+                           standing_color=worst_color,
                            gwa_val=gwa_val,
                            gwa_hint=gwa_hint,
                            gwa_color=gwa_color,

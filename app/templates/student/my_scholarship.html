@@ -14,8 +14,8 @@
 
   <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
     <div>
-      <h1 class="h3 fw-bold mb-1">My Scholarship</h1>
-      <p class="text-muted small mb-0">Your approved scholarship program and current standing</p>
+      <h1 class="h3 fw-bold mb-1">My Scholarship{% if scholarship_details|length > 1 %}s{% endif %}</h1>
+      <p class="text-muted small mb-0">Your approved scholarship program{{ 's' if scholarship_details|length > 1 else '' }} and current standing</p>
     </div>
     <span class="badge fs-6 py-2 px-3 bg-{{ standing_color }}">
       <i class="bi bi-patch-check-fill me-1"></i>{{ standing_label }}
@@ -24,8 +24,15 @@
 
   <div class="row g-4">
 
-    <!-- ── Program details ─────────────────────────────────────────────── -->
+    <!-- ── Scholarship cards (stacked) ─────────────────────────────── -->
     <div class="col-lg-7">
+      {% for sd in scholarship_details %}
+      {% set app = sd.app %}
+      {% set program = sd.program %}
+      {% set batch = sd.batch %}
+      {% set period = sd.period %}
+
+      <!-- Program card -->
       <div class="card border-0 shadow-sm mb-4" style="border-radius:14px;border-left:5px solid var(--sh-success,#198754);">
         <div class="card-body p-4">
           <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
@@ -37,6 +44,7 @@
           <p class="text-muted small mb-3">
             <i class="bi bi-building me-1"></i>
             {% if program.funding_type == 'public' %}Public (government-funded){% else %}Private scholarship program{% endif %}
+            <span class="badge bg-{{ sd.standing_color }} ms-2">{{ sd.standing_label }}</span>
           </p>
 
           {% if program.description %}
@@ -47,11 +55,6 @@
           {% if program.benefits %}
           <h6 class="fw-bold small text-uppercase text-muted">What You Receive</h6>
           <p class="mb-3">{{ program.benefits }}</p>
-          {% endif %}
-
-          {% if program.eligibility_criteria %}
-          <h6 class="fw-bold small text-uppercase text-muted">Eligibility (why you qualified)</h6>
-          <p class="mb-3">{{ program.eligibility_criteria }}</p>
           {% endif %}
 
           <div class="row g-3 mt-2">
@@ -87,11 +90,12 @@
           </div>
         </div>
       </div>
+      {% endfor %}
 
-      <!-- ── Keeping this scholarship ───────────────────────────────────── -->
+      <!-- ── Keeping this scholarship ───────────────────────────────── -->
       <div class="card border-0 shadow-sm" style="border-radius:14px;">
         <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
-          <h5 class="fw-bold mb-2"><i class="bi bi-shield-check me-2 text-success"></i>Keeping This Scholarship</h5>
+          <h5 class="fw-bold mb-2"><i class="bi bi-shield-check me-2 text-success"></i>Keeping Your Scholarship{{ 's' if scholarship_details|length > 1 else '' }}</h5>
           <p class="text-muted small">What the Scholarship Office expects from you every semester.</p>
         </div>
         <div class="card-body px-4 pb-4 pt-2">
@@ -143,7 +147,9 @@
           <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
             <span class="small text-muted">
               Compliance standing:
-              <span class="badge bg-{{ compliance_color }}">{{ compliance_label }}</span>
+              {% for sd in scholarship_details %}
+              <span class="badge bg-{{ sd.compliance_color }} me-1">{{ sd.app.scholarship.title }}: {{ sd.compliance_label }}</span>
+              {% endfor %}
             </span>
             <a href="{{ url_for('student.upload_gwa') }}" class="btn btn-success btn-sm">
               <i class="bi bi-upload me-1"></i>Upload Latest Grades
@@ -153,7 +159,7 @@
       </div>
     </div>
 
-    <!-- ── Side column ─────────────────────────────────────────────────── -->
+    <!-- ── Side column ─────────────────────────────────────────────── -->
     <div class="col-lg-5">
       <div class="card border-0 shadow-sm mb-4" style="border-radius:14px;">
         <div class="card-body p-4">
@@ -161,10 +167,6 @@
           <div class="d-flex justify-content-between align-items-center mb-2">
             <span class="small text-muted">Scholar status</span>
             <span class="badge bg-{{ standing_color }}">{{ standing_label }}</span>
-          </div>
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <span class="small text-muted">Compliance</span>
-            <span class="badge bg-{{ compliance_color }}">{{ compliance_label }}</span>
           </div>
           <div class="d-flex justify-content-between align-items-center mb-2">
             <span class="small text-muted">Current GWA</span>
@@ -183,14 +185,26 @@
             {{ gwa_hint }}
           </div>
           {% endif %}
+
+          <!-- Per-scholarship compliance breakdown -->
+          {% if scholarship_details|length > 1 %}
+          <hr class="my-3">
+          <h6 class="fw-bold small text-muted mb-2">Compliance by Program</h6>
+          {% for sd in scholarship_details %}
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="small">{{ sd.program.title }}</span>
+            <span class="badge bg-{{ sd.compliance_color }}">{{ sd.compliance_label }}</span>
+          </div>
+          {% endfor %}
+          {% endif %}
         </div>
       </div>
 
       <div class="card border-0 shadow-sm" style="border-radius:14px;background:#f8f9fa;">
         <div class="card-body p-4">
-          <h6 class="fw-bold mb-2"><i class="bi bi-patch-question me-2 text-primary"></i>Questions about your grant?</h6>
+          <h6 class="fw-bold mb-2"><i class="bi bi-patch-question me-2 text-primary"></i>Questions about your grant{{ 's' if scholarship_details|length > 1 else '' }}?</h6>
           <p class="small text-muted mb-2">
-            For disbursement schedules, document requests, or concerns about this scholarship,
+            For disbursement schedules, document requests, or concerns about your scholarship{{ 's' if scholarship_details|length > 1 else '' }},
             contact the Scholarship Office:
           </p>
           <p class="small mb-1"><i class="bi bi-envelope me-2 text-primary"></i>lspu.scholarhub@gmail.com</p>
