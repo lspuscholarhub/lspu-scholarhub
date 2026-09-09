@@ -25,6 +25,9 @@ from difflib import SequenceMatcher
 
 logger = logging.getLogger(__name__)
 
+# Cached working Gemini model name (probed once per process, then reused)
+_resolved_ocr_model = None
+
 # ── Constants ─────────────────────────────────────────────────────────────────
 
 NAME_MATCH_THRESHOLD   = 0.80
@@ -355,11 +358,30 @@ def _extract_via_gemini(file_bytes: bytes, file_ext: str, raw_text: str = '') ->
 
         client = genai.Client(api_key=api_key)
 
-        # Use model name from env, with fallback
-        _ocr_model = os.environ.get('GEMINI_MODEL', 'gemini-1.5-flash').strip()
-        # Guard against invalid legacy model names
-        if 'preview' in _ocr_model and _ocr_model not in ('gemini-1.5-pro-preview', 'gemini-1.5-flash-preview'):
-            _ocr_model = 'gemini-1.5-flash'
+        # Use model name from env; if unset/retired, probe known-good candidates.
+        # gemini-1.5-flash was RETIRED by Google (404s) — the old hardcoded default
+        # silently killed the AI fallback. gemini-flash-latest always tracks the
+        # current stable Flash model.
+        global _resolved_ocr_model
+        _ocr_model = os.environ.get('GEMINI_MODEL', '').strip()
+        if not _ocr_model or 'gemini-1.5' in _ocr_model:
+            if _resolved_ocr_model:
+                _ocr_model = _resolved_ocr_model   # cached from a previous call
+            else:
+                _ocr_model = None
+                for candidate in ('gemini-flash-latest', 'gemini-2.5-flash-lite',
+                                  'gemini-2.0-flash'):
+                    try:
+                        test = client.models.generate_content(model=candidate, contents='hi')
+                        if test.text:
+                            _ocr_model = candidate
+                            break
+                    except Exception:
+                        continue
+                if not _ocr_model:
+                    _ocr_model = 'gemini-flash-latest'  # last resort — will raise below
+                _resolved_ocr_model = _ocr_model
+            logger.info(f'Gemini OCR using model: {_ocr_model}')
 
         # Retry logic: if we get a 429 with a short retry delay, wait and try once more
         max_attempts = 2
@@ -539,7 +561,8 @@ def verify_documents(
     - Quota exceeded AND no native data found → BLOCKED (method = 'quota_exceeded')
     - Document belongs to existing account → BLOCKED
     - ID/name mismatch → BLOCKED
-    - Could not extract data from valid PDF → WARNING only (manual review)
+    - Random/forged PDF with no readable student data → BLOCKED (no hard data = no proof)
+    - Readable ID+name but course not found → WARNING only (staff review)
     """
     errors   = []
     warnings = []
@@ -567,8 +590,21 @@ def verify_documents(
     # Hard block: unsupported file type
     if cor_data['method'] == 'rejected_unsupported':
         errors.append(
-            'Your Certificate of Registration (COR) must be a PDF or image file (JPG/PNG). '
-            'Please upload your official COR from the LSPU portal or take a clear photo of it.'
+            'Your Certificate of Registration (COR) must be a PDF file. '
+            'Please upload your official COR PDF from the LSPU portal.'
+        )
+        return {'passed': False, 'errors': errors, 'warnings': warnings,
+                'cor_data': cor_data, 'grades_data': None, 'gwa': None}
+
+    # Hard block: readable PDF but NO student data at all — nothing proves ownership.
+    # This rejects random PDFs (e.g. any document renamed to .pdf) at registration time.
+    # Checked BEFORE the quota/failed blocks so the user gets the accurate reason.
+    if not cor_data['student_id'] and not cor_data['name']:
+        errors.append(
+            'Your Certificate of Registration (COR) could not be verified — '
+            'no Student ID or name was found in the document. '
+            'Please upload the official digital COR PDF from the LSPU portal. '
+            'Photos or printouts saved as PDF cannot be verified.'
         )
         return {'passed': False, 'errors': errors, 'warnings': warnings,
                 'cor_data': cor_data, 'grades_data': None, 'gwa': None}
@@ -622,6 +658,7 @@ def verify_documents(
                 f'Please make sure your Student ID matches your COR exactly.'
             )
     else:
+        # ID missing but name was found — still verifiable via name; warn only.
         warnings.append(
             'Could not locate a Student ID on your COR. '
             'Staff will manually verify this document.'
@@ -673,8 +710,8 @@ def verify_documents(
         # Hard block: unsupported file type
         if grades_data['method'] == 'rejected_unsupported':
             errors.append(
-                'Your Copy of Grades must be a PDF or image file (JPG/PNG). '
-                'Please upload your official grades or take a clear photo of it.'
+                'Your Copy of Grades must be a PDF file. '
+                'Please upload your official grades PDF from the LSPU portal.'
             )
             return {'passed': False, 'errors': errors, 'warnings': warnings,
                     'cor_data': cor_data, 'grades_data': grades_data, 'gwa': None}

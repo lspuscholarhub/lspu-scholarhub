@@ -13,7 +13,7 @@ app = create_app()
 app.config['WTF_CSRF_ENABLED'] = False
 
 SCHOLARSHIP_IDS = [29, 30, 31]   # private, public, public
-STUDENT_ID = 49
+STUDENT_ID = 165  # an existing active student in the live DB
 STAFF_ID = 52
 ADMIN_ID = 1
 

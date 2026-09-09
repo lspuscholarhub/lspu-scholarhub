@@ -2,9 +2,10 @@
 Authentication views for LSPU ScholarHub.
 
 Registration workflow:
-  1. Student fills form → OTP sent to email → session stores pending data
+  1. Student fills form + uploads COR/grades PDFs → contents verified inline
+     (Student ID + name + course must match the form) → OTP sent to email
   2. Student enters OTP on verify page → account created → credentials emailed
-  3. Instant access (no manual admin approval)
+  3. Instant access — but ONLY verified LSPU documents can ever reach this step
 
 Login:
   - Accepts email OR student_id as the identifier
@@ -296,10 +297,6 @@ def register():
         NEEDS_COR    = {'1st Year', '2nd Year', '3rd Year', '4th Year'}
         NEEDS_GRADES = {'2nd Year', '3rd Year', '4th Year'}
 
-        cor_bytes    = None
-        cor_ext      = None
-        grades_bytes = None
-        grades_ext   = None
         cor_cloudinary_id    = None
         grades_cloudinary_id = None
 
@@ -311,15 +308,12 @@ def register():
 
             cor_ext = cor_file.filename.rsplit('.', 1)[-1].lower() if '.' in cor_file.filename else ''
 
-            # Accept PDF and images (JPG/PNG) — images are analyzed via Gemini Vision
-            allowed_exts = {'pdf', 'jpg', 'jpeg', 'png'}
-            if cor_ext not in allowed_exts:
-                flash('Your COR must be a PDF or image file (JPG/PNG). '
-                      'Please upload your official COR or take a clear photo of it.', 'error')
+            # PDF only — images allowed anyone to register with random photos.
+            # Official LSPU portal COR/grades are downloadable as PDF.
+            if cor_ext != 'pdf':
+                flash('Your COR must be a PDF file. Download the official COR PDF '
+                      'from the LSPU student portal and upload it here.', 'error')
                 return render_template('auth/register.html')
-
-            cor_bytes = cor_file.read()
-            cor_file.seek(0)
 
             cor_path, cor_cloudinary_id = _save_registration_file(cor_file, student_id, 'cor')
             if not cor_path:
@@ -334,46 +328,90 @@ def register():
 
             grades_ext = grades_file.filename.rsplit('.', 1)[-1].lower() if '.' in grades_file.filename else ''
 
-            # Accept PDF and images
-            allowed_exts = {'pdf', 'jpg', 'jpeg', 'png'}
-            if grades_ext not in allowed_exts:
-                flash('Your Copy of Grades must be a PDF or image file (JPG/PNG). '
-                      'Please upload your official grades or take a clear photo of it.', 'error')
+            # PDF only — same rule as COR
+            if grades_ext != 'pdf':
+                flash('Your Copy of Grades must be a PDF file. Download the official '
+                      'grades PDF from the LSPU student portal and upload it here.', 'error')
                 return render_template('auth/register.html')
-
-            grades_bytes = grades_file.read()
-            grades_file.seek(0)
 
             grades_path, grades_cloudinary_id = _save_registration_file(grades_file, student_id, 'grades')
             if not grades_path:
                 flash('Grades file could not be uploaded to cloud storage. Please try again.', 'error')
                 return render_template('auth/register.html')
 
-        # ── Document validation — file type check only (no OCR during registration) ──
-        # OCR/AI verification is done by staff when reviewing scholarship applications.
-        # Running Gemini during registration causes timeouts on production servers.
-        # Staff can view uploaded COR/grades from the student profile page.
+        # ── Document verification — INLINE GATE (before account creation) ─────
+        # The uploaded PDF is read and its contents (Student ID, name, course) are
+        # matched against the form. Mismatched or random PDFs are REJECTED here —
+        # they can never create an account. This replaces the old background-OCR
+        # approach that only flagged impostors after the account already existed.
 
-        # ── Quick GWA extraction from grades file (fast, non-blocking) ────────
-        # Only try if grades file was uploaded — uses Gemini but with short timeout
-        auto_gwa = None
-        if grades_bytes and grades_ext:
+        # Read the saved files back for verification (local path OR Cloudinary URL)
+        from app.services.storage_service import get_file_bytes as _get_bytes
+
+        cor_b    = _get_bytes(cor_path, cor_cloudinary_id)
+        grades_b = _get_bytes(grades_path, grades_cloudinary_id)
+
+        verification = None
+        if cor_b:
+            import concurrent.futures
+            from app.services.ocr_service import verify_documents
+
+            def _run_verification():
+                return verify_documents(
+                    form_student_id=student_id,
+                    form_first_name=first_name,
+                    form_last_name=last_name,
+                    form_middle_name=middle_name,
+                    cor_bytes=cor_b,
+                    cor_ext='pdf',
+                    grades_bytes=grades_b,
+                    grades_ext='pdf' if grades_b else None,
+                    form_course=course,
+                )
+
             try:
-                import concurrent.futures
-                from app.services.ocr_service import extract_document_data
-
-                def _extract_gwa():
-                    result = extract_document_data(grades_bytes, grades_ext)
-                    return result.get('gwa')
-
                 with concurrent.futures.ThreadPoolExecutor(max_workers=1) as ex:
-                    future = ex.submit(_extract_gwa)
+                    future = ex.submit(_run_verification)
                     try:
-                        auto_gwa = future.result(timeout=15)
+                        verification = future.result(timeout=60)
                     except concurrent.futures.TimeoutError:
-                        auto_gwa = None  # staff enters manually
+                        verification = None
+            except Exception as verify_err:
+                import logging as _l
+                _l.getLogger(__name__).warning(f'Registration verification error: {verify_err}')
+                verification = None
+
+        # Verification unavailable (timeout/service error) — fail closed:
+        # an unverified document can NOT create an account. Clean up uploads.
+        if verification is None:
+            from app.services.storage_service import delete_file as _delete_file
+            try:
+                if cor_cloudinary_id or (cor_path and os.path.exists(cor_path)):
+                    _delete_file(public_id=cor_cloudinary_id, file_path=None if cor_cloudinary_id else cor_path)
+                if grades_cloudinary_id or (grades_path and os.path.exists(grades_path)):
+                    _delete_file(public_id=grades_cloudinary_id, file_path=None if grades_cloudinary_id else grades_path)
             except Exception:
-                auto_gwa = None
+                pass
+            flash('Document verification is temporarily unavailable. '
+                  'Please try again in a few minutes.', 'error')
+            return render_template('auth/register.html',
+                                   form_data=request.form, ocr_errors=None)
+
+        # ── Verification FAILED — block registration, show exact reasons ──────
+        if not verification.get('passed'):
+            from app.services.storage_service import delete_file as _delete_file
+            try:
+                if cor_cloudinary_id or (cor_path and os.path.exists(cor_path)):
+                    _delete_file(public_id=cor_cloudinary_id, file_path=None if cor_cloudinary_id else cor_path)
+                if grades_cloudinary_id or (grades_path and os.path.exists(grades_path)):
+                    _delete_file(public_id=grades_cloudinary_id, file_path=None if grades_cloudinary_id else grades_path)
+            except Exception:
+                pass
+            return render_template('auth/register.html',
+                                   form_data=request.form,
+                                   ocr_errors=verification.get('errors', []))
+
+        auto_gwa = verification.get('gwa')
 
         # ── Generate and send OTP ─────────────────────────────────────────────
         otp = _generate_otp()
@@ -467,10 +505,12 @@ def verify_otp():
                 student_id=pending['student_id'],
                 course=pending['course'],
                 year_level=pending['year_level'],
-                gwa=pending.get('auto_gwa'),       # auto-populated from OCR
+                gwa=pending.get('auto_gwa'),       # extracted from grades PDF during verification
                 user_type='student',
                 is_active=True,
                 is_verified=True,
+                ocr_verified=True,                 # inline gate already passed at registration
+                ocr_result=None,
                 cor_file_path=pending.get('cor_path'),
                 grades_file_path=pending.get('grades_path'),
                 cor_cloudinary_id=pending.get('cor_cloudinary_id'),
@@ -517,86 +557,9 @@ def verify_otp():
             # Send credentials
             _send_credentials_email(new_user, temp_password)
 
-            # ── Run OCR in background thread after account is created ─────────
-            # This keeps registration instant while still auto-verifying documents.
-            # Results are stored on the user record and visible on the admin/staff profile page.
-            try:
-                import threading
-                from flask import current_app
-
-                def _background_ocr(app, user_id, cor_path, grades_path,
-                                     student_id, first_name, last_name,
-                                     middle_name, course):
-                    """Run OCR after account creation — non-blocking."""
-                    with app.app_context():
-                        try:
-                            import os
-                            from app.models import User as _User
-                            from app import db as _db
-
-                            user_rec = _User.query.get(user_id)
-                            if not user_rec:
-                                return
-
-                            # Read file bytes from saved paths
-                            def _read(path):
-                                if path and os.path.exists(path):
-                                    with open(path, 'rb') as f:
-                                        return f.read()
-                                return None
-
-                            cor_b    = _read(cor_path)
-                            grades_b = _read(grades_path)
-
-                            if not cor_b:
-                                return
-
-                            cor_ext_bg    = cor_path.rsplit('.', 1)[-1].lower() if cor_path and '.' in cor_path else ''
-                            grades_ext_bg = grades_path.rsplit('.', 1)[-1].lower() if grades_path and '.' in grades_path else ''
-
-                            from app.services.ocr_service import verify_documents
-                            result = verify_documents(
-                                form_student_id=student_id,
-                                form_first_name=first_name,
-                                form_last_name=last_name,
-                                form_middle_name=middle_name,
-                                cor_bytes=cor_b,
-                                cor_ext=cor_ext_bg,
-                                grades_bytes=grades_b,
-                                grades_ext=grades_ext_bg,
-                                form_course=course,
-                            )
-
-                            # Store OCR result on user record
-                            user_rec.ocr_verified  = result.get('passed', False)
-                            user_rec.ocr_result    = str(result.get('errors', []))
-                            if result.get('gwa') and not user_rec.gwa:
-                                user_rec.gwa = result['gwa']
-                            _db.session.commit()
-
-                        except Exception as ocr_err:
-                            import logging as _l
-                            _l.getLogger(__name__).warning(f'Background OCR failed: {ocr_err}')
-
-                t = threading.Thread(
-                    target=_background_ocr,
-                    args=(
-                        current_app._get_current_object(),
-                        new_user.id,
-                        pending.get('cor_path'),
-                        pending.get('grades_path'),
-                        pending['student_id'],
-                        pending['first_name'],
-                        pending['last_name'],
-                        pending.get('middle_name'),
-                        pending['course'],
-                    ),
-                    daemon=True,
-                )
-                t.start()
-            except Exception as bg_err:
-                import logging as _log
-                _log.getLogger(__name__).warning(f'Could not start background OCR: {bg_err}')
+            # NOTE: Document verification already ran INLINE during registration
+            # (before the OTP was even sent) — mismatched/random PDFs were rejected
+            # there. Nothing left to check in the background.
 
             # Audit log — registration
             try:

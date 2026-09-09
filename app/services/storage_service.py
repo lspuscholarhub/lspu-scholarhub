@@ -100,6 +100,36 @@ def get_signed_url(public_id: str, resource_type: str = 'raw',
     except Exception as e:
         logger.error(f'Signed URL generation failed: {e}')
         return None
+
+
+def get_file_bytes(file_path: str = None, public_id: str = None,
+                   resource_type: str = 'raw') -> bytes | None:
+    """
+    Read file bytes from local storage or Cloudinary.
+
+    Accepts either a local file path OR a Cloudinary URL/path + public_id.
+    Used by registration to feed uploaded documents into inline verification.
+    """
+    # Local file first (dev environment / local-fallback uploads)
+    if file_path and not str(file_path).startswith(('http://', 'https://')):
+        if os.path.exists(file_path):
+            with open(file_path, 'rb') as f:
+                return f.read()
+        return None
+    # Cloudinary (production): need public_id to fetch
+    if public_id and _cloudinary_configured():
+        return _fetch_from_cloudinary(public_id, resource_type)
+    # Last resort: direct download of the URL (works for public/uploaded raw assets)
+    if file_path and str(file_path).startswith(('http://', 'https://')):
+        try:
+            import urllib.request
+            req = urllib.request.Request(file_path, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=20) as resp:
+                return resp.read()
+        except Exception as e:
+            logger.error(f'URL fetch failed: {e}')
+            return None
+    return None
     """
     Fetch raw bytes of a stored file.
     Used for OCR processing that needs the file content.

@@ -46,14 +46,23 @@ with app.test_client() as c:
     post_check('guest', '/chatbot/chat', {'message': 'hello'})
 
     # ── Student flows ─────────────────────────────────────────────────────────
-    login(49, 'student', '0123-1590')
+    # Look up LIVE ids — the old hardcoded scholarship 30 / student 49 no longer exist
+    with app.app_context():
+        from app.models import Scholarship, User
+        _s = Scholarship.query.filter_by(status='active').first() or Scholarship.query.first()
+        _u = User.query.filter_by(user_type='student', is_active=True).first()
+        assert _s and _u, 'live DB needs at least one scholarship and one student'
+        LIVE_SCHOLARSHIP_ID = _s.id
+        LIVE_STUDENT_ID = _u.id
+
+    login(LIVE_STUDENT_ID, 'student', 'student')
     # apply without agreeing to terms → validation flash, no DB write
-    post_check('student', '/scholarship/30/apply', {'first_name': 'x'})
+    post_check('student', f'/scholarship/{LIVE_SCHOLARSHIP_ID}/apply', {'first_name': 'x'})
     # edit application (create a synthetic pending app first)
     with app.app_context():
         from app.models import ScholarshipApplication, User
         from app.models.scholarship import ApplicationStatus
-        a = ScholarshipApplication(scholarship_id=30, applicant_id=49,
+        a = ScholarshipApplication(scholarship_id=LIVE_SCHOLARSHIP_ID, applicant_id=LIVE_STUDENT_ID,
                                    application_data={'first_name': 'Orig'},
                                    documents=[], status=ApplicationStatus.PENDING,
                                    submitted_at=datetime.utcnow())
