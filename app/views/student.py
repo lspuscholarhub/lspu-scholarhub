@@ -551,6 +551,15 @@ def upload_gwa():
             flash(f'Please upload a PDF or image file (JPG/PNG) for {label}.', 'error')
             return redirect(url_for('student.upload_gwa'))
 
+        # Server-side 5MB limit (matches what the page promises)
+        file.seek(0, os.SEEK_END)
+        file_size = file.tell()
+        file.seek(0)
+        if file_size > 5 * 1024 * 1024:
+            flash(f'Your file is {file_size / (1024*1024):.1f}MB — the maximum size is 5MB. '
+                  f'Please upload a smaller file.', 'error')
+            return redirect(url_for('student.upload_gwa'))
+
         file_bytes = file.read()
         file.seek(0)
 
@@ -601,7 +610,7 @@ def upload_gwa():
         # Run OCR to extract GWA
         try:
             from app.services.ocr_service import extract_document_data, _normalise_id
-            result = extract_document_data(file_bytes, 'pdf')
+            result = extract_document_data(file_bytes, ext)
 
             extracted_gwa = result.get('gwa')
             doc_student_id = result.get('student_id')

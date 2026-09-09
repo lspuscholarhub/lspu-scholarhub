@@ -1470,6 +1470,13 @@ def upload_student_document(uid):
         flash(f'File type .{ext} not allowed. Use PDF, JPG, PNG, DOC, or DOCX.', 'error')
         return redirect(url_for('admin.student_profile', uid=uid))
 
+    # Server-side 5MB limit (matches what the form promises)
+    file.seek(0, os.SEEK_END)
+    if file.tell() > 5 * 1024 * 1024:
+        flash('File is larger than 5MB. Please upload a smaller file.', 'error')
+        return redirect(url_for('admin.student_profile', uid=uid))
+    file.seek(0)
+
     # Read file bytes
     file_bytes = file.read()
     file_size  = len(file_bytes)

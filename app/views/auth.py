@@ -333,6 +333,15 @@ def register():
                       'from the LSPU student portal and upload it here.', 'error')
                 return render_template('auth/register.html')
 
+            # Server-side 5MB limit (matches what the form promises)
+            cor_file.seek(0, os.SEEK_END)
+            cor_size = cor_file.tell()
+            cor_file.seek(0)
+            if cor_size > 5 * 1024 * 1024:
+                flash(f'Your COR is {cor_size / (1024*1024):.1f}MB — the maximum size is 5MB. '
+                      f'Please upload a smaller PDF.', 'error')
+                return render_template('auth/register.html')
+
             cor_path, cor_cloudinary_id = _save_registration_file(cor_file, student_id, 'cor')
             if not cor_path:
                 flash('COR file could not be uploaded to cloud storage. Please try again.', 'error')
@@ -350,6 +359,15 @@ def register():
             if grades_ext != 'pdf':
                 flash('Your Copy of Grades must be a PDF file. Download the official '
                       'grades PDF from the LSPU student portal and upload it here.', 'error')
+                return render_template('auth/register.html')
+
+            # Server-side 5MB limit (matches what the form promises)
+            grades_file.seek(0, os.SEEK_END)
+            grades_size = grades_file.tell()
+            grades_file.seek(0)
+            if grades_size > 5 * 1024 * 1024:
+                flash(f'Your Copy of Grades is {grades_size / (1024*1024):.1f}MB — the maximum '
+                      f'size is 5MB. Please upload a smaller PDF.', 'error')
                 return render_template('auth/register.html')
 
             grades_path, grades_cloudinary_id = _save_registration_file(grades_file, student_id, 'grades')

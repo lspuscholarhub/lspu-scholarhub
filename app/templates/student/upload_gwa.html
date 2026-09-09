@@ -262,10 +262,20 @@
     // Click label opens picker (label[for] already does this, but keep explicit)
     area.addEventListener('click', function () { input.click(); });
 
-    // Show selected file + reveal submit button
+    // Show selected file + reveal submit button (validate size first)
     input.addEventListener('change', function () {
       if (input.files.length) {
-        selected.querySelector('.file-name').textContent = input.files[0].name;
+        var f = input.files[0];
+        if (f.size > 5 * 1024 * 1024) {
+          var mb = (f.size / (1024 * 1024)).toFixed(1);
+          alert('"' + f.name + '" is ' + mb + 'MB — the maximum size is 5MB. Please choose a smaller file.');
+          input.value = '';
+          selected.classList.add('d-none');
+          submit.classList.add('d-none');
+          submit.classList.remove('d-block');
+          return;
+        }
+        selected.querySelector('.file-name').textContent = f.name;
         selected.classList.remove('d-none');
         submit.classList.remove('d-none');
         submit.classList.add('d-block');

@@ -26,17 +26,19 @@ class DocumentService:
             'certificate':      ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
             'registration':     ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
             'grades':           ['pdf', 'jpg', 'jpeg', 'png'],
+            'cor':              ['pdf', 'jpg', 'jpeg', 'png'],
             'general':          ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'],
         }
         
         # Maximum file sizes (in bytes)
+        # NOTE: uniform 5MB — every upload UI in the system promises "max 5MB"
         self.MAX_FILE_SIZES = {
             'pdf': 5 * 1024 * 1024,  # 5MB
             'doc': 5 * 1024 * 1024,  # 5MB
             'docx': 5 * 1024 * 1024, # 5MB
-            'jpg': 2 * 1024 * 1024,  # 2MB
-            'jpeg': 2 * 1024 * 1024, # 2MB
-            'png': 2 * 1024 * 1024   # 2MB
+            'jpg': 5 * 1024 * 1024,  # 5MB
+            'jpeg': 5 * 1024 * 1024, # 5MB
+            'png': 5 * 1024 * 1024,  # 5MB
         }
     
     def allowed_file(self, filename, category):
@@ -64,6 +66,9 @@ class DocumentService:
             max_size = self.MAX_FILE_SIZES[ext]
             if file_size > max_size:
                 return False, f"File size too large. Maximum size is {max_size // (1024*1024)}MB"
+        elif file_size > 5 * 1024 * 1024:
+            # Unknown extension — still enforce the global 5MB cap
+            return False, "File size too large. Maximum size is 5MB"
         
         return True, "File size valid"
     
