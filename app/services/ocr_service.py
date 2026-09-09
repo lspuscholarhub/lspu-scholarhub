@@ -317,12 +317,16 @@ def _parse_text(text: str, doc_type: str = 'auto') -> dict:
             except ValueError:
                 pass
 
-    # Year Level — found on CORs (e.g. "Year Level : 2" or "Year Level 3")
-    year_patterns = [
-        r'Year\s+Level\s*[:\-]?\s*(\d)',
-        r'Year\s*[:\-]\s*(\d)',
-    ]
+    # Year Level — found on CORs (e.g. "Year Level : 2", "Year Level 3",
+    # "Course: BSIT   Year Level: 4", or "2nd Year" / "4th Year")
     year_map = {'1': '1st Year', '2': '2nd Year', '3': '3rd Year', '4': '4th Year'}
+    year_patterns = [
+        r'Year\s+Level\s*[:\-]?\s*(\d)',          # Year Level : 2
+        r'Year\s*[:\-]\s*(\d)',                    # Year: 2
+        r'Yr\.?\s*Level\s*[:\-]?\s*(\d)',         # Yr Level: 2
+        r'Grade\s+Year\s*[:\-]?\s*(\d)',           # Grade Year: 2
+        r'\b(\d)(?:st|nd|rd|th)\s+Year\b',         # 2nd Year, 4th Year
+    ]
     for pat in year_patterns:
         m = re.search(pat, text, re.IGNORECASE)
         if m:

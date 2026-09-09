@@ -452,8 +452,8 @@ def register():
         # ── Year level validation against COR ──────────────────────────────────
         cor_data = verification.get('cor_data') or {}
         detected_year = cor_data.get('year_level')
-        if detected_year and detected_year != year_level:
-            from app.services.storage_service import delete_file as _delete_file
+        from app.services.storage_service import delete_file as _delete_file
+        def _cleanup_cor_and_grades():
             try:
                 if cor_cloudinary_id or (cor_path and os.path.exists(cor_path)):
                     _delete_file(public_id=cor_cloudinary_id, file_path=None if cor_cloudinary_id else cor_path)
@@ -461,6 +461,14 @@ def register():
                     _delete_file(public_id=grades_cloudinary_id, file_path=None if grades_cloudinary_id else grades_path)
             except Exception:
                 pass
+        if not detected_year:
+            _cleanup_cor_and_grades()
+            flash('Could not detect the year level from your COR. '
+                  'Please make sure your COR PDF is clear and legible, then try again.', 'error')
+            return render_template('auth/register.html',
+                                   form_data=request.form, ocr_errors=None)
+        if detected_year != year_level:
+            _cleanup_cor_and_grades()
             flash(f'Your COR shows {detected_year} but you selected {year_level}. '
                   f'Please select the correct year level to continue.', 'error')
             return render_template('auth/register.html',
