@@ -92,7 +92,7 @@
             </div>
           </div>
         </div>        <!-- Status timeline -->
-        {% if sv in ('approved','rejected') %}
+        {% if sv not in ('withdrawn',) %}
         <div class="mt-3 pt-3 border-top">
           <div class="d-flex align-items-center justify-content-center gap-0">
             {% set steps = [
