@@ -88,8 +88,8 @@
     <div class="card-body">
       <form method="GET" class="auto-filter row g-2 align-items-end">
         <div class="col-md-3">
-          <label class="form-label small fw-semibold">Scholar Status</label>
-          <select name="scholar_status" class="form-select">
+          <label class="form-label small fw-semibold" for="mon-status">Scholar Status</label>
+          <select id="mon-status" name="scholar_status" class="form-select">
             <option value="">All Statuses</option>
             {% for val, label in [('active','Good Standing'),('at_risk','At Risk'),('probation','Probation'),('termination_warning','Termination Warning')] %}
             <option value="{{ val }}" {% if status_filter==val %}selected{% endif %}>{{ label }}</option>
@@ -97,21 +97,11 @@
           </select>
         </div>
         <div class="col-md-3">
-        <div class="col-md-2">
-          <label class="form-label small fw-semibold">Course / Program</label>
-          <select name="course" class="form-select">
+          <label class="form-label small fw-semibold" for="mon-course">Course / Program</label>
+          <select id="mon-course" name="course" class="form-select">
             <option value="">All Courses</option>
             {% for c in courses %}
             <option value="{{ c }}" {% if course_filter==c %}selected{% endif %}>{{ c }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-3">
-          <label class="form-label small fw-semibold">Scholar Status</label>
-          <select name="scholar_status" class="form-select">
-            <option value="">All Statuses</option>
-            {% for val, label in [('active','Good Standing'),('at_risk','At Risk'),('probation','Probation'),('termination_warning','Termination Warning')] %}
-            <option value="{{ val }}" {% if status_filter==val %}selected{% endif %}>{{ label }}</option>
             {% endfor %}
           </select>
         </div>

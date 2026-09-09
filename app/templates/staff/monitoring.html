@@ -98,15 +98,6 @@
             {% endfor %}
           </select>
         </div>
-        <div class="col-md-3">
-          <label class="form-label small fw-semibold" for="mon-status">Scholar Status</label>
-          <select id="mon-status" name="scholar_status" class="form-select">
-            <option value="">All Statuses</option>
-            {% for val, label in [('active','Good Standing'),('at_risk','At Risk'),('probation','Probation'),('termination_warning','Termination Warning')] %}
-            <option value="{{ val }}" {% if status_filter==val %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
         <div class="col-md-3 d-flex justify-content-end">
           <a href="{{ url_for('staff.monitoring') }}" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-x-circle me-1"></i>Reset
