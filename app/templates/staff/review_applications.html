@@ -186,7 +186,7 @@
             <p><strong>Student ID:</strong> {{ app.application_data.student_id or '—' }}</p>
             <p><strong>Course:</strong> {{ app.application_data.course or '—' }}</p>
             <p><strong>Year:</strong> {{ app.application_data.year_level or '—' }}</p>
-            <p><strong>GWA:</strong> {{ app.application_data.gpa or '—' }}</p>
+            <p><strong>GWA:</strong> {{ app.application_data.gwa or app.applicant.gwa or '—' }}</p>
             {% endif %}
           </div>
           <div class="col-md-6">

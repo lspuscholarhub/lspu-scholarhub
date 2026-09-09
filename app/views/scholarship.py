@@ -40,15 +40,18 @@ def list_scholarships():
     else:
         scholarships = [s for s in all_scholarships if s.is_visible_to(student_id)]
 
-    # Collect IDs the student already applied to (non-withdrawn)
+    # Collect the student's application states per scholarship
     applied_ids = set()
     withdrawn_ids = set()
+    rejected_ids = set()
     holds_public = False
     active_scholarship_title = None
     if session.get('user_type') == 'student':
         for a in ScholarshipApplication.query.filter_by(applicant_id=session['user_id']).all():
             if a.status == ApplicationStatus.WITHDRAWN:
                 withdrawn_ids.add(a.scholarship_id)
+            elif a.status == ApplicationStatus.REJECTED:
+                rejected_ids.add(a.scholarship_id)
             else:
                 applied_ids.add(a.scholarship_id)
 
@@ -64,6 +67,7 @@ def list_scholarships():
         scholarships=scholarships,
         applied_ids=applied_ids,
         withdrawn_ids=withdrawn_ids,
+        rejected_ids=rejected_ids,
         holds_public=holds_public,
         active_scholarship_title=active_scholarship_title,
         q=q,
@@ -108,6 +112,7 @@ def view_scholarship(scholarship_id):
 
     already_applied = False
     can_reapply     = False
+    reapply_reason  = None
     holds_public = False
     active_scholarship_title = None
     if session.get('user_type') == 'student':
@@ -116,8 +121,9 @@ def view_scholarship(scholarship_id):
             applicant_id=session['user_id'],
         ).first()
         if existing:
-            if existing.status == ApplicationStatus.WITHDRAWN:
-                can_reapply = True      # withdrawn → allowed to re-apply
+            if existing.status in (ApplicationStatus.WITHDRAWN, ApplicationStatus.REJECTED):
+                can_reapply = True      # withdrawn or rejected → allowed to re-apply
+                reapply_reason = 'withdrawn' if existing.status == ApplicationStatus.WITHDRAWN else 'rejected'
             else:
                 already_applied = True  # active application exists
 
@@ -138,6 +144,7 @@ def view_scholarship(scholarship_id):
         scholarship=scholarship,
         already_applied=already_applied,
         can_reapply=can_reapply,
+        reapply_reason=reapply_reason,
         holds_public=holds_public,
         active_scholarship_title=active_scholarship_title,
         days_left=days_left,
@@ -177,13 +184,18 @@ def apply_scholarship(scholarship_id):
                   'private scholarship programs.', 'warning')
             return redirect(url_for('student.my_applications'))
 
-    # Guard: no duplicate active applications (withdrawn = allowed to re-apply)
+    # Guard: no duplicate ACTIVE application for this scholarship.
+    # Withdrawn or rejected applications free the student to apply again.
     existing = ScholarshipApplication.query.filter_by(
         scholarship_id=scholarship_id,
         applicant_id=user.id,
+    ).filter(
+        ScholarshipApplication.status.in_(
+            [ApplicationStatus.PENDING, ApplicationStatus.UNDER_REVIEW,
+             ApplicationStatus.APPROVED])
     ).first()
-    if existing and existing.status != ApplicationStatus.WITHDRAWN:
-        flash('You have already applied for this scholarship.', 'warning')
+    if existing:
+        flash('You have an active application for this scholarship.', 'warning')
         return redirect(url_for('student.my_applications'))
 
     # Guard: visibility — student must be in the allowed list if scholarship is hidden

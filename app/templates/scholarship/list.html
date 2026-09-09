@@ -61,17 +61,17 @@
             <a href="{{ url_for('scholarship.view_scholarship', scholarship_id=s.id) }}"
                class="btn btn-outline-primary btn-sm">View Details</a>
             {% if session.get('user_type') == 'student' %}
-              {% if s.funding_type == 'public' and holds_public %}
-                <span class="badge bg-secondary" title="You already hold the public scholarship '{{ active_scholarship_title }}' — only one public scholarship is allowed">
+              {% if s.id in applied_ids %}
+                <span class="badge bg-info">Already Applied</span>
+              {% elif s.funding_type == 'public' and holds_public %}
+                <span class="badge bg-secondary" title="You already have the public scholarship '{{ active_scholarship_title }}' — only one public scholarship is allowed">
                   <i class="bi bi-lock-fill me-1"></i>Public Limit Reached
                 </span>
-              {% elif s.id in applied_ids %}
-                <span class="badge bg-info">Already Applied</span>
-              {% elif s.id in withdrawn_ids %}
+              {% elif s.id in withdrawn_ids or s.id in rejected_ids %}
                 {% if s.is_application_open() %}
                   <a href="{{ url_for('scholarship.apply_scholarship', scholarship_id=s.id) }}"
                      class="btn btn-warning btn-sm">
-                    <i class="bi bi-arrow-repeat me-1"></i>Re-apply
+                    <i class="bi bi-arrow-repeat me-1"></i>{{ 'Re-apply' if s.id in withdrawn_ids else 'Apply Again' }}
                   </a>
                 {% else %}
                   <span class="badge bg-secondary">Closed</span>

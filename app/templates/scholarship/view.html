@@ -129,29 +129,33 @@
             </a>
             <div>
               {% if session.get('user_type') == 'student' %}
-                {% if scholarship.funding_type == 'public' and holds_public %}
+                {% if already_applied %}
+                  <span class="btn btn-secondary disabled">Already Applied</span>
+                {% elif scholarship.funding_type == 'public' and holds_public %}
                   <span class="btn btn-secondary disabled">
                     <i class="bi bi-lock-fill me-1"></i>Public Limit Reached
                   </span>
                   <div class="mt-2">
                     <small class="text-muted">
                       <i class="bi bi-info-circle me-1"></i>
-                      You already hold the public scholarship "{{ active_scholarship_title }}".
+                      You already have the public scholarship "{{ active_scholarship_title }}".
                       Only one public scholarship is allowed — private programs remain open to you.
                     </small>
                   </div>
-                {% elif already_applied %}
-                  <span class="btn btn-secondary disabled">Already Applied</span>
                 {% elif can_reapply %}
                   {% if scholarship.is_application_open() %}
                     <a href="{{ url_for('scholarship.apply_scholarship', scholarship_id=scholarship.id) }}"
                        class="btn btn-warning btn-lg">
-                      <i class="bi bi-arrow-repeat me-1"></i>Re-apply
+                      <i class="bi bi-arrow-repeat me-1"></i>{{ 'Re-apply' if reapply_reason == 'withdrawn' else 'Apply Again' }}
                     </a>
                     <div class="mt-2">
                       <small class="text-muted">
                         <i class="bi bi-info-circle me-1"></i>
-                        You previously withdrew your application. You may re-apply.
+                        {% if reapply_reason == 'withdrawn' %}
+                          You previously withdrew your application. You may re-apply.
+                        {% else %}
+                          Your previous application was not approved. You may submit a new one.
+                        {% endif %}
                       </small>
                     </div>
                   {% else %}
