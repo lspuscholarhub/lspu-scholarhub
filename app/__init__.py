@@ -212,13 +212,22 @@ def create_app(config_name=None):
 
         # Real unread notification count for the navbar bell badge
         unread = 0
-        if _session.get('user_id'):
+        has_approved_scholarship = False
+        if _session.get('user_id') and _session.get('user_type') == 'student':
             try:
                 from app.models.notification import Notification
                 unread = Notification.query.filter_by(
                     user_id=_session['user_id'], is_read=False).count()
             except Exception:
                 unread = 0
+            try:
+                from app.models import ScholarshipApplication
+                from app.models.scholarship import ApplicationStatus as _AS
+                has_approved_scholarship = ScholarshipApplication.query.filter_by(
+                    applicant_id=_session['user_id'],
+                    status=_AS.APPROVED).limit(1).count() > 0
+            except Exception:
+                has_approved_scholarship = False
 
         return {
             'now': _dt.utcnow(),
@@ -229,6 +238,7 @@ def create_app(config_name=None):
             'get_gwa_badge_class': get_gwa_badge_class,
             'GWA_THRESHOLD': GWA_THRESHOLD,
             'unread_count': unread,
+            'has_approved_scholarship': has_approved_scholarship,
         }
 
     return app

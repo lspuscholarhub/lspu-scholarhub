@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% block title %}My Scholarship - Student{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+
+  <!-- Breadcrumb -->
+  <nav aria-label="breadcrumb">
+    <ol class="breadcrumb mb-3">
+      <li class="breadcrumb-item"><a href="{{ url_for('student.dashboard') }}">Dashboard</a></li>
+      <li class="breadcrumb-item active" aria-current="page">My Scholarship</li>
+    </ol>
+  </nav>
+
+  <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
+    <div>
+      <h1 class="h3 fw-bold mb-1">My Scholarship</h1>
+      <p class="text-muted small mb-0">Your approved scholarship program and current standing</p>
+    </div>
+    <span class="badge fs-6 py-2 px-3 bg-{{ standing_color }}">
+      <i class="bi bi-patch-check-fill me-1"></i>{{ standing_label }}
+    </span>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- ── Program details ─────────────────────────────────────────────── -->
+    <div class="col-lg-7">
+      <div class="card border-0 shadow-sm mb-4" style="border-radius:14px;border-left:5px solid var(--sh-success,#198754);">
+        <div class="card-body p-4">
+          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+            <h2 class="h4 fw-bold mb-0">{{ program.title }}</h2>
+            <span class="fw-bold text-success fs-5">
+              ₱{{ '%.2f'|format(app.amount_received or program.award_amount or 0) }}
+            </span>
+          </div>
+          <p class="text-muted small mb-3">
+            <i class="bi bi-building me-1"></i>
+            {% if program.funding_type == 'public' %}Public (government-funded){% else %}Private scholarship program{% endif %}
+          </p>
+
+          {% if program.description %}
+          <h6 class="fw-bold small text-uppercase text-muted">About the Program</h6>
+          <p class="mb-3">{{ program.description }}</p>
+          {% endif %}
+
+          {% if program.benefits %}
+          <h6 class="fw-bold small text-uppercase text-muted">What You Receive</h6>
+          <p class="mb-3">{{ program.benefits }}</p>
+          {% endif %}
+
+          {% if program.eligibility_criteria %}
+          <h6 class="fw-bold small text-uppercase text-muted">Eligibility (why you qualified)</h6>
+          <p class="mb-3">{{ program.eligibility_criteria }}</p>
+          {% endif %}
+
+          <div class="row g-3 mt-2">
+            <div class="col-sm-6">
+              <div class="border rounded-3 p-3 h-100" style="background:#f8f9fa;">
+                <div class="text-muted" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;">Approved On</div>
+                <div class="fw-semibold">{{ app.approved_at.strftime('%B %d, %Y') if app.approved_at else '—' }}</div>
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="border rounded-3 p-3 h-100" style="background:#f8f9fa;">
+                <div class="text-muted" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;">Amount Received</div>
+                <div class="fw-semibold">
+                  {% if app.amount_received %}₱{{ '%.2f'|format(app.amount_received) }}
+                  {% else %}Not yet recorded{% endif %}
+                </div>
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="border rounded-3 p-3 h-100" style="background:#f8f9fa;">
+                <div class="text-muted" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;">Batch</div>
+                <div class="fw-semibold">
+                  {% if batch %}{{ batch.batch_name }}{% else %}Not yet assigned{% endif %}
+                </div>
+              </div>
+            </div>
+            <div class="col-sm-6">
+              <div class="border rounded-3 p-3 h-100" style="background:#f8f9fa;">
+                <div class="text-muted" style="font-size:.72rem;text-transform:uppercase;letter-spacing:.05em;">Semester</div>
+                <div class="fw-semibold">{{ period.display_name if period else '—' }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Keeping this scholarship ───────────────────────────────────── -->
+      <div class="card border-0 shadow-sm" style="border-radius:14px;">
+        <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
+          <h5 class="fw-bold mb-2"><i class="bi bi-shield-check me-2 text-success"></i>Keeping This Scholarship</h5>
+          <p class="text-muted small">What the Scholarship Office expects from you every semester.</p>
+        </div>
+        <div class="card-body px-4 pb-4 pt-2">
+          <div class="d-flex gap-3 mb-3">
+            <i class="bi bi-1-circle-fill text-primary flex-shrink-0" style="font-size:1.2rem;"></i>
+            <div>
+              <strong>Maintain your grades.</strong> Keep your GWA at <strong>2.00 or better</strong>
+              (3.00 is the absolute limit). Your current GWA is
+              {% if gwa_val is not none %}
+                <span class="badge bg-{{ gwa_color }}">{{ '%.2f'|format(gwa_val) }}</span> — {{ gwa_hint }}
+              {% else %}
+                <span class="badge bg-warning text-dark">Not set</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="d-flex gap-3 mb-3">
+            <i class="bi bi-2-circle-fill text-primary flex-shrink-0" style="font-size:1.2rem;"></i>
+            <div>
+              <strong>Submit your grades every semester.</strong>
+              {% if grades_semester %}
+                The office has your grades for <strong>{{ grades_semester }}</strong>.
+              {% else %}
+                The office has no grades on file for you yet.
+              {% endif %}
+              {% if current_period %}
+                Upload your latest Copy of Grades for
+                <strong>{{ current_period.display_name }}</strong> in
+                <a href="{{ url_for('student.upload_gwa') }}">My Documents</a> as soon as enrollment is done.
+              {% endif %}
+            </div>
+          </div>
+          <div class="d-flex gap-3 mb-3">
+            <i class="bi bi-3-circle-fill text-primary flex-shrink-0" style="font-size:1.2rem;"></i>
+            <div>
+              <strong>Stay enrolled.</strong> Dropping to zero units or withdrawing from the
+              university ends the grant. Update your units in your profile when your load changes.
+            </div>
+          </div>
+          <div class="d-flex gap-3">
+            <i class="bi bi-4-circle-fill text-primary flex-shrink-0" style="font-size:1.2rem;"></i>
+            <div>
+              <strong>Watch your notifications.</strong> Renewal reminders and office
+              announcements arrive in your <a href="{{ url_for('student.notifications') }}">Notifications</a> —
+              act on them before the deadline.
+            </div>
+          </div>
+
+          <hr class="my-3">
+          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span class="small text-muted">
+              Compliance standing:
+              <span class="badge bg-{{ compliance_color }}">{{ compliance_label }}</span>
+            </span>
+            <a href="{{ url_for('student.upload_gwa') }}" class="btn btn-success btn-sm">
+              <i class="bi bi-upload me-1"></i>Upload Latest Grades
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Side column ─────────────────────────────────────────────────── -->
+    <div class="col-lg-5">
+      <div class="card border-0 shadow-sm mb-4" style="border-radius:14px;">
+        <div class="card-body p-4">
+          <h6 class="fw-bold mb-3"><i class="bi bi-activity me-2 text-primary"></i>My Standing</h6>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="small text-muted">Scholar status</span>
+            <span class="badge bg-{{ standing_color }}">{{ standing_label }}</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="small text-muted">Compliance</span>
+            <span class="badge bg-{{ compliance_color }}">{{ compliance_label }}</span>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="small text-muted">Current GWA</span>
+            {% if gwa_val is not none %}
+            <span class="badge bg-{{ gwa_color }}">{{ '%.2f'|format(gwa_val) }}</span>
+            {% else %}
+            <span class="badge bg-secondary">Not set</span>
+            {% endif %}
+          </div>
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="small text-muted">Units enrolled</span>
+            <span class="fw-semibold">{{ user.units_enrolled or '—' }}</span>
+          </div>
+          {% if gwa_val is not none %}
+          <div class="alert alert-{{ gwa_color }} py-2 px-3 small mt-3 mb-0">
+            {{ gwa_hint }}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card border-0 shadow-sm" style="border-radius:14px;background:#f8f9fa;">
+        <div class="card-body p-4">
+          <h6 class="fw-bold mb-2"><i class="bi bi-patch-question me-2 text-primary"></i>Questions about your grant?</h6>
+          <p class="small text-muted mb-2">
+            For disbursement schedules, document requests, or concerns about this scholarship,
+            contact the Scholarship Office:
+          </p>
+          <p class="small mb-1"><i class="bi bi-envelope me-2 text-primary"></i>lspu.scholarhub@gmail.com</p>
+          <p class="small mb-0"><i class="bi bi-telephone me-2 text-primary"></i>0968-365-2615 (Mon–Fri, 8AM–5PM)</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

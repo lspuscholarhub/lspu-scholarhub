@@ -104,6 +104,27 @@
     </div>
   </div>
 
+  {% if has_approved_scholarship %}
+  <!-- My Scholarship — quick access for approved scholars -->
+  <a href="{{ url_for('student.my_scholarship') }}" class="text-decoration-none d-block mb-4">
+    <div class="card border-0 shadow-sm" style="border-radius:12px;border-left:5px solid #198754;">
+      <div class="card-body py-3 px-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-3">
+          <div class="d-flex align-items-center justify-content-center flex-shrink-0"
+               style="width:42px;height:42px;border-radius:10px;background:#19875415;">
+            <i class="bi bi-patch-check-fill" style="color:#198754;font-size:1.3rem;"></i>
+          </div>
+          <div>
+            <div class="fw-bold text-dark">You are a scholar! 🎓</div>
+            <div class="text-muted small">View your scholarship program, benefits, and standing</div>
+          </div>
+        </div>
+        <span class="btn btn-success btn-sm">My Scholarship <i class="bi bi-arrow-right ms-1"></i></span>
+      </div>
+    </div>
+  </a>
+  {% endif %}
+
   <!-- QUICK ACTIONS — centered -->
   <div class="d-flex justify-content-center gap-3 mb-4">
     <a href="{{ url_for('student.my_applications') }}" class="text-decoration-none" style="width:200px;">

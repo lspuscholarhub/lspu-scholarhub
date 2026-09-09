@@ -146,6 +146,88 @@ def mark_all_read():
 
 # ── Documents ─────────────────────────────────────────────────────────────────
 
+@student_bp.route('/my-scholarship')
+@role_required('student')
+def my_scholarship():
+    """The student's approved scholarship program — details, status, batch,
+    amount received, and renewal/compliance guidance."""
+    user = User.query.get(session['user_id'])
+
+    approved_app = (ScholarshipApplication.query
+                    .filter_by(applicant_id=user.id,
+                               status=ApplicationStatus.APPROVED)
+                    .order_by(ScholarshipApplication.approved_at.desc())
+                    .first())
+
+    if not approved_app:
+        flash('You do not have an approved scholarship yet. '
+              'Approved programs will appear here.', 'info')
+        return redirect(url_for('student.my_applications'))
+
+    program = approved_app.scholarship
+    batch   = approved_app.batch
+    period  = batch.academic_period if batch else None
+
+    # Scholar standing labels
+    status_labels = {
+        'active':              ('Good Standing', 'success'),
+        'at_risk':             ('At Risk', 'warning'),
+        'probation':           ('On Probation', 'warning'),
+        'termination_warning': ('Termination Warning', 'danger'),
+        'inactive':            ('Inactive', 'secondary'),
+    }
+    standing_label, standing_color = status_labels.get(
+        (approved_app.scholar_status or 'active').lower(), ('Active', 'secondary'))
+
+    compliance_labels = {
+        'compliant':     ('Compliant', 'success'),
+        'non_compliant': ('Not Compliant', 'danger'),
+        'pending':       ('For Review', 'warning'),
+    }
+    compliance_label, compliance_color = compliance_labels.get(
+        (approved_app.compliance_status or 'compliant').lower(), ('For Review', 'warning'))
+
+    # Renewal guidance: what the office expects this semester
+    from app.models.academic_period import AcademicPeriod
+    current_period = AcademicPeriod.get_current()
+    grades_semester = user.grades_semester  # last semester the office has grades for
+
+    gwa_val = float(user.gwa) if user.gwa is not None else None
+    if gwa_val is None:
+        gwa_hint = ('Your GWA has not been recorded yet. '
+                    'Upload your latest Copy of Grades in My Documents so the office can monitor your standing.')
+        gwa_color = 'warning'
+    elif gwa_val <= 1.75:
+        gwa_hint = 'Excellent standing — keep it up!'
+        gwa_color = 'success'
+    elif gwa_val <= 2.25:
+        gwa_hint = 'Good standing. Maintain your grades to keep the scholarship.'
+        gwa_color = 'success'
+    elif gwa_val <= 3.00:
+        gwa_hint = 'Passing, but close to the risk line. Aim to improve this semester.'
+        gwa_color = 'warning'
+    else:
+        gwa_hint = ('Your GWA is above the usual limit (3.00). '
+                    'Please coordinate with the Scholarship Office — your grant may be at risk.')
+        gwa_color = 'danger'
+
+    return render_template('student/my_scholarship.html',
+                           user=user,
+                           app=approved_app,
+                           program=program,
+                           batch=batch,
+                           period=period,
+                           standing_label=standing_label,
+                           standing_color=standing_color,
+                           compliance_label=compliance_label,
+                           compliance_color=compliance_color,
+                           gwa_val=gwa_val,
+                           gwa_hint=gwa_hint,
+                           gwa_color=gwa_color,
+                           current_period=current_period,
+                           grades_semester=grades_semester)
+
+
 @student_bp.route('/documents')
 @role_required('student')
 def documents():
