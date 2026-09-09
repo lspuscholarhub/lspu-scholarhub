@@ -463,10 +463,37 @@ def register():
             except Exception:
                 pass
         if year_level not in ('Irregular', 'Graduate'):
-            if detected_year and detected_year != year_level:
+            if not detected_year:
+                _cleanup_cor_and_grades()
+                flash('Could not detect the year level from your COR. '
+                      'Please make sure your COR PDF is clear and legible, then try again.', 'error')
+                return render_template('auth/register.html',
+                                       form_data=request.form, ocr_errors=None)
+            if detected_year != year_level:
                 _cleanup_cor_and_grades()
                 flash(f'Your COR shows {detected_year} but you selected {year_level}. '
                       f'Please select the correct year level to continue.', 'error')
+                return render_template('auth/register.html',
+                                       form_data=request.form, ocr_errors=None)
+
+        # ── Birthday validation against Report of Grades ──────────────────────
+        # The birthday the student entered must match their grades document.
+        grades_data = verification.get('grades_data') or {}
+        detected_dob = grades_data.get('date_of_birth')
+        if detected_dob and birthday_date:
+            # Parse the detected DOB (format: MM/DD/YYYY or M/D/YYYY)
+            try:
+                dob_from_file = datetime.strptime(detected_dob, '%m/%d/%Y').date()
+            except ValueError:
+                try:
+                    dob_from_file = datetime.strptime(detected_dob, '%m/%d/%y').date()
+                except ValueError:
+                    dob_from_file = None
+            if dob_from_file and dob_from_file != birthday_date:
+                _cleanup_cor_and_grades()
+                flash(f'Your Report of Grades shows a birthdate of {dob_from_file.strftime("%B %d, %Y")}, '
+                      f'but you entered {birthday_date.strftime("%B %d, %Y")}. '
+                      f'Please enter the correct birthdate to continue.', 'error')
                 return render_template('auth/register.html',
                                        form_data=request.form, ocr_errors=None)
 
