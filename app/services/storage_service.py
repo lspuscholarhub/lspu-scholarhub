@@ -66,13 +66,19 @@ def upload_file(file_bytes: bytes, filename: str, folder: str,
 
 
 def delete_file(public_id: str = None, file_path: str = None,
-                resource_type: str = 'auto') -> dict:
+                resource_type: str = None) -> dict:
     """
     Delete a file from Cloudinary or local filesystem.
 
     Pass public_id for Cloudinary files, file_path for local files.
+    resource_type: 'image' for JPG/PNG, 'raw' for PDF/DOC/etc.
+    If not provided, auto-detects from the file path or public_id.
     """
     if public_id and _cloudinary_configured():
+        # Auto-detect resource type from public_id if not provided
+        if resource_type is None:
+            ext = public_id.rsplit('.', 1)[-1].lower() if '.' in public_id else ''
+            resource_type = 'image' if ext in ('jpg', 'jpeg', 'png', 'gif', 'webp') else 'raw'
         return _delete_from_cloudinary(public_id, resource_type)
     if file_path:
         return _delete_local(file_path)
