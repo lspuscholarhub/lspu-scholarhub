@@ -109,6 +109,19 @@
               </div>
             </div>
 
+            <!-- Campus -->
+            <div class="mb-3">
+              <label class="form-label fw-semibold">Campus <span class="text-danger">*</span></label>
+              <select class="form-select" name="campus_id" required>
+                <option value="">— Select Campus —</option>
+                {% set sel_campus = fd.campus_id if fd else '' %}
+                {% for c in campuses %}
+                <option value="{{ c.id }}" {% if sel_campus|string == c.id|string %}selected{% endif %}>{{ c.name }}</option>
+                {% endfor %}
+              </select>
+              <div class="form-text">Select your LSPU campus.</div>
+            </div>
+
             <!-- Course -->
             <div class="mb-3">
               <label class="form-label fw-semibold">Course / Program <span class="text-danger">*</span></label>

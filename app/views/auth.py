@@ -215,6 +215,14 @@ def login():
             session['first_login'] = (user.last_login is None)
             session['last_active'] = datetime.utcnow().timestamp()
 
+            # Campus context
+            if user.campus_id:
+                session['campus_id'] = user.campus_id
+                session['campus_name'] = user.campus.name if user.campus else ''
+            if user.user_type == 'university_admin':
+                session.pop('campus_context', None)
+                session.pop('campus_context_name', None)
+
             # Audit log
             from app.services.audit_service import log_action
             log_action('auth.login',
@@ -225,7 +233,7 @@ def login():
 
             flash(f'Welcome back, {user.first_name}!', 'success')
 
-            if user.user_type == 'admin':
+            if user.user_type in ('admin', 'university_admin', 'campus_admin'):
                 return redirect(url_for('admin.dashboard'))
             elif user.user_type == 'staff':
                 return redirect(url_for('staff.dashboard'))
@@ -242,6 +250,8 @@ def login():
 @auth_bp.route('/register', methods=['GET', 'POST'])
 @limiter.limit('20 per hour')
 def register():
+    from app.models import Campus
+    _campuses = Campus.query.filter_by(is_active=True).order_by(Campus.id).all()
     """
     Step 1 of registration: validate form data, send OTP, store pending data in session.
     Account is NOT created here — only after OTP is verified.
@@ -259,11 +269,12 @@ def register():
         course      = request.form.get('course',       '').strip()
         year_level  = request.form.get('year_level',   '').strip()
         birthday    = request.form.get('birthday',     '').strip()
+        campus_id   = request.form.get('campus_id',    '').strip()
 
         # ── Required fields (middle_name, gender, town, province are optional) ─
-        if not all([first_name, last_name, email, student_id, phone, course, year_level, birthday]):
+        if not all([first_name, last_name, email, student_id, phone, course, year_level, birthday, campus_id]):
             flash('Please fill in all required fields.', 'error')
-            return render_template('auth/register.html')
+            return render_template('auth/register.html', campuses=_campuses)
 
         # ── Birthday: valid date, not in the future, sane age range ─────────
         birthday_date = None
@@ -271,39 +282,39 @@ def register():
             birthday_date = datetime.strptime(birthday, '%Y-%m-%d').date()
         except ValueError:
             flash('Please provide a valid birthday.', 'error')
-            return render_template('auth/register.html')
+            return render_template('auth/register.html', campuses=_campuses)
         today = datetime.utcnow().date()
         if birthday_date >= today:
             flash('Birthday must be a date in the past.', 'error')
-            return render_template('auth/register.html')
+            return render_template('auth/register.html', campuses=_campuses)
         age = today.year - birthday_date.year - (
             (today.month, today.day) < (birthday_date.month, birthday_date.day))
         if age < 15 or age > 100:
             flash('Please double-check your birthday — the age you entered looks incorrect.', 'error')
-            return render_template('auth/register.html')
+            return render_template('auth/register.html', campuses=_campuses)
 
         # ── Student ID: exactly XXXX-XXXX format ─────────────────────────────
         if not re.match(r'^\d{4}-\d{4}$', student_id):
             flash('Student ID must follow the format XXXX-XXXX (e.g. 2024-1234).', 'error')
-            return render_template('auth/register.html')
+            return render_template('auth/register.html', campuses=_campuses)
 
         # ── Phone: exactly 11 digits ──────────────────────────────────────────
         phone_digits = re.sub(r'\D', '', phone)
         if len(phone_digits) != 11:
             flash('Phone number must be exactly 11 digits (e.g. 09123456789).', 'error')
-            return render_template('auth/register.html')
+            return render_template('auth/register.html', campuses=_campuses)
         phone = phone_digits
 
         # ── Duplicate checks ──────────────────────────────────────────────────
         if User.query.filter_by(email=email).first():
             flash('An account with this email already exists.', 'error')
-            return render_template('auth/register.html')
+            return render_template('auth/register.html', campuses=_campuses)
         if User.query.filter_by(student_id=student_id).first():
             flash('This Student ID is already registered.', 'error')
-            return render_template('auth/register.html')
+            return render_template('auth/register.html', campuses=_campuses)
         if User.query.filter_by(phone_number=phone).first():
             flash('This phone number is already registered to another account.', 'error')
-            return render_template('auth/register.html')
+            return render_template('auth/register.html', campuses=_campuses)
 
         # ── Document validation + OCR verification ────────────────────────────
         # 1st Year  → COR required, grades NOT required
@@ -322,7 +333,7 @@ def register():
             cor_file = request.files.get('cor_file')
             if not cor_file or not cor_file.filename:
                 flash('Certificate of Registration (COR) is required.', 'error')
-                return render_template('auth/register.html')
+                return render_template('auth/register.html', campuses=_campuses)
 
             cor_ext = cor_file.filename.rsplit('.', 1)[-1].lower() if '.' in cor_file.filename else ''
 
@@ -331,7 +342,7 @@ def register():
             if cor_ext != 'pdf':
                 flash('Your COR must be a PDF file. Download the official COR PDF '
                       'from the LSPU student portal and upload it here.', 'error')
-                return render_template('auth/register.html')
+                return render_template('auth/register.html', campuses=_campuses)
 
             # Server-side 5MB limit (matches what the form promises)
             cor_file.seek(0, os.SEEK_END)
@@ -340,18 +351,18 @@ def register():
             if cor_size > 5 * 1024 * 1024:
                 flash(f'Your COR is {cor_size / (1024*1024):.1f}MB — the maximum size is 5MB. '
                       f'Please upload a smaller PDF.', 'error')
-                return render_template('auth/register.html')
+                return render_template('auth/register.html', campuses=_campuses)
 
             cor_path, cor_cloudinary_id = _save_registration_file(cor_file, student_id, 'cor')
             if not cor_path:
                 flash('COR file could not be uploaded to cloud storage. Please try again.', 'error')
-                return render_template('auth/register.html')
+                return render_template('auth/register.html', campuses=_campuses)
 
         if year_level in NEEDS_GRADES:
             grades_file = request.files.get('grades_file')
             if not grades_file or not grades_file.filename:
                 flash('Copy of Grades is required for 2nd year and above.', 'error')
-                return render_template('auth/register.html')
+                return render_template('auth/register.html', campuses=_campuses)
 
             grades_ext = grades_file.filename.rsplit('.', 1)[-1].lower() if '.' in grades_file.filename else ''
 
@@ -359,7 +370,7 @@ def register():
             if grades_ext != 'pdf':
                 flash('Your Copy of Grades must be a PDF file. Download the official '
                       'grades PDF from the LSPU student portal and upload it here.', 'error')
-                return render_template('auth/register.html')
+                return render_template('auth/register.html', campuses=_campuses)
 
             # Server-side 5MB limit (matches what the form promises)
             grades_file.seek(0, os.SEEK_END)
@@ -368,12 +379,12 @@ def register():
             if grades_size > 5 * 1024 * 1024:
                 flash(f'Your Copy of Grades is {grades_size / (1024*1024):.1f}MB — the maximum '
                       f'size is 5MB. Please upload a smaller PDF.', 'error')
-                return render_template('auth/register.html')
+                return render_template('auth/register.html', campuses=_campuses)
 
             grades_path, grades_cloudinary_id = _save_registration_file(grades_file, student_id, 'grades')
             if not grades_path:
                 flash('Grades file could not be uploaded to cloud storage. Please try again.', 'error')
-                return render_template('auth/register.html')
+                return render_template('auth/register.html', campuses=_campuses)
 
         # ── Document verification — INLINE GATE (before account creation) ─────
         # The uploaded PDF is read and its contents (Student ID, name, course) are
@@ -526,6 +537,7 @@ def register():
             'province':             province,
             'course':               course,
             'year_level':           year_level,
+            'campus_id':            int(campus_id) if campus_id else None,
             'cor_path':             cor_path,
             'grades_path':          grades_path,
             'cor_cloudinary_id':    cor_cloudinary_id,
@@ -541,7 +553,7 @@ def register():
               f'Please check your inbox.', 'info')
         return redirect(url_for('auth.verify_otp'))
 
-    return render_template('auth/register.html')
+    return render_template('auth/register.html', campuses=_campuses)
 
 
 # ── OTP Verification ──────────────────────────────────────────────────────────
@@ -605,6 +617,7 @@ def verify_otp():
                 year_level=pending['year_level'],
                 gwa=pending.get('auto_gwa'),       # extracted from grades PDF during verification
                 units_enrolled=pending.get('auto_units'),   # extracted from grades PDF
+                campus_id=pending.get('campus_id'),
                 user_type='student',
                 is_active=True,
                 is_verified=True,

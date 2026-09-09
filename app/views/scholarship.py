@@ -23,19 +23,39 @@ def list_scholarships():
     """List scholarships — respects is_hidden and allowed_student_ids."""
     q = request.args.get('q', '').strip()
 
+    # Campus filter: students see their campus + university-wide scholarships
+    user = User.query.get(session.get('user_id')) if session.get('user_id') else None
+    user_campus_id = user.campus_id if user else None
+    user_type = session.get('user_type', '')
+
     query = Scholarship.query
     if q:
         query = query.filter(Scholarship.title.ilike(f'%{q}%'))
+
+    # Campus scoping: students see campus-specific + university-wide
+    if user_type == 'student' and user_campus_id:
+        from sqlalchemy import or_
+        query = query.filter(or_(
+            Scholarship.campus_id == user_campus_id,
+            Scholarship.campus_id.is_(None)   # university-wide
+        ))
+    elif user_type in ('staff', 'campus_admin') and user_campus_id:
+        # Staff/campus_admin see their campus + university-wide
+        from sqlalchemy import or_
+        query = query.filter(or_(
+            Scholarship.campus_id == user_campus_id,
+            Scholarship.campus_id.is_(None)
+        ))
+    # university_admin sees all (no filter)
 
     all_scholarships = query.order_by(Scholarship.application_deadline.asc()).all()
 
     # Filter by visibility for students
     student_id = None
-    if session.get('user_type') == 'student':
-        user = User.query.get(session['user_id'])
-        student_id = user.student_id if user else None
+    if user_type == 'student' and user:
+        student_id = user.student_id
 
-    if session.get('user_type') in ('admin', 'staff'):
+    if user_type in ('admin', 'university_admin', 'staff', 'campus_admin'):
         scholarships = all_scholarships
     else:
         scholarships = [s for s in all_scholarships if s.is_visible_to(student_id)]

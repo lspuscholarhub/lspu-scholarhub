@@ -26,6 +26,7 @@ class ScholarshipBatch(db.Model):
     total_amount       = db.Column(db.Numeric(12, 2), default=0)
     status             = db.Column(db.Enum('open', 'closed', 'finalized'), default='open')
     notes              = db.Column(db.Text, nullable=True)
+    campus_id          = db.Column(db.Integer, db.ForeignKey('campuses.id'), nullable=True)
     created_by         = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'), nullable=True)
     created_at         = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at         = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

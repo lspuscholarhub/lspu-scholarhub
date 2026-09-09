@@ -8,7 +8,8 @@ from .academic_period import AcademicPeriod
 from .scholarship_batch import ScholarshipBatch
 from .chat_history import ChatHistory
 from .monitoring_submission import MonitoringSubmission
+from .campus import Campus
 
 __all__ = ['User', 'Scholarship', 'ScholarshipApplication', 'Notification',
            'Document', 'AuditLog', 'GwaHistory', 'AcademicPeriod', 'ScholarshipBatch',
-           'ChatHistory', 'MonitoringSubmission']
+           'ChatHistory', 'MonitoringSubmission', 'Campus']

@@ -13,6 +13,33 @@ from app.utils.decorators import role_required
 admin_bp = Blueprint('admin', __name__)
 
 
+# ── Campus Context (University Admin) ──────────────────────────────────────
+
+@admin_bp.route('/campus-context/<int:campus_id>')
+@role_required('admin')
+def set_campus_context(campus_id):
+    """Set the campus context for university admin. campus_id=0 means all campuses."""
+    from flask import session as _session
+    if _session.get('user_type') not in ('university_admin', 'admin'):
+        flash('You do not have permission to change campus context.', 'error')
+        return redirect(url_for('admin.dashboard'))
+
+    if campus_id == 0:
+        _session.pop('campus_context', None)
+        _session.pop('campus_context_name', None)
+        flash('Showing all campuses.', 'info')
+    else:
+        from app.models import Campus
+        campus = Campus.query.get(campus_id)
+        if not campus:
+            flash('Invalid campus.', 'error')
+            return redirect(url_for('admin.dashboard'))
+        _session['campus_context'] = campus.id
+        _session['campus_context_name'] = campus.name
+        flash(f'Switched to {campus.name}.', 'info')
+    return redirect(request.referrer or url_for('admin.dashboard'))
+
+
 # ── Dashboard ─────────────────────────────────────────────────────────────────
 
 @admin_bp.route('/')
@@ -711,6 +738,7 @@ def send_renewal_reminder(app_id):
 def manage_users():
     q         = request.args.get('q', '').strip()
     role      = request.args.get('role', '')
+    campus_filter = request.args.get('campus', '')
     query     = User.query
     if q:
         query = query.filter(
@@ -723,9 +751,27 @@ def manage_users():
         )
     if role:
         query = query.filter_by(user_type=role)
+
+    # Campus filtering: university admin can filter, campus_admin sees own campus
+    user_type = session.get('user_type', '')
+    if user_type == 'university_admin':
+        campus_ctx = session.get('campus_context')
+        if campus_ctx:
+            query = query.filter(User.campus_id == campus_ctx)
+        elif campus_filter:
+            query = query.filter(User.campus_id == int(campus_filter))
+    elif user_type in ('campus_admin', 'staff'):
+        user = User.query.get(session.get('user_id'))
+        if user and user.campus_id:
+            query = query.filter(User.campus_id == user.campus_id)
+
     users = query.order_by(User.created_at.desc()).all()
+    from app.models import Campus
+    all_campuses = Campus.query.filter_by(is_active=True).order_by(Campus.id).all()
     return render_template('admin/users.html', users=users, q=q, role=role,
-                           current_user_id=session.get('user_id'))
+                           current_user_id=session.get('user_id'),
+                           all_campuses=all_campuses,
+                           campus_filter=campus_filter)
 
 
 @admin_bp.route('/users/<int:uid>/edit', methods=['POST'])
@@ -744,7 +790,7 @@ def edit_user(uid):
 
     # Role change (with the same safety rules as the quick-change route)
     new_role = request.form.get('role', '').strip()
-    if new_role and new_role in ('student', 'staff', 'admin') and new_role != user.user_type:
+    if new_role and new_role in ('student', 'staff', 'admin', 'university_admin', 'campus_admin') and new_role != user.user_type:
         if user.id == session['user_id']:
             flash('You cannot change your own role. Ask another admin to do it.', 'error')
             return redirect(url_for('admin.manage_users'))
@@ -791,7 +837,7 @@ def change_user_role(uid):
     user = User.query.get_or_404(uid)
     new_role = request.form.get('role', '').strip()
 
-    if new_role not in ('student', 'staff', 'admin'):
+    if new_role not in ('student', 'staff', 'admin', 'university_admin', 'campus_admin'):
         flash('Invalid role selected.', 'error')
         return redirect(url_for('admin.manage_users'))
 

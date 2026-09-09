@@ -254,6 +254,14 @@ def create_app(config_name=None):
             except Exception:
                 has_approved_scholarship = False
 
+        # Campus data for navbar
+        all_campuses = []
+        try:
+            from app.models import Campus
+            all_campuses = Campus.query.filter_by(is_active=True).order_by(Campus.id).all()
+        except Exception:
+            pass
+
         return {
             'now': _dt.utcnow(),
             'session': _session,
@@ -264,6 +272,7 @@ def create_app(config_name=None):
             'GWA_THRESHOLD': GWA_THRESHOLD,
             'unread_count': unread,
             'has_approved_scholarship': has_approved_scholarship,
+            'all_campuses': all_campuses,
         }
 
     return app

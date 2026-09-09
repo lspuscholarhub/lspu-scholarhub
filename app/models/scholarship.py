@@ -39,6 +39,10 @@ class Scholarship(db.Model):
     is_hidden = db.Column(db.Boolean, default=False, nullable=False)
     allowed_student_ids = db.Column(db.Text, nullable=True)
     custom_form_fields = db.Column(db.JSON, nullable=True)  # Custom form fields for this scholarship
+    campus_id = db.Column(db.Integer, db.ForeignKey('campuses.id'), nullable=True)  # NULL = university-wide
+    scope     = db.Column(db.Enum('campus', 'university'), default='campus', nullable=False)
+
+    campus = db.relationship('Campus', backref='scholarships', lazy=True)
 
     applications = db.relationship('ScholarshipApplication', backref='scholarship',
                                    lazy=True, cascade='all, delete-orphan')
@@ -113,6 +117,7 @@ class ScholarshipApplication(db.Model):
     academic_period_id = db.Column(db.Integer, db.ForeignKey('academic_periods.id'), nullable=True)
     amount_received    = db.Column(db.Numeric(10, 2), nullable=True)   # actual amount given to this student
     seq_number         = db.Column(db.Integer, nullable=True)          # sequence number within the batch
+    campus_id          = db.Column(db.Integer, db.ForeignKey('campuses.id'), nullable=True)
 
     # Monitoring & Tracking
     scholar_status        = db.Column(db.String(30), default='active')

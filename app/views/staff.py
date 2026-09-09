@@ -109,6 +109,19 @@ def create_scholarship():
                 'options': options,
             })
 
+        # Campus assignment
+        user_type = session.get('user_type', '')
+        if user_type == 'university_admin':
+            scope = request.form.get('scope', 'campus')
+            campus_id_val = int(request.form.get('campus_id') or 0) or None
+            if scope == 'university':
+                campus_id_val = None   # university-wide
+        else:
+            # Campus admin/staff: scholarship belongs to their campus
+            user = User.query.get(session['user_id'])
+            campus_id_val = user.campus_id if user else None
+            scope = 'campus'
+
         s = Scholarship(
             title=request.form['title'],
             category=request.form.get('category', 'General'),
@@ -123,6 +136,8 @@ def create_scholarship():
             status=ScholarshipStatus.ACTIVE,
             created_by=session['user_id'],
             custom_form_fields=custom_fields if custom_fields else None,
+            campus_id=campus_id_val,
+            scope=scope,
         )
         s.is_hidden = bool(request.form.get('is_hidden'))
         s.allowed_student_ids = request.form.get('allowed_student_ids', '').strip() or None

@@ -37,7 +37,8 @@ class User(db.Model):
     # Academic monitoring
     gwa              = db.Column(db.Float)          # General Weighted Average (input by staff)
     units_enrolled   = db.Column(db.Integer)        # Total units enrolled this semester
-    user_type = db.Column(db.Enum('student', 'admin', 'staff'), default='student', nullable=False)
+    campus_id  = db.Column(db.Integer, db.ForeignKey('campuses.id'), nullable=True)   # NULL for university admin
+    user_type = db.Column(db.Enum('student', 'admin', 'staff', 'university_admin', 'campus_admin'), default='student', nullable=False)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     is_verified = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
@@ -52,6 +53,7 @@ class User(db.Model):
     phone_otp_expires      = db.Column(db.DateTime, nullable=True)
     
     # Relationships
+    campus     = db.relationship('Campus', backref='users', lazy=True)
     applications = db.relationship('ScholarshipApplication', foreign_keys='ScholarshipApplication.applicant_id', backref='applicant', lazy=True, cascade='all, delete-orphan')
     reviewed_applications = db.relationship('ScholarshipApplication', foreign_keys='ScholarshipApplication.reviewed_by', backref='reviewer', lazy=True)
     notifications = db.relationship('Notification', backref='recipient', lazy=True, cascade='all, delete-orphan')

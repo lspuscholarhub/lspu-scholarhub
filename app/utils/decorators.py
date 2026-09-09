@@ -37,14 +37,27 @@ def role_required(*roles):
     Example:
         @role_required('admin')
         @role_required('admin', 'staff')
+
+    Role aliases:
+        'admin' also matches 'university_admin' and 'campus_admin'
+        'staff' also matches 'campus_admin'
     """
+    # Expand role aliases
+    expanded = set()
+    for r in roles:
+        expanded.add(r)
+        if r == 'admin':
+            expanded.update(('university_admin', 'campus_admin'))
+        if r == 'staff':
+            expanded.add('campus_admin')
+
     def decorator(f):
         @wraps(f)
         def decorated(*args, **kwargs):
             if 'user_id' not in session:
                 flash('Please log in to access this page.', 'warning')
                 return redirect(url_for('auth.login'))
-            if session.get('user_type') not in roles:
+            if session.get('user_type') not in expanded:
                 flash('Access denied. You do not have permission to view this page.', 'error')
                 return redirect(url_for('auth.login'))
             return f(*args, **kwargs)
