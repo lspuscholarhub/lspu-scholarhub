@@ -37,7 +37,7 @@ def _get_or_create_current_period():
         semester = '2nd Semester'
         academic_year = f'{year - 1}-{year}'
     else:
-        semester = 'Summer'
+        semester = 'Inter-Semester'
         academic_year = f'{year - 1}-{year}'
 
     # Check if this period already exists (just not marked current)

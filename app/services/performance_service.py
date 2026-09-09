@@ -355,7 +355,7 @@ class PerformanceService:
         elif now.month >= 11 or now.month <= 3:
             return f"Second Semester {year}" if now.month <= 3 else f"Second Semester {year-1}"
         else:
-            return f"Summer {year}"
+            return f"Inter-Semester {year}"
     
     def get_performance_trends(self, scholar_id):
         """Get performance trends for a scholar"""

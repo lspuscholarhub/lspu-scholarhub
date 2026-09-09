@@ -12,7 +12,7 @@ class AcademicPeriod(db.Model):
 
     id            = db.Column(db.Integer, primary_key=True)
     academic_year = db.Column(db.String(20), nullable=False)   # e.g. '2025-2026'
-    semester      = db.Column(db.String(30), nullable=False)   # '1st Semester', '2nd Semester', 'Summer'
+    semester      = db.Column(db.String(30), nullable=False)   # '1st Semester', '2nd Semester', 'Inter-Semester'
     is_current    = db.Column(db.Boolean, default=False)
     start_date    = db.Column(db.Date, nullable=True)
     end_date      = db.Column(db.Date, nullable=True)
