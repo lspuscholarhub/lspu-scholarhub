@@ -475,6 +475,34 @@ def update_profile():
         from app.services.storage_service import delete_file as _del_storage
         file = request.files.get(f'{doc_type}_file')
         if file and file.filename:
+            # PDF only + ownership check BEFORE saving (same gate as registration)
+            ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+            if ext != 'pdf':
+                label = 'Certificate of Registration' if doc_type == 'cor' else 'Copy of Grades'
+                flash(f'Your {label} must be a PDF file. Download the official PDF '
+                      f'from the LSPU student portal and upload it here.', 'error')
+                return redirect(url_for('student.upload_gwa'))
+
+            file.seek(0, os.SEEK_END)
+            if file.tell() > 5 * 1024 * 1024:
+                flash('File is larger than 5MB. Please upload a smaller file.', 'error')
+                return redirect(url_for('student.upload_gwa'))
+            file.seek(0)
+            file_bytes = file.read()
+            file.seek(0)
+
+            from app.services.ocr_service import verify_document_owner
+            ownership = verify_document_owner(
+                file_bytes, ext,
+                expected_id=user.student_id or '',
+                expected_first=user.first_name or '',
+                expected_last=user.last_name or '',
+                expected_middle=user.middle_name,
+            )
+            if not ownership.get('passed'):
+                flash(ownership.get('error', 'Document could not be verified.'), 'error')
+                return redirect(url_for('student.upload_gwa'))
+
             result = document_service.save_file(file, user.id, doc_type)
             if result['success']:
                 info = result['file_info']
@@ -628,9 +656,10 @@ def upload_gwa():
             return redirect(url_for('student.upload_gwa'))
 
         ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
-        allowed_exts = {'pdf', 'jpg', 'jpeg', 'png'}
-        if ext not in allowed_exts:
-            flash(f'Please upload a PDF or image file (JPG/PNG) for {label}.', 'error')
+        # PDF only — same security policy as registration
+        if ext != 'pdf':
+            flash(f'Your {label} must be a PDF file. Download the official PDF '
+                  f'from the LSPU student portal and upload it here.', 'error')
             return redirect(url_for('student.upload_gwa'))
 
         # Server-side 5MB limit (matches what the page promises)
@@ -666,6 +695,29 @@ def upload_gwa():
                 f.write(file_bytes)
             cloud_id = None
 
+        # ── Ownership verification — same gate as registration ────────────────
+        # The document must be readable and belong to THIS student (ID + name).
+        from app.services.ocr_service import verify_document_owner
+        ownership = verify_document_owner(
+            file_bytes, ext,
+            expected_id=user.student_id or '',
+            expected_first=user.first_name or '',
+            expected_last=user.last_name or '',
+            expected_middle=user.middle_name,
+        )
+        if not ownership.get('passed'):
+            # Delete the just-uploaded file — it failed verification
+            if cloud_id:
+                try: _del_storage(public_id=cloud_id)
+                except Exception: pass
+            elif file_path and os.path.exists(file_path):
+                try: os.remove(file_path)
+                except Exception: pass
+            flash(ownership.get('error', 'Document could not be verified.'), 'error')
+            return redirect(url_for('student.upload_gwa'))
+
+        verified_data = ownership.get('data') or {}
+
         # Delete old file if replacing
         if doc_type == 'cor':
             old_path = user.cor_file_path
@@ -689,24 +741,12 @@ def upload_gwa():
             flash(f'{label} uploaded successfully.', 'success')
             return redirect(url_for('student.upload_gwa'))
 
-        # Run OCR to extract GWA
+        # GWA extraction — ownership was already verified above;
+        # reuse that extraction instead of reading the document again.
         try:
-            from app.services.ocr_service import extract_document_data, _normalise_id
-            result = extract_document_data(file_bytes, ext)
+            result = verified_data
 
             extracted_gwa = result.get('gwa')
-            doc_student_id = result.get('student_id')
-
-            # Verify the document belongs to this student
-            if doc_student_id and doc_student_id != _normalise_id(user.student_id):
-                flash(
-                    f'The document you uploaded belongs to Student ID {doc_student_id}, '
-                    f'but your account is {user.student_id}. '
-                    f'Please upload your own Copy of Grades.',
-                    'error'
-                )
-                os.remove(file_path)  # delete the invalid file
-                return redirect(url_for('student.upload_gwa'))
 
             if extracted_gwa:
                 # Update user GWA and units

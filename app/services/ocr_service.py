@@ -253,8 +253,8 @@ def _parse_text(text: str, doc_type: str = 'auto') -> dict:
             result['name'] = m.group(1).strip()
     if not result['name']:
         for pat in [
-            r'(?:Student\s+Name|Name of Student)\s*[:\-]?\s*([A-Za-z][A-Za-z\s,.\-]{4,60})',
-            r'Name\s*[:\-]\s*([A-Za-z][A-Za-z\s,.\-]{4,60})',
+            r'(?:Student\s+Name|Name of Student)\s*[:\-]?\s*([A-Za-z][A-Za-z\s,.\-]{4,60}?)(?=\s{2,}|\n|\b[A-Z][A-Za-z]+\s*:|$)',
+            r'Name\s*[:\-]\s*([A-Za-z][A-Za-z\s,.\-]{4,60}?)(?=\s{2,}|\n|\b[A-Z][A-Za-z]+\s*:|$)',
         ]:
             m = re.search(pat, text, re.IGNORECASE)
             if m:
@@ -831,6 +831,65 @@ def verify_documents(
         'grades_data': grades_data,
         'gwa':         extracted_gwa,
     }
+
+
+# ── Document ownership gate (replacement uploads) ────────────────────────────
+
+def verify_document_owner(file_bytes: bytes, file_ext: str,
+                          expected_id: str, expected_first: str,
+                          expected_last: str, expected_middle: str | None = None) -> dict:
+    """
+    Ownership gate for document replacement uploads (My Documents).
+    Same security policy as registration: the document must be readable and
+    must belong to the expected student — random or borrowed documents are
+    rejected. Returns {'passed': bool, 'error': str|None, 'data': extract dict}.
+    """
+    data = extract_document_data(file_bytes, file_ext)
+
+    def _fail(msg):
+        return {'passed': False, 'error': msg, 'data': data}
+
+    # Build the expected name variants (same logic as verify_documents)
+    form_short = f"{expected_first} {expected_last}".strip()
+    if expected_middle:
+        form_full = f"{expected_first} {expected_middle} {expected_last}".strip()
+    else:
+        form_full = form_short
+
+    def _best_name_sim(doc_name: str) -> float:
+        return max(_name_similarity(form_full, doc_name),
+                   _name_similarity(form_short, doc_name))
+
+    if data['method'] == 'rejected_unsupported':
+        return _fail('This document must be a PDF file. '
+                     'Download the official PDF from the LSPU student portal.')
+
+    if data['method'] in ('failed', 'quota_exceeded') and not data['student_id'] and not data['name']:
+        return _fail('This document could not be verified — no Student ID or name was found. '
+                     'Upload the official digital PDF from the LSPU portal '
+                     '(photos or printouts saved as PDF cannot be verified). '
+                     'If the AI service is busy, please try again in a few minutes.')
+
+    if not data['student_id'] and not data['name']:
+        return _fail('This document could not be verified — no Student ID or name was found in it. '
+                     'Please upload the official digital PDF from the LSPU portal.')
+
+    norm_expected = _normalise_id(expected_id)
+
+    if data['student_id'] and data['student_id'] != norm_expected:
+        return _fail(f'This document belongs to Student ID {data["student_id"]}, '
+                     f'but your account is {norm_expected}. '
+                     f'Please upload your own official document.')
+
+    if data['name']:
+        sim = _best_name_sim(data['name'])
+        if sim < NAME_MATCH_THRESHOLD:
+            return _fail(f'The name on this document ("{data["name"]}") does not match '
+                         f'your account name ("{form_full}"). '
+                         f'Please upload your own official document.')
+
+    # ID matched, or name matched with no ID printed — ownership established
+    return {'passed': True, 'error': None, 'data': data}
 
 
 # ── CTC Stamp Detection ───────────────────────────────────────────────────────

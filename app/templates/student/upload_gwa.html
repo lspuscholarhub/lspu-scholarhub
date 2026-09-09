@@ -102,13 +102,13 @@
             <label class="dropzone-area" for="corInput"
                    style="background:{% if user.cor_file_path %}#fff{% else %}#f8f9fa{% endif %};border:2px dashed {% if user.cor_file_path %}var(--sh-gray-300){% else %}var(--sh-accent){% endif %};">
               <input type="file" class="d-none" name="cor_file" id="corInput"
-                     accept=".pdf,.jpg,.jpeg,.png" required>
+                     accept=".pdf,application/pdf" required>
               <i class="bi {% if user.cor_file_path %}bi-arrow-repeat text-muted{% else %}bi-cloud-arrow-up text-primary{% endif %}"
                  style="font-size:1.6rem;"></i>
               <div class="small fw-semibold mt-1">
                 {% if user.cor_file_path %}Replace current file{% else %}Drop your COR here{% endif %}
               </div>
-              <div class="text-muted" style="font-size:.72rem;">or click to browse — PDF, JPG, PNG (max 5MB)</div>
+              <div class="text-muted" style="font-size:.72rem;">or click to browse — PDF only (max 5MB)</div>
             </label>
             <div class="file-selected small text-success mt-2 d-none">
               <i class="bi bi-check-circle me-1"></i><span class="file-name fw-semibold"></span>
@@ -171,13 +171,13 @@
             <label class="dropzone-area" for="gradesInput"
                    style="background:{% if user.grades_file_path %}#fff{% else %}#f8f9fa{% endif %};border:2px dashed {% if user.grades_file_path %}var(--sh-gray-300){% else %}var(--sh-accent){% endif %};">
               <input type="file" class="d-none" name="grades_file" id="gradesInput"
-                     accept=".pdf,.jpg,.jpeg,.png" required>
+                     accept=".pdf,application/pdf" required>
               <i class="bi {% if user.grades_file_path %}bi-arrow-repeat text-muted{% else %}bi-cloud-arrow-up text-primary{% endif %}"
                  style="font-size:1.6rem;"></i>
               <div class="small fw-semibold mt-1">
                 {% if user.grades_file_path %}Replace current file{% else %}Drop your grades here{% endif %}
               </div>
-              <div class="text-muted" style="font-size:.72rem;">or click to browse — PDF, JPG, PNG (max 5MB)</div>
+              <div class="text-muted" style="font-size:.72rem;">or click to browse — PDF only (max 5MB)</div>
             </label>
             <div class="file-selected small text-success mt-2 d-none">
               <i class="bi bi-check-circle me-1"></i><span class="file-name fw-semibold"></span>
@@ -212,8 +212,8 @@
         <div class="col-md-4">
           <div class="fw-semibold mb-1"><i class="bi bi-lightbulb text-warning me-1"></i>Tips for a clear upload</div>
           <ul class="text-muted mb-0 ps-3">
-            <li>Make sure the whole document is visible</li>
-            <li>Your name and student ID must be readable</li>
+            <li>Upload the official <strong>PDF</strong> from the LSPU student portal</li>
+            <li>The document must show <strong>your name and Student ID</strong> — random or borrowed files are rejected</li>
           </ul>
         </div>
         <div class="col-md-4">
@@ -262,10 +262,20 @@
     // Click label opens picker (label[for] already does this, but keep explicit)
     area.addEventListener('click', function () { input.click(); });
 
-    // Show selected file + reveal submit button (validate size first)
+    // Show selected file + reveal submit button (validate type + size first)
     input.addEventListener('change', function () {
       if (input.files.length) {
         var f = input.files[0];
+        var isPdf = f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
+        if (!isPdf) {
+          alert('"' + f.name + '" is not a PDF file. Only official PDF documents are accepted — ' +
+                'download the PDF from the LSPU student portal.');
+          input.value = '';
+          selected.classList.add('d-none');
+          submit.classList.add('d-none');
+          submit.classList.remove('d-block');
+          return;
+        }
         if (f.size > 5 * 1024 * 1024) {
           var mb = (f.size / (1024 * 1024)).toFixed(1);
           alert('"' + f.name + '" is ' + mb + 'MB — the maximum size is 5MB. Please choose a smaller file.');
