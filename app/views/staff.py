@@ -115,7 +115,7 @@ def create_scholarship():
             benefits=request.form.get('benefits', '').strip() or None,
             scholarship_type=request.form.get('scholarship_type', 'Financial Assistance'),
             funding_type=request.form.get('funding_type', 'public'),
-            award_amount=request.form.get('award_amount') or None,
+            award_amount=max(0, float(request.form.get('award_amount') or 0)) or None,
             max_applicants=max(0, int(request.form.get('max_applicants') or 0)) or None,
             application_deadline=deadline,
             status=ScholarshipStatus.ACTIVE,
@@ -189,7 +189,7 @@ def edit_scholarship(sid):
         s.description = request.form.get('description', s.description)
         s.eligibility_criteria = request.form.get('eligibility_criteria', s.eligibility_criteria)
         s.benefits = request.form.get('benefits', s.benefits)
-        s.award_amount = request.form.get('award_amount') or s.award_amount
+        s.award_amount = max(0, float(request.form.get('award_amount') or 0)) or s.award_amount
         if request.form.get('max_applicants'):
             s.max_applicants = max(0, int(request.form['max_applicants'])) or None
         if request.form.get('application_deadline'):
@@ -1405,7 +1405,7 @@ def create_batch():
     try:
         batch = ScholarshipBatch(scholarship_id=scholarship_id, academic_period_id=period_id,
                                  batch_name=batch_name, batch_number=batch_number,
-                                 amount_per_scholar=float(amount) if amount else None,
+                                 amount_per_scholar=max(0, float(amount)) if amount else None,
                                  created_by=session['user_id'])
         db.session.add(batch); db.session.commit()
         from app.services.audit_service import log_action
@@ -1424,7 +1424,7 @@ def edit_batch(batch_id):
     batch = ScholarshipBatch.query.get_or_404(batch_id)
     batch.batch_name = request.form.get('batch_name', batch.batch_name).strip()
     amount = request.form.get('amount_per_scholar', '').strip()
-    if amount: batch.amount_per_scholar = float(amount)
+    if amount: batch.amount_per_scholar = max(0, float(amount))
     status = request.form.get('status', '')
     if status in ('open','closed','finalized'): batch.status = status
     batch.notes = request.form.get('notes', batch.notes)
