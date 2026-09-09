@@ -714,7 +714,8 @@ def manage_users():
     if role:
         query = query.filter_by(user_type=role)
     users = query.order_by(User.created_at.desc()).all()
-    return render_template('admin/users.html', users=users, q=q, role=role)
+    return render_template('admin/users.html', users=users, q=q, role=role,
+                           current_user_id=session.get('user_id'))
 
 
 @admin_bp.route('/users/<int:uid>/edit', methods=['POST'])
@@ -731,6 +732,30 @@ def edit_user(uid):
     user.year_level   = request.form.get('year_level',    user.year_level or '').strip() or None
     user.address      = request.form.get('address',       user.address or '').strip() or None
 
+    # Role change (with the same safety rules as the quick-change route)
+    new_role = request.form.get('role', '').strip()
+    if new_role and new_role in ('student', 'staff', 'admin') and new_role != user.user_type:
+        if user.id == session['user_id']:
+            flash('You cannot change your own role. Ask another admin to do it.', 'error')
+            return redirect(url_for('admin.manage_users'))
+        if user.user_type == 'admin' and new_role != 'admin':
+            admins_remaining = User.query.filter(
+                User.user_type == 'admin', User.id != user.id, User.is_active == True
+            ).count()
+            if admins_remaining == 0:
+                flash('Cannot demote the only active admin. Promote another admin first.', 'error')
+                return redirect(url_for('admin.manage_users'))
+        old_role = user.user_type
+        user.user_type = new_role
+        from app.services.audit_service import log_action as _log
+        _log('user.role_change',
+             f'Admin {session.get("username")} changed role of '
+             f'{user.get_full_name()} ({user.username}) from {old_role.upper()} '
+             f'to {new_role.upper()} via user edit.',
+             category='user', target_type='user', target_id=uid,
+             user_id=session.get('user_id'), user_name=session.get('username'),
+             user_role='admin')
+
     new_pw = request.form.get('new_password', '').strip()
     if new_pw:
         if len(new_pw) < 8:
@@ -746,6 +771,51 @@ def edit_user(uid):
                f'Fields updated: name, email, phone, student ID, course, year level.{pw_changed}',
                category='user', target_type='user', target_id=uid)
     flash(f'User {user.username} updated successfully.', 'success')
+    return redirect(url_for('admin.manage_users'))
+
+
+@admin_bp.route('/users/<int:uid>/role', methods=['POST'])
+@role_required('admin')
+def change_user_role(uid):
+    """Change a user's role (student / staff / admin)."""
+    user = User.query.get_or_404(uid)
+    new_role = request.form.get('role', '').strip()
+
+    if new_role not in ('student', 'staff', 'admin'):
+        flash('Invalid role selected.', 'error')
+        return redirect(url_for('admin.manage_users'))
+
+    if new_role == user.user_type:
+        flash(f'{user.username} is already a {new_role}.', 'info')
+        return redirect(url_for('admin.manage_users'))
+
+    # Safety: an admin cannot demote themselves
+    if user.id == session['user_id']:
+        flash('You cannot change your own role. Ask another admin to do it.', 'error')
+        return redirect(url_for('admin.manage_users'))
+
+    # Safety: never remove the last admin
+    if user.user_type == 'admin' and new_role != 'admin':
+        admins_remaining = User.query.filter(
+            User.user_type == 'admin', User.id != user.id, User.is_active == True
+        ).count()
+        if admins_remaining == 0:
+            flash('Cannot demote the only active admin. Promote another admin first.', 'error')
+            return redirect(url_for('admin.manage_users'))
+
+    old_role = user.user_type
+    user.user_type = new_role
+    db.session.commit()
+
+    from app.services.audit_service import log_action
+    log_action('user.role_change',
+               f'Admin {session.get("username")} changed role of '
+               f'{user.get_full_name()} ({user.username}) from {old_role.upper()} '
+               f'to {new_role.upper()}.',
+               category='user', target_type='user', target_id=uid,
+               user_id=session.get('user_id'), user_name=session.get('username'),
+               user_role='admin')
+    flash(f'{user.get_full_name()} ({user.username}) is now a {new_role}.', 'success')
     return redirect(url_for('admin.manage_users'))
 
 

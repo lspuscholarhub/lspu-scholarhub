@@ -47,6 +47,23 @@
                 {% if u.user_type=='admin' %}<span class="badge bg-danger">Admin</span>
                 {% elif u.user_type=='staff' %}<span class="badge bg-warning text-dark">Staff</span>
                 {% else %}<span class="badge bg-primary">Student</span>{% endif %}
+                {% if u.id != current_user_id %}
+                <form method="POST"
+                      action="{{ url_for('admin.change_user_role', uid=u.id) }}"
+                      class="d-inline-flex align-items-center gap-1 mt-1"
+                      onsubmit="return confirm('Change role of {{ u.username }} from {{ u.user_type|title }} to the selected role?')">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <select name="role" class="form-select form-select-sm" style="width:auto;"
+                          aria-label="Change role">
+                    {% for r in ['student', 'staff', 'admin'] %}
+                    <option value="{{ r }}" {% if u.user_type == r %}selected{% endif %}>{{ r|title }}</option>
+                    {% endfor %}
+                  </select>
+                  <button class="btn btn-sm btn-outline-secondary" title="Apply role change">
+                    <i class="bi bi-check-lg"></i>
+                  </button>
+                </form>
+                {% endif %}
               </td>
               <td>
                 {% if u.is_active %}<span class="badge bg-success">Active</span>
@@ -227,6 +244,17 @@
                        placeholder="Min. 8 characters" minlength="8">
               </div>
             </div>
+            {% if u.id != current_user_id %}
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Role</label>
+              <select class="form-select" name="role">
+                {% for r in ['student', 'staff', 'admin'] %}
+                <option value="{{ r }}" {% if u.user_type == r %}selected{% endif %}>{{ r|title }}</option>
+                {% endfor %}
+              </select>
+              <div class="form-text">Changing the role updates what this user can access. Takes effect on their next login if they are signed in.</div>
+            </div>
+            {% endif %}
           </div>
         </div>
         <div class="modal-footer">
