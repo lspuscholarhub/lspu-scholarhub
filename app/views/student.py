@@ -718,6 +718,22 @@ def upload_gwa():
 
         verified_data = ownership.get('data') or {}
 
+        # ── Document type validation ─────────────────────────────────────────
+        # Ensure the uploaded file is actually the expected document type.
+        detected = verified_data.get('detected_type', 'unknown')
+        if detected != doc_type:
+            type_label = 'Certificate of Registration' if doc_type == 'cor' else 'Copy of Grades'
+            detected_label = 'Certificate of Registration' if detected == 'cor' else 'Copy of Grades' if detected == 'grades' else 'unknown document'
+            if cloud_id:
+                try: _del_storage(public_id=cloud_id)
+                except Exception: pass
+            elif file_path and os.path.exists(file_path):
+                try: os.remove(file_path)
+                except Exception: pass
+            flash(f'This file appears to be a {detected_label}, not a {type_label}. '
+                  f'Please upload the correct document type.', 'error')
+            return redirect(url_for('student.upload_gwa'))
+
         # Delete old file if replacing
         if doc_type == 'cor':
             old_path = user.cor_file_path

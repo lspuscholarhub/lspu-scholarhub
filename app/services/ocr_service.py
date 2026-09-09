@@ -227,6 +227,7 @@ def _parse_text(text: str, doc_type: str = 'auto') -> dict:
 
     is_cor    = 'Student No.' in text or 'CERTIFICATE OF REGISTRATION' in text.upper()
     is_grades = 'Student ID:' in text or 'REPORT OF GRADES' in text.upper() or 'GWA:' in text
+    result['detected_type'] = 'cor' if is_cor else ('grades' if is_grades else 'unknown')
 
     # Student ID
     if is_cor:
@@ -605,6 +606,16 @@ def verify_documents(
     logger.info('Extracting data from COR…')
     cor_data = extract_document_data(cor_bytes, cor_ext)
 
+    # Hard block: wrong document type uploaded as COR
+    if cor_data.get('detected_type') == 'grades':
+        errors.append(
+            'The file uploaded as your Certificate of Registration appears to be '
+            'a Copy of Grades instead. Please download your COR PDF from the '
+            'LSPU student portal and upload it here.'
+        )
+        return {'passed': False, 'errors': errors, 'warnings': warnings,
+                'cor_data': cor_data, 'grades_data': None, 'gwa': None}
+
     # Hard block: unsupported file type
     if cor_data['method'] == 'rejected_unsupported':
         errors.append(
@@ -724,6 +735,16 @@ def verify_documents(
     if grades_bytes and grades_ext:
         logger.info('Extracting data from Copy of Grades…')
         grades_data = extract_document_data(grades_bytes, grades_ext)
+
+        # Hard block: wrong document type uploaded as Grades
+        if grades_data.get('detected_type') == 'cor':
+            errors.append(
+                'The file uploaded as your Copy of Grades appears to be a '
+                'Certificate of Registration instead. Please download your '
+                'grades PDF from the LSPU student portal and upload it here.'
+            )
+            return {'passed': False, 'errors': errors, 'warnings': warnings,
+                    'cor_data': cor_data, 'grades_data': grades_data, 'gwa': None}
 
         # Hard block: unsupported file type
         if grades_data['method'] == 'rejected_unsupported':
