@@ -5,17 +5,22 @@
 <div class="container-fluid py-4">
   <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <h1 class="h3">Manage Users</h1>
-    <form class="d-flex gap-2" method="GET">
-      <input type="text" name="q" value="{{ q }}" class="form-control"
-             placeholder="Search name / email…" style="width:220px;">
-      <select name="role" class="form-select" style="width:130px;">
-        <option value="">All Roles</option>
-        <option value="student" {% if role=='student' %}selected{% endif %}>Student</option>
-        <option value="staff"   {% if role=='staff'   %}selected{% endif %}>Staff</option>
-        <option value="admin"   {% if role=='admin'   %}selected{% endif %}>Admin</option>
-      </select>
-      <button class="btn btn-outline-primary" type="submit">Search</button>
-    </form>
+    <div class="d-flex gap-2 flex-wrap">
+      <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createAccountModal">
+        <i class="bi bi-person-plus me-2"></i>Create Staff/Admin Account
+      </button>
+      <form class="d-flex gap-2" method="GET">
+        <input type="text" name="q" value="{{ q }}" class="form-control"
+               placeholder="Search name / email…" style="width:220px;">
+        <select name="role" class="form-select" style="width:130px;">
+          <option value="">All Roles</option>
+          <option value="student" {% if role=='student' %}selected{% endif %}>Student</option>
+          <option value="staff"   {% if role=='staff'   %}selected{% endif %}>Staff</option>
+          <option value="admin"   {% if role=='admin'   %}selected{% endif %}>Admin</option>
+        </select>
+        <button class="btn btn-outline-primary" type="submit">Search</button>
+      </form>
+    </div>
   </div>
 
   <div class="card shadow">
@@ -102,6 +107,17 @@
                     {% if u.is_active %}Disable{% else %}Enable{% endif %}
                   </button>
                 </form>
+                {% if u.user_type in ('staff', 'admin') and u.id != current_user_id %}
+                <form method="POST"
+                      action="{{ url_for('admin.delete_user', uid=u.id) }}"
+                      class="d-inline"
+                      onsubmit="return confirm('Permanently delete this {{ u.user_type }} account ({{ u.username }})? This cannot be undone.')">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-sm btn-outline-danger" title="Delete account">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+                {% endif %}
               </td>
             </tr>
             {% endfor %}
@@ -266,5 +282,57 @@
   </div>
 </div>
 {% endfor %}
+
+<!-- Create Staff/Admin Account Modal -->
+<div class="modal fade" id="createAccountModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>Create Staff/Admin Account</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('admin.create_user_account') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">First Name *</label>
+              <input type="text" class="form-control" name="first_name" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Last Name *</label>
+              <input type="text" class="form-control" name="last_name" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Email *</label>
+              <input type="email" class="form-control" name="email" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label fw-semibold">Username *</label>
+              <input type="text" class="form-control" name="username" required>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Password *</label>
+              <input type="password" class="form-control" name="password"
+                     minlength="8" required placeholder="Minimum 8 characters">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Account Type *</label>
+              <select class="form-select" name="role" required>
+                <option value="staff" selected>Staff</option>
+                <option value="admin">Admin</option>
+              </select>
+              <div class="form-text">Students register themselves via the public registration page.</div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Account</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
 {% endblock %}

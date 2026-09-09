@@ -1256,80 +1256,126 @@ def view_document(doc_id):
                       download_name=doc.original_filename)
 
 
-# ── Staff Management (Admin only) ─────────────────────────────────────────────
+# ── User Account Management (Admin only) ─────────────────────────────────
 
-@admin_bp.route('/staff')
+def _delete_user_related_rows(uid):
+    """Delete rows that reference the user before deleting the account.
+    Documents/chat/gwa_history cascade at DB level; these do not."""
+    from app.models.notification import Notification
+    from app.models.document import Document
+    Notification.query.filter_by(recipient_id=uid).delete()
+    Document.query.filter_by(user_id=uid).delete()
+
+
+@admin_bp.route('/users/create', methods=['POST'])
 @role_required('admin')
-def manage_staff():
-    """List all staff accounts."""
-    staff_list = User.query.filter_by(user_type='staff').order_by(User.created_at.desc()).all()
-    return render_template('admin/staff.html', staff_list=staff_list)
-
-
-@admin_bp.route('/staff/create', methods=['POST'])
-@role_required('admin')
-def create_staff():
-    """Create a new staff account."""
+def create_user_account():
+    """Create a new staff or admin account (from Manage Users)."""
     first_name = request.form.get('first_name', '').strip().title()
     last_name  = request.form.get('last_name',  '').strip().title()
     email      = request.form.get('email',      '').strip().lower()
     username   = request.form.get('username',   '').strip()
     password   = request.form.get('password',   '').strip()
+    role       = request.form.get('role', 'staff').strip()
 
+    if role not in ('staff', 'admin'):
+        flash('New accounts can be created as staff or admin only. '
+              'Students register themselves through the registration page.', 'error')
+        return redirect(url_for('admin.manage_users'))
     if not all([first_name, last_name, email, username, password]):
         flash('All fields are required.', 'error')
-        return redirect(url_for('admin.manage_staff'))
+        return redirect(url_for('admin.manage_users'))
     if len(password) < 8:
         flash('Password must be at least 8 characters.', 'error')
-        return redirect(url_for('admin.manage_staff'))
+        return redirect(url_for('admin.manage_users'))
     if User.query.filter_by(username=username).first():
         flash(f'Username "{username}" is already taken.', 'error')
-        return redirect(url_for('admin.manage_staff'))
+        return redirect(url_for('admin.manage_users'))
     if User.query.filter_by(email=email).first():
         flash(f'Email "{email}" is already registered.', 'error')
-        return redirect(url_for('admin.manage_staff'))
+        return redirect(url_for('admin.manage_users'))
 
     try:
-        staff = User(
+        account = User(
             username=username, email=email,
             first_name=first_name, last_name=last_name,
-            user_type='staff', is_active=True, is_verified=True,
+            user_type=role, is_active=True, is_verified=True,
         )
-        staff.set_password(password)
-        db.session.add(staff)
+        account.set_password(password)
+        db.session.add(account)
         db.session.commit()
         from app.services.audit_service import log_action
-        log_action('user.create_staff',
-                   f'Admin {session.get("username")} created new staff account: '
+        log_action('user.create_account',
+                   f'Admin {session.get("username")} created new {role} account: '
                    f'{first_name} {last_name} (username: {username}, email: {email}).',
-                   category='user', target_type='user', target_id=staff.id)
-        flash(f'Staff account "{username}" created successfully.', 'success')
+                   category='user', target_type='user', target_id=account.id,
+                   user_id=session.get('user_id'), user_name=session.get('username'),
+                   user_role='admin')
+        flash(f'{role.title()} account "{username}" created successfully.', 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Error creating staff: {e}', 'error')
-    return redirect(url_for('admin.manage_staff'))
+        flash(f'Error creating account: {e}', 'error')
+    return redirect(url_for('admin.manage_users'))
+
+
+@admin_bp.route('/users/<int:uid>/delete', methods=['POST'])
+@role_required('admin')
+def delete_user(uid):
+    """Permanently delete any staff/admin account (and its records)."""
+    user = User.query.get_or_404(uid)
+
+    # Students register through the public flow — removal there means deleting
+    # their scholarship history too, which manage_users is not the place for.
+    if user.user_type == 'student':
+        flash('Student accounts cannot be deleted here. Use the Student Directory.', 'error')
+        return redirect(url_for('admin.manage_users'))
+    if user.id == session['user_id']:
+        flash('You cannot delete your own account.', 'error')
+        return redirect(url_for('admin.manage_users'))
+    if user.user_type == 'admin':
+        admins_remaining = User.query.filter(
+            User.user_type == 'admin', User.id != user.id, User.is_active == True
+        ).count()
+        if admins_remaining == 0:
+            flash('Cannot delete the only active admin.', 'error')
+            return redirect(url_for('admin.manage_users'))
+
+    uname, uemail = user.username, user.email
+    _delete_user_related_rows(uid)
+    db.session.delete(user)
+    db.session.commit()
+    from app.services.audit_service import log_action
+    log_action('user.delete_account',
+               f'Admin {session.get("username")} permanently deleted {user.user_type} account: '
+               f'{uname} (email: {uemail}).',
+               category='user', target_type='user', target_id=uid,
+               user_id=session.get('user_id'), user_name=session.get('username'),
+               user_role='admin')
+    flash(f'Account "{uname}" deleted.', 'success')
+    return redirect(url_for('admin.manage_users'))
+
+
+# ── Legacy Staff Management routes — kept as redirects for old links ────────
+
+@admin_bp.route('/staff')
+@role_required('admin')
+def manage_staff():
+    """Legacy staff page — merged into Manage Users; redirects there."""
+    return redirect(url_for('admin.manage_users', role='staff'))
+
+
+@admin_bp.route('/staff/create', methods=['POST'])
+@role_required('admin')
+def create_staff():
+    """Legacy staff-creation endpoint — delegates to the unified account creator."""
+    return create_user_account()
 
 
 @admin_bp.route('/staff/<int:uid>/delete', methods=['POST'])
 @role_required('admin')
 def delete_staff(uid):
-    """Delete a staff account."""
-    staff = User.query.get_or_404(uid)
-    if staff.user_type != 'staff':
-        flash('Can only delete staff accounts here.', 'error')
-        return redirect(url_for('admin.manage_staff'))
-    staff_name     = staff.get_full_name()
-    staff_username = staff.username
-    staff_email    = staff.email
-    db.session.delete(staff)
-    db.session.commit()
-    from app.services.audit_service import log_action
-    log_action('user.delete_staff',
-               f'Admin {session.get("username")} permanently deleted staff account: '
-               f'{staff_name} (username: {staff_username}, email: {staff_email}).',
-               category='user', target_type='user', target_id=uid)
-    flash(f'Staff account "{staff_username}" deleted.', 'success')
-    return redirect(url_for('admin.manage_staff'))
+    """Legacy staff-deletion endpoint — delegates to the unified deleter."""
+    return delete_user(uid)
 
 
 # ── Student Directory (Admin) ─────────────────────────────────────────────────
