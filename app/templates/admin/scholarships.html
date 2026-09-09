@@ -27,6 +27,8 @@
           <thead>
             <tr>
               <th class="ps-4">Program Name</th>
+              <th>Campus</th>
+              <th>Campus</th>
               <th>Amount</th>
               <th>Applicants</th>
               <th>Status</th>
@@ -40,6 +42,15 @@
                 <strong>{{ s.title }}</strong>
                 {% if s.is_hidden %}
                 <span class="badge bg-warning text-dark ms-1" style="font-size:.65rem;">Hidden</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if s.scope == 'university' %}
+                  <span class="badge bg-primary"><i class="bi bi-globe me-1"></i>All</span>
+                {% elif s.campus %}
+                  <span class="badge bg-info text-dark">{{ s.campus.short_name or s.campus.name }}</span>
+                {% else %}
+                  <span class="text-muted small">—</span>
                 {% endif %}
               </td>
               <td>{% if s.award_amount %}<strong>₱{{ "{:,.0f}".format(s.award_amount) }}</strong>{% else %}<span class="text-muted">—</span>{% endif %}</td>
@@ -126,6 +137,24 @@
               <option value="private">Private — students may hold this alongside other scholarships</option>
             </select>
             <div class="form-text">Students can hold only ONE public scholarship, but any number of private ones.</div>
+          </div>
+          <div class="row g-3 mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Scope</label>
+              <select class="form-select" name="scope">
+                <option value="campus">Campus-specific</option>
+                <option value="university">University-wide (all campuses)</option>
+              </select>
+              <div class="form-text">University-wide scholarships are visible to students from all campuses.</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Campus</label>
+              <select class="form-select" name="campus_id">
+                {% for c in all_campuses %}
+                <option value="{{ c.id }}" {% if session.get('campus_context') == c.id %}selected{% endif %}>{{ c.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
           </div>
           <div class="mb-3">
             <label class="form-label fw-semibold">Description</label>

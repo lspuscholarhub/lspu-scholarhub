@@ -25,6 +25,15 @@
           <div class="d-flex justify-content-between align-items-start mb-2">
             <h5 class="card-title mb-0">{{ s.title }}</h5>
             <div class="d-flex gap-1">
+              {% if s.scope == 'university' %}
+                <span class="badge bg-primary" title="University-wide — open to all campuses">
+                  <i class="bi bi-globe me-1"></i>All Campuses
+                </span>
+              {% elif s.campus %}
+                <span class="badge bg-info text-dark" title="Campus-specific: {{ s.campus.name }}">
+                  <i class="bi bi-geo-alt me-1"></i>{{ s.campus.short_name or s.campus.name }}
+                </span>
+              {% endif %}
               {% if s.funding_type == 'private' %}
                 <span class="badge bg-info text-dark" title="Private scholarship — can be combined with your other scholarships">
                   <i class="bi bi-building me-1"></i>Private

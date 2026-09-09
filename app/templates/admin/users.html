@@ -18,6 +18,12 @@
           <option value="staff"   {% if role=='staff'   %}selected{% endif %}>Staff</option>
           <option value="admin"   {% if role=='admin'   %}selected{% endif %}>Admin</option>
         </select>
+        <select name="campus" class="form-select" style="width:150px;">
+          <option value="">All Campuses</option>
+          {% for c in all_campuses %}
+          <option value="{{ c.id }}" {% if campus_filter|string == c.id|string %}selected{% endif %}>{{ c.short_name or c.name }}</option>
+          {% endfor %}
+        </select>
         <button class="btn btn-outline-primary" type="submit">Search</button>
       </form>
     </div>
@@ -31,7 +37,7 @@
           <thead class="table-light">
             <tr>
               <th>ID</th><th>Username</th><th>Name</th><th>Email</th>
-              <th>Role</th><th>Status</th><th>Verified</th><th>Registered</th><th>Actions</th>
+              <th>Campus</th><th>Role</th><th>Status</th><th>Verified</th><th>Registered</th><th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -49,7 +55,16 @@
               </td>
               <td class="small">{{ u.email }}</td>
               <td>
-                {% if u.user_type=='admin' %}<span class="badge bg-danger">Admin</span>
+                {% if u.campus %}
+                  <span class="badge bg-info text-dark">{{ u.campus.short_name or u.campus.name }}</span>
+                {% else %}
+                  <span class="text-muted small">—</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if u.user_type=='university_admin' %}<span class="badge bg-danger">University Admin</span>
+                {% elif u.user_type=='campus_admin' %}<span class="badge bg-danger">Campus Admin</span>
+                {% elif u.user_type=='admin' %}<span class="badge bg-danger">Admin</span>
                 {% elif u.user_type=='staff' %}<span class="badge bg-warning text-dark">Staff</span>
                 {% else %}<span class="badge bg-primary">Student</span>{% endif %}
                 {% if u.id != current_user_id %}
@@ -60,7 +75,7 @@
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <select name="role" class="form-select form-select-sm" style="width:auto;"
                           aria-label="Change role">
-                    {% for r in ['student', 'staff', 'admin'] %}
+                    {% for r in ['student', 'staff', 'campus_admin', 'admin', 'university_admin'] %}
                     <option value="{{ r }}" {% if u.user_type == r %}selected{% endif %}>{{ r|title }}</option>
                     {% endfor %}
                   </select>
