@@ -246,10 +246,6 @@
 
         {# Campus badge / selector #}
         {% if session.get('user_id') and role != 'guest' %}
-          {% set user_obj = None %}
-          {% if session.get('user_id') %}
-            {% from 'app.models' import User %}
-          {% endif %}
           {% if role == 'university_admin' %}
             {# University admin: campus selector dropdown #}
             <li class="nav-item dropdown d-none d-lg-flex align-items-center me-1">
