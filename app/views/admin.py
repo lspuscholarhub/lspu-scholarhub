@@ -124,7 +124,7 @@ def create_scholarship():
             eligibility_criteria = request.form.get('eligibility_criteria', '').strip() or None,
             benefits             = request.form.get('benefits', '').strip() or None,
             award_amount         = request.form.get('award_amount') or None,
-            max_applicants       = request.form.get('max_applicants') or None,
+            max_applicants       = max(0, int(request.form.get('max_applicants') or 0)) or None,
             application_deadline = datetime.strptime(request.form['application_deadline'], '%Y-%m-%d') if request.form.get('application_deadline') else None,
             status               = ScholarshipStatus.ACTIVE,
             created_by           = session['user_id'],
@@ -194,7 +194,8 @@ def edit_scholarship(sid):
         s.eligibility_criteria = request.form.get('eligibility_criteria', s.eligibility_criteria)
         s.benefits             = request.form.get('benefits', s.benefits)
         s.award_amount         = request.form.get('award_amount') or s.award_amount
-        s.max_applicants       = request.form.get('max_applicants') or s.max_applicants
+        if request.form.get('max_applicants'):
+            s.max_applicants = max(0, int(request.form['max_applicants'])) or None
         if request.form.get('application_deadline'):
             s.application_deadline = datetime.strptime(
                 request.form['application_deadline'], '%Y-%m-%d')
