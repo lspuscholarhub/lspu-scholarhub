@@ -139,6 +139,7 @@ def create_scholarship():
                 f'Log in to ScholarHub and go to Scholarships to apply.'
             )
             do_sms = request.form.get('announce_sms') == '1'
+            do_email = request.form.get('announce_email') == '1'
             try:
                 students = User.query.filter_by(user_type='student', is_active=True).all()
                 sms_sent = 0
@@ -150,6 +151,9 @@ def create_scholarship():
                         notification_type=NotificationType.NEW_SCHOLARSHIP,
                         channel=NotificationChannel.IN_APP,
                     ))
+                    if do_email:
+                        notification_service.send_email(
+                            user.email, announce_title, announce_msg)
                     if do_sms and user.phone_number:
                         result = notification_service.send_sms(
                             user.phone_number, f"{announce_title}: {announce_msg}")
@@ -160,6 +164,7 @@ def create_scholarship():
                            f'Announced scholarship "{s.title}" to {len(students)} student(s).',
                            category='scholarship', target_type='scholarship', target_id=s.id)
                 flash(f'Announcement sent to {len(students)} student(s)'
+                      + (' · Email queued' if do_email else '')
                       + (f' · SMS delivered to {sms_sent}' if do_sms else '') + '.', 'success')
             except Exception as ae:
                 db.session.rollback()
@@ -1068,6 +1073,7 @@ def send_notification():
     recipient_type = request.form.get('recipient_type', 'multiple')
     title          = request.form.get('title', '').strip()
     message        = request.form.get('message', '').strip()
+    send_email     = request.form.get('send_email') == 'on'
     send_sms       = request.form.get('send_sms') == 'on'
 
     if not title or not message:
@@ -1092,12 +1098,16 @@ def send_notification():
             notification_type=NotificationType.SYSTEM_ANNOUNCEMENT,
             channel=NotificationChannel.IN_APP,
         ))
+        if send_email:
+            notification_service.send_email(user.email, title, message)
         if send_sms and user.phone_number:
             result = notification_service.send_sms(user.phone_number, f"{title}: {message}")
             if result.get('success'):
                 sms_sent += 1
     db.session.commit()
     msg = f'Notification sent to {len(recipients)} recipient(s).'
+    if send_email:
+        msg += ' Email queued.'
     if send_sms:
         msg += f' SMS delivered to {sms_sent} verified phone(s).'
     flash(msg, 'success')

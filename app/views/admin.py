@@ -147,6 +147,7 @@ def create_scholarship():
                 f'Log in to ScholarHub and go to Scholarships to apply.'
             )
             do_sms = request.form.get('announce_sms') == '1'
+            do_email = request.form.get('announce_email') == '1'
             try:
                 students = User.query.filter_by(user_type='student', is_active=True).all()
                 sms_sent = 0
@@ -158,6 +159,9 @@ def create_scholarship():
                         notification_type=NotificationType.NEW_SCHOLARSHIP,
                         channel=NotificationChannel.IN_APP,
                     ))
+                    if do_email:
+                        notification_service.send_email(
+                            user.email, announce_title, announce_msg)
                     if do_sms and user.phone_number:
                         result = notification_service.send_sms(
                             user.phone_number, f"{announce_title}: {announce_msg}")
@@ -168,6 +172,7 @@ def create_scholarship():
                            f'Announced scholarship "{s.title}" to {len(students)} student(s).',
                            category='scholarship', target_type='scholarship', target_id=s.id)
                 flash(f'Announcement sent to {len(students)} student(s)'
+                      + (' · Email queued' if do_email else '')
                       + (f' · SMS delivered to {sms_sent}' if do_sms else '') + '.', 'success')
             except Exception as ae:
                 db.session.rollback()
