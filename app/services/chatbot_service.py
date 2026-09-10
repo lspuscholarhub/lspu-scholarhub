@@ -70,25 +70,49 @@ def _init_gemini():
 
 # ── Live context builders ─────────────────────────────────────────────────────
 
-def _scholarship_context():
-    """Return a structured text block of all currently open scholarships."""
-    try:
-        from app.models import Scholarship
-        from app.models.scholarship import ScholarshipStatus
+def _visible_open_scholarships(user_id=None):
+    """Active, deadline-open scholarships the viewer is ALLOWED to see.
 
-        scholarships = (Scholarship.query
-                        .filter_by(status=ScholarshipStatus.ACTIVE)
-                        .filter(
-                            db.or_(
-                                Scholarship.application_deadline > datetime.utcnow(),
-                                Scholarship.application_deadline.is_(None)
-                            )
+    Hidden programs are only visible to students listed in their
+    allowed_student_ids, and to staff/admin roles. Guests (user_id=None)
+    never see hidden ones — same rules as the Scholarships page.
+    """
+    from app.models import Scholarship, User
+    from app.models.scholarship import ScholarshipStatus
+
+    scholarships = (Scholarship.query
+                    .filter_by(status=ScholarshipStatus.ACTIVE)
+                    .filter(
+                        db.or_(
+                            Scholarship.application_deadline > datetime.utcnow(),
+                            Scholarship.application_deadline.is_(None)
                         )
-                        .order_by(
-                            db.case((Scholarship.application_deadline.is_(None), 1), else_=0),
-                            Scholarship.application_deadline.asc()
-                        )
-                        .all())
+                    )
+                    .order_by(
+                        db.case((Scholarship.application_deadline.is_(None), 1), else_=0),
+                        Scholarship.application_deadline.asc()
+                    )
+                    .all())
+
+    student_id = None
+    staff_view = False
+    if user_id:
+        user = User.query.get(user_id)
+        if user:
+            if user.user_type in ('staff', 'admin', 'super_admin'):
+                staff_view = True
+            else:
+                student_id = user.student_id
+
+    if staff_view:
+        return scholarships
+    return [s for s in scholarships if s.is_visible_to(student_id)]
+
+
+def _scholarship_context(user_id=None):
+    """Return a structured text block of open scholarships visible to the viewer."""
+    try:
+        scholarships = _visible_open_scholarships(user_id)
 
         if not scholarships:
             return "There are currently NO open scholarships."
@@ -158,7 +182,7 @@ def _user_context(user_id):
 
 def _build_system_prompt(user_id=None):
     """Assemble the full system prompt with live data."""
-    scholarship_ctx = _scholarship_context()
+    scholarship_ctx = _scholarship_context(user_id)
     user_ctx        = _user_context(user_id)
 
     return f"""You are the official AI assistant for **LSPU ScholarHub** — the scholarship management system of Laguna State Polytechnic University (LSPU), Philippines.
@@ -297,14 +321,7 @@ def _rule_based_response(user_message, user_id=None):
     # List scholarships
     if intent == 'list_scholarships':
         try:
-            scholarships = (Scholarship.query
-                            .filter_by(status=ScholarshipStatus.ACTIVE)
-                            .filter(
-                                db.or_(
-                                    Scholarship.application_deadline > datetime.utcnow(),
-                                    Scholarship.application_deadline.is_(None)
-                                )
-                            ).all())
+            scholarships = _visible_open_scholarships(user_id)
             if not scholarships:
                 return "There are currently no open scholarships. Please check back later or visit the Scholarships page."
             lines = []
@@ -320,14 +337,7 @@ def _rule_based_response(user_message, user_id=None):
     # Deadlines
     if intent == 'deadline_inquiry':
         try:
-            scholarships = (Scholarship.query
-                            .filter_by(status=ScholarshipStatus.ACTIVE)
-                            .filter(
-                                db.or_(
-                                    Scholarship.application_deadline > datetime.utcnow(),
-                                    Scholarship.application_deadline.is_(None)
-                                )
-                            ).all())
+            scholarships = _visible_open_scholarships(user_id)
             if scholarships:
                 lines = []
                 for s in scholarships:
@@ -342,14 +352,7 @@ def _rule_based_response(user_message, user_id=None):
     # Benefits / amounts
     if intent == 'benefits_inquiry':
         try:
-            scholarships = (Scholarship.query
-                            .filter_by(status=ScholarshipStatus.ACTIVE)
-                            .filter(
-                                db.or_(
-                                    Scholarship.application_deadline > datetime.utcnow(),
-                                    Scholarship.application_deadline.is_(None)
-                                )
-                            ).all())
+            scholarships = _visible_open_scholarships(user_id)
             if scholarships:
                 lines = [f"• **{s.title}**: ₱{float(s.award_amount):,.0f}" if s.award_amount
                          else f"• **{s.title}**: TBA"
@@ -391,14 +394,7 @@ def _rule_based_response(user_message, user_id=None):
     # Eligibility
     if intent == 'eligibility_inquiry':
         try:
-            scholarships = (Scholarship.query
-                            .filter_by(status=ScholarshipStatus.ACTIVE)
-                            .filter(
-                                db.or_(
-                                    Scholarship.application_deadline > datetime.utcnow(),
-                                    Scholarship.application_deadline.is_(None)
-                                )
-                            ).all())
+            scholarships = _visible_open_scholarships(user_id)
             if scholarships:
                 lines = [f"• **{s.title}**: {s.eligibility_criteria[:100]}{'…' if len(s.eligibility_criteria) > 100 else ''}"
                          for s in scholarships]
