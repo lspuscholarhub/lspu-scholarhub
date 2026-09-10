@@ -58,25 +58,30 @@ class NotificationService:
         # Fallback for development
         return 'http://localhost:5000'
 
-    def send_email(self, to_email, subject, message, template_data=None):
+    def send_email(self, to_email, subject, message, template_data=None, attachments=None):
         """
         Send email notification.
         Priority:
           1. Resend HTTP API  — if RESEND_API_KEY is set (instant activation, free tier)
           2. Brevo HTTP API   — if BREVO_API_KEY is set (bypasses SMTP port restrictions)
           3. SMTP             — fallback for local development
+
+        attachments: optional list of dicts {'filename': str, 'content_base64': str}
+        (base64-encoded by the caller; supported by Brevo and Resend APIs)
         """
         html_content = self._generate_email_html(message, template_data)
 
         # ── Option 1: Resend API (works instantly on Railway) ─────────────────
         resend_key = os.environ.get('RESEND_API_KEY', '').strip()
         if resend_key:
-            return self._send_via_resend_api(to_email, subject, html_content, resend_key)
+            return self._send_via_resend_api(to_email, subject, html_content, resend_key,
+                                             attachments=attachments)
 
         # ── Option 2: Brevo HTTP API ──────────────────────────────────────────
         brevo_key = os.environ.get('BREVO_API_KEY', '').strip()
         if brevo_key:
-            return self._send_via_brevo_api(to_email, subject, html_content, brevo_key)
+            return self._send_via_brevo_api(to_email, subject, html_content, brevo_key,
+                                            attachments=attachments)
 
         # ── Option 3: SMTP fallback (local dev) ───────────────────────────────
         try:
@@ -104,19 +109,25 @@ class NotificationService:
             logger.error(f"Failed to send email to {to_email}: {str(e)}")
             return {'success': False, 'message': f'Email send failed: {str(e)}'}
 
-    def _send_via_resend_api(self, to_email, subject, html_content, api_key):
+    def _send_via_resend_api(self, to_email, subject, html_content, api_key, attachments=None):
         """Send email via Resend HTTP API — instant activation, free 3000 emails/month."""
         import urllib.request
         import urllib.error
         import json
         import base64
 
-        payload = json.dumps({
+        body = {
             'from':    'LSPU ScholarHub <onboarding@resend.dev>',
             'to':      [to_email],
             'subject': subject,
             'html':    html_content,
-        }).encode('utf-8')
+        }
+        if attachments:
+            body['attachments'] = [
+                {'filename': a['filename'], 'content': a['content_base64']}
+                for a in attachments
+            ]
+        payload = json.dumps(body).encode('utf-8')
 
         credentials = base64.b64encode(f':{api_key}'.encode()).decode()
 
@@ -148,18 +159,24 @@ class NotificationService:
             logger.error(f"Resend API request failed: {e}")
             return {'success': False, 'message': f'Resend API failed: {e}'}
 
-    def _send_via_brevo_api(self, to_email, subject, html_content, api_key):
+    def _send_via_brevo_api(self, to_email, subject, html_content, api_key, attachments=None):
         """Send email via Brevo HTTP API — works on Railway (no SMTP ports needed)."""
         import urllib.request
         import urllib.error
         import json
 
-        payload = json.dumps({
+        body = {
             'sender':   {'name': 'LSPU ScholarHub', 'email': 'lspu.scholarhub@gmail.com'},
             'to':       [{'email': to_email}],
             'subject':  subject,
             'htmlContent': html_content,
-        }).encode('utf-8')
+        }
+        if attachments:
+            body['attachment'] = [
+                {'name': a['filename'], 'content': a['content_base64']}
+                for a in attachments
+            ]
+        payload = json.dumps(body).encode('utf-8')
 
         req = urllib.request.Request(
             'https://api.brevo.com/v3/smtp/email',

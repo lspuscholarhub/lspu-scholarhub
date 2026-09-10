@@ -1100,6 +1100,31 @@ def send_notification():
         flash('Title and message are required.', 'error')
         return redirect(url_for('staff.notifications'))
 
+    # ── Optional attachments (up to 3 files, 5MB each) ──────────────
+    import base64 as _b64
+    ALLOWED_ATTACHMENT_EXTS = {'pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png'}
+    attachments = []
+    for f in request.files.getlist('attachments'):
+        if not f or not f.filename:
+            continue
+        if len(attachments) >= 3:
+            flash('Maximum of 3 attachments allowed — extra files were skipped.', 'warning')
+            break
+        ext = f.filename.rsplit('.', 1)[-1].lower() if '.' in f.filename else ''
+        if ext not in ALLOWED_ATTACHMENT_EXTS:
+            flash(f'Attachment "{f.filename}" was skipped — allowed types: PDF, Word, Excel, images.', 'warning')
+            continue
+        data = f.read()
+        if len(data) > 5 * 1024 * 1024:
+            flash(f'Attachment "{f.filename}" was skipped — it exceeds the 5MB limit.', 'warning')
+            continue
+        attachments.append({
+            'filename': f.filename,
+            'content_base64': _b64.b64encode(data).decode('ascii'),
+        })
+    if attachments and not send_email:
+        flash('Attachments are sent by email only — tick "Also send as email" for students to receive them.', 'warning')
+
     uids = request.form.getlist('recipient_ids')
     if uids:
         recipients = User.query.filter(User.id.in_([int(u) for u in uids if u.isdigit()])).all()
@@ -1119,7 +1144,8 @@ def send_notification():
             channel=NotificationChannel.IN_APP,
         ))
         if send_email:
-            notification_service.send_email(user.email, title, message)
+            notification_service.send_email(user.email, title, message,
+                                            attachments=attachments or None)
         if send_sms and user.phone_number:
             result = notification_service.send_sms(user.phone_number, f"{title}: {message}")
             if result.get('success'):
