@@ -99,11 +99,16 @@ def list_scholarships():
 def _active_public_application(user_id, exclude_app_id=None):
     """The student's ACTIVE public scholarship application, if any.
 
-    Rule: a student may be pursuing only ONE public (government-funded)
-    scholarship at a time — that includes a pending/under-review application
-    or an approved award. Private scholarships are combinable — with the
-    public one and with each other.
+    Rule (per academic period): a student may pursue only ONE public
+    (government-funded) scholarship within the same academic period —
+    a pending/under-review application or an approved award counts.
+    When a new academic period starts, they may apply to a different
+    public program again. Private scholarships are combinable — with
+    the public one and with each other.
     """
+    from app.models.academic_period import AcademicPeriod
+    period = AcademicPeriod.get_current()
+
     q = (ScholarshipApplication.query
          .join(Scholarship, ScholarshipApplication.scholarship_id == Scholarship.id)
          .filter(
@@ -115,7 +120,27 @@ def _active_public_application(user_id, exclude_app_id=None):
          ))
     if exclude_app_id:
         q = q.filter(ScholarshipApplication.id != exclude_app_id)
-    return q.first()
+    apps = q.all()
+
+    if not period:
+        # No academic period configured — fall back to legacy behaviour
+        return apps[0] if apps else None
+
+    # Only count applications submitted in the current academic period.
+    # Approved awards whose period ended do not block a new application.
+    start = (period.start_date or None)
+    for a in apps:
+        ref = a.submitted_at
+        if start and ref and ref.date() < start:
+            continue
+        # An award approved in an EARLIER period doesn't block either
+        if a.status == ApplicationStatus.APPROVED and a.approved_at:
+            if start and a.approved_at.date() < start:
+                continue
+            if period.end_date and a.approved_at.date() > period.end_date:
+                continue
+        return a
+    return None
 
 
 @scholarship_bp.route('/<int:scholarship_id>')

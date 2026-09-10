@@ -616,6 +616,17 @@ def monitoring():
         if s.application_id not in me_forms:
             me_forms[s.application_id] = s
 
+    # M&E deadline (per current academic period) for overdue flagging
+    from app.models.academic_period import AcademicPeriod
+    current_period = AcademicPeriod.get_current()
+    me_deadline = current_period.me_form_deadline if current_period else None
+    me_overdue_count = 0
+    if me_deadline:
+        today = datetime.utcnow().date()
+        for a in all_approved:
+            if a.id not in me_forms and me_deadline < today:
+                me_overdue_count += 1
+
     return render_template(
         'admin/monitoring.html',
         scholars=scholars, stats=stats,
@@ -623,6 +634,9 @@ def monitoring():
         status_filter=status_filter,
         course_filter=course_filter,
         me_forms=me_forms,
+        me_deadline=me_deadline,
+        me_overdue_count=me_overdue_count,
+        now_local=datetime.utcnow().date(),
     )
 
 

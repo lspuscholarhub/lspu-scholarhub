@@ -368,20 +368,15 @@ def review_application(app_id):
         flash('Invalid action.', 'error')
         return redirect(url_for('staff.review_applications'))
 
-    # Guard: a student may hold only ONE public scholarship at a time
+    # Guard: a student may hold only ONE public scholarship per academic period
     if action == 'approve' and application.scholarship.funding_type == 'public':
-        held_public = (ScholarshipApplication.query
-                       .join(Scholarship, ScholarshipApplication.scholarship_id == Scholarship.id)
-                       .filter(
-                           ScholarshipApplication.applicant_id == application.applicant_id,
-                           ScholarshipApplication.status == ApplicationStatus.APPROVED,
-                           Scholarship.funding_type == 'public',
-                           ScholarshipApplication.id != application.id,
-                       ).first())
+        from app.views.scholarship import _active_public_application
+        held_public = _active_public_application(application.applicant_id,
+                                                 exclude_app_id=application.id)
         if held_public:
             flash(f'Cannot approve: {application.applicant.get_full_name()} already holds the '
-                  f'public scholarship "{held_public.scholarship.title}". Only one public '
-                  'scholarship is allowed per student.', 'error')
+                  f'public scholarship "{held_public.scholarship.title}" for this academic period. '
+                  'Only one public scholarship is allowed per student per period.', 'error')
             return redirect(url_for('staff.review_applications'))
 
     application.status      = new_status
@@ -438,17 +433,11 @@ def batch_review():
     for app_id in app_ids:
         app = ScholarshipApplication.query.get(int(app_id))
         if app:
-            # Guard: skip approving a public scholarship for a student who already holds one
+            # Guard: skip approving a public scholarship for a student who already
+            # holds one in this academic period
             if (action == 'approve' and app.scholarship.funding_type == 'public'):
-                held_public = (ScholarshipApplication.query
-                               .join(Scholarship, ScholarshipApplication.scholarship_id == Scholarship.id)
-                               .filter(
-                                   ScholarshipApplication.applicant_id == app.applicant_id,
-                                   ScholarshipApplication.status == ApplicationStatus.APPROVED,
-                                   Scholarship.funding_type == 'public',
-                                   ScholarshipApplication.id != app.id,
-                               ).first())
-                if held_public:
+                from app.views.scholarship import _active_public_application
+                if _active_public_application(app.applicant_id, exclude_app_id=app.id):
                     skipped_public += 1
                     continue
             app.status = new_status
@@ -550,6 +539,17 @@ def monitoring():
         if s.application_id not in me_forms:
             me_forms[s.application_id] = s
 
+    # M&E deadline (per current academic period) for overdue flagging
+    from app.models.academic_period import AcademicPeriod
+    current_period = AcademicPeriod.get_current()
+    me_deadline = current_period.me_form_deadline if current_period else None
+    me_overdue_count = 0
+    if me_deadline:
+        today = datetime.utcnow().date()
+        for a in all_approved:
+            if a.id not in me_forms and me_deadline < today:
+                me_overdue_count += 1
+
     return render_template(
         'staff/monitoring.html',
         scholars=scholars, stats=stats,
@@ -558,6 +558,9 @@ def monitoring():
         status_filter=status_filter,
         course_filter=course_filter,
         me_forms=me_forms,
+        me_deadline=me_deadline,
+        me_overdue_count=me_overdue_count,
+        now_local=datetime.utcnow().date(),
     )
 
 

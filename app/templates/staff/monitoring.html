@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% set now_local = now_local or none %}
 {% block title %}Monitoring & Tracking - Staff{% endblock %}
 {% block content %}
 <div class="container-fluid py-4">
@@ -24,8 +25,7 @@
       ('Total Scholars', stats.total, 'primary', 'bi-people-fill'),
       ('Good Standing', stats.active, 'success', 'bi-check-circle-fill'),
       ('At Risk', stats.at_risk, 'warning', 'bi-exclamation-triangle-fill'),
-      ('On Probation', stats.probation, 'orange', 'bi-exclamation-circle-fill'),
-      ('Termination Warning', stats.termination, 'danger', 'bi-x-octagon-fill'),
+      ('M&E Overdue', me_overdue_count or 0, 'danger', 'bi-exclamation-octagon-fill'),
     ] %}
     <div class="col-xl-2 col-md-4 col-6">
       <div class="card border-0 shadow-sm text-center py-3" style="border-radius:12px;">
@@ -149,12 +149,15 @@
               </td>
               <td data-label="M&E Form">
                 {% set me_sub = me_forms.get(app.id) %}
+                {% set me_overdue = (me_deadline and (not me_sub) and (me_deadline < now_local)) %}
                 {% if me_sub %}
                   <a href="{{ url_for('staff.view_me_form', app_id=app.id) }}" target="_blank"
                      class="badge bg-success text-decoration-none" title="View {{ me_sub.original_filename }} (uploaded {{ me_sub.uploaded_at.strftime('%b %d, %Y') }})">
                     <i class="bi bi-file-earmark-check me-1"></i>Submitted
                   </a>
                   <small class="text-muted d-block">{{ me_sub.uploaded_at.strftime('%b %d, %Y') }}</small>
+                {% elif me_overdue %}
+                  <span class="badge bg-danger" title="Deadline was {{ me_deadline.strftime('%b %d, %Y') }} — not submitted"><i class="bi bi-exclamation-octagon me-1"></i>Overdue</span>
                 {% else %}
                   <span class="badge bg-secondary"><i class="bi bi-file-earmark-x me-1"></i>Not submitted</span>
                 {% endif %}
