@@ -17,6 +17,7 @@
           <option value="student" {% if role=='student' %}selected{% endif %}>Student</option>
           <option value="staff"   {% if role=='staff'   %}selected{% endif %}>Staff</option>
           <option value="admin"   {% if role=='admin'   %}selected{% endif %}>Admin</option>
+          <option value="super_admin" {% if role=='super_admin' %}selected{% endif %}>Super Admin</option>
         </select>
         <select name="campus" class="form-select" style="width:150px;">
           <option value="">All Campuses</option>
@@ -64,7 +65,6 @@
               <td>
                 {% if u.user_type=='super_admin' %}<span class="badge bg-danger">Super Admin</span>
                 {% elif u.user_type=='admin' %}<span class="badge bg-danger">Admin</span>
-                {% elif u.user_type=='admin' %}<span class="badge bg-danger">Admin</span>
                 {% elif u.user_type=='staff' %}<span class="badge bg-warning text-dark">Staff</span>
                 {% else %}<span class="badge bg-primary">Student</span>{% endif %}
                 {% if u.id != current_user_id %}
@@ -75,7 +75,7 @@
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <select name="role" class="form-select form-select-sm" style="width:auto;"
                           aria-label="Change role">
-                    {% for r in ['student', 'staff', 'admin', 'admin', 'super_admin'] %}
+                    {% for r in ['student', 'staff', 'admin', 'super_admin'] %}
                     <option value="{{ r }}" {% if u.user_type == r %}selected{% endif %}>{{ r|title }}</option>
                     {% endfor %}
                   </select>
@@ -158,7 +158,8 @@
         <h5 class="modal-title">
           Edit User — {{ u.username }}
           <span class="badge
-            {% if u.user_type=='admin' %}bg-danger
+            {% if u.user_type=='super_admin' %}bg-danger
+            {% elif u.user_type=='admin' %}bg-danger
             {% elif u.user_type=='staff' %}bg-warning text-dark
             {% else %}bg-primary{% endif %} ms-2">
             {{ u.user_type|title }}
@@ -253,7 +254,7 @@
               <label class="form-label fw-semibold">Year Level</label>
               <select class="form-select" name="year_level">
                 <option value="">— Select —</option>
-                {% for y in ['1st Year','2nd Year','3rd Year','4th Year','5th Year'] %}
+                {% for y in ['1st Year','2nd Year','3rd Year','4th Year','5th Year','Irregular','Graduate'] %}
                 <option value="{{ y }}"
                   {% if u.year_level == y %}selected{% endif %}>{{ y }}</option>
                 {% endfor %}
@@ -279,7 +280,7 @@
             <div class="col-md-6">
               <label class="form-label fw-semibold">Role</label>
               <select class="form-select" name="role">
-                {% for r in ['student', 'staff', 'admin'] %}
+                {% for r in ['student', 'staff', 'admin', 'super_admin'] %}
                 <option value="{{ r }}" {% if u.user_type == r %}selected{% endif %}>{{ r|title }}</option>
                 {% endfor %}
               </select>
@@ -338,6 +339,16 @@
                 <option value="admin">Admin</option>
               </select>
               <div class="form-text">Students register themselves via the public registration page.</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Campus *</label>
+              <select class="form-select" name="campus_id" required>
+                <option value="" disabled>Select Campus</option>
+                {% for c in all_campuses %}
+                <option value="{{ c.id }}">{{ c.name }}</option>
+                {% endfor %}
+              </select>
+              <div class="form-text">Staff/admin accounts are scoped to their campus.</div>
             </div>
           </div>
         </div>

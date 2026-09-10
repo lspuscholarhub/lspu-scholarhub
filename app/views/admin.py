@@ -790,16 +790,18 @@ def edit_user(uid):
 
     # Role change (with the same safety rules as the quick-change route)
     new_role = request.form.get('role', '').strip()
-    if new_role and new_role in ('student', 'staff', 'admin', 'super_admin', 'admin') and new_role != user.user_type:
+    if new_role and new_role in ('student', 'staff', 'admin', 'super_admin') and new_role != user.user_type:
         if user.id == session['user_id']:
             flash('You cannot change your own role. Ask another admin to do it.', 'error')
             return redirect(url_for('admin.manage_users'))
         if user.user_type == 'admin' and new_role != 'admin':
             admins_remaining = User.query.filter(
-                User.user_type == 'admin', User.id != user.id, User.is_active == True
+                User.user_type.in_(('admin', 'super_admin')),
+                User.id != user.id, User.is_active == True
             ).count()
             if admins_remaining == 0:
-                flash('Cannot demote the only active admin. Promote another admin first.', 'error')
+                flash('Cannot demote the only active admin. A super admin or '
+                      'another admin must remain.', 'error')
                 return redirect(url_for('admin.manage_users'))
         old_role = user.user_type
         user.user_type = new_role
@@ -839,7 +841,7 @@ def change_user_role(uid):
     user = User.query.get_or_404(uid)
     new_role = request.form.get('role', '').strip()
 
-    if new_role not in ('student', 'staff', 'admin', 'super_admin', 'admin'):
+    if new_role not in ('student', 'staff', 'admin', 'super_admin'):
         flash('Invalid role selected.', 'error')
         return redirect(url_for('admin.manage_users'))
 
@@ -855,10 +857,12 @@ def change_user_role(uid):
     # Safety: never remove the last admin
     if user.user_type == 'admin' and new_role != 'admin':
         admins_remaining = User.query.filter(
-            User.user_type == 'admin', User.id != user.id, User.is_active == True
+            User.user_type.in_(('admin', 'super_admin')),
+            User.id != user.id, User.is_active == True
         ).count()
         if admins_remaining == 0:
-            flash('Cannot demote the only active admin. Promote another admin first.', 'error')
+            flash('Cannot demote the only active admin. A super admin or '
+                  'another admin must remain.', 'error')
             return redirect(url_for('admin.manage_users'))
 
     old_role = user.user_type
@@ -1323,8 +1327,10 @@ def _delete_user_related_rows(uid):
     Documents/chat/gwa_history cascade at DB level; these do not."""
     from app.models.notification import Notification
     from app.models.document import Document
+    from app.models.chat_history import ChatHistory
     Notification.query.filter_by(recipient_id=uid).delete()
     Document.query.filter_by(user_id=uid).delete()
+    ChatHistory.query.filter_by(user_id=uid).delete()
 
 
 @admin_bp.route('/users/create', methods=['POST'])
@@ -1348,6 +1354,20 @@ def create_user_account():
     if len(password) < 8:
         flash('Password must be at least 8 characters.', 'error')
         return redirect(url_for('admin.manage_users'))
+
+    # Campus assignment — required so campus-scoped queries work for the
+    # new account (a staff/admin without a campus sees nothing).
+    from app.models import Campus
+    campus_id = request.form.get('campus_id', '').strip()
+    campus = None
+    if campus_id:
+        try:
+            campus = Campus.query.get(int(campus_id))
+        except (TypeError, ValueError):
+            campus = None
+    if campus is None:
+        flash('Please select the campus this account belongs to.', 'error')
+        return redirect(url_for('admin.manage_users'))
     if User.query.filter_by(username=username).first():
         flash(f'Username "{username}" is already taken.', 'error')
         return redirect(url_for('admin.manage_users'))
@@ -1360,6 +1380,7 @@ def create_user_account():
             username=username, email=email,
             first_name=first_name, last_name=last_name,
             user_type=role, is_active=True, is_verified=True,
+            campus_id=campus.id,
         )
         account.set_password(password)
         db.session.add(account)
@@ -1367,11 +1388,13 @@ def create_user_account():
         from app.services.audit_service import log_action
         log_action('user.create_account',
                    f'Admin {session.get("username")} created new {role} account: '
-                   f'{first_name} {last_name} (username: {username}, email: {email}).',
+                   f'{first_name} {last_name} (username: {username}, email: {email}, '
+                   f'campus: {campus.name}).',
                    category='user', target_type='user', target_id=account.id,
                    user_id=session.get('user_id'), user_name=session.get('username'),
                    user_role='admin')
-        flash(f'{role.title()} account "{username}" created successfully.', 'success')
+        flash(f'{role.title()} account "{username}" created successfully '
+              f'for {campus.name} campus.', 'success')
     except Exception as e:
         db.session.rollback()
         flash(f'Error creating account: {e}', 'error')
@@ -1393,11 +1416,14 @@ def delete_user(uid):
         flash('You cannot delete your own account.', 'error')
         return redirect(url_for('admin.manage_users'))
     if user.user_type == 'admin':
+        # A super_admin counts as an admin-level guardian of the system
         admins_remaining = User.query.filter(
-            User.user_type == 'admin', User.id != user.id, User.is_active == True
+            User.user_type.in_(('admin', 'super_admin')),
+            User.id != user.id, User.is_active == True
         ).count()
         if admins_remaining == 0:
-            flash('Cannot delete the only active admin.', 'error')
+            flash('Cannot delete the only active admin. A super admin or '
+                  'another admin must remain to manage the system.', 'error')
             return redirect(url_for('admin.manage_users'))
 
     uname, uemail = user.username, user.email
