@@ -94,11 +94,47 @@ def dashboard():
 
 # ── Scholarship Management (full CRUD — same as admin) ────────────────────────
 
+def _scholarship_campus_guard(scholarship):
+    """Block campus staff from mutating scholarships outside their campus.
+    Super admin (any selector) is always allowed. Returns a redirect response
+    when blocked, or None when permitted."""
+    if session.get('user_type') == 'super_admin':
+        return None
+    _me = db.session.get(User, session.get('user_id'))
+    my_campus = _me.campus_id if _me else None
+    if scholarship.campus_id != my_campus:
+        flash('You can only manage scholarship programs for your own campus.', 'error')
+        return redirect(url_for('staff.manage_scholarships'))
+    return None
+
+
 @staff_bp.route('/scholarships')
 @role_required('staff')
 def manage_scholarships():
-    scholarships = Scholarship.query.order_by(Scholarship.created_at.desc()).all()
-    return render_template('staff/scholarships.html', scholarships=scholarships)
+    # Strict campus scoping (super admin honors campus selector)
+    if session.get('user_type') == 'super_admin':
+        campus_ctx = session.get('campus_context')          # None = all campuses
+    else:
+        _me = db.session.get(User, session.get('user_id'))
+        campus_ctx = _me.campus_id if _me else None
+
+    query = Scholarship.query
+    if session.get('user_type') == 'super_admin':
+        # Super admin: selected campus context (None = all). University-wide
+        # programs are always visible to them.
+        if campus_ctx:
+            query = query.filter(db.or_(Scholarship.campus_id == campus_ctx,
+                                        Scholarship.campus_id.is_(None)))
+    else:
+        # Campus staff manage only their own campus's programs;
+        # university-wide programs are owned by the super admin.
+        query = query.filter(Scholarship.campus_id == campus_ctx)
+    scholarships = query.order_by(Scholarship.created_at.desc()).all()
+
+    from app.models import Campus
+    all_campuses = Campus.query.filter_by(is_active=True).order_by(Campus.id).all()
+    return render_template('staff/scholarships.html', scholarships=scholarships,
+                           all_campuses=all_campuses)
 
 
 @staff_bp.route('/scholarships/create', methods=['POST'])
@@ -177,7 +213,12 @@ def create_scholarship():
             do_sms = request.form.get('announce_sms') == '1'
             do_email = request.form.get('announce_email') == '1'
             try:
-                students = User.query.filter_by(user_type='student', is_active=True).all()
+                # Announce only to the program's intended audience:
+                # campus-specific program → that campus's students; university-wide → everyone.
+                _stu_q = User.query.filter_by(user_type='student', is_active=True)
+                if campus_id_val:
+                    _stu_q = _stu_q.filter(User.campus_id == campus_id_val)
+                students = _stu_q.all()
                 sms_sent = 0
                 for user in students:
                     db.session.add(Notification(
@@ -216,6 +257,9 @@ def create_scholarship():
 @role_required('staff')
 def edit_scholarship(sid):
     s = Scholarship.query.get_or_404(sid)
+    _err = _scholarship_campus_guard(s)
+    if _err:
+        return _err
     try:
         s.title = request.form.get('title', s.title)
         s.category = request.form.get('category', s.category)
@@ -273,6 +317,9 @@ def edit_scholarship(sid):
 @role_required('staff')
 def delete_scholarship(sid):
     s = Scholarship.query.get_or_404(sid)
+    _err = _scholarship_campus_guard(s)
+    if _err:
+        return _err
     pending = ScholarshipApplication.query.filter_by(
         scholarship_id=sid, status=ApplicationStatus.PENDING).count()
     if pending:
@@ -288,6 +335,9 @@ def delete_scholarship(sid):
 @role_required('staff')
 def toggle_scholarship_visibility(sid):
     s = Scholarship.query.get_or_404(sid)
+    _err = _scholarship_campus_guard(s)
+    if _err:
+        return _err
     s.is_hidden = not s.is_hidden
     db.session.commit()
     flash(f'"{s.title}" is now {"hidden" if s.is_hidden else "visible"}.', 'success')
@@ -344,7 +394,11 @@ def review_applications():
     pagination = (query.order_by(ScholarshipApplication.submitted_at.asc())
                       .paginate(page=page, per_page=20, error_out=False))
     applications = pagination.items
-    scholarships = Scholarship.query.order_by(Scholarship.title).all()
+    _sch_q = Scholarship.query.order_by(Scholarship.title)
+    if campus_ctx:
+        _sch_q = _sch_q.filter(db.or_(Scholarship.campus_id == campus_ctx,
+                                      Scholarship.campus_id.is_(None)))
+    scholarships = _sch_q.all()
     courses = sorted({
         u.course for u in User.query.filter(
             User.user_type == 'student', User.course.isnot(None)).all()
@@ -1032,17 +1086,40 @@ def view_reg_document(uid, doc_type):
 @role_required('staff')
 def reports():
     import json
-    total_apps    = ScholarshipApplication.query.count()
-    approved      = ScholarshipApplication.query.filter_by(status=ApplicationStatus.APPROVED).count()
-    rejected      = ScholarshipApplication.query.filter_by(status=ApplicationStatus.REJECTED).count()
-    pending       = ScholarshipApplication.query.filter(
+
+    # Strict campus scoping (super admin honors campus selector)
+    if session.get('user_type') == 'super_admin':
+        campus_ctx = session.get('campus_context')          # None = all campuses
+    else:
+        _me = db.session.get(User, session.get('user_id'))
+        campus_ctx = _me.campus_id if _me else None
+
+    def _apps_q():
+        """Applications scoped to the campus of the applicant."""
+        q = ScholarshipApplication.query.join(
+            User, ScholarshipApplication.applicant_id == User.id)
+        if campus_ctx:
+            q = q.filter(User.campus_id == campus_ctx)
+        return q
+
+    total_apps    = _apps_q().count()
+    approved      = _apps_q().filter(
+        ScholarshipApplication.status == ApplicationStatus.APPROVED).count()
+    rejected      = _apps_q().filter(
+        ScholarshipApplication.status == ApplicationStatus.REJECTED).count()
+    pending       = _apps_q().filter(
         ScholarshipApplication.status.in_([ApplicationStatus.PENDING, ApplicationStatus.UNDER_REVIEW])
     ).count()
     approval_rate = round(approved / total_apps * 100, 1) if total_apps else 0
-    scholarships  = Scholarship.query.all()
+
+    _sch_q = Scholarship.query
+    if campus_ctx:
+        _sch_q = _sch_q.filter(db.or_(Scholarship.campus_id == campus_ctx,
+                                      Scholarship.campus_id.is_(None)))
+    scholarships  = _sch_q.all()
     scholarship_stats = []
     for s in scholarships:
-        apps = ScholarshipApplication.query.filter_by(scholarship_id=s.id).all()
+        apps = _apps_q().filter(ScholarshipApplication.scholarship_id == s.id).all()
         scholarship_stats.append({
             'scholarship': s,
             'total':    len(apps),
@@ -1052,7 +1129,10 @@ def reports():
         })
 
     # GWA distribution
-    students_with_gwa = User.query.filter(User.user_type == 'student', User.gwa.isnot(None)).all()
+    _gwa_q = User.query.filter(User.user_type == 'student', User.gwa.isnot(None))
+    if campus_ctx:
+        _gwa_q = _gwa_q.filter(User.campus_id == campus_ctx)
+    students_with_gwa = _gwa_q.all()
     gwa_buckets = {
         'Excellent (≤1.25)': 0, 'Very Satisfactory (≤1.75)': 0,
         'Satisfactory (≤2.25)': 0, 'Fairly Satisfactory (≤2.75)': 0,
@@ -1074,7 +1154,8 @@ def reports():
     sch_approved = json.dumps([s['approved'] for s in scholarship_stats])
     sch_pending  = json.dumps([s['pending']  for s in scholarship_stats])
     sch_rejected = json.dumps([s['rejected'] for s in scholarship_stats])
-    all_approved = ScholarshipApplication.query.filter_by(status=ApplicationStatus.APPROVED).all()
+    all_approved = _apps_q().filter(
+        ScholarshipApplication.status == ApplicationStatus.APPROVED).all()
     scholar_status_data = json.dumps([
         sum(1 for a in all_approved if a.scholar_status == 'active'),
         sum(1 for a in all_approved if a.scholar_status == 'at_risk'),
@@ -1116,10 +1197,24 @@ def export_report():
 @staff_bp.route('/notifications')
 @role_required('staff')
 def notifications():
-    students     = User.query.filter_by(user_type='student', is_active=True).order_by(User.last_name).all()
+    # Strict campus scoping (super admin honors campus selector)
+    if session.get('user_type') == 'super_admin':
+        campus_ctx = session.get('campus_context')          # None = all campuses
+    else:
+        _me = db.session.get(User, session.get('user_id'))
+        campus_ctx = _me.campus_id if _me else None
+
+    _stu_q = User.query.filter_by(user_type='student', is_active=True)
+    if campus_ctx:
+        _stu_q = _stu_q.filter(User.campus_id == campus_ctx)
+    students     = _stu_q.order_by(User.last_name).all()
     courses      = sorted({s.course for s in students if s.course})
     year_levels  = ['1st Year', '2nd Year', '3rd Year', '4th Year']
-    scholarships = Scholarship.query.order_by(Scholarship.title).all()
+    _sch_q = Scholarship.query.order_by(Scholarship.title)
+    if campus_ctx:
+        _sch_q = _sch_q.filter(db.or_(Scholarship.campus_id == campus_ctx,
+                                      Scholarship.campus_id.is_(None)))
+    scholarships = _sch_q.all()
     recent       = Notification.query.order_by(Notification.sent_at.desc()).limit(20).all()
     return render_template('staff/notifications.html', students=students, recent=recent,
                            courses=courses, year_levels=year_levels, scholarships=scholarships)
@@ -1491,6 +1586,13 @@ def create_batch():
     if not scholarship_id or not period_id:
         flash('Scholarship and academic period are required.', 'error')
         return redirect(url_for('staff.manage_batches'))
+    _s = db.session.get(Scholarship, scholarship_id)
+    if not _s:
+        flash('Scholarship program not found.', 'error')
+        return redirect(url_for('staff.manage_batches'))
+    _err = _scholarship_campus_guard(_s)
+    if _err:
+        return _err
     if not batch_name:
         batch_name, batch_number = ScholarshipBatch.suggest_next_batch_name(scholarship_id, period_id)
     else:
