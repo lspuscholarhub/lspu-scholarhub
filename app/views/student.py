@@ -758,6 +758,26 @@ def upload_gwa():
 
         verified_data = ownership.get('data') or {}
 
+        # ── Campus auto-update (same policy as year level) ─────────────────
+        # Documents print the campus in the header. If the new document shows
+        # a different campus than the account's, trust the document — the
+        # account campus was originally taken from these same documents.
+        from app.services.ocr_service import campus_matches_document
+        from app.models import Campus as _Campus
+        detected_campus = verified_data.get('campus')
+        if detected_campus and user.campus_id:
+            _cmp = campus_matches_document(detected_campus, user.campus.name if user.campus else None)
+            if _cmp is False:
+                _new_campus = _Campus.query.filter(_Campus.name.ilike(f"%{detected_campus}%")).first()
+                if _new_campus and _new_campus.id != user.campus_id:
+                    _old = user.campus.name if user.campus else 'None'
+                    user.campus_id = _new_campus.id
+                    from app.services.audit_service import log_action as _log
+                    _log('user.campus_update',
+                         f'Student {user.get_full_name()} ({user.student_id}) account campus '
+                         f'updated from {_old} to {_new_campus.name} based on uploaded document.',
+                         category='user', target_type='user', target_id=user.id)
+
         # ── Document type validation ─────────────────────────────────────────
         # Ensure the uploaded file is actually the expected document type.
         detected = verified_data.get('detected_type', 'unknown')

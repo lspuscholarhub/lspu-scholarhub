@@ -488,6 +488,23 @@ def register():
                 return render_template('auth/register.html',
                                        form_data=request.form, ocr_errors=None)
 
+        # ── Campus validation against the documents ──────────────────────
+        # Both COR and Grades print the campus in the header. Like the year
+        # level and birthday, what the student selected must match the papers.
+        from app.services.ocr_service import campus_matches_document
+        from app.models import Campus as _Campus
+        _sel_campus = _Campus.query.get(int(campus_id)) if campus_id else None
+        _sel_campus_name = _sel_campus.name if _sel_campus else None
+        _doc_campus = (cor_data.get('campus')
+                       or (grades_data.get('campus') if grades_data else None))
+        _campus_cmp = campus_matches_document(_doc_campus, _sel_campus_name)
+        if _campus_cmp is False:
+            _cleanup_cor_and_grades()
+            flash(f'Your documents show {_doc_campus}, but you selected '
+                  f'{_sel_campus_name}. Please select your correct campus to continue.', 'error')
+            return render_template('auth/register.html',
+                                   form_data=request.form, ocr_errors=None)
+
         # ── Birthday validation against Report of Grades ──────────────────────
         # The birthday the student entered must match their grades document.
         grades_data = verification.get('grades_data') or {}

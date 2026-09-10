@@ -220,11 +220,41 @@ def _extract_text_from_pdf(file_bytes: bytes) -> str:
         return ''
 
 
+# ── Campus resolution ───────────────────────────────────────────────────────
+
+def resolve_campus_name(name: str) -> str | None:
+    """Map any campus name variant to the canonical short key used across
+    the system (matches Campus.name from the database after normalisation).
+    Returns None when the text does not name an LSPU campus."""
+    n = (name or '').lower()
+    if 'santa cruz' in n:
+        return 'Santa Cruz'
+    if 'siniloan' in n:
+        return 'Siniloan'
+    if 'san pablo' in n:
+        return 'San Pablo City'
+    if 'los ba' in n:          # covers Baños and Banos spellings
+        return 'Los Baños'
+    return None
+
+
+def campus_matches_document(detected: str | None, db_campus_name: str | None) -> bool | None:
+    """Compare an OCR-detected campus name against the account's DB campus name.
+    Returns None if nothing was detected (nothing to compare), otherwise bool."""
+    if not detected:
+        return None
+    a = resolve_campus_name(detected)
+    b = resolve_campus_name(db_campus_name or '')
+    if a is None or b is None:
+        return None
+    return a == b
+
+
 def _parse_text(text: str, doc_type: str = 'auto') -> dict:
     """Search extracted text for Student ID, Name, GWA, and Course."""
     result = {'student_id': None, 'name': None, 'gwa': None,
               'course': None, 'units_enrolled': None, 'year_level': None,
-              'date_of_birth': None, 'place_of_birth': None}
+              'date_of_birth': None, 'place_of_birth': None, 'campus': None}
 
     is_cor    = 'Student No.' in text or 'CERTIFICATE OF REGISTRATION' in text.upper()
     is_grades = 'Student ID:' in text or 'REPORT OF GRADES' in text.upper() or 'GWA:' in text
@@ -370,6 +400,21 @@ def _parse_text(text: str, doc_type: str = 'auto') -> dict:
             result['place_of_birth'] = m.group(1).strip()
             break
 
+    # Campus — LSPU documents print the campus in the header
+    # (e.g. "Santa Cruz Campus", "Siniloan Campus", "San Pablo City Campus",
+    # "Los Baños Campus"). Prefer the explicit "... Campus" form; fall back
+    # to a keyword in the header region (first 600 chars) so an address
+    # like "San Pablo Doctors" (Place of Birth) cannot false-match.
+    campus_m = re.search(
+        r'(Santa\s+Cruz|Siniloan|San\s+Pablo(?:\s+City)?|Los\s+Bañ?os)\s+Campus',
+        text, re.IGNORECASE)
+    if not campus_m:
+        campus_m = re.search(
+            r'(Santa\s+Cruz|Siniloan|San\s+Pablo(?:\s+City)?|Los\s+Bañ?os)',
+            text[:600], re.IGNORECASE)
+    if campus_m:
+        result['campus'] = resolve_campus_name(campus_m.group(1))
+
     return result
 
 
@@ -402,6 +447,7 @@ GEMINI_INSTRUCTION = (
     '  "units_enrolled": 21 or null,\n'
     '  "course": "Full course/program name or null",\n'
     '  "year_level": "e.g. 4th Year or null",\n'
+    '  "campus": "LSPU campus name from the document header (e.g. Santa Cruz Campus, Siniloan Campus, San Pablo City Campus, Los Banos Campus) or null",\n'
     '  "date_of_birth": "MM/DD/YYYY format or null",\n'
     '  "place_of_birth": "city/municipality or null",\n'
     '  "semester": "e.g. 2nd Semester or null",\n'
@@ -566,6 +612,7 @@ def extract_document_data(file_bytes: bytes, file_ext: str) -> dict:
         'academic_year': None,
         'date_of_birth': None,
         'place_of_birth': None,
+        'campus':        None,
     }
 
     allowed_exts = ('pdf', 'jpg', 'jpeg', 'png')
@@ -579,7 +626,7 @@ def extract_document_data(file_bytes: bytes, file_ext: str) -> dict:
         logger.info(f'Running Gemini Vision analysis for .{file_ext} image.')
         try:
             gemini = _extract_via_gemini(file_bytes, file_ext)
-            for key in ('student_id', 'name', 'gwa', 'units_enrolled', 'course', 'year_level', 'semester', 'academic_year', 'date_of_birth', 'place_of_birth'):
+            for key in ('student_id', 'name', 'gwa', 'units_enrolled', 'course', 'year_level', 'semester', 'academic_year', 'date_of_birth', 'place_of_birth', 'campus'):
                 if gemini.get(key):
                     result[key] = gemini[key]
             result['method'] = (
@@ -607,7 +654,7 @@ def extract_document_data(file_bytes: bytes, file_ext: str) -> dict:
     logger.info(f'Running Gemini analysis for .{file_ext} document.')
     try:
         gemini = _extract_via_gemini(file_bytes, file_ext, raw_text)
-        for key in ('student_id', 'name', 'gwa', 'units_enrolled', 'course', 'year_level', 'semester', 'academic_year', 'date_of_birth', 'place_of_birth'):
+        for key in ('student_id', 'name', 'gwa', 'units_enrolled', 'course', 'year_level', 'semester', 'academic_year', 'date_of_birth', 'place_of_birth', 'campus'):
             if gemini.get(key):
                 result[key] = gemini[key]
         result['method'] = (
