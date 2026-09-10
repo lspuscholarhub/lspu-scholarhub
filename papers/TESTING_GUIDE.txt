@@ -1,0 +1,305 @@
+================================================================
+ LSPU SCHOLARHUB - STEP BY STEP TESTING GUIDE
+ Test every role. Follow the order: Guest -> Student -> Staff
+ -> Admin -> Super Admin. Use a second browser or incognito
+ window to test two roles at the same time.
+================================================================
+
+
+=====================================================
+ 1. GUEST (not logged in)
+=====================================================
+
+ View landing page
+   1. Open the site URL while logged out.
+   2. Check: header shows Home, Scholarships, AI Assistant,
+      Login, Register. Footer shows contact info.
+
+ Browse scholarships
+   1. Click "Scholarships".
+   2. Check: only OPEN, non-hidden programs show.
+   3. Check: campus badges show (All Campuses or SC/SN/SBC/LB).
+   4. Open one program's details page.
+   5. Check: Apply is NOT offered to guests (login prompt).
+
+ Test the AI Assistant
+   1. Click "AI Assistant".
+   2. Ask: "What scholarships are open?"
+   3. Check: it lists the same open programs as the page,
+      and NEVER mentions a hidden program.
+
+ Try to register (document-verified)
+   1. Click Register. Fill the form: name, birthday
+      (calendar picker), email, phone, course, year level,
+      campus, student ID.
+   2. Upload COR as PDF and Copy of Grades as PDF.
+   3. Check: images are REJECTED (PDF only).
+   4. Check: files over 5MB are REJECTED.
+   5. Test a MISMATCH: select a year level different from
+      the COR -> must be blocked with a clear message.
+   6. Test a MISMATCH: enter a birthday different from the
+      grades document -> must be blocked.
+   7. Test a MISMATCH: select a campus different from the
+      document header -> must be blocked.
+   8. Now enter everything correctly -> OTP is sent to email.
+   9. Enter the OTP -> account is created and verified.
+  10. Check: welcome email with temporary password arrives.
+
+ Test login and password
+   1. Log in with the temporary password.
+   2. Check: system asks you to set a new password.
+   3. Try a weak password (e.g. "abc12345") -> must be rejected
+      (needs 8+ chars with upper, lower, and a number).
+   4. Set a valid password, log out, log back in.
+
+
+=====================================================
+ 2. STUDENT
+=====================================================
+
+ Dashboard
+   1. Log in as a student.
+   2. Check: header shows Dashboard, Scholarships, My
+      Applications, My Scholarship (only if approved),
+      Notifications, AI Assistant.
+   3. Check: counters (applications, approved, pending),
+      GWA card, units enrolled, document reminder.
+
+ Browse and apply
+   1. Open Scholarships.
+   2. Check: only own-campus + university-wide programs show.
+      Hidden programs must NOT appear (unless invited).
+   3. Open a program, click Apply.
+   4. Check: form is PRE-FILLED (name, ID, course, year
+      level, GWA, units) - only custom questions to answer.
+   5. Check: no essay and no document upload needed.
+   6. Submit. Check the success message.
+
+ One-public-program rule
+   1. Apply to a second PUBLIC program while one public
+      application is pending/approved -> must be blocked.
+   2. Apply to a PRIVATE program -> must be ALLOWED
+      even with a public one.
+
+ My Applications
+   1. Open My Applications.
+   2. Check: counters on top are centered (total, pending/
+      review, approved).
+   3. Check: status shows Pending, then Approved/Rejected.
+   4. Click Edit on a pending application, change an answer,
+      save.
+   5. Click the Back button after editing -> must NOT show
+      error 500.
+   6. Withdraw a pending application -> confirmation dialog
+      appears, status becomes Withdrawn.
+
+ Notifications
+   1. Open Notifications.
+   2. Check: application received/status emails and SMS also
+      arrived (check email inbox and phone).
+
+ My Documents (replace COR/Grades)
+   1. Open My Documents.
+   2. Replace the Copy of Grades with a new PDF.
+   3. Check: PDF-only rule, 5MB limit enforced.
+   4. Check: wrong-document-type swap is blocked (uploading
+      COR where grades belong -> blocked).
+   5. Check: after upload, GWA and units update automatically.
+   6. Check: if the new document shows a different campus, the
+      account campus updates to match.
+
+ My Scholarship (approved students only)
+   1. Log in as a student with an approved scholarship.
+   2. Check: My Scholarship appears in the header.
+   3. Check: ALL approved programs are listed (a student can
+      hold one public + private programs).
+   4. Check: program details, benefits, and batch info show.
+   5. Download the Monitoring & Evaluation form.
+   6. Upload a photo/PDF of the filled M&E form (max 5MB).
+   7. Check: green banner with View Submission and Replace.
+   8. Check: deadline banner color (blue/yellow/red).
+
+ My Profile
+   1. Open My Profile.
+   2. Check: campus shows read-only in Profile Information.
+   3. Check: there is NO "Update Your GWA" card.
+   4. Edit phone number and address, save.
+   5. Change password (old password required).
+
+ AI Assistant as student
+   1. Open AI Assistant.
+   2. Ask "What scholarships can I apply to?"
+   3. Check: reply is personalized and never leaks hidden or
+      other-campus programs.
+
+
+=====================================================
+ 3. STAFF (campus-scoped)
+=====================================================
+
+ Log in as staff
+   1. Log in with a staff account.
+   2. Check: header shows Dashboard, Applications, Programs,
+      Students, Monitoring, Reports, Announcements.
+   3. Check: campus badge shows the staff's campus.
+
+ Review applications
+   1. Open Applications (Review queue).
+   2. Check: only own-campus applications show.
+   3. Open one application: check the pre-filled profile,
+      custom answers, GWA.
+   4. Move one to "Under Review".
+   5. Approve one (with notes) -> student gets in-app + email
+      + SMS.
+   6. Reject one (with reason) -> same notifications.
+
+ Create a scholarship program
+   1. Programs -> Scholarships -> Create.
+   2. Fill: title, award amount (try a negative number ->
+      must be blocked, 0 minimum), slots (try negative ->
+      blocked), eligibility, benefits, funding type
+      (public/private), scope (campus or university-wide),
+      and custom form fields.
+   3. Choose "announce this program" -> check students get
+      the announcement (email/SMS/in-app).
+   4. Create a HIDDEN program with specific student IDs
+      allowed -> check only those students see it.
+
+ Batch the approved scholars
+   1. Programs -> Batches -> Create batch.
+   2. Check: the batch is named after the scholarship program
+      and created in ONE action (approved scholars of that
+      program are batched together automatically).
+   3. Open the batch: check every scholar's info is complete
+      and viewable.
+   4. Export the batch to Excel -> open the file and verify.
+
+ Monitoring and tracking
+   1. Open Monitoring.
+   2. Check: scholars table shows M&E Form column
+      (Submitted green / Not submitted gray).
+   3. Click a "Submitted" badge -> the student's uploaded
+      M&E file opens in a new tab.
+   4. Update a scholar's GWA / status.
+
+ Reports
+   1. Open Reports.
+   2. Check: charts render and RESIZE when the window is
+      resized.
+   3. Export the report -> file downloads correctly.
+
+ Students directory
+   1. Open Students.
+   2. Check: only own-campus students.
+   3. Open one student: view their documents (opens in tab,
+      not forced download).
+
+
+=====================================================
+ 4. ADMIN (campus-scoped, everything staff can do plus)
+=====================================================
+
+ Everything in the Staff section above, plus:
+
+ Manage users
+   1. Manage -> Users.
+   2. Check: campus column and campus filter work.
+   3. Create a Staff account: fill all fields INCLUDING
+      campus -> account is created and scoped to that campus.
+   4. Create an Admin account the same way.
+   5. Change a user's role with the role dropdown ->
+      confirmation appears, role updates.
+   6. Try to change YOUR OWN role -> must be blocked.
+   7. Disable a user, then log in as that user -> login is
+      blocked. Re-enable.
+   8. Delete a test staff account -> confirmation, removed.
+      (Cannot delete yourself or the last admin.)
+
+ Edit a user
+   1. Click Edit on a student: update name, phone, student
+      ID, course, year level (check 5th Year, Irregular,
+      Graduate exist in the dropdown), address.
+   2. Reset a password (min 8 chars, policy enforced).
+   3. Save -> changes reflected.
+
+ Student directory and files
+   1. Manage -> Students -> Directory.
+   2. Open a student's profile.
+   3. View their COR and Grades files -> open in a new tab
+      (viewable, not auto-download).
+
+ Bulk import
+   1. Students -> Bulk Import.
+   2. Download the template, fill a row, import.
+   3. Check: the student appears in the users list.
+
+ Announcements
+   1. Announcements -> compose.
+   2. Check: SMS and Email options are ALWAYS available.
+   3. Send to a few test students -> they receive it.
+
+ Settings
+   1. Open Settings.
+   2. Set the M&E form deadline for the current semester ->
+      students see the deadline banner.
+
+ Reports and audit
+   1. Reports -> charts + export work.
+   2. Audit Log -> shows who did what; export works.
+
+
+=====================================================
+ 5. SUPER ADMIN (all campuses)
+=====================================================
+
+ Campus switcher
+   1. Log in as superadmin.
+   2. Check: full admin navbar (Dashboard, Manage, Students,
+      Monitoring, Reports, Announcements, Settings) AND the
+      "All Campuses" selector at the top right.
+   3. Switch to "Santa Cruz" -> data filters to that campus.
+   4. Switch to "Siniloan" -> data changes accordingly.
+   5. Switch back to "All Campuses" -> everything shows.
+
+ Manage across campuses
+   1. Manage -> Users: filter by each campus; create a staff
+      or admin for ANY campus from here.
+   2. Manage -> Scholarships: check the Campus column (All
+      for university-wide, SC/SN/SBC/LB otherwise) and the
+      campus filter.
+   3. Create a UNIVERSITY-WIDE program -> check students
+      from at least two campuses can see it.
+   4. Create a campus-specific program -> check ONLY that
+      campus's students see it.
+   5. Manage -> Batches: check batches from all campuses
+      are visible; open one; export it.
+
+ Monitoring, reports, audit
+   1. Monitoring -> scholars from all campuses, M&E column
+      works.
+   2. Reports -> numbers make sense per campus.
+   3. Audit Log -> super admin actions are logged too.
+
+ Role management safety
+   1. Demote an admin to staff while a super admin exists
+      -> should now be ALLOWED.
+   2. Promote a staff to Admin for their campus.
+   3. Try to change your own role -> must be blocked.
+
+
+=====================================================
+ QUICK REGRESSION CHECKLIST (after any update)
+=====================================================
+ [ ] Login works for all 4 roles
+ [ ] Student can apply; edit/back does not 500
+ [ ] Registration validates year level, birthday, campus
+ [ ] Replace documents updates GWA/units/campus
+ [ ] Staff approve/reject fires notifications
+ [ ] Batch creation one-click + Excel export
+ [ ] M&E upload + staff can view it
+ [ ] Charts resize; no page stuck at old width
+ [ ] No 500 errors anywhere you click
+ [ ] Hidden programs never leak (pages AND AI assistant)
+ [ ] Campus scoping: wrong-campus students see nothing
+       of the other campus
+================================================================
