@@ -2,8 +2,8 @@
 Campus model — represents each LSPU campus.
 
 Currently:
-  - Santa Cruz (Main Campus)
-  - Siniloan
+  - Santa Cruz Campus
+  - Siniloan Campus
   - San Pablo City
   - Los Baños
 

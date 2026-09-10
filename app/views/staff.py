@@ -22,41 +22,60 @@ GWA_THRESHOLD = 3.00  # LSPU: above 3.00 = at-risk
 def dashboard():
     from app.models import AcademicPeriod, ScholarshipBatch
 
-    to_review = ScholarshipApplication.query.filter(
+    # ── Campus scoping: staff see their own campus only ────────────────────
+    _me = db.session.get(User, session.get('user_id'))
+    campus_ctx = _me.campus_id if _me else None
+
+    def _su(q):
+        """Scope a User query to the staff's campus."""
+        return q.filter(User.campus_id == campus_ctx) if campus_ctx else q
+
+    def _sa(q):
+        """Scope an Application query to the staff's campus."""
+        if campus_ctx:
+            return q.join(User, ScholarshipApplication.applicant_id == User.id).filter(
+                User.campus_id == campus_ctx)
+        return q
+
+    to_review = _sa(ScholarshipApplication.query.filter(
         ScholarshipApplication.status.in_([ApplicationStatus.PENDING,
-                                           ApplicationStatus.UNDER_REVIEW])
+                                           ApplicationStatus.UNDER_REVIEW]))
     ).count()
-    reviewed_today = ScholarshipApplication.query.filter(
+    reviewed_today = _sa(ScholarshipApplication.query.filter(
         ScholarshipApplication.reviewed_by == session['user_id'],
         db.func.date(ScholarshipApplication.reviewed_at) == datetime.utcnow().date(),
-    ).count()
-    active_students = User.query.filter_by(user_type='student', is_active=True).count()
-    new_users       = User.query.filter(
+    )).count()
+    active_students = _su(User.query.filter_by(user_type='student', is_active=True)).count()
+    new_users       = _su(User.query.filter(
         User.created_at >= datetime.utcnow() - timedelta(days=30)
-    ).count()
-    approved_count  = ScholarshipApplication.query.filter_by(status=ApplicationStatus.APPROVED).count()
-    at_risk_count   = User.query.filter(
+    )).count()
+    approved_count  = _sa(ScholarshipApplication.query.filter_by(status=ApplicationStatus.APPROVED)).count()
+    at_risk_count   = _su(User.query.filter(
         User.user_type == 'student', User.gwa.isnot(None), User.gwa > GWA_THRESHOLD
-    ).count()
-    male_students   = User.query.filter_by(user_type='student', gender='Male').count()
-    female_students = User.query.filter_by(user_type='student', gender='Female').count()
-    total_funds     = db.session.query(
+    )).count()
+    male_students   = _su(User.query.filter_by(user_type='student', gender='Male')).count()
+    female_students = _su(User.query.filter_by(user_type='student', gender='Female')).count()
+    _funds_q = db.session.query(
         db.func.coalesce(db.func.sum(ScholarshipBatch.total_amount), 0)
-    ).scalar() or 0
-    active_batches  = ScholarshipBatch.query.filter_by(status='open').count()
+    )
+    if campus_ctx:
+        _funds_q = _funds_q.filter(ScholarshipBatch.campus_id == campus_ctx)
+    total_funds     = _funds_q.scalar() or 0
+    _batches_q = ScholarshipBatch.query.filter_by(status='open')
+    if campus_ctx:
+        _batches_q = _batches_q.filter(ScholarshipBatch.campus_id == campus_ctx)
+    active_batches  = _batches_q.count()
     current_period  = AcademicPeriod.get_current()
 
-    pending_apps = (ScholarshipApplication.query
+    pending_apps = _sa(ScholarshipApplication.query
                     .filter_by(status=ApplicationStatus.PENDING)
-                    .order_by(ScholarshipApplication.submitted_at.asc())
-                    .limit(5).all())
-    recent_activity = (ScholarshipApplication.query
-                       .order_by(ScholarshipApplication.submitted_at.desc())
-                       .limit(5).all())
+                    ).order_by(ScholarshipApplication.submitted_at.asc()).limit(5).all()
+    recent_activity = _sa(ScholarshipApplication.query
+                       ).order_by(ScholarshipApplication.submitted_at.desc()).limit(5).all()
 
     # Top performing students (lowest GWA = best, closest to 1.00)
-    top_performers = (User.query
-                      .filter(User.user_type == 'student', User.gwa.isnot(None))
+    top_performers = (_su(User.query
+                      .filter(User.user_type == 'student', User.gwa.isnot(None)))
                       .order_by(User.gwa.asc())
                       .limit(5).all())
 
@@ -289,8 +308,13 @@ def review_applications():
     year_filter       = request.args.get('year', '')
     q                 = request.args.get('q', '').strip()
 
+    _me = db.session.get(User, session.get('user_id'))
+    campus_ctx = _me.campus_id if _me else None
+
     query = ScholarshipApplication.query.join(
         User, ScholarshipApplication.applicant_id == User.id)
+    if campus_ctx:
+        query = query.filter(User.campus_id == campus_ctx)
 
     if status_filter and status_filter != 'all':
         try:
@@ -497,10 +521,14 @@ def monitoring():
     status_filter = request.args.get('scholar_status', '')
     course_filter = request.args.get('course', '')
 
-    # All approved scholars
+    # All approved scholars (staff's campus only)
+    _me = db.session.get(User, session.get('user_id'))
+    campus_ctx = _me.campus_id if _me else None
     query = ScholarshipApplication.query.filter(
         ScholarshipApplication.status == ApplicationStatus.APPROVED
     ).join(User, ScholarshipApplication.applicant_id == User.id)
+    if campus_ctx:
+        query = query.filter(User.campus_id == campus_ctx)
 
     if status_filter:
         query = query.filter(ScholarshipApplication.scholar_status == status_filter)
@@ -510,7 +538,10 @@ def monitoring():
     scholars = query.order_by(ScholarshipApplication.approved_at.desc()).all()
 
     # Summary stats
-    all_approved = ScholarshipApplication.query.filter_by(status=ApplicationStatus.APPROVED).all()
+    _all_approved_q = ScholarshipApplication.query.filter_by(status=ApplicationStatus.APPROVED)
+    if campus_ctx:
+        _all_approved_q = _all_approved_q.join(User, ScholarshipApplication.applicant_id == User.id).filter(User.campus_id == campus_ctx)
+    all_approved = _all_approved_q.all()
     stats = {
         'total':       len(all_approved),
         'active':      sum(1 for a in all_approved if a.scholar_status == 'active'),
@@ -713,7 +744,11 @@ def student_directory():
     sort     = request.args.get('sort', 'name')
     gwa_flag = request.args.get('gwa_flag', '')
 
+    _me = db.session.get(User, session.get('user_id'))
+    campus_ctx = _me.campus_id if _me else None
     query = User.query.filter_by(user_type='student')
+    if campus_ctx:
+        query = query.filter(User.campus_id == campus_ctx)
     if q:
         query = query.filter(db.or_(
             User.first_name.ilike(f'%{q}%'), User.last_name.ilike(f'%{q}%'),
@@ -737,7 +772,10 @@ def student_directory():
 
     page = request.args.get('page', 1, type=int)
     students = query.paginate(page=page, per_page=20, error_out=False)
-    all_s    = User.query.filter_by(user_type='student').all()
+    _all_q = User.query.filter_by(user_type='student')
+    if campus_ctx:
+        _all_q = _all_q.filter(User.campus_id == campus_ctx)
+    all_s    = _all_q.all()
     with_gwa = [s for s in all_s if s.gwa is not None]
     at_risk  = [s for s in with_gwa if s.gwa > GWA_THRESHOLD]
     avg_gwa  = round(sum(s.gwa for s in with_gwa) / len(with_gwa), 2) if with_gwa else None
@@ -1419,8 +1457,16 @@ def manage_batches():
     period_id      = request.args.get('period_id', '')
     current_period = AcademicPeriod.get_current()
     periods        = AcademicPeriod.query.order_by(AcademicPeriod.id.desc()).all()
-    scholarships   = Scholarship.query.order_by(Scholarship.title).all()
+    _me = db.session.get(User, session.get('user_id'))
+    campus_ctx = _me.campus_id if _me else None
+    _sch_q = Scholarship.query.order_by(Scholarship.title)
+    if campus_ctx:
+        _sch_q = _sch_q.filter(db.or_(Scholarship.campus_id == campus_ctx,
+                                      Scholarship.campus_id.is_(None)))
+    scholarships   = _sch_q.all()
     query = ScholarshipBatch.query
+    if campus_ctx:
+        query = query.filter(ScholarshipBatch.campus_id == campus_ctx)
     if scholarship_id:
         query = query.filter_by(scholarship_id=int(scholarship_id))
     if period_id:

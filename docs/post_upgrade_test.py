@@ -35,7 +35,7 @@ with app.app_context():
             s['user_id'] = 150
             s['user_type'] = 'student'
             s['campus_id'] = 1
-            s['campus_name'] = 'Santa Cruz (Main Campus)'
+            s['campus_name'] = 'Santa Cruz Campus'
 
         test("Student dashboard", lambda: c.get('/student/dashboard').status_code == 200 or (_ for _ in ()).throw(AssertionError()))
         test("Student applications", lambda: c.get('/student/applications').status_code == 200 or (_ for _ in ()).throw(AssertionError()))
@@ -52,7 +52,7 @@ with app.app_context():
             s['user_id'] = 53
             s['user_type'] = 'staff'
             s['campus_id'] = 1
-            s['campus_name'] = 'Santa Cruz (Main Campus)'
+            s['campus_name'] = 'Santa Cruz Campus'
 
         test("Staff dashboard", lambda: c.get('/staff/').status_code == 200 or (_ for _ in ()).throw(AssertionError()))
         test("Staff review", lambda: c.get('/staff/review-applications').status_code == 200 or (_ for _ in ()).throw(AssertionError()))
