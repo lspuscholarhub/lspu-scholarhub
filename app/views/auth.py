@@ -220,6 +220,13 @@ def login():
             if user.campus_id:
                 session['campus_id'] = user.campus_id
                 session['campus_name'] = user.campus.name if user.campus else ''
+            # Multi-campus for staff/admin
+            if user.user_type in ('staff', 'admin'):
+                assigned = user.assigned_campuses
+                if assigned:
+                    session['assigned_campus_ids'] = [c.id for c in assigned]
+                elif user.campus_id:
+                    session['assigned_campus_ids'] = [user.campus_id]
             if user.user_type == 'super_admin':
                 session.pop('campus_context', None)
                 session.pop('campus_context_name', None)

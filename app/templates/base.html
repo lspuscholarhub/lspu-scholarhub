@@ -271,6 +271,40 @@
                 {% endfor %}
               </ul>
             </li>
+          {% elif role == 'staff' and session.get('user_id') %}
+            {# Staff: show campus dropdown if multiple campuses, else badge #}
+            {% set staff_campuses = [] %}
+            {% for c in all_campuses %}
+              {% if session.get('assigned_campus_ids') and c.id in session.assigned_campus_ids %}
+                {% set _ = staff_campuses.append(c) %}
+              {% endif %}
+            {% endfor %}
+            {% if staff_campuses|length > 1 %}
+            <li class="nav-item dropdown d-none d-lg-flex align-items-center me-1">
+              <a class="nav-link dropdown-toggle badge bg-info text-dark px-2 py-1"
+                 href="#" data-bs-toggle="dropdown" style="font-size:.68rem;cursor:pointer;">
+                {% if session.get('campus_context_name') %}{{ session.campus_context_name }}{% else %}All My Campuses{% endif %}
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end" style="min-width:220px;">
+                <li class="px-3 pt-2 pb-1"><div class="fw-semibold small text-muted">Select Campus</div></li>
+                <li><hr class="dropdown-divider"></li>
+                <li>
+                  <a class="dropdown-item {% if not session.get('campus_context') %}active{% endif %}"
+                     href="{{ url_for('staff.set_campus_context', campus_id=0) }}">All My Campuses</a>
+                </li>
+                {% for c in staff_campuses %}
+                <li>
+                  <a class="dropdown-item {% if session.get('campus_context') == c.id %}active{% endif %}"
+                     href="{{ url_for('staff.set_campus_context', campus_id=c.id) }}">{{ c.name }}</a>
+                </li>
+                {% endfor %}
+              </ul>
+            </li>
+            {% elif session.get('campus_name') %}
+            <li class="nav-item d-none d-lg-flex align-items-center me-1">
+              <span class="badge bg-info text-dark px-2 py-1" style="font-size:.68rem;">{{ session.campus_name }}</span>
+            </li>
+            {% endif %}
           {% elif session.get('campus_name') %}
             {# Other roles: show campus badge #}
             <li class="nav-item d-none d-lg-flex align-items-center me-1">

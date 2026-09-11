@@ -16,6 +16,33 @@ staff_bp = Blueprint('staff', __name__)
 GWA_THRESHOLD = 3.00  # LSPU: above 3.00 = at-risk
 
 
+# ── Campus Context (staff can switch between assigned campuses) ───────
+
+@staff_bp.route('/campus-context/<int:campus_id>')
+@role_required('staff')
+def set_campus_context(campus_id):
+    """Set the campus context for staff. campus_id=0 means all assigned campuses."""
+    _me = db.session.get(User, session.get('user_id'))
+    if campus_id == 0:
+        session.pop('campus_context', None)
+        session.pop('campus_context_name', None)
+        flash('Showing all assigned campuses.', 'info')
+    else:
+        from app.models import Campus
+        campus = Campus.query.get(campus_id)
+        if not campus:
+            flash('Invalid campus.', 'error')
+            return redirect(url_for('staff.dashboard'))
+        allowed_ids = [c.id for c in _me.assigned_campuses] if _me and _me.assigned_campuses else ([] if _me and not _me.campus_id else [_me.campus_id] if _me else [])
+        if campus_id in allowed_ids:
+            session['campus_context'] = campus.id
+            session['campus_context_name'] = campus.name
+            flash(f'Switched to {campus.name}.', 'info')
+        else:
+            flash('You are not assigned to that campus.', 'error')
+    return redirect(request.referrer or url_for('staff.dashboard'))
+
+
 # ── Period Context (staff can also switch) ────────────────────────────
 
 @staff_bp.route('/period-context/<int:period_id>')
@@ -45,19 +72,34 @@ def set_period_context(period_id):
 def dashboard():
     from app.models import AcademicPeriod, ScholarshipBatch
 
-    # ── Campus scoping: staff see their own campus only ────────────────────
+    # ── Campus scoping: staff see their assigned campuses ──────────────────
     _me = db.session.get(User, session.get('user_id'))
-    campus_ctx = _me.campus_id if _me else None
+    campus_ctx = session.get('campus_context') if session.get('user_type') == 'super_admin' else None
+    my_campus_ids = []
+    if campus_ctx is None and _me:
+        if _me.assigned_campuses:
+            my_campus_ids = [c.id for c in _me.assigned_campuses]
+        elif _me.campus_id:
+            my_campus_ids = [_me.campus_id]
+        if len(my_campus_ids) == 1:
+            campus_ctx = my_campus_ids[0]
 
     def _su(q):
-        """Scope a User query to the staff's campus."""
-        return q.filter(User.campus_id == campus_ctx) if campus_ctx else q
+        """Scope a User query to the staff's assigned campuses."""
+        if campus_ctx:
+            return q.filter(User.campus_id == campus_ctx)
+        elif my_campus_ids:
+            return q.filter(User.campus_id.in_(my_campus_ids))
+        return q
 
     def _sa(q):
-        """Scope an Application query to the staff's campus."""
+        """Scope an Application query to the staff's assigned campuses."""
         if campus_ctx:
             return q.join(User, ScholarshipApplication.applicant_id == User.id).filter(
                 User.campus_id == campus_ctx)
+        elif my_campus_ids:
+            return q.join(User, ScholarshipApplication.applicant_id == User.id).filter(
+                User.campus_id.in_(my_campus_ids))
         return q
 
     current_period  = get_viewing_period()

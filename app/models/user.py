@@ -57,6 +57,8 @@ class User(db.Model):
     
     # Relationships
     campus     = db.relationship('Campus', backref='users', lazy=True)
+    assigned_campuses = db.relationship('Campus', secondary='user_campuses',
+                                        backref='staff_users', lazy=True)
     applications = db.relationship('ScholarshipApplication', foreign_keys='ScholarshipApplication.applicant_id', backref='applicant', lazy=True, cascade='all, delete-orphan')
     reviewed_applications = db.relationship('ScholarshipApplication', foreign_keys='ScholarshipApplication.reviewed_by', backref='reviewer', lazy=True)
     notifications = db.relationship('Notification', backref='recipient', lazy=True, cascade='all, delete-orphan')

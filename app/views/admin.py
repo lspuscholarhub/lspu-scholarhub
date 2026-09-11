@@ -18,11 +18,9 @@ admin_bp = Blueprint('admin', __name__)
 @admin_bp.route('/campus-context/<int:campus_id>')
 @role_required('admin', 'staff')
 def set_campus_context(campus_id):
-    """Set the campus context for university admin. campus_id=0 means all campuses."""
+    """Set the campus context. campus_id=0 means all allowed campuses."""
     from flask import session as _session
-    if _session.get('user_type') not in ('super_admin', 'admin'):
-        flash('You do not have permission to change campus context.', 'error')
-        return redirect(url_for('admin.dashboard'))
+    _me = db.session.get(User, _session.get('user_id'))
 
     if campus_id == 0:
         _session.pop('campus_context', None)
@@ -34,9 +32,14 @@ def set_campus_context(campus_id):
         if not campus:
             flash('Invalid campus.', 'error')
             return redirect(url_for('admin.dashboard'))
-        _session['campus_context'] = campus.id
-        _session['campus_context_name'] = campus.name
-        flash(f'Switched to {campus.name}.', 'info')
+        # Verify the user is assigned to this campus
+        allowed_ids = [c.id for c in _me.assigned_campuses] if _me and _me.assigned_campuses else ([] if _me and not _me.campus_id else [_me.campus_id] if _me else [])
+        if _session.get('user_type') == 'super_admin' or campus_id in allowed_ids:
+            _session['campus_context'] = campus.id
+            _session['campus_context_name'] = campus.name
+            flash(f'Switched to {campus.name}.', 'info')
+        else:
+            flash('You are not assigned to that campus.', 'error')
     return redirect(request.referrer or url_for('admin.dashboard'))
 
 
@@ -90,24 +93,43 @@ def dashboard():
 
     # ── Strict campus scoping ──────────────────────────────────────────────
     # Super admin: honor the campus selector (None = all campuses).
-    # Campus admin: always their own campus.
+    # Campus admin/staff: their assigned campuses (from junction table).
     campus_ctx = None
+    my_campus_ids = []  # IDs this user is allowed to see
     if session.get('user_type') == 'super_admin':
         campus_ctx = session.get('campus_context')          # None = all
     else:
         _me = db.session.get(User, session.get('user_id'))
-        campus_ctx = _me.campus_id if _me else None
+        if _me and _me.assigned_campuses:
+            my_campus_ids = [c.id for c in _me.assigned_campuses]
+        elif _me:
+            my_campus_ids = [_me.campus_id] if _me.campus_id else []
+        campus_ctx = my_campus_ids[0] if len(my_campus_ids) == 1 else None
 
     def _scoped_users(q):
-        return q.filter(User.campus_id == campus_ctx) if campus_ctx else q
+        if campus_ctx:
+            return q.filter(User.campus_id == campus_ctx)
+        elif my_campus_ids:
+            return q.filter(User.campus_id.in_(my_campus_ids))
+        return q
 
     def _scoped_apps(q):
-        return (q.join(User, ScholarshipApplication.applicant_id == User.id)
-                 .filter(User.campus_id == campus_ctx)) if campus_ctx else q
+        if campus_ctx:
+            return (q.join(User, ScholarshipApplication.applicant_id == User.id)
+                     .filter(User.campus_id == campus_ctx))
+        elif my_campus_ids:
+            return (q.join(User, ScholarshipApplication.applicant_id == User.id)
+                     .filter(User.campus_id.in_(my_campus_ids)))
+        return q
 
     def _scoped_sch(q):
-        return (q.filter(db.or_(Scholarship.campus_id == campus_ctx,
-                                Scholarship.campus_id.is_(None))) if campus_ctx else q)
+        if campus_ctx:
+            return q.filter(db.or_(Scholarship.campus_id == campus_ctx,
+                                    Scholarship.campus_id.is_(None)))
+        elif my_campus_ids:
+            return q.filter(db.or_(Scholarship.campus_id.in_(my_campus_ids),
+                                    Scholarship.campus_id.is_(None)))
+        return q
 
     total_users         = _scoped_users(User.query).count()
     total_students      = _scoped_users(User.query.filter_by(user_type='student')).count()
@@ -1006,6 +1028,28 @@ def edit_user(uid):
             return redirect(url_for('admin.manage_users'))
         user.set_password(new_pw)
 
+    # Update campus assignment for staff/admin
+    if user.user_type in ('staff', 'admin', 'super_admin'):
+        from app.models import UserCampus, Campus
+        campus_ids = request.form.getlist('campus_ids')
+        if campus_ids:
+            new_campuses = []
+            for cid in campus_ids:
+                try:
+                    c = Campus.query.get(int(cid))
+                    if c:
+                        new_campuses.append(c)
+                except (TypeError, ValueError):
+                    pass
+            if new_campuses:
+                # Remove old assignments
+                UserCampus.query.filter_by(user_id=user.id).delete()
+                # Add new assignments
+                for c in new_campuses:
+                    db.session.add(UserCampus(user_id=user.id, campus_id=c.id))
+                # Update primary campus_id for backward compatibility
+                user.campus_id = new_campuses[0].id
+
     db.session.commit()
     from app.services.audit_service import log_action
     pw_changed = ' Password was also reset.' if request.form.get('new_password', '').strip() else ''
@@ -1666,18 +1710,90 @@ def create_user_account():
         flash('Password must be at least 8 characters.', 'error')
         return redirect(url_for('admin.manage_users'))
 
-    # Campus assignment — required so campus-scoped queries work for the
-    # new account (a staff/admin without a campus sees nothing).
-    from app.models import Campus
-    campus_id = request.form.get('campus_id', '').strip()
-    campus = None
-    if campus_id:
+    # Campus assignment — staff/admin can be assigned to multiple campuses
+    from app.models import Campus, UserCampus
+    campus_ids = request.form.getlist('campus_ids')
+    if not campus_ids:
+        # Fallback to single campus_id for backward compatibility
+        single = request.form.get('campus_id', '').strip()
+        if single:
+            campus_ids = [single]
+    campuses = []
+    for cid in campus_ids:
         try:
-            campus = Campus.query.get(int(campus_id))
+            c = Campus.query.get(int(cid))
+            if c:
+                campuses.append(c)
         except (TypeError, ValueError):
-            campus = None
-    if campus is None:
-        flash('Please select the campus this account belongs to.', 'error')
+            pass
+    if not campuses:
+        flash('Please select at least one campus for this account.', 'error')
+        return redirect(url_for('admin.manage_users'))
+    if User.query.filter_by(username=username).first():
+        flash(f'Username "{username}" is already taken.', 'error')
+        return redirect(url_for('admin.manage_users'))
+    if User.query.filter_by(email=email).first():
+        flash(f'Email "{email}" is already registered.', 'error')
+        return redirect(url_for('admin.manage_users'))
+
+    try:
+        # Use the first campus as primary campus_id for backward compatibility
+        account = User(
+            username=username, email=email,
+            first_name=first_name, last_name=last_name,
+            user_type=role, is_active=True, is_verified=True,
+            campus_id=campuses[0].id,
+        )
+        account.set_password(password)
+        db.session.add(account)
+        db.session.flush()  # get the id
+        # Add all assigned campuses to junction table
+        for c in campuses:
+            db.session.add(UserCampus(user_id=account.id, campus_id=c.id))
+        db.session.commit()
+        from app.services.audit_service import log_action
+        campus_names = ', '.join(c.name for c in campuses)
+        log_action('user.create_account',
+                   f'Admin {session.get("username")} created new {role} account: '
+                   f'{first_name} {last_name} (username: {username}, email: {email}, '
+                   f'campuses: {campus_names}).',
+                   category='user', target_type='user', target_id=account.id,
+                   user_id=session.get('user_id'), user_name=session.get('username'),
+                   user_role='admin')
+        flash(f'{role.title()} account "{username}" created successfully '
+              f'for {campus_names}.', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Error creating account: {e}', 'error')
+    return redirect(url_for('admin.manage_users'))
+
+
+@admin_bp.route('/users/create-student', methods=['POST'])
+@role_required('admin')
+def create_student_account():
+    """Create a student account (super admin only)."""
+    if session.get('user_type') != 'super_admin':
+        flash('Only the Super Admin can create student accounts.', 'error')
+        return redirect(url_for('admin.manage_users'))
+
+    first_name = request.form.get('first_name', '').strip().title()
+    last_name  = request.form.get('last_name',  '').strip().title()
+    email      = request.form.get('email',      '').strip().lower()
+    username   = request.form.get('username',   '').strip()
+    password   = request.form.get('password',   '').strip()
+    campus_id  = request.form.get('campus_id',  '').strip()
+
+    if not all([first_name, last_name, email, username, password, campus_id]):
+        flash('All fields are required.', 'error')
+        return redirect(url_for('admin.manage_users'))
+    if len(password) < 8:
+        flash('Password must be at least 8 characters.', 'error')
+        return redirect(url_for('admin.manage_users'))
+
+    from app.models import Campus
+    campus = Campus.query.get(int(campus_id)) if campus_id.isdigit() else None
+    if not campus:
+        flash('Please select a valid campus.', 'error')
         return redirect(url_for('admin.manage_users'))
     if User.query.filter_by(username=username).first():
         flash(f'Username "{username}" is already taken.', 'error')
@@ -1690,25 +1806,24 @@ def create_user_account():
         account = User(
             username=username, email=email,
             first_name=first_name, last_name=last_name,
-            user_type=role, is_active=True, is_verified=True,
+            user_type='student', is_active=True, is_verified=True,
             campus_id=campus.id,
         )
         account.set_password(password)
         db.session.add(account)
         db.session.commit()
         from app.services.audit_service import log_action
-        log_action('user.create_account',
-                   f'Admin {session.get("username")} created new {role} account: '
+        log_action('user.create_student',
+                   f'Super admin created student account: '
                    f'{first_name} {last_name} (username: {username}, email: {email}, '
                    f'campus: {campus.name}).',
                    category='user', target_type='user', target_id=account.id,
                    user_id=session.get('user_id'), user_name=session.get('username'),
-                   user_role='admin')
-        flash(f'{role.title()} account "{username}" created successfully '
-              f'for {campus.name} campus.', 'success')
+                   user_role='super_admin')
+        flash(f'Student account "{username}" created successfully for {campus.name}.', 'success')
     except Exception as e:
         db.session.rollback()
-        flash(f'Error creating account: {e}', 'error')
+        flash(f'Error creating student account: {e}', 'error')
     return redirect(url_for('admin.manage_users'))
 
 
