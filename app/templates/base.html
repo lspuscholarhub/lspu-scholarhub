@@ -216,11 +216,13 @@
             <i class="bi bi-megaphone me-1"></i>Announcements
           </a>
         </li>
+        {% if role == 'super_admin' %}
         <li class="nav-item">
           <a class="nav-link" href="{{ url_for('admin.settings') }}">
             <i class="bi bi-calendar3 me-1"></i>Periods
           </a>
         </li>
+        {% endif %}
         {% endif %}
 
       </ul>

@@ -1225,6 +1225,9 @@ def update_profile():
 @role_required('admin')
 def settings():
     """System settings page — manage academic periods and configuration."""
+    if session.get('user_type') != 'super_admin':
+        flash('Only the Super Admin can manage periods.', 'error')
+        return redirect(url_for('admin.dashboard'))
     from app.models import AcademicPeriod, ScholarshipBatch
     periods = AcademicPeriod.query.order_by(AcademicPeriod.id.desc()).all()
     current = AcademicPeriod.get_current()
@@ -1234,6 +1237,9 @@ def settings():
 @admin_bp.route('/settings/period/create', methods=['POST'])
 @role_required('admin')
 def create_academic_period():
+    if session.get('user_type') != 'super_admin':
+        flash('Only the Super Admin can manage periods.', 'error')
+        return redirect(url_for('admin.dashboard'))
     from app.models import AcademicPeriod
     year = request.form.get('academic_year', '').strip()
     sem  = request.form.get('semester', '').strip()
@@ -1255,6 +1261,9 @@ def create_academic_period():
 @admin_bp.route('/settings/period/<int:pid>/set-current', methods=['POST'])
 @role_required('admin')
 def set_current_period(pid):
+    if session.get('user_type') != 'super_admin':
+        flash('Only the Super Admin can manage periods.', 'error')
+        return redirect(url_for('admin.dashboard'))
     from app.models import AcademicPeriod
     AcademicPeriod.set_current(pid)
     period = AcademicPeriod.query.get(pid)
@@ -3310,6 +3319,9 @@ def view_me_form(app_id):
 @role_required('admin')
 def set_me_deadline():
     """Set/clear the M&E form submission deadline for the current period."""
+    if session.get('user_type') != 'super_admin':
+        flash('Only the Super Admin can manage periods.', 'error')
+        return redirect(url_for('admin.dashboard'))
     from app.models import AcademicPeriod
     period = AcademicPeriod.get_current()
     if not period:
