@@ -239,6 +239,31 @@
               </select>
             </div>
 
+            <!-- Existing-scholar declaration -->
+            <div class="mb-3 p-3 rounded-3" id="existingScholarBox"
+                 style="background:#f0f7ff;border:1px solid #cfe2ff;">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="isExistingScholar"
+                       name="is_existing_scholar" value="1"
+                       {% if fd.is_existing_scholar %}checked{% endif %}>
+                <label class="form-check-label fw-semibold" for="isExistingScholar">
+                  I am already a scholar of another scholarship program
+                </label>
+                <div class="form-text">
+                  Check this if you currently hold a scholarship (e.g. from a private
+                  company, barangay, or LGU) so the Scholarship Office can see it and
+                  add you to that program in the system.
+                </div>
+              </div>
+              <div class="mt-2 {% if not fd.is_existing_scholar %}d-none{% endif %}" id="existingScholarNameWrap">
+                <label class="form-label small fw-semibold">Scholarship Program Name</label>
+                <input type="text" class="form-control" name="existing_scholarship_name"
+                       value="{{ fd.existing_scholarship_name if fd else '' }}"
+                       maxlength="150" placeholder="e.g. SM Foundation Scholarship">
+                <div class="form-text">Type the name of the scholarship program you currently hold.</div>
+              </div>
+            </div>
+
             <!-- Document uploads -->
             <div id="documentSection" class="{% if not ocr_errors %}d-none{% endif %}">
 
@@ -380,6 +405,15 @@
   const sidInput      = document.getElementById('studentIdInput');
 
   const UPPERCLASS = new Set(['2nd Year', '3rd Year', '4th Year', '5th Year', 'Irregular', 'Graduate']);
+
+  // ── Existing-scholar declaration: show program-name field only when checked ──
+  const scholarCheck = document.getElementById('isExistingScholar');
+  const scholarNameWrap = document.getElementById('existingScholarNameWrap');
+  if (scholarCheck && scholarNameWrap) {
+    const toggleScholarName = () => scholarNameWrap.classList.toggle('d-none', !scholarCheck.checked);
+    scholarCheck.addEventListener('change', toggleScholarName);
+    toggleScholarName();
+  }
 
   // ── Restore document section state if year level is pre-selected ─────────
   function applyYearLevel(year) {

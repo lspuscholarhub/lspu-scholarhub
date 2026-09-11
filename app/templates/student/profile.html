@@ -276,6 +276,31 @@
                 <div class="form-text">Assigned at registration. Contact the scholarship office to change it.</div>
               </div>
             </div>
+
+            <!-- Existing-scholar declaration -->
+            <hr class="my-4">
+            <div class="p-3 rounded-3" style="background:#f0f7ff;border:1px solid #cfe2ff;">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="isExistingScholar"
+                       name="is_existing_scholar" value="1"
+                       {% if user.is_existing_scholar %}checked{% endif %}>
+                <label class="form-check-label fw-semibold" for="isExistingScholar">
+                  I am already a scholar of another scholarship program
+                </label>
+                <div class="form-text">
+                  Check this if you currently hold a scholarship (e.g. from a private
+                  company, barangay, or LGU). The Scholarship Office will see your
+                  declaration and can add you to that program in the system.
+                </div>
+              </div>
+              <div class="mt-2 {% if not user.is_existing_scholar %}d-none{% endif %}" id="existingScholarNameWrap">
+                <label class="form-label small fw-semibold">Scholarship Program Name</label>
+                <input type="text" class="form-control" name="existing_scholarship_name"
+                       value="{{ user.existing_scholarship_name or '' }}"
+                       maxlength="150" placeholder="e.g. SM Foundation Scholarship">
+              </div>
+            </div>
+
             <div class="mt-4">
               <button type="submit" class="btn btn-primary px-4">
                 <i class="bi bi-check-lg me-1"></i>Save Profile
@@ -358,6 +383,15 @@
 {% block scripts %}
 <script>
 (function () {
+  // Existing-scholar declaration: show program-name field only when checked
+  const scholarCheck = document.getElementById('isExistingScholar');
+  const scholarNameWrap = document.getElementById('existingScholarNameWrap');
+  if (scholarCheck && scholarNameWrap) {
+    const toggleScholarName = () => scholarNameWrap.classList.toggle('d-none', !scholarCheck.checked);
+    scholarCheck.addEventListener('change', toggleScholarName);
+    toggleScholarName();
+  }
+
   const currentPw = document.getElementById('currentPw');
   const newPw     = document.getElementById('newPw');
   const confirmPw = document.getElementById('confirmPw');

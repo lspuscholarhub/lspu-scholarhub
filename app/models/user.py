@@ -37,6 +37,9 @@ class User(db.Model):
     # Academic monitoring
     gwa              = db.Column(db.Float)          # General Weighted Average (input by staff)
     units_enrolled   = db.Column(db.Integer)        # Total units enrolled this semester
+    # Existing-scholar declaration (self-declared at registration or via profile)
+    is_existing_scholar       = db.Column(db.Boolean, default=False, nullable=False, server_default='0')
+    existing_scholarship_name = db.Column(db.String(150), nullable=True)  # free-text program name they currently hold
     campus_id  = db.Column(db.Integer, db.ForeignKey('campuses.id'), nullable=True)   # NULL for university admin
     user_type = db.Column(db.Enum('student', 'admin', 'staff', 'super_admin', 'admin'), default='student', nullable=False)
     is_active = db.Column(db.Boolean, default=True, nullable=False)

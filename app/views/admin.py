@@ -1692,6 +1692,7 @@ def student_directory():
     gender     = request.args.get('gender', '')
     sort       = request.args.get('sort', 'name')
     gwa_flag   = request.args.get('gwa_flag', '')
+    scholar_filter = request.args.get('scholar', '')
     GWA_THRESHOLD = 3.00
 
     # Strict campus scoping (super admin honors campus selector)
@@ -1718,6 +1719,10 @@ def student_directory():
         query = query.filter_by(gender=gender)
     if gwa_flag == 'at_risk':
         query = query.filter(User.gwa.isnot(None), User.gwa > GWA_THRESHOLD)
+    if scholar_filter == 'existing':
+        query = query.filter(User.is_existing_scholar.is_(True))
+    elif scholar_filter == 'none':
+        query = query.filter(User.is_existing_scholar.is_(False))
 
     if sort == 'gwa_asc':
         query = query.order_by(db.case((User.gwa.is_(None), 1), else_=0), User.gwa.asc())
@@ -1737,17 +1742,20 @@ def student_directory():
     at_risk      = [s for s in with_gwa if s.gwa > GWA_THRESHOLD]
     avg_gwa      = round(sum(s.gwa for s in with_gwa) / len(with_gwa), 2) if with_gwa else None
     courses      = sorted({s.course for s in all_students if s.course})
+    existing_scholars = sum(1 for s in all_students if s.is_existing_scholar)
 
     return render_template(
         'admin/students.html',
         students=students,
         q=q, year=year, course=course, gender=gender, sort=sort, gwa_flag=gwa_flag,
+        scholar_filter=scholar_filter,
         GWA_THRESHOLD=GWA_THRESHOLD,
         total_students=len(all_students),
         with_gwa_count=len(with_gwa),
         at_risk_count=len(at_risk),
         avg_gwa=avg_gwa,
         courses=courses,
+        existing_scholars=existing_scholars,
     )
 
 
@@ -1760,6 +1768,66 @@ def student_profile(uid):
         flash('User is not a student.', 'error')
         return redirect(url_for('admin.student_directory'))
     return render_template('admin/student_profile.html', student=student)
+
+
+# ── Existing-scholar declaration: add student to a program directly ──────────
+
+@admin_bp.route('/students/<int:uid>/add-existing-scholar', methods=['GET', 'POST'])
+@role_required('admin')
+def add_existing_scholar(uid):
+    """Add a self-declared existing scholar into a scholarship program as a
+    pre-approved application (same record a normal approval produces)."""
+    student = User.query.get_or_404(uid)
+    if student.user_type != 'student':
+        flash('User is not a student.', 'error')
+        return redirect(url_for('admin.student_directory'))
+
+    if request.method == 'POST':
+        from app.services.scholarship_service import add_existing_scholar_to_program
+        program_id = request.form.get('scholarship_id', '').strip()
+        notes      = request.form.get('notes', '').strip() or None
+        if not program_id:
+            flash('Please choose a scholarship program.', 'error')
+            return redirect(url_for('admin.add_existing_scholar', uid=uid))
+        scholarship = Scholarship.query.get(int(program_id))
+        if not scholarship:
+            flash('Scholarship program not found.', 'error')
+            return redirect(url_for('admin.student_profile', uid=uid))
+
+        # Campus guard: campus admins/staff only touch their own campus (or univ-wide)
+        if session.get('user_type') != 'super_admin' and student.campus_id:
+            _me = db.session.get(User, session.get('user_id'))
+            _my_campus = _me.campus_id if _me else None
+            if _my_campus and student.campus_id != _my_campus:
+                flash('This student belongs to a different campus.', 'error')
+                return redirect(url_for('admin.student_directory'))
+
+        application, err = add_existing_scholar_to_program(
+            student, scholarship, session.get('user_id'), notes=notes)
+        if err:
+            flash(err, 'error')
+            return redirect(url_for('admin.add_existing_scholar', uid=uid))
+
+        from app.services.audit_service import log_action
+        log_action('scholarship.existing_scholar_added',
+                   f'{student.get_full_name()} ({student.student_id}) added to '
+                   f'"{scholarship.title}" via existing-scholar declaration.',
+                   category='scholarship', target_type='application',
+                   target_id=application.id)
+        flash(f'{student.get_full_name()} has been added to "{scholarship.title}" '
+              f'as an approved scholar and notified.', 'success')
+        return redirect(url_for('admin.student_profile', uid=uid))
+
+    # GET: programs the office can add this student to (campus-scoped)
+    campus_ctx = student.campus_id
+    q = Scholarship.query.filter(Scholarship.status == ScholarshipStatus.ACTIVE)
+    if campus_ctx:
+        q = q.filter(db.or_(Scholarship.campus_id == campus_ctx,
+                            Scholarship.campus_id.is_(None)))
+    programs = q.order_by(Scholarship.title.asc()).all()
+    return render_template('shared/add_existing_scholar.html',
+                           student=student, programs=programs,
+                           back_url=url_for('admin.student_profile', uid=uid))
 
 
 # ── Student document verification ─────────────────────────────────────────────

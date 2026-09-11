@@ -271,6 +271,10 @@ def register():
         year_level  = request.form.get('year_level',   '').strip()
         birthday    = request.form.get('birthday',     '').strip()
         campus_id   = request.form.get('campus_id',    '').strip()
+        # Existing-scholar declaration (optional, self-declared)
+        is_existing_scholar       = request.form.get('is_existing_scholar') == '1'
+        existing_scholarship_name = (request.form.get('existing_scholarship_name', '').strip()
+                                     if is_existing_scholar else '') or None
 
         # ── Required fields (middle_name, gender, town, province are optional) ─
         if not all([first_name, last_name, email, student_id, phone, course, year_level, birthday, campus_id]):
@@ -556,6 +560,8 @@ def register():
             'course':               course,
             'year_level':           year_level,
             'campus_id':            int(campus_id) if campus_id else None,
+            'is_existing_scholar':       is_existing_scholar,
+            'existing_scholarship_name': existing_scholarship_name,
             'cor_path':             cor_path,
             'grades_path':          grades_path,
             'cor_cloudinary_id':    cor_cloudinary_id,
@@ -645,6 +651,8 @@ def verify_otp():
                 grades_file_path=pending.get('grades_path'),
                 cor_cloudinary_id=pending.get('cor_cloudinary_id'),
                 grades_cloudinary_id=pending.get('grades_cloudinary_id'),
+                is_existing_scholar=pending.get('is_existing_scholar', False),
+                existing_scholarship_name=pending.get('existing_scholarship_name'),
             )
             new_user.set_password(temp_password)
             db.session.add(new_user)

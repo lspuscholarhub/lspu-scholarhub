@@ -94,6 +94,25 @@
     <!-- Right: GWA + Documents -->
     <div class="col-lg-8">
 
+      {% if student.is_existing_scholar %}
+      <div class="alert d-flex gap-3 align-items-start py-3 mb-4"
+           style="background:#e7f3ff;border:1px solid #b6d4fe;color:#0a58ca;">
+        <i class="bi bi-award fs-4 flex-shrink-0"></i>
+        <div class="flex-grow-1">
+          <div class="fw-bold">Declared Existing Scholar</div>
+          <div class="small">
+            This student declared they already hold a scholarship:
+            <strong>“{{ student.existing_scholarship_name or 'Program not specified' }}”</strong>
+            <span class="text-muted">(self-declared — verify with office records)</span>
+          </div>
+        </div>
+        <a href="{{ url_for('admin.add_existing_scholar', uid=student.id) }}"
+           class="btn btn-primary btn-sm flex-shrink-0">
+          <i class="bi bi-plus-circle me-1"></i>Add to Program
+        </a>
+      </div>
+      {% endif %}
+
       <!-- GWA Card — prominent -->
       <div class="card border-0 shadow-sm mb-4"
            style="border-left: 4px solid #0d6efd !important;">

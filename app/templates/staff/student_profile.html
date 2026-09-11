@@ -35,6 +35,20 @@
           {% if student.course %}
           <span class="badge bg-light text-dark border ms-1">{{ student.course }}</span>
           {% endif %}
+          {% if student.is_existing_scholar %}
+          <div class="mt-2 p-2 rounded-3 w-100" style="background:#e7f3ff;border:1px solid #b6d4fe;">
+            <div class="small fw-bold" style="color:#0a58ca;">
+              <i class="bi bi-award me-1"></i>Declared Existing Scholar
+            </div>
+            <div class="small text-muted">
+              {{ student.existing_scholarship_name or 'Program not specified' }}
+            </div>
+            <a href="{{ url_for('staff.add_existing_scholar', uid=student.id) }}"
+               class="btn btn-sm btn-primary mt-2 w-100">
+              <i class="bi bi-plus-circle me-1"></i>Add to Program
+            </a>
+          </div>
+          {% endif %}
           <div class="mt-2">
             {% if student.is_verified %}
               <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Verified</span>

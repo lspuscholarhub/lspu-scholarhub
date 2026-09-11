@@ -70,6 +70,9 @@ CREATE TABLE `users` (
   -- Academic monitoring
   `gwa`                    float                                DEFAULT NULL,
   `units_enrolled`         int(11)                              DEFAULT NULL,
+  -- Existing-scholar declaration (self-declared at registration or via profile)
+  `is_existing_scholar`         tinyint(1)                      NOT NULL DEFAULT 0,
+  `existing_scholarship_name`   varchar(150)                    DEFAULT NULL,
   -- Account fields
   `user_type`              enum('student','admin','staff')      NOT NULL DEFAULT 'student',
   `is_active`              tinyint(1)                           NOT NULL DEFAULT 1,

@@ -168,5 +168,88 @@ class ScholarshipService:
             return {'success': False, 'message': str(e)}
 
 
+def add_existing_scholar_to_program(user, scholarship, staff_user_id, notes=None):
+    """Add a self-declared existing scholar to a scholarship program directly.
+
+    Creates a pre-approved application — the exact same record a normal approval
+    would produce — so the student flows into batches, monitoring, reports and
+    the 'My Scholarship' page with no special-casing anywhere downstream.
+
+    Guards (mirroring the normal approval path):
+      - student already has an ACTIVE application for this program → rejected
+      - public-funding rule: one public scholarship per academic period
+      - program must be accepting applications (or capacity is ignored — staff
+        override is intentional here since the office controls the award)
+
+    Returns (application, error_message). Exactly one is truthy.
+    """
+    from app.models import AcademicPeriod, ScholarshipBatch
+    from app.services.batch_service import auto_assign_to_batch
+    from app.views.scholarship import _active_public_application
+
+    period = AcademicPeriod.get_current()
+
+    dup = ScholarshipApplication.query.filter_by(
+        scholarship_id=scholarship.id, applicant_id=user.id)
+    if period:
+        dup = dup.filter_by(academic_period_id=period.id)
+    dup = dup.filter(ScholarshipApplication.status.in_(
+        [ApplicationStatus.PENDING, ApplicationStatus.UNDER_REVIEW,
+         ApplicationStatus.APPROVED])).first()
+    if dup:
+        return None, (f'{user.get_full_name()} already has an active application '
+                      f'for "{scholarship.title}" in the current period.')
+
+    if scholarship.funding_type == 'public':
+        held = _active_public_application(user.id)
+        if held:
+            return None, (f'{user.get_full_name()} already holds the public scholarship '
+                          f'"{held.scholarship.title}" for this academic period. '
+                          'Only one public scholarship is allowed per student per period.')
+
+    application = ScholarshipApplication(
+        scholarship_id=scholarship.id,
+        applicant_id=user.id,
+        application_data={
+            'source': 'existing_scholar',
+            'declared_program': user.existing_scholarship_name,
+            'added_by': staff_user_id,
+        },
+        status=ApplicationStatus.APPROVED,
+        scholar_tag='active',
+        scholar_status='active',
+        submitted_at=datetime.utcnow(),
+        reviewed_at=datetime.utcnow(),
+        reviewed_by=staff_user_id,
+        review_notes=notes or 'Added directly by the Scholarship Office (existing scholar declaration).',
+        final_decision_date=datetime.utcnow(),
+        approved_at=datetime.utcnow(),
+        is_active=True,
+        academic_period_id=period.id if period else None,
+        campus_id=user.campus_id,
+    )
+    db.session.add(application)
+    db.session.flush()
+
+    scholarship.increment_applicants()
+
+    batch = auto_assign_to_batch(application)
+    db.session.commit()
+
+    # Notify the student (non-critical)
+    try:
+        from app.services.notification_service import notification_service as _ns
+        _ns.send_application_status_update(
+            user.email, user.phone_number or '', user.id,
+            scholarship.title, 'approved',
+            'You have been added to this scholarship program by the Scholarship Office '
+            'based on your existing-scholar declaration.',
+        )
+    except Exception:
+        pass
+
+    return application, None
+
+
 # Module-level singleton
 scholarship_service = ScholarshipService()

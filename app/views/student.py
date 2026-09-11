@@ -575,6 +575,10 @@ def update_profile():
     user.phone_number = request.form.get('phone_number', user.phone_number or '').strip() or None
     user.course       = request.form.get('course',     user.course)
     user.year_level   = request.form.get('year_level', user.year_level)
+    # Existing-scholar declaration (self-declared; office verifies offline)
+    user.is_existing_scholar = request.form.get('is_existing_scholar') == '1'
+    user.existing_scholarship_name = (request.form.get('existing_scholarship_name', '').strip()
+                                      if user.is_existing_scholar else None) or None
     # student_id and email are read-only — not updated here
 
     new_pw = request.form.get('new_password', '').strip()

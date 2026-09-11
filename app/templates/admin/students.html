@@ -46,6 +46,12 @@
         <small class="text-muted">Average GWA</small>
       </div>
     </div>
+    <div class="col-md-3">
+      <div class="card border-0 shadow-sm text-center py-3">
+        <h2 class="mb-0" style="color:#0a58ca;">{{ existing_scholars }}</h2>
+        <small class="text-muted">Declared Existing Scholars</small>
+      </div>
+    </div>
   </div>
 
   <!-- Filters -->
@@ -103,8 +109,16 @@
               <option value="at_risk" {% if gwa_flag=='at_risk' %}selected{% endif %}>⚠ At Risk (GWA above 3.00)</option>
             </select>
           </div>
-          <div class="col-md-3"></div>
-          <div class="col-md-3 d-flex justify-content-end">
+          <div class="col-md-3">
+            <label class="form-label small fw-semibold">Scholar Declaration</label>
+            <select name="scholar" class="form-select">
+              <option value=""         {% if scholar_filter==''         %}selected{% endif %}>All Students</option>
+              <option value="existing" {% if scholar_filter=='existing' %}selected{% endif %}>Declared existing scholar</option>
+              <option value="none"     {% if scholar_filter=='none'     %}selected{% endif %}>No declaration</option>
+            </select>
+          </div>
+          <div class="col-md-1"></div>
+          <div class="col-md-2 d-flex justify-content-end">
             <a href="{{ url_for('admin.student_directory') }}" class="btn btn-outline-secondary btn-sm">
               <i class="bi bi-x-circle me-1"></i>Reset
             </a>
@@ -132,6 +146,12 @@
               <td>
                 <strong>{{ s.get_full_name() }}</strong><br>
                 <small class="text-muted">{{ s.email }}</small>
+                {% if s.is_existing_scholar %}
+                <span class="badge mt-1" style="background:#e7f3ff;color:#0a58ca;"
+                      data-bs-toggle="tooltip" title="Self-declared existing scholar: {{ s.existing_scholarship_name or 'program not specified' }}">
+                  <i class="bi bi-award me-1"></i>Existing scholar
+                </span>
+                {% endif %}
               </td>
               <td class="small">{{ s.student_id or '—' }}</td>
               <td class="small">
@@ -223,19 +243,19 @@
   <nav class="mt-4 d-flex justify-content-center">
     <ul class="pagination">
       <li class="page-item {% if not students.has_prev %}disabled{% endif %}">
-        <a class="page-link" href="{{ url_for('admin.student_directory', page=students.prev_num, q=q, year=year, course=course, gender=gender, sort=sort, gwa_flag=gwa_flag) }}">&laquo;</a>
+        <a class="page-link" href="{{ url_for('admin.student_directory', page=students.prev_num, q=q, year=year, course=course, gender=gender, sort=sort, gwa_flag=gwa_flag, scholar=scholar_filter) }}">&laquo;</a>
       </li>
       {% for p in students.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
         {% if p %}
         <li class="page-item {% if p == students.page %}active{% endif %}">
-          <a class="page-link" href="{{ url_for('admin.student_directory', page=p, q=q, year=year, course=course, gender=gender, sort=sort, gwa_flag=gwa_flag) }}">{{ p }}</a>
+          <a class="page-link" href="{{ url_for('admin.student_directory', page=p, q=q, year=year, course=course, gender=gender, sort=sort, gwa_flag=gwa_flag, scholar=scholar_filter) }}">{{ p }}</a>
         </li>
         {% else %}
         <li class="page-item disabled"><span class="page-link">…</span></li>
         {% endif %}
       {% endfor %}
       <li class="page-item {% if not students.has_next %}disabled{% endif %}">
-        <a class="page-link" href="{{ url_for('admin.student_directory', page=students.next_num, q=q, year=year, course=course, gender=gender, sort=sort, gwa_flag=gwa_flag) }}">&raquo;</a>
+        <a class="page-link" href="{{ url_for('admin.student_directory', page=students.next_num, q=q, year=year, course=course, gender=gender, sort=sort, gwa_flag=gwa_flag, scholar=scholar_filter) }}">&raquo;</a>
       </li>
     </ul>
   </nav>
