@@ -150,7 +150,7 @@ def dashboard():
         ScholarshipApplication.status.in_([ApplicationStatus.PENDING,
                                            ApplicationStatus.UNDER_REVIEW])
     ).count()
-    approved_count      = _apps_q.filter_by(status=ApplicationStatus.APPROVED).count()
+    approved_count      = _apps_q.filter(ScholarshipApplication.status == ApplicationStatus.APPROVED).count()
 
     # Gender breakdown of all students
     male_students   = _scoped_users(User.query.filter_by(user_type='student', gender='Male')).count()
@@ -542,8 +542,8 @@ def manage_applications():
         'pending':      query.filter(ScholarshipApplication.status.in_(
                             [ApplicationStatus.PENDING, ApplicationStatus.UNDER_REVIEW])).count(),
         'under_review': 0,  # merged into pending
-        'approved':     query.filter_by(status=ApplicationStatus.APPROVED).count(),
-        'rejected':     query.filter_by(status=ApplicationStatus.REJECTED).count(),
+        'approved':     query.filter(ScholarshipApplication.status == ApplicationStatus.APPROVED).count(),
+        'rejected':     query.filter(ScholarshipApplication.status == ApplicationStatus.REJECTED).count(),
     }
 
     return render_template(

@@ -121,7 +121,7 @@ def dashboard():
     new_users       = _su(User.query.filter(
         User.created_at >= datetime.utcnow() - timedelta(days=30)
     )).count()
-    approved_count  = _apps_q.filter_by(status=ApplicationStatus.APPROVED).count()
+    approved_count  = _apps_q.filter(ScholarshipApplication.status == ApplicationStatus.APPROVED).count()
     at_risk_count   = _su(User.query.filter(
         User.user_type == 'student', User.gwa.isnot(None), User.gwa > GWA_THRESHOLD
     )).count()
@@ -142,7 +142,7 @@ def dashboard():
         _batches_q = _batches_q.filter(ScholarshipBatch.academic_period_id == pid)
     active_batches  = _batches_q.count()
 
-    pending_apps = _apps_q.filter_by(status=ApplicationStatus.PENDING
+    pending_apps = _apps_q.filter(ScholarshipApplication.status == ApplicationStatus.PENDING
                     ).order_by(ScholarshipApplication.submitted_at.asc()).limit(5).all()
     recent_activity = _apps_q.order_by(ScholarshipApplication.submitted_at.desc()).limit(5).all()
 
@@ -489,8 +489,8 @@ def review_applications():
         'pending':      query.filter(ScholarshipApplication.status.in_(
                             [ApplicationStatus.PENDING, ApplicationStatus.UNDER_REVIEW])).count(),
         'under_review': 0,  # merged into pending
-        'approved':     query.filter_by(status=ApplicationStatus.APPROVED).count(),
-        'rejected':     query.filter_by(status=ApplicationStatus.REJECTED).count(),
+        'approved':     query.filter(ScholarshipApplication.status == ApplicationStatus.APPROVED).count(),
+        'rejected':     query.filter(ScholarshipApplication.status == ApplicationStatus.REJECTED).count(),
     }
 
     return render_template(
