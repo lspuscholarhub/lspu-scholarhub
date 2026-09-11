@@ -247,20 +247,20 @@
                        name="is_existing_scholar" value="1"
                        {% if fd.is_existing_scholar %}checked{% endif %}>
                 <label class="form-check-label fw-semibold" for="isExistingScholar">
-                  I am already a scholar of another scholarship program
+                  I am already a scholar in LSPU
                 </label>
                 <div class="form-text">
-                  Check this if you currently hold a scholarship (e.g. from a private
-                  company, barangay, or LGU) so the Scholarship Office can see it and
-                  add you to that program in the system.
+                  This is only for students who are already scholars but do not yet have
+                  an account in the system. Check this so the Scholarship Office can
+                  add you to the correct program.
                 </div>
               </div>
               <div class="mt-2 {% if not fd.is_existing_scholar %}d-none{% endif %}" id="existingScholarNameWrap">
                 <label class="form-label small fw-semibold">Scholarship Program Name</label>
                 <input type="text" class="form-control" name="existing_scholarship_name"
                        value="{{ fd.existing_scholarship_name if fd else '' }}"
-                       maxlength="150" placeholder="e.g. SM Foundation Scholarship">
-                <div class="form-text">Type the name of the scholarship program you currently hold.</div>
+                       maxlength="150" placeholder="e.g. TES, TDP, Private Scholarship">
+                <div class="form-text">Type the name of your current LSPU scholarship program.</div>
               </div>
             </div>
 
