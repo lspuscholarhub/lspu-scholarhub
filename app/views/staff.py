@@ -886,10 +886,31 @@ def student_directory():
     scholar_filter = request.args.get('scholar', '')
 
     _me = db.session.get(User, session.get('user_id'))
-    campus_ctx = _me.campus_id if _me else None
-    query = User.query.filter_by(user_type='student')
+    campus_ctx = session.get('campus_context') if session.get('user_type') == 'super_admin' else None
+    my_campus_ids = []
+    if campus_ctx is None and _me:
+        if _me.assigned_campuses:
+            my_campus_ids = [c.id for c in _me.assigned_campuses]
+        elif _me.campus_id:
+            my_campus_ids = [_me.campus_id]
+        if len(my_campus_ids) == 1:
+            campus_ctx = my_campus_ids[0]
+
+    current_period = get_viewing_period()
+    pid = current_period.id if current_period else None
+
+    # When a period is selected, only show students who have applications in that period
+    if pid:
+        from sqlalchemy import select as _sel
+        period_student_ids = _sel(ScholarshipApplication.applicant_id).where(
+            ScholarshipApplication.academic_period_id == pid).distinct()
+        query = User.query.filter(User.id.in_(period_student_ids))
+    else:
+        query = User.query.filter_by(user_type='student')
     if campus_ctx:
         query = query.filter(User.campus_id == campus_ctx)
+    elif my_campus_ids:
+        query = query.filter(User.campus_id.in_(my_campus_ids))
     if q:
         query = query.filter(db.or_(
             User.first_name.ilike(f'%{q}%'), User.last_name.ilike(f'%{q}%'),
@@ -917,10 +938,9 @@ def student_directory():
 
     page = request.args.get('page', 1, type=int)
     students = query.paginate(page=page, per_page=20, error_out=False)
-    _all_q = User.query.filter_by(user_type='student')
-    if campus_ctx:
-        _all_q = _all_q.filter(User.campus_id == campus_ctx)
-    all_s    = _all_q.all()
+
+    # Stats — scoped to the same period
+    all_s    = query.all()
     with_gwa = [s for s in all_s if s.gwa is not None]
     at_risk  = [s for s in with_gwa if s.gwa > GWA_THRESHOLD]
     avg_gwa  = round(sum(s.gwa for s in with_gwa) / len(with_gwa), 2) if with_gwa else None

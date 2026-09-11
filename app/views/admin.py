@@ -1910,8 +1910,17 @@ def student_directory():
     if campus_ctx is None and session.get('user_type') != 'super_admin':
         _me = db.session.get(User, session.get('user_id'))
         campus_ctx = _me.campus_id if _me else None
+    current_period = get_viewing_period()
+    pid = current_period.id if current_period else None
 
-    query = User.query.filter_by(user_type='student')
+    # When a period is selected, only show students who have applications in that period
+    if pid:
+        from sqlalchemy import select as _sel
+        period_student_ids = _sel(ScholarshipApplication.applicant_id).where(
+            ScholarshipApplication.academic_period_id == pid).distinct()
+        query = User.query.filter(User.id.in_(period_student_ids))
+    else:
+        query = User.query.filter_by(user_type='student')
     if campus_ctx:
         query = query.filter(User.campus_id == campus_ctx)
     if q:
@@ -1944,10 +1953,8 @@ def student_directory():
     page = request.args.get('page', 1, type=int)
     students = query.paginate(page=page, per_page=20, error_out=False)
 
-    _all_students_q = User.query.filter_by(user_type='student')
-    if campus_ctx:
-        _all_students_q = _all_students_q.filter(User.campus_id == campus_ctx)
-    all_students = _all_students_q.all()
+    # Stats — scoped to the same period
+    all_students = query.all()
     with_gwa     = [s for s in all_students if s.gwa is not None]
     at_risk      = [s for s in with_gwa if s.gwa > GWA_THRESHOLD]
     avg_gwa      = round(sum(s.gwa for s in with_gwa) / len(with_gwa), 2) if with_gwa else None
