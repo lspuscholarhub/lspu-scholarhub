@@ -8,8 +8,31 @@ from app.models.scholarship import ScholarshipStatus, ApplicationStatus
 from app.models.document import Document
 from app.services.document_service import document_service
 from app.utils.decorators import role_required
+from app.utils.period_context import get_viewing_period
 
 student_bp = Blueprint('student', __name__)
+
+
+# ── Period Context (students can also switch) ─────────────────────────
+
+@student_bp.route('/period-context/<int:period_id>')
+@role_required('student')
+def set_period_context(period_id):
+    """Set the viewing period. period_id=0 means current period (default)."""
+    from app.models.academic_period import AcademicPeriod
+    if period_id == 0:
+        session.pop('viewing_period_id', None)
+        session.pop('viewing_period_name', None)
+        flash('Viewing current period.', 'info')
+    else:
+        period = AcademicPeriod.query.get(period_id)
+        if not period:
+            flash('Invalid period.', 'error')
+            return redirect(url_for('student.dashboard'))
+        session['viewing_period_id'] = period.id
+        session['viewing_period_name'] = period.display_name
+        flash(f'Viewing: {period.display_name}', 'info')
+    return redirect(request.referrer or url_for('student.dashboard'))
 
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -18,7 +41,11 @@ student_bp = Blueprint('student', __name__)
 @role_required('student')
 def dashboard():
     user = User.query.get(session['user_id'])
-    apps = user.applications or []
+    current_period = get_viewing_period()
+    pid = current_period.id if current_period else None
+    all_apps = user.applications or []
+    # Filter by selected period if viewing a specific one
+    apps = [a for a in all_apps if pid is None or a.academic_period_id == pid]
 
     total_apps     = len(apps)
     approved_count = sum(1 for a in apps if a.status == ApplicationStatus.APPROVED)
@@ -64,10 +91,12 @@ def dashboard():
 @role_required('student')
 def my_applications():
     user = User.query.get(session['user_id'])
-    apps = (ScholarshipApplication.query
-            .filter_by(applicant_id=user.id)
-            .order_by(ScholarshipApplication.submitted_at.desc())
-            .all())
+    current_period = get_viewing_period()
+    pid = current_period.id if current_period else None
+    q = ScholarshipApplication.query.filter_by(applicant_id=user.id)
+    if pid:
+        q = q.filter(ScholarshipApplication.academic_period_id == pid)
+    apps = q.order_by(ScholarshipApplication.submitted_at.desc()).all()
 
     return render_template(
         'student/applications.html',
@@ -152,12 +181,14 @@ def my_scholarship():
     """ALL of the student's approved scholarships — details, status, batch,
     amount received, and renewal/compliance guidance per program."""
     user = User.query.get(session['user_id'])
+    current_period = get_viewing_period()
+    pid = current_period.id if current_period else None
 
-    approved_apps = (ScholarshipApplication.query
-                     .filter_by(applicant_id=user.id,
-                                status=ApplicationStatus.APPROVED)
-                     .order_by(ScholarshipApplication.approved_at.desc())
-                     .all())
+    q = (ScholarshipApplication.query
+          .filter_by(applicant_id=user.id, status=ApplicationStatus.APPROVED))
+    if pid:
+        q = q.filter(ScholarshipApplication.academic_period_id == pid)
+    approved_apps = q.order_by(ScholarshipApplication.approved_at.desc()).all()
 
     if not approved_apps:
         flash('You do not have an approved scholarship yet. '
@@ -205,7 +236,7 @@ def my_scholarship():
 
     # Renewal guidance (user-level, shared across scholarships)
     from app.models.academic_period import AcademicPeriod
-    current_period = AcademicPeriod.get_current()
+    current_period = get_viewing_period()
     grades_semester = user.grades_semester
 
     gwa_val = float(user.gwa) if user.gwa is not None else None
@@ -848,7 +879,7 @@ def upload_gwa():
 
                 # Mark which semester these grades are for
                 from app.models.academic_period import AcademicPeriod
-                current_period = AcademicPeriod.get_current()
+                current_period = get_viewing_period()
                 if current_period:
                     user.grades_semester = current_period.display_name
                     # Save to GWA history
@@ -957,7 +988,7 @@ def upload_me_form():
         flash('The selected file is empty.', 'error')
         return redirect(url_for('student.my_scholarship'))
 
-    current_period = AcademicPeriod.get_current()
+    current_period = get_viewing_period()
 
     # Replace any previous submission for this period (keep only the latest)
     existing = MonitoringSubmission.query.filter_by(

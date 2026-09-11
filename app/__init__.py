@@ -262,6 +262,14 @@ def create_app(config_name=None):
         except Exception:
             pass
 
+        # Academic periods for navbar period switcher
+        all_academic_periods = []
+        try:
+            from app.models.academic_period import AcademicPeriod
+            all_academic_periods = AcademicPeriod.query.order_by(AcademicPeriod.id.desc()).all()
+        except Exception:
+            pass
+
         return {
             'now': _dt.utcnow(),
             'session': _session,
@@ -273,6 +281,7 @@ def create_app(config_name=None):
             'unread_count': unread,
             'has_approved_scholarship': has_approved_scholarship,
             'all_campuses': all_campuses,
+            'all_academic_periods': all_academic_periods,
         }
 
     return app

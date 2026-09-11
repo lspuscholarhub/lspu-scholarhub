@@ -11,6 +11,7 @@ from app.models.document import Document
 from app.services.document_service import document_service
 from app.services.notification_service import notification_service
 from app.utils.decorators import login_required, role_required
+from app.utils.period_context import get_viewing_period
 
 scholarship_bp = Blueprint('scholarship', __name__)
 logger = logging.getLogger(__name__)
@@ -107,7 +108,7 @@ def _active_public_application(user_id, exclude_app_id=None):
     the public one and with each other.
     """
     from app.models.academic_period import AcademicPeriod
-    period = AcademicPeriod.get_current()
+    period = get_viewing_period()
 
     q = (ScholarshipApplication.query
          .join(Scholarship, ScholarshipApplication.scholarship_id == Scholarship.id)

@@ -16,7 +16,7 @@ admin_bp = Blueprint('admin', __name__)
 # ── Campus Context (Super Admin) ──────────────────────────────────────
 
 @admin_bp.route('/campus-context/<int:campus_id>')
-@role_required('admin')
+@role_required('admin', 'staff')
 def set_campus_context(campus_id):
     """Set the campus context for university admin. campus_id=0 means all campuses."""
     from flask import session as _session
@@ -38,6 +38,31 @@ def set_campus_context(campus_id):
         _session['campus_context_name'] = campus.name
         flash(f'Switched to {campus.name}.', 'info')
     return redirect(request.referrer or url_for('admin.dashboard'))
+
+
+# ── Period Context (all logged-in users) ──────────────────────────────
+
+@admin_bp.route('/period-context/<int:period_id>')
+@role_required('admin')
+def set_period_context(period_id):
+    """Set the viewing period. period_id=0 means current period (default)."""
+    from app.models.academic_period import AcademicPeriod
+    if period_id == 0:
+        session.pop('viewing_period_id', None)
+        session.pop('viewing_period_name', None)
+        flash('Viewing current period.', 'info')
+    else:
+        period = AcademicPeriod.query.get(period_id)
+        if not period:
+            flash('Invalid period.', 'error')
+            return redirect(request.referrer or url_for('admin.dashboard'))
+        session['viewing_period_id'] = period.id
+        session['viewing_period_name'] = period.display_name
+        flash(f'Viewing: {period.display_name}', 'info')
+    return redirect(request.referrer or url_for('admin.dashboard'))
+
+
+from app.utils.period_context import get_viewing_period
 
 
 # ── Scholarship campus guard ─────────────────────────────────────────────────
@@ -90,46 +115,57 @@ def dashboard():
         User.created_at >= datetime.utcnow() - timedelta(days=30)
     )).count()
     active_scholarships = _scoped_sch(Scholarship.query.filter_by(status=ScholarshipStatus.ACTIVE)).count()
-    total_applications  = _scoped_apps(ScholarshipApplication.query).count()
-    pending_review      = _scoped_apps(ScholarshipApplication.query.filter(
+    # Current academic period (from session switcher or default)
+    current_period = get_viewing_period()
+    pid = current_period.id if current_period else None
+
+    # Applications — scoped by campus AND period
+    _apps_q = _scoped_apps(ScholarshipApplication.query)
+    if pid:
+        _apps_q = _apps_q.filter(ScholarshipApplication.academic_period_id == pid)
+    total_applications  = _apps_q.count()
+    pending_review      = _apps_q.filter(
         ScholarshipApplication.status.in_([ApplicationStatus.PENDING,
                                            ApplicationStatus.UNDER_REVIEW])
-    )).count()
-    approved_count      = _scoped_apps(ScholarshipApplication.query.filter_by(status=ApplicationStatus.APPROVED)).count()
+    ).count()
+    approved_count      = _apps_q.filter_by(status=ApplicationStatus.APPROVED).count()
 
     # Gender breakdown of all students
     male_students   = _scoped_users(User.query.filter_by(user_type='student', gender='Male')).count()
     female_students = _scoped_users(User.query.filter_by(user_type='student', gender='Female')).count()
 
-    # Fund summary — total amount disbursed across all batches
-    total_funds = db.session.query(
-        db.func.coalesce(db.func.sum(ScholarshipBatch.total_amount), 0)
-    ).filter(ScholarshipBatch.campus_id == campus_ctx) if campus_ctx else db.session.query(
+    # Fund summary — scoped by campus AND period
+    _funds_q = db.session.query(
         db.func.coalesce(db.func.sum(ScholarshipBatch.total_amount), 0)
     )
-    total_funds = total_funds.scalar() or 0
-
-    # Current academic period
-    current_period = AcademicPeriod.get_current()
+    if campus_ctx:
+        _funds_q = _funds_q.filter(ScholarshipBatch.campus_id == campus_ctx)
+    if pid:
+        _funds_q = _funds_q.filter(ScholarshipBatch.academic_period_id == pid)
+    total_funds = _funds_q.scalar() or 0
 
     # At-risk students (GWA > 3.00)
     at_risk_count = _scoped_users(User.query.filter(
         User.user_type == 'student', User.gwa.isnot(None), User.gwa > 3.00
     )).count()
 
-    # Recent activity: last 5 applications
+    # Recent activity: last 5 applications — scoped by campus AND period
     recent_apps_q = (ScholarshipApplication.query
                      .join(User, ScholarshipApplication.applicant_id == User.id))
     if campus_ctx:
         recent_apps_q = recent_apps_q.filter(User.campus_id == campus_ctx)
+    if pid:
+        recent_apps_q = recent_apps_q.filter(ScholarshipApplication.academic_period_id == pid)
     recent_apps = (recent_apps_q
                    .order_by(ScholarshipApplication.submitted_at.desc())
                    .limit(5).all())
 
-    # Active batches
+    # Active batches — scoped by campus AND period
     active_batches_q = ScholarshipBatch.query.filter_by(status='open')
     if campus_ctx:
         active_batches_q = active_batches_q.filter(ScholarshipBatch.campus_id == campus_ctx)
+    if pid:
+        active_batches_q = active_batches_q.filter(ScholarshipBatch.academic_period_id == pid)
     active_batches = active_batches_q.count()
 
     # Top performing students (lowest GWA = best, closest to 1.00)
@@ -434,6 +470,12 @@ def manage_applications():
     if campus_ctx:
         query = query.filter(User.campus_id == campus_ctx)
 
+    # Period filtering
+    current_period = get_viewing_period()
+    pid = current_period.id if current_period else None
+    if pid:
+        query = query.filter(ScholarshipApplication.academic_period_id == pid)
+
     if status_filter and status_filter != 'all':
         try:
             if status_filter == 'pending':
@@ -474,12 +516,12 @@ def manage_applications():
     })
 
     stats = {
-        'total':        ScholarshipApplication.query.count(),
-        'pending':      ScholarshipApplication.query.filter(ScholarshipApplication.status.in_(
+        'total':        query.count(),
+        'pending':      query.filter(ScholarshipApplication.status.in_(
                             [ApplicationStatus.PENDING, ApplicationStatus.UNDER_REVIEW])).count(),
         'under_review': 0,  # merged into pending
-        'approved':     ScholarshipApplication.query.filter_by(status=ApplicationStatus.APPROVED).count(),
-        'rejected':     ScholarshipApplication.query.filter_by(status=ApplicationStatus.REJECTED).count(),
+        'approved':     query.filter_by(status=ApplicationStatus.APPROVED).count(),
+        'rejected':     query.filter_by(status=ApplicationStatus.REJECTED).count(),
     }
 
     return render_template(
@@ -692,11 +734,16 @@ def monitoring():
         _me = db.session.get(User, session.get('user_id'))
         campus_ctx = _me.campus_id if _me else None
 
+    current_period = get_viewing_period()
+    pid = current_period.id if current_period else None
+
     query = ScholarshipApplication.query.filter(
         ScholarshipApplication.status == ApplicationStatus.APPROVED
     ).join(User, ScholarshipApplication.applicant_id == User.id)
     if campus_ctx:
         query = query.filter(User.campus_id == campus_ctx)
+    if pid:
+        query = query.filter(ScholarshipApplication.academic_period_id == pid)
 
     if status_filter:
         query = query.filter(ScholarshipApplication.scholar_status == status_filter)
@@ -708,6 +755,8 @@ def monitoring():
     _all_approved_q = ScholarshipApplication.query.filter_by(status=ApplicationStatus.APPROVED)
     if campus_ctx:
         _all_approved_q = _all_approved_q.join(User, ScholarshipApplication.applicant_id == User.id).filter(User.campus_id == campus_ctx)
+    if pid:
+        _all_approved_q = _all_approved_q.filter(ScholarshipApplication.academic_period_id == pid)
     all_approved = _all_approved_q.all()
     stats = {
         'total':         len(all_approved),
@@ -738,7 +787,7 @@ def monitoring():
 
     # M&E deadline (per current academic period) for overdue flagging
     from app.models.academic_period import AcademicPeriod
-    current_period = AcademicPeriod.get_current()
+    current_period = get_viewing_period()
     me_deadline = current_period.me_form_deadline if current_period else None
     me_overdue_count = 0
     if me_deadline:
@@ -1230,7 +1279,7 @@ def settings():
         return redirect(url_for('admin.dashboard'))
     from app.models import AcademicPeriod, ScholarshipBatch
     periods = AcademicPeriod.query.order_by(AcademicPeriod.id.desc()).all()
-    current = AcademicPeriod.get_current()
+    current = get_viewing_period()
     return render_template('admin/settings.html', periods=periods, current=current)
 
 
@@ -1274,6 +1323,38 @@ def set_current_period(pid):
     return redirect(url_for('admin.settings'))
 
 
+@admin_bp.route('/settings/period/<int:pid>/delete', methods=['POST'])
+@role_required('admin')
+def delete_academic_period(pid):
+    """Delete an academic period — only if it has no linked data."""
+    if session.get('user_type') != 'super_admin':
+        flash('Only the Super Admin can manage periods.', 'error')
+        return redirect(url_for('admin.dashboard'))
+    from app.models import AcademicPeriod, ScholarshipBatch, MonitoringSubmission
+    period = AcademicPeriod.query.get(pid)
+    if not period:
+        flash('Period not found.', 'error')
+        return redirect(url_for('admin.settings'))
+    if period.is_current:
+        flash('Cannot delete the current active period. Set another period as current first.', 'error')
+        return redirect(url_for('admin.settings'))
+    # Check for linked data
+    has_apps = ScholarshipApplication.query.filter_by(academic_period_id=pid).count() > 0
+    has_batches = ScholarshipBatch.query.filter_by(academic_period_id=pid).count() > 0
+    has_monitoring = MonitoringSubmission.query.filter_by(academic_period_id=pid).count() > 0
+    if has_apps or has_batches or has_monitoring:
+        flash(f'Cannot delete "{period.display_name}" — it has linked applications, batches, or monitoring records.', 'error')
+        return redirect(url_for('admin.settings'))
+    name = period.display_name
+    db.session.delete(period)
+    db.session.commit()
+    log_action('settings.period_delete',
+               f'Admin deleted academic period: {name}',
+               category='system')
+    flash(f'Academic period "{name}" deleted.', 'success')
+    return redirect(url_for('admin.settings'))
+
+
 # ── Reports & Export ──────────────────────────────────────────────────────────
 
 @admin_bp.route('/reports')
@@ -1290,12 +1371,17 @@ def reports():
         _me = db.session.get(User, session.get('user_id'))
         campus_ctx = _me.campus_id if _me else None
 
+    current_period = get_viewing_period()
+    pid = current_period.id if current_period else None
+
     def _apps_q():
-        """Applications scoped to the campus of the applicant."""
+        """Applications scoped to the campus AND period."""
         q = ScholarshipApplication.query.join(
             User, ScholarshipApplication.applicant_id == User.id)
         if campus_ctx:
             q = q.filter(User.campus_id == campus_ctx)
+        if pid:
+            q = q.filter(ScholarshipApplication.academic_period_id == pid)
         return q
 
     def _students_q(extra=None):
@@ -2828,7 +2914,7 @@ def manage_batches():
     scholarship_id = request.args.get('scholarship_id', '', type=str)
     period_id      = request.args.get('period_id', '', type=str)
 
-    current_period = AcademicPeriod.get_current()
+    current_period = get_viewing_period()
     periods        = AcademicPeriod.query.order_by(AcademicPeriod.id.desc()).all()
 
     # Strict campus scoping (super admin honors campus selector)
@@ -3323,7 +3409,7 @@ def set_me_deadline():
         flash('Only the Super Admin can manage periods.', 'error')
         return redirect(url_for('admin.dashboard'))
     from app.models import AcademicPeriod
-    period = AcademicPeriod.get_current()
+    period = get_viewing_period()
     if not period:
         flash('Create a current academic period first.', 'warning')
         return redirect(url_for('admin.settings'))

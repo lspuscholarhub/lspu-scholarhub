@@ -51,6 +51,13 @@
                         <i class="bi bi-check-circle me-1"></i>Set Current
                       </button>
                     </form>
+                    <form method="POST" action="{{ url_for('admin.delete_academic_period', pid=p.id) }}" class="d-inline ms-1"
+                          onsubmit="return confirm('Delete {{ p.display_name }}? This cannot be undone.');">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button class="btn btn-sm btn-outline-danger">
+                        <i class="bi bi-trash me-1"></i>Delete
+                      </button>
+                    </form>
                     {% endif %}
                   </td>
                 </tr>
