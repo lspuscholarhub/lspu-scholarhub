@@ -316,12 +316,19 @@
    3. Check: Attachments field is present (optional).
    4. Send with and without attachments.
 
- Periods (was "Settings")
-   1. Open Periods (Academic Periods).
-   2. Set the M&E form deadline for the current
+ Periods (Super Admin ONLY)
+   1. Log in as campus admin -> check: Periods link is
+      NOT in the navbar.
+   2. Log in as super admin -> check: Periods link IS
+      in the navbar.
+   3. Open Periods (Academic Periods).
+   4. Create a new academic period (e.g. '1st Semester
+      2026-2027').
+   5. Set a period as current -> old period is unset.
+   6. Set the M&E form deadline for the current
       semester -> students see the deadline banner.
-   3. Create a new academic period.
-   4. Set a period as current.
+   7. Try accessing /admin/settings as campus admin ->
+      must redirect with error message.
 
  Reports and audit
    1. Reports -> charts + export work.
@@ -370,6 +377,13 @@
    2. Reports -> numbers make sense per campus.
    3. Audit Log -> super admin actions are logged too.
 
+ Period management
+   1. Open Periods -> create a new period.
+   2. Set it as current -> old period is unset.
+   3. Set the M&E deadline for the current period.
+   4. Try accessing /admin/settings as campus admin ->
+      must redirect with error.
+
  Role management safety
    1. Demote an admin to staff while a super admin
       exists -> should be ALLOWED.
@@ -395,6 +409,7 @@
  [ ] No 500 errors anywhere you click
  [ ] Hidden programs never leak (pages AND AI assistant)
  [ ] Campus scoping: switching campus filters ALL pages
+ [ ] Periods: only super admin can access; campus admin blocked
  [ ] Announcements: SMS + Email always available
  [ ] Announcements: file attachments work
  [ ] Documents open in new tab (not forced download)
