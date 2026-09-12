@@ -198,8 +198,8 @@
               </div>
               <div class="col-md-6">
                 <label class="form-label fw-semibold">Email</label>
-                <input type="email" class="form-control"
-                       value="{{ user.email }}" readonly>
+                <input type="email" class="form-control" name="email"
+                       value="{{ user.email }}" required>
               </div>
               <div class="col-md-6">
                 <label class="form-label fw-semibold">Phone Number</label>
@@ -211,13 +211,8 @@
               </div>
               <div class="col-md-6">
                 <label class="form-label fw-semibold">Year Level</label>
-                <select class="form-select" name="year_level">
-                  <option value="">Select Year</option>
-                  {% for y in ['1st Year','2nd Year','3rd Year','4th Year','5th Year'] %}
-                  <option value="{{ y }}"
-                    {% if user.year_level == y %}selected{% endif %}>{{ y }}</option>
-                  {% endfor %}
-                </select>
+                <input type="text" class="form-control" value="{{ user.year_level or 'Not set' }}" readonly style="background:#f8f9fa;">
+                <div class="form-text">Contact the scholarship office to update your year level.</div>
               </div>
               <div class="col-md-6">
                 <label class="form-label fw-semibold">Course / Program</label>

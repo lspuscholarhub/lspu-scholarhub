@@ -618,9 +618,16 @@ def update_profile():
             flash('Please select a file to upload.', 'error')
         return redirect(url_for('student.upload_gwa'))
 
-    # Only update non-readonly fields (name, student_id, campus, course are locked)
+    # Only update non-readonly fields (name, student_id, campus, course, year_level are locked)
+    new_email = request.form.get('email', user.email).strip().lower()
+    if new_email and new_email != user.email:
+        # Check if email is already taken by another user
+        existing = User.query.filter(User.email == new_email, User.id != user.id).first()
+        if existing:
+            flash('This email is already associated with another account.', 'error')
+            return redirect(url_for('student.profile'))
+        user.email = new_email
     user.phone_number = request.form.get('phone_number', user.phone_number or '').strip() or None
-    user.year_level   = request.form.get('year_level', user.year_level)
     # Existing-scholar declaration (self-declared; office verifies offline)
     user.is_existing_scholar = request.form.get('is_existing_scholar') == '1'
     user.existing_scholarship_name = (request.form.get('existing_scholarship_name', '').strip()
