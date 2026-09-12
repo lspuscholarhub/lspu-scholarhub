@@ -2777,6 +2777,7 @@ def audit_log():
     from app.models.audit_log import AuditLog
 
     category = request.args.get('category', '')
+    role     = request.args.get('role', '')
     q        = request.args.get('q', '').strip()
     page     = request.args.get('page', 1, type=int)
     per_page = 50
@@ -2793,6 +2794,8 @@ def audit_log():
             db.or_(User.campus_id == campus_ctx, User.campus_id.is_(None)))
     if category:
         query = query.filter_by(category=category)
+    if role:
+        query = query.filter_by(user_role=role)
     if q:
         query = query.filter(
             db.or_(
@@ -2805,12 +2808,15 @@ def audit_log():
     logs       = query.order_by(AuditLog.timestamp.desc()).paginate(
                      page=page, per_page=per_page, error_out=False)
     categories = ['auth', 'application', 'scholarship', 'user', 'gwa', 'document', 'system']
+    roles      = ['super_admin', 'admin', 'staff', 'student']
 
     return render_template(
         'admin/audit_log.html',
         logs=logs,
         categories=categories,
+        roles=roles,
         category=category,
+        role=role,
         q=q,
     )
 
@@ -2825,11 +2831,14 @@ def export_audit_log():
 
     fmt      = request.args.get('format', 'xlsx')
     category = request.args.get('category', '')
+    role     = request.args.get('role', '')
     q        = request.args.get('q', '').strip()
 
     query = AuditLog.query
     if category:
         query = query.filter_by(category=category)
+    if role:
+        query = query.filter_by(user_role=role)
     if q:
         query = query.filter(
             db.or_(

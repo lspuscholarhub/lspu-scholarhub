@@ -24,13 +24,13 @@
         <ul class="dropdown-menu dropdown-menu-end">
           <li>
             <a class="dropdown-item"
-               href="{{ url_for('admin.export_audit_log', format='xlsx', category=category, q=q) }}">
+               href="{{ url_for('admin.export_audit_log', format='xlsx', category=category, role=role, q=q) }}">
               <i class="bi bi-file-earmark-excel text-success me-2"></i>Excel (.xlsx)
             </a>
           </li>
           <li>
             <a class="dropdown-item"
-               href="{{ url_for('admin.export_audit_log', format='pdf', category=category, q=q) }}">
+               href="{{ url_for('admin.export_audit_log', format='pdf', category=category, role=role, q=q) }}">
               <i class="bi bi-file-earmark-pdf text-danger me-2"></i>PDF
             </a>
           </li>
@@ -56,7 +56,7 @@
           <input type="text" name="q" value="{{ q }}" class="form-control"
                  placeholder="User, action, or description…">
         </div>
-        <div class="col-md-3">
+        <div class="col-md-2">
           <label class="form-label small fw-semibold">Category</label>
           <select name="category" class="form-select">
             <option value="">All Categories</option>
@@ -67,7 +67,18 @@
             {% endfor %}
           </select>
         </div>
-        <div class="col-md-5 d-flex justify-content-end">
+        <div class="col-md-2">
+          <label class="form-label small fw-semibold">Role</label>
+          <select name="role" class="form-select">
+            <option value="">All Roles</option>
+            {% for r in roles %}
+            <option value="{{ r }}" {% if role==r %}selected{% endif %}>
+              {{ r.replace('_', ' ')|title }}
+            </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4 d-flex justify-content-end">
           <a href="{{ url_for('admin.audit_log') }}" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-x-circle me-1"></i>Reset
           </a>
