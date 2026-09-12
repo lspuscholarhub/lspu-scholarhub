@@ -1208,9 +1208,29 @@ def manage_notifications():
         _sch_q = _sch_q.filter(db.or_(Scholarship.campus_id == campus_ctx,
                                       Scholarship.campus_id.is_(None)))
     scholarships = _sch_q.all()
-    recent   = (Notification.query
-                .order_by(Notification.sent_at.desc())
-                .limit(20).all())
+    # Filter recent notifications by campus and period
+    recent_q = Notification.query
+    if campus_ctx:
+        recent_q = recent_q.join(User, Notification.recipient_id == User.id).filter(
+            User.campus_id == campus_ctx)
+    current_period = get_viewing_period()
+    pid = current_period.id if current_period else None
+    if pid:
+        # For period filtering, only show notifications related to applications in this period
+        recent_q = recent_q.outerjoin(
+            ScholarshipApplication,
+            db.and_(
+                Notification.related_entity_type == 'application',
+                Notification.related_entity_id == ScholarshipApplication.id
+            )
+        ).filter(
+            db.or_(
+                ScholarshipApplication.academic_period_id == pid,
+                ScholarshipApplication.academic_period_id.is_(None),
+                Notification.related_entity_type.is_(None)
+            )
+        )
+    recent = recent_q.order_by(Notification.sent_at.desc()).limit(20).all()
     return render_template('admin/notifications.html',
                            students=students, recent=recent,
                            courses=courses, year_levels=year_levels,
