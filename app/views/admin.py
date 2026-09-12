@@ -1490,6 +1490,16 @@ def reports():
         q = User.query.filter(User.user_type == 'student')
         if campus_ctx:
             q = q.filter(User.campus_id == campus_ctx)
+        # Period filtering: only students with applications in this period
+        if pid:
+            period_student_ids = [r[0] for r in db.session.query(
+                ScholarshipApplication.applicant_id
+            ).filter(ScholarshipApplication.academic_period_id == pid).distinct().all()]
+            if period_student_ids:
+                q = q.filter(User.id.in_(period_student_ids))
+            else:
+                # No students in this period — return empty query
+                q = q.filter(User.id == -1)
         if extra is not None:
             q = q.filter(extra)
         return q
@@ -1505,8 +1515,8 @@ def reports():
     ).count()
     approval_rate = round(approved / total_apps * 100, 1) if total_apps else 0
 
-    total_users     = User.query.count()
     total_students  = _students_q().count()
+    total_users     = total_students  # In period context, users = students with apps
     total_staff     = User.query.filter_by(user_type='staff').count()
     active_scholars = _apps_q().filter(
         ScholarshipApplication.status == ApplicationStatus.APPROVED,
