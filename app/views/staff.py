@@ -361,6 +361,11 @@ def edit_scholarship(sid):
     _err = _scholarship_campus_guard(s)
     if _err:
         return _err
+    # Block editing if program has applicants
+    if s.current_applicants and s.current_applicants > 0:
+        flash(f'Cannot edit "{s.title}" — it already has {s.current_applicants} applicant(s). '
+              f'Close the program first or contact the scholarship office.', 'error')
+        return redirect(url_for('staff.manage_scholarships'))
     try:
         s.title = request.form.get('title', s.title)
         s.category = request.form.get('category', s.category)
