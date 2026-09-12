@@ -1216,25 +1216,27 @@ def manage_notifications():
     current_period = get_viewing_period()
     pid = current_period.id if current_period else None
     if pid:
-        # Period filtering: system announcements always show;
-        # application notifications only if the application belongs to this period.
-        recent_q = recent_q.outerjoin(
-            ScholarshipApplication,
-            db.and_(
-                Notification.related_entity_type == 'application',
-                Notification.related_entity_id == ScholarshipApplication.id
-            )
-        ).filter(
+        # Period filtering: show notifications tagged with this period,
+        # or notifications with no period tag (legacy/auto-generated)
+        recent_q = recent_q.filter(
             db.or_(
-                Notification.related_entity_type != 'application',
-                ScholarshipApplication.academic_period_id == pid
+                Notification.academic_period_id == pid,
+                Notification.academic_period_id.is_(None)
             )
         )
     recent = recent_q.order_by(Notification.sent_at.desc()).limit(20).all()
+    # Check if viewing a past period (for confirmation dialog)
+    from app.models.academic_period import AcademicPeriod
+    current_period_db = AcademicPeriod.query.filter_by(is_current=True).first()
+    viewing_period = get_viewing_period()
+    is_past_period = (viewing_period and current_period_db and
+                      viewing_period.id != current_period_db.id)
     return render_template('admin/notifications.html',
                            students=students, recent=recent,
                            courses=courses, year_levels=year_levels,
-                           scholarships=scholarships)
+                           scholarships=scholarships,
+                           viewing_period=viewing_period,
+                           is_past_period=is_past_period)
 
 
 @admin_bp.route('/notifications/send', methods=['POST'])
@@ -1291,6 +1293,8 @@ def send_notification():
 
     sent = 0
     sms_sent = 0
+    current_period = get_viewing_period()
+    period_id = current_period.id if current_period else None
     for user in recipients:
         db.session.add(Notification(
             recipient_id=user.id,
@@ -1298,6 +1302,7 @@ def send_notification():
             message=message,
             notification_type=NotificationType.SYSTEM_ANNOUNCEMENT,
             channel=NotificationChannel.IN_APP,
+            academic_period_id=period_id,
         ))
         if send_email:
             notification_service.send_email(user.email, title, message,

@@ -31,6 +31,7 @@ class Notification(db.Model):
     read_at = db.Column(db.DateTime)
     related_entity_type = db.Column(db.String(50))  # e.g., 'scholarship', 'application'
     related_entity_id = db.Column(db.Integer)
+    academic_period_id = db.Column(db.Integer, db.ForeignKey('academic_periods.id'), nullable=True)
     
     def mark_as_read(self):
         """Mark notification as read"""

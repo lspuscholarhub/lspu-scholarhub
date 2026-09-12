@@ -1408,21 +1408,21 @@ def notifications():
     current_period = get_viewing_period()
     pid = current_period.id if current_period else None
     if pid:
-        recent_q = recent_q.outerjoin(
-            ScholarshipApplication,
-            db.and_(
-                Notification.related_entity_type == 'application',
-                Notification.related_entity_id == ScholarshipApplication.id
-            )
-        ).filter(
+        recent_q = recent_q.filter(
             db.or_(
-                Notification.related_entity_type != 'application',
-                ScholarshipApplication.academic_period_id == pid
+                Notification.academic_period_id == pid,
+                Notification.academic_period_id.is_(None)
             )
         )
     recent = recent_q.order_by(Notification.sent_at.desc()).limit(20).all()
+    from app.models.academic_period import AcademicPeriod
+    current_period_db = AcademicPeriod.query.filter_by(is_current=True).first()
+    viewing_period = get_viewing_period()
+    is_past_period = (viewing_period and current_period_db and
+                      viewing_period.id != current_period_db.id)
     return render_template('staff/notifications.html', students=students, recent=recent,
-                           courses=courses, year_levels=year_levels, scholarships=scholarships)
+                           courses=courses, year_levels=year_levels, scholarships=scholarships,
+                           viewing_period=viewing_period, is_past_period=is_past_period)
 
 
 @staff_bp.route('/notifications/send', methods=['POST'])
@@ -1475,11 +1475,14 @@ def send_notification():
 
     recipients = [u for u in recipients if u]
     sms_sent = 0
+    current_period = get_viewing_period()
+    period_id = current_period.id if current_period else None
     for user in recipients:
         db.session.add(Notification(
             recipient_id=user.id, title=title, message=message,
             notification_type=NotificationType.SYSTEM_ANNOUNCEMENT,
             channel=NotificationChannel.IN_APP,
+            academic_period_id=period_id,
         ))
         if send_email:
             notification_service.send_email(user.email, title, message,
