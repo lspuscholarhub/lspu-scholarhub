@@ -154,15 +154,23 @@ def dashboard():
         ).filter(ScholarshipApplication.academic_period_id == pid).distinct().all()]
 
     # Period-scoped student stats
-    if pid and period_student_ids:
-        total_students = User.query.filter(User.id.in_(period_student_ids)).count()
-        male_students = User.query.filter(User.id.in_(period_student_ids), User.gender == 'Male').count()
-        female_students = User.query.filter(User.id.in_(period_student_ids), User.gender == 'Female').count()
-        new_users = User.query.filter(User.id.in_(period_student_ids)).count()
-        at_risk_count = User.query.filter(
-            User.id.in_(period_student_ids), User.gwa.isnot(None), User.gwa > 3.00
-        ).count()
-        total_users = total_students
+    if pid:
+        if period_student_ids:
+            total_students = User.query.filter(User.id.in_(period_student_ids)).count()
+            male_students = User.query.filter(User.id.in_(period_student_ids), User.gender == 'Male').count()
+            female_students = User.query.filter(User.id.in_(period_student_ids), User.gender == 'Female').count()
+            new_users = User.query.filter(User.id.in_(period_student_ids)).count()
+            at_risk_count = User.query.filter(
+                User.id.in_(period_student_ids), User.gwa.isnot(None), User.gwa > 3.00
+            ).count()
+            total_users = total_students
+        else:
+            total_students = 0
+            male_students = 0
+            female_students = 0
+            new_users = 0
+            at_risk_count = 0
+            total_users = 0
     else:
         total_students = _scoped_users(User.query.filter_by(user_type='student')).count()
         male_students = _scoped_users(User.query.filter_by(user_type='student', gender='Male')).count()
