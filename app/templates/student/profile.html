@@ -183,13 +183,12 @@
             <div class="row g-3">
               <div class="col-md-6">
                 <label class="form-label fw-semibold">First Name</label>
-                <input type="text" class="form-control" name="first_name"
-                       value="{{ user.first_name }}" required>
+                <input type="text" class="form-control" value="{{ user.first_name }}" readonly style="background:#f8f9fa;">
+                <div class="form-text">Contact the scholarship office to update your name.</div>
               </div>
               <div class="col-md-6">
                 <label class="form-label fw-semibold">Last Name</label>
-                <input type="text" class="form-control" name="last_name"
-                       value="{{ user.last_name }}" required>
+                <input type="text" class="form-control" value="{{ user.last_name }}" readonly style="background:#f8f9fa;">
               </div>
               <div class="col-md-6">
                 <label class="form-label fw-semibold">Student ID</label>
@@ -222,52 +221,8 @@
               </div>
               <div class="col-md-6">
                 <label class="form-label fw-semibold">Course / Program</label>
-                <select class="form-select" name="course">
-                  <option value="">Select Course</option>
-                  {% for c in [
-                    'Bachelor of Secondary Education major in English',
-                    'Bachelor of Secondary Education major in Filipino',
-                    'Bachelor of Secondary Education major in Social Science',
-                    'Bachelor of Secondary Education major in Mathematics',
-                    'Bachelor of Secondary Education major in Science',
-                    'Bachelor of Elementary Education',
-                    'Bachelor of Physical Education',
-                    'Bachelor of Technical-Vocational Teacher Education',
-                    'Bachelor of Technology and Livelihood Education',
-                    'Bachelor of Science in Psychology',
-                    'Bachelor of Arts in Broadcasting',
-                    'Bachelor of Science in Biology',
-                    'Bachelor of Science in Mathematics',
-                    'Bachelor of Science in Chemistry',
-                    'Bachelor of Science in Nursing',
-                    'Bachelor of Science in Computer Engineering',
-                    'Bachelor of Science in Mechanical Engineering',
-                    'Bachelor of Science in Civil Engineering',
-                    'Bachelor of Science in Electrical Engineering',
-                    'Bachelor of Science in Electronics Engineering',
-                    'Bachelor of Science in Office Administration',
-                    'Bachelor of Science in Entrepreneurship',
-                    'Bachelor of Science in Accountancy',
-                    'Bachelor of Science in Business Administration major in Marketing',
-                    'Bachelor of Public Administration',
-                    'Bachelor of Science in Business Administration major in Financial Management',
-                    'Bachelor of Science in Financial Management',
-                    'Bachelor of Science in Hospitality Management',
-                    'Bachelor of Science in Tourism Management',
-                    'Bachelor of Science in Industrial Technology - Food Processing',
-                    'Bachelor of Science in Industrial Technology - Automotive',
-                    'Bachelor of Science in Industrial Technology - Drafting',
-                    'Bachelor of Science in Industrial Technology - Electrical',
-                    'Bachelor of Science in Industrial Technology - Electronics',
-                    'Bachelor of Science in Industrial Technology - HVAC',
-                    'Bachelor of Science in Information Technology',
-                    'Bachelor of Science in Computer Science',
-                    'Bachelor of Science in Criminal Justice Education',
-                  ] %}
-                  <option value="{{ c }}"
-                    {% if user.course == c %}selected{% endif %}>{{ c }}</option>
-                  {% endfor %}
-                </select>
+                <input type="text" class="form-control" value="{{ user.course or 'Not assigned' }}" readonly style="background:#f8f9fa;">
+                <div class="form-text">Contact the scholarship office to update your course/program.</div>
               </div>
               <div class="col-md-6">
                 <label class="form-label fw-semibold">Campus</label>
