@@ -1216,14 +1216,8 @@ def manage_notifications():
     current_period = get_viewing_period()
     pid = current_period.id if current_period else None
     if pid:
-        # Period filtering: show notifications tagged with this period,
-        # or notifications with no period tag (legacy/auto-generated)
-        recent_q = recent_q.filter(
-            db.or_(
-                Notification.academic_period_id == pid,
-                Notification.academic_period_id.is_(None)
-            )
-        )
+        # Period filtering: only show notifications tagged with this period
+        recent_q = recent_q.filter(Notification.academic_period_id == pid)
     recent = recent_q.order_by(Notification.sent_at.desc()).limit(20).all()
     # Check if viewing a past period (for confirmation dialog)
     from app.models.academic_period import AcademicPeriod

@@ -1408,12 +1408,7 @@ def notifications():
     current_period = get_viewing_period()
     pid = current_period.id if current_period else None
     if pid:
-        recent_q = recent_q.filter(
-            db.or_(
-                Notification.academic_period_id == pid,
-                Notification.academic_period_id.is_(None)
-            )
-        )
+        recent_q = recent_q.filter(Notification.academic_period_id == pid)
     recent = recent_q.order_by(Notification.sent_at.desc()).limit(20).all()
     from app.models.academic_period import AcademicPeriod
     current_period_db = AcademicPeriod.query.filter_by(is_current=True).first()

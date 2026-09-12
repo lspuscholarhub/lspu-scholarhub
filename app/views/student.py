@@ -120,8 +120,18 @@ def apply_scholarship(scholarship_id):
 def notifications():
     user   = User.query.get(session['user_id'])
     filter_type = request.args.get('filter', 'all')
+    current_period = get_viewing_period()
+    pid = current_period.id if current_period else None
 
     query = Notification.query.filter_by(recipient_id=user.id)
+    # Period filtering
+    if pid:
+        query = query.filter(
+            db.or_(
+                Notification.academic_period_id == pid,
+                Notification.academic_period_id.is_(None)
+            )
+        )
     if filter_type == 'unread':
         query = query.filter_by(is_read=False)
     elif filter_type == 'applications':
@@ -139,8 +149,16 @@ def notifications():
         ]))
 
     notifs      = query.order_by(Notification.sent_at.desc()).all()
-    unread_count = Notification.query.filter_by(
-        recipient_id=user.id, is_read=False).count()
+    # Unread count also respects period
+    unread_q = Notification.query.filter_by(recipient_id=user.id, is_read=False)
+    if pid:
+        unread_q = unread_q.filter(
+            db.or_(
+                Notification.academic_period_id == pid,
+                Notification.academic_period_id.is_(None)
+            )
+        )
+    unread_count = unread_q.count()
 
     return render_template(
         'student/notifications.html',
