@@ -1216,7 +1216,8 @@ def manage_notifications():
     current_period = get_viewing_period()
     pid = current_period.id if current_period else None
     if pid:
-        # For period filtering, only show notifications related to applications in this period
+        # Period filtering: system announcements always show;
+        # application notifications only if the application belongs to this period.
         recent_q = recent_q.outerjoin(
             ScholarshipApplication,
             db.and_(
@@ -1225,9 +1226,8 @@ def manage_notifications():
             )
         ).filter(
             db.or_(
-                ScholarshipApplication.academic_period_id == pid,
-                ScholarshipApplication.academic_period_id.is_(None),
-                Notification.related_entity_type.is_(None)
+                Notification.related_entity_type != 'application',
+                ScholarshipApplication.academic_period_id == pid
             )
         )
     recent = recent_q.order_by(Notification.sent_at.desc()).limit(20).all()

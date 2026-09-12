@@ -1416,9 +1416,8 @@ def notifications():
             )
         ).filter(
             db.or_(
-                ScholarshipApplication.academic_period_id == pid,
-                ScholarshipApplication.academic_period_id.is_(None),
-                Notification.related_entity_type.is_(None)
+                Notification.related_entity_type != 'application',
+                ScholarshipApplication.academic_period_id == pid
             )
         )
     recent = recent_q.order_by(Notification.sent_at.desc()).limit(20).all()
