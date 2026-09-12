@@ -49,6 +49,26 @@ def list_scholarships():
         ))
     # super_admin sees all (no filter)
 
+    # Period filtering: students see permanent programs + programs for the selected period
+    from app.utils.period_context import get_viewing_period, is_viewing_specific_period
+    viewing_period = get_viewing_period()
+    if user_type == 'student':
+        from sqlalchemy import or_
+        if is_viewing_specific_period() and viewing_period:
+            # Student selected a specific period — show permanent + that period's programs
+            query = query.filter(or_(
+                Scholarship.academic_period_id.is_(None),
+                Scholarship.academic_period_id == viewing_period.id
+            ))
+        else:
+            # Current period — show permanent + current period's programs
+            current = AcademicPeriod.get_current()
+            if current:
+                query = query.filter(or_(
+                    Scholarship.academic_period_id.is_(None),
+                    Scholarship.academic_period_id == current.id
+                ))
+
     all_scholarships = query.order_by(Scholarship.application_deadline.asc()).all()
 
     # Filter by visibility for students

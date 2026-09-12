@@ -43,6 +43,11 @@
                 {% if s.is_hidden %}
                 <span class="badge bg-warning text-dark ms-1" style="font-size:.65rem;">Hidden</span>
                 {% endif %}
+                {% if s.academic_period %}
+                <span class="badge bg-info text-dark ms-1" style="font-size:.65rem;"><i class="bi bi-calendar3 me-1"></i>{{ s.academic_period.display_name }}</span>
+                {% else %}
+                <span class="badge bg-success ms-1" style="font-size:.65rem;"><i class="bi bi-infinity me-1"></i>Permanent</span>
+                {% endif %}
               </td>
               <td>
                 {% if s.scope == 'university' %}
@@ -155,6 +160,16 @@
                 {% endfor %}
               </select>
             </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Academic Period</label>
+            <select class="form-select" name="academic_period_id">
+              <option value="">Permanent (available every period)</option>
+              {% for p in all_academic_periods %}
+              <option value="{{ p.id }}">{{ p.display_name }}</option>
+              {% endfor %}
+            </select>
+            <div class="form-text">Select "Permanent" for programs available every period, or link to a specific period.</div>
           </div>
           <div class="mb-3">
             <label class="form-label fw-semibold">Description</label>
@@ -294,6 +309,16 @@
               <option value="closed" {% if s.status and s.status.value=='closed' %}selected{% endif %}>Closed (Applications Finished)</option>
               <option value="inactive" {% if s.status and s.status.value=='inactive' %}selected{% endif %}>Inactive</option>
             </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Academic Period</label>
+            <select class="form-select" name="academic_period_id">
+              <option value="" {% if not s.academic_period_id %}selected{% endif %}>Permanent (available every period)</option>
+              {% for p in all_academic_periods %}
+              <option value="{{ p.id }}" {% if s.academic_period_id == p.id %}selected{% endif %}>{{ p.display_name }}</option>
+              {% endfor %}
+            </select>
+            <div class="form-text">Select "Permanent" for programs available every period, or link to a specific period.</div>
           </div>
 
           <!-- Custom Form Builder (Edit) -->

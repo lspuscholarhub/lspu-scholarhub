@@ -41,8 +41,10 @@ class Scholarship(db.Model):
     custom_form_fields = db.Column(db.JSON, nullable=True)  # Custom form fields for this scholarship
     campus_id = db.Column(db.Integer, db.ForeignKey('campuses.id'), nullable=True)  # NULL = university-wide
     scope     = db.Column(db.Enum('campus', 'university'), default='campus', nullable=False)
+    academic_period_id = db.Column(db.Integer, db.ForeignKey('academic_periods.id'), nullable=True)  # NULL = permanent
 
     campus = db.relationship('Campus', backref='scholarships', lazy=True)
+    academic_period = db.relationship('AcademicPeriod', backref='scholarships', lazy=True)
 
     applications = db.relationship('ScholarshipApplication', backref='scholarship',
                                    lazy=True, cascade='all, delete-orphan')

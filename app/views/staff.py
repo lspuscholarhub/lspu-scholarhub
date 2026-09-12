@@ -273,6 +273,10 @@ def create_scholarship():
             campus_id_val = user.campus_id if user else None
             scope = 'campus'
 
+        # Academic period — NULL = permanent
+        period_val = request.form.get('academic_period_id', '').strip()
+        academic_period_id_val = int(period_val) if period_val else None
+
         s = Scholarship(
             title=request.form['title'],
             category=request.form.get('category', 'General'),
@@ -289,6 +293,7 @@ def create_scholarship():
             custom_form_fields=custom_fields if custom_fields else None,
             campus_id=campus_id_val,
             scope=scope,
+            academic_period_id=academic_period_id_val,
         )
         s.is_hidden = bool(request.form.get('is_hidden'))
         s.allowed_student_ids = request.form.get('allowed_student_ids', '').strip() or None
@@ -397,6 +402,9 @@ def edit_scholarship(sid):
                 'options': options,
             })
         s.custom_form_fields = custom_fields if custom_fields else None
+        # Academic period
+        period_val = request.form.get('academic_period_id', '').strip()
+        s.academic_period_id = int(period_val) if period_val else None
 
         db.session.commit()
         from app.services.audit_service import log_action
