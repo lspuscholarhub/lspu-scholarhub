@@ -65,7 +65,7 @@ def set_period_context(period_id):
     return redirect(request.referrer or url_for('admin.dashboard'))
 
 
-from app.utils.period_context import get_viewing_period
+from app.utils.period_context import get_viewing_period, is_viewing_specific_period
 
 
 # ── Scholarship campus guard ─────────────────────────────────────────────────
@@ -133,12 +133,16 @@ def dashboard():
 
     # Current academic period (from session switcher or default)
     current_period = get_viewing_period()
+    # Only filter by period if user explicitly selected a non-current period
+    specific_period = is_viewing_specific_period()
     pid = current_period.id if current_period else None
+    # When viewing current period (or no selection), don't filter by period for stats
+    effective_pid = pid if specific_period else None
 
     # Applications — scoped by campus AND period
     _apps_q = _scoped_apps(ScholarshipApplication.query)
-    if pid:
-        _apps_q = _apps_q.filter(ScholarshipApplication.academic_period_id == pid)
+    if effective_pid:
+        _apps_q = _apps_q.filter(ScholarshipApplication.academic_period_id == effective_pid)
     total_applications  = _apps_q.count()
     pending_review      = _apps_q.filter(
         ScholarshipApplication.status.in_([ApplicationStatus.PENDING,
@@ -146,15 +150,11 @@ def dashboard():
     ).count()
     approved_count      = _apps_q.filter(ScholarshipApplication.status == ApplicationStatus.APPROVED).count()
 
-    # Get student IDs who have applications in this period (for period-scoped stats)
-    period_student_ids = []
-    if pid:
+    # Student stats — only filter by period when a specific past period is selected
+    if specific_period and pid:
         period_student_ids = [r[0] for r in db.session.query(
             ScholarshipApplication.applicant_id
         ).filter(ScholarshipApplication.academic_period_id == pid).distinct().all()]
-
-    # Period-scoped student stats
-    if pid:
         if period_student_ids:
             total_students = User.query.filter(User.id.in_(period_student_ids)).count()
             male_students = User.query.filter(User.id.in_(period_student_ids), User.gender == 'Male').count()
@@ -201,8 +201,8 @@ def dashboard():
     )
     if campus_ctx:
         _funds_q = _funds_q.filter(ScholarshipBatch.campus_id == campus_ctx)
-    if pid:
-        _funds_q = _funds_q.filter(ScholarshipBatch.academic_period_id == pid)
+    if effective_pid:
+        _funds_q = _funds_q.filter(ScholarshipBatch.academic_period_id == effective_pid)
     total_funds = _funds_q.scalar() or 0
 
     # Recent activity: last 5 applications — scoped by campus AND period
@@ -210,8 +210,8 @@ def dashboard():
                      .join(User, ScholarshipApplication.applicant_id == User.id))
     if campus_ctx:
         recent_apps_q = recent_apps_q.filter(User.campus_id == campus_ctx)
-    if pid:
-        recent_apps_q = recent_apps_q.filter(ScholarshipApplication.academic_period_id == pid)
+    if effective_pid:
+        recent_apps_q = recent_apps_q.filter(ScholarshipApplication.academic_period_id == effective_pid)
     recent_apps = (recent_apps_q
                    .order_by(ScholarshipApplication.submitted_at.desc())
                    .limit(5).all())
@@ -220,8 +220,8 @@ def dashboard():
     active_batches_q = ScholarshipBatch.query.filter_by(status='open')
     if campus_ctx:
         active_batches_q = active_batches_q.filter(ScholarshipBatch.campus_id == campus_ctx)
-    if pid:
-        active_batches_q = active_batches_q.filter(ScholarshipBatch.academic_period_id == pid)
+    if effective_pid:
+        active_batches_q = active_batches_q.filter(ScholarshipBatch.academic_period_id == effective_pid)
     active_batches = active_batches_q.count()
 
     # Top performing students (lowest GWA = best, closest to 1.00)

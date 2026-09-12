@@ -9,7 +9,7 @@ from app.models.scholarship import ScholarshipStatus, ApplicationStatus
 from app.models.notification import NotificationType, NotificationChannel
 from app.services.notification_service import notification_service
 from app.utils.decorators import role_required
-from app.utils.period_context import get_viewing_period
+from app.utils.period_context import get_viewing_period, is_viewing_specific_period
 
 staff_bp = Blueprint('staff', __name__)
 
@@ -103,12 +103,14 @@ def dashboard():
         return q
 
     current_period  = get_viewing_period()
+    specific_period = is_viewing_specific_period()
     pid = current_period.id if current_period else None
+    effective_pid = pid if specific_period else None
 
     # Applications — scoped by campus AND period
     _apps_q = _sa(ScholarshipApplication.query)
-    if pid:
-        _apps_q = _apps_q.filter(ScholarshipApplication.academic_period_id == pid)
+    if effective_pid:
+        _apps_q = _apps_q.filter(ScholarshipApplication.academic_period_id == effective_pid)
     to_review = _apps_q.filter(
         ScholarshipApplication.status.in_([ApplicationStatus.PENDING,
                                            ApplicationStatus.UNDER_REVIEW])
@@ -119,18 +121,25 @@ def dashboard():
     ).count()
     approved_count  = _apps_q.filter(ScholarshipApplication.status == ApplicationStatus.APPROVED).count()
 
-    # Period-scoped student stats
-    if pid:
+    # Student stats — only filter by period when a specific past period is selected
+    if specific_period and pid:
         period_student_ids = [r[0] for r in db.session.query(
             ScholarshipApplication.applicant_id
         ).filter(ScholarshipApplication.academic_period_id == pid).distinct().all()]
-        active_students = User.query.filter(User.id.in_(period_student_ids), User.is_active == True).count()
-        new_users = User.query.filter(User.id.in_(period_student_ids)).count()
-        at_risk_count = User.query.filter(
-            User.id.in_(period_student_ids), User.gwa.isnot(None), User.gwa > GWA_THRESHOLD
-        ).count()
-        male_students = User.query.filter(User.id.in_(period_student_ids), User.gender == 'Male').count()
-        female_students = User.query.filter(User.id.in_(period_student_ids), User.gender == 'Female').count()
+        if period_student_ids:
+            active_students = User.query.filter(User.id.in_(period_student_ids), User.is_active == True).count()
+            new_users = User.query.filter(User.id.in_(period_student_ids)).count()
+            at_risk_count = User.query.filter(
+                User.id.in_(period_student_ids), User.gwa.isnot(None), User.gwa > GWA_THRESHOLD
+            ).count()
+            male_students = User.query.filter(User.id.in_(period_student_ids), User.gender == 'Male').count()
+            female_students = User.query.filter(User.id.in_(period_student_ids), User.gender == 'Female').count()
+        else:
+            active_students = 0
+            new_users = 0
+            at_risk_count = 0
+            male_students = 0
+            female_students = 0
     else:
         active_students = _su(User.query.filter_by(user_type='student', is_active=True)).count()
         new_users = _su(User.query.filter(
@@ -146,14 +155,14 @@ def dashboard():
     )
     if campus_ctx:
         _funds_q = _funds_q.filter(ScholarshipBatch.campus_id == campus_ctx)
-    if pid:
-        _funds_q = _funds_q.filter(ScholarshipBatch.academic_period_id == pid)
+    if effective_pid:
+        _funds_q = _funds_q.filter(ScholarshipBatch.academic_period_id == effective_pid)
     total_funds     = _funds_q.scalar() or 0
     _batches_q = ScholarshipBatch.query.filter_by(status='open')
     if campus_ctx:
         _batches_q = _batches_q.filter(ScholarshipBatch.campus_id == campus_ctx)
-    if pid:
-        _batches_q = _batches_q.filter(ScholarshipBatch.academic_period_id == pid)
+    if effective_pid:
+        _batches_q = _batches_q.filter(ScholarshipBatch.academic_period_id == effective_pid)
     active_batches  = _batches_q.count()
 
     pending_apps = _apps_q.filter(ScholarshipApplication.status == ApplicationStatus.PENDING

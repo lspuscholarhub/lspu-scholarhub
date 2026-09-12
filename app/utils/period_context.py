@@ -18,3 +18,13 @@ def get_viewing_period():
         if p:
             return p
     return AcademicPeriod.get_current()
+
+
+def is_viewing_specific_period():
+    """Return True only if the user explicitly selected a non-current period.
+    When False, views should show all-time data (no period filter)."""
+    vid = session.get('viewing_period_id')
+    if not vid:
+        return False
+    current = AcademicPeriod.get_current()
+    return current is None or vid != current.id
