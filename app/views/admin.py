@@ -131,12 +131,6 @@ def dashboard():
                                     Scholarship.campus_id.is_(None)))
         return q
 
-    total_users         = _scoped_users(User.query).count()
-    total_students      = _scoped_users(User.query.filter_by(user_type='student')).count()
-    new_users           = _scoped_users(User.query.filter(
-        User.created_at >= datetime.utcnow() - timedelta(days=30)
-    )).count()
-    active_scholarships = _scoped_sch(Scholarship.query.filter_by(status=ScholarshipStatus.ACTIVE)).count()
     # Current academic period (from session switcher or default)
     current_period = get_viewing_period()
     pid = current_period.id if current_period else None
@@ -152,9 +146,46 @@ def dashboard():
     ).count()
     approved_count      = _apps_q.filter(ScholarshipApplication.status == ApplicationStatus.APPROVED).count()
 
-    # Gender breakdown of all students
-    male_students   = _scoped_users(User.query.filter_by(user_type='student', gender='Male')).count()
-    female_students = _scoped_users(User.query.filter_by(user_type='student', gender='Female')).count()
+    # Get student IDs who have applications in this period (for period-scoped stats)
+    period_student_ids = []
+    if pid:
+        period_student_ids = [r[0] for r in db.session.query(
+            ScholarshipApplication.applicant_id
+        ).filter(ScholarshipApplication.academic_period_id == pid).distinct().all()]
+
+    # Period-scoped student stats
+    if pid and period_student_ids:
+        total_students = User.query.filter(User.id.in_(period_student_ids)).count()
+        male_students = User.query.filter(User.id.in_(period_student_ids), User.gender == 'Male').count()
+        female_students = User.query.filter(User.id.in_(period_student_ids), User.gender == 'Female').count()
+        new_users = User.query.filter(User.id.in_(period_student_ids)).count()
+        at_risk_count = User.query.filter(
+            User.id.in_(period_student_ids), User.gwa.isnot(None), User.gwa > 3.00
+        ).count()
+        total_users = total_students
+    else:
+        total_students = _scoped_users(User.query.filter_by(user_type='student')).count()
+        male_students = _scoped_users(User.query.filter_by(user_type='student', gender='Male')).count()
+        female_students = _scoped_users(User.query.filter_by(user_type='student', gender='Female')).count()
+        new_users = _scoped_users(User.query.filter(
+            User.created_at >= datetime.utcnow() - timedelta(days=30)
+        )).count()
+        at_risk_count = _scoped_users(User.query.filter(
+            User.user_type == 'student', User.gwa.isnot(None), User.gwa > 3.00
+        )).count()
+        total_users = _scoped_users(User.query).count()
+
+    # Active scholarships — scoped by period if set
+    _sch_q = Scholarship.query.filter_by(status=ScholarshipStatus.ACTIVE)
+    if session.get('user_type') == 'super_admin':
+        if campus_ctx:
+            _sch_q = _sch_q.filter(db.or_(Scholarship.campus_id == campus_ctx,
+                                           Scholarship.campus_id.is_(None)))
+    else:
+        _me = db.session.get(User, session.get('user_id'))
+        if _me:
+            _sch_q = _sch_q.filter(Scholarship.campus_id == _me.campus_id)
+    active_scholarships = _sch_q.count()
 
     # Fund summary — scoped by campus AND period
     _funds_q = db.session.query(
@@ -165,11 +196,6 @@ def dashboard():
     if pid:
         _funds_q = _funds_q.filter(ScholarshipBatch.academic_period_id == pid)
     total_funds = _funds_q.scalar() or 0
-
-    # At-risk students (GWA > 3.00)
-    at_risk_count = _scoped_users(User.query.filter(
-        User.user_type == 'student', User.gwa.isnot(None), User.gwa > 3.00
-    )).count()
 
     # Recent activity: last 5 applications — scoped by campus AND period
     recent_apps_q = (ScholarshipApplication.query
@@ -3397,98 +3423,6 @@ def test_email():
         'MAIL_SERVER':   os.environ.get('MAIL_SERVER', 'NOT SET'),
         'MAIL_USERNAME': os.environ.get('MAIL_USERNAME', 'NOT SET'),
     })
-
-
-# ── Bulk OCR re-scan for units_enrolled ───────────────────────────────────────
-
-@admin_bp.route('/students/rescan-units', methods=['POST'])
-@role_required('admin')
-def rescan_units():
-    """
-    Re-run OCR on all students who have a grades file but no units_enrolled.
-    Runs in a background thread so it doesn't timeout.
-    Returns immediately with a flash message.
-    """
-    import threading
-    from flask import current_app
-
-    # Find students missing units but having a grades file
-    students = User.query.filter_by(user_type='student') \
-                         .filter(User.grades_file_path.isnot(None)) \
-                         .filter(User.units_enrolled.is_(None)) \
-                         .all()
-
-    if not students:
-        flash('All students with grades files already have units recorded.', 'info')
-        return redirect(url_for('admin.student_directory'))
-
-    count = len(students)
-
-    def _run(app, student_ids):
-        with app.app_context():
-            import urllib.request as _ur
-            from app.services.ocr_service import extract_document_data
-            from app.models import User as _User
-            from app import db as _db
-
-            for uid in student_ids:
-                try:
-                    student = _User.query.get(uid)
-                    if not student or not student.grades_file_path:
-                        continue
-
-                    file_path = student.grades_file_path
-                    ext = file_path.rsplit('.', 1)[-1].lower() if '.' in file_path else 'pdf'
-
-                    # Fetch file bytes — Cloudinary URL or local path
-                    if file_path.startswith('http://') or file_path.startswith('https://'):
-                        try:
-                            req = _ur.Request(file_path)
-                            req.add_header('User-Agent', 'LSPU-ScholarHub/1.0')
-                            with _ur.urlopen(req, timeout=30) as resp:
-                                file_bytes = resp.read()
-                        except Exception as e:
-                            import logging
-                            logging.getLogger(__name__).warning(
-                                f'Could not fetch grades for student {uid}: {e}')
-                            continue
-                    else:
-                        import os
-                        if not os.path.exists(file_path):
-                            continue
-                        with open(file_path, 'rb') as f:
-                            file_bytes = f.read()
-
-                    result = extract_document_data(file_bytes, ext)
-                    units = result.get('units_enrolled')
-
-                    if units:
-                        student.units_enrolled = units
-                        _db.session.commit()
-                        import logging
-                        logging.getLogger(__name__).info(
-                            f'Units set to {units} for student {student.student_id}')
-
-                except Exception as e:
-                    import logging
-                    logging.getLogger(__name__).warning(
-                        f'Rescan failed for student {uid}: {e}')
-                    _db.session.rollback()
-
-    student_ids = [s.id for s in students]
-    t = threading.Thread(
-        target=_run,
-        args=(current_app._get_current_object(), student_ids),
-        daemon=True,
-    )
-    t.start()
-
-    flash(
-        f'Re-scanning {count} student(s) for units enrolled. '
-        f'This runs in the background — refresh student profiles in a few minutes to see results.',
-        'info'
-    )
-    return redirect(url_for('admin.student_directory'))
 
 
 # ── Monitoring & Evaluation form submissions ────────────────────────────────

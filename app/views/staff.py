@@ -117,16 +117,30 @@ def dashboard():
         ScholarshipApplication.reviewed_by == session['user_id'],
         db.func.date(ScholarshipApplication.reviewed_at) == datetime.utcnow().date(),
     ).count()
-    active_students = _su(User.query.filter_by(user_type='student', is_active=True)).count()
-    new_users       = _su(User.query.filter(
-        User.created_at >= datetime.utcnow() - timedelta(days=30)
-    )).count()
     approved_count  = _apps_q.filter(ScholarshipApplication.status == ApplicationStatus.APPROVED).count()
-    at_risk_count   = _su(User.query.filter(
-        User.user_type == 'student', User.gwa.isnot(None), User.gwa > GWA_THRESHOLD
-    )).count()
-    male_students   = _su(User.query.filter_by(user_type='student', gender='Male')).count()
-    female_students = _su(User.query.filter_by(user_type='student', gender='Female')).count()
+
+    # Period-scoped student stats
+    if pid:
+        period_student_ids = [r[0] for r in db.session.query(
+            ScholarshipApplication.applicant_id
+        ).filter(ScholarshipApplication.academic_period_id == pid).distinct().all()]
+        active_students = User.query.filter(User.id.in_(period_student_ids), User.is_active == True).count()
+        new_users = User.query.filter(User.id.in_(period_student_ids)).count()
+        at_risk_count = User.query.filter(
+            User.id.in_(period_student_ids), User.gwa.isnot(None), User.gwa > GWA_THRESHOLD
+        ).count()
+        male_students = User.query.filter(User.id.in_(period_student_ids), User.gender == 'Male').count()
+        female_students = User.query.filter(User.id.in_(period_student_ids), User.gender == 'Female').count()
+    else:
+        active_students = _su(User.query.filter_by(user_type='student', is_active=True)).count()
+        new_users = _su(User.query.filter(
+            User.created_at >= datetime.utcnow() - timedelta(days=30)
+        )).count()
+        at_risk_count = _su(User.query.filter(
+            User.user_type == 'student', User.gwa.isnot(None), User.gwa > GWA_THRESHOLD
+        )).count()
+        male_students = _su(User.query.filter_by(user_type='student', gender='Male')).count()
+        female_students = _su(User.query.filter_by(user_type='student', gender='Female')).count()
     _funds_q = db.session.query(
         db.func.coalesce(db.func.sum(ScholarshipBatch.total_amount), 0)
     )
