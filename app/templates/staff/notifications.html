@@ -223,18 +223,18 @@
 <script>
 var SCHOLARSHIP_STUDENTS = {
   {% for sch in scholarships %}
-  "{{ sch.id }}": [{% for app in sch.applications if app.status.value == 'approved' %}{{ app.applicant_id }}{% if not loop.last %},{% endif %}{% endfor %}]{% if not loop.last %},{% endif %}
+  "{{ sch.id }}": [{% for app in sch.applications if app.status.value == 'approved' and (not current_period or app.academic_period_id == current_period.id) %}{{ app.applicant_id }}{% if not loop.last %},{% endif %}{% endfor %}]{% if not loop.last %},{% endif %}
   {% endfor %}
 };
 
 var SCHOLARSHIP_BATCHES = {
   {% for sch in scholarships %}
   "{{ sch.id }}": [
-    {% for b in sch.batches %}
+    {% for b in sch.batches if (not current_period or b.academic_period_id == current_period.id) %}
     {
       "id": {{ b.id }},
       "name": "{{ b.batch_name }}",
-      "student_ids": [{% for app in b.applications if app.status.value == 'approved' %}{{ app.applicant_id }}{% if not loop.last %},{% endif %}{% endfor %}]
+      "student_ids": [{% for app in b.applications if app.status.value == 'approved' and (not current_period or app.academic_period_id == current_period.id) %}{{ app.applicant_id }}{% if not loop.last %},{% endif %}{% endfor %}]
     }{% if not loop.last %},{% endif %}
     {% endfor %}
   ]{% if not loop.last %},{% endif %}

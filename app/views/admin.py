@@ -1213,6 +1213,17 @@ def manage_notifications():
     _stu_q = User.query.filter_by(user_type='student', is_active=True)
     if campus_ctx:
         _stu_q = _stu_q.filter(User.campus_id == campus_ctx)
+    # Period filtering: when a specific period is selected, only show students with apps in that period
+    current_period = get_viewing_period()
+    pid = current_period.id if current_period else None
+    if pid and is_viewing_specific_period():
+        period_student_ids = [r[0] for r in db.session.query(
+            ScholarshipApplication.applicant_id
+        ).filter(ScholarshipApplication.academic_period_id == pid).distinct().all()]
+        if period_student_ids:
+            _stu_q = _stu_q.filter(User.id.in_(period_student_ids))
+        else:
+            _stu_q = _stu_q.filter(User.id == -1)  # empty
     students    = _stu_q.order_by(User.last_name).all()
     courses     = sorted({s.course for s in students if s.course})
     year_levels = ['1st Year', '2nd Year', '3rd Year', '4th Year']
@@ -1242,6 +1253,7 @@ def manage_notifications():
                            students=students, recent=recent,
                            courses=courses, year_levels=year_levels,
                            scholarships=scholarships,
+                           current_period=current_period,
                            viewing_period=viewing_period,
                            is_past_period=is_past_period)
 
