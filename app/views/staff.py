@@ -1701,12 +1701,16 @@ def import_students():
             errors.append(f'Row {i}: Email "{email}" exists.'); skipped += 1; continue
         try:
             temp_pw  = _generate_password(10)
+            # Assign to staff's campus
+            _me = db.session.get(User, session.get('user_id'))
+            campus_id = _me.campus_id if _me else None
             new_user = User(username=sid, email=email,
                             first_name=first_name, last_name=last_name,
                             middle_name=middle_name,
                             student_id=sid, year_level=year_level, course=course,
                             phone_number=phone, gender=gender,
                             town=town, province=province,
+                            campus_id=campus_id,
                             user_type='student', is_active=True, is_verified=True)
             new_user.set_password(temp_pw)
             db.session.add(new_user)

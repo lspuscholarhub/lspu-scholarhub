@@ -983,7 +983,7 @@ def manage_users():
     if role:
         query = query.filter_by(user_type=role)
 
-    # Campus filtering: university admin can filter, admin sees own campus
+    # Campus filtering: super admin honors campus selector, admin/staff see own campus
     user_type = session.get('user_type', '')
     if user_type == 'super_admin':
         campus_ctx = session.get('campus_context')
@@ -993,8 +993,13 @@ def manage_users():
             query = query.filter(User.campus_id == int(campus_filter))
     elif user_type in ('admin', 'staff'):
         user = User.query.get(session.get('user_id'))
-        if user and user.campus_id:
-            query = query.filter(User.campus_id == user.campus_id)
+        if user:
+            # Use multi-campus junction table for staff with multiple campuses
+            if user.assigned_campuses:
+                my_campus_ids = [c.id for c in user.assigned_campuses]
+                query = query.filter(User.campus_id.in_(my_campus_ids))
+            elif user.campus_id:
+                query = query.filter(User.campus_id == user.campus_id)
 
     users = query.order_by(User.created_at.desc()).all()
     from app.models import Campus
@@ -2731,7 +2736,16 @@ def audit_log():
     page     = request.args.get('page', 1, type=int)
     per_page = 50
 
+    # Campus scoping for admin/staff
+    campus_ctx = session.get('campus_context') if session.get('user_type') == 'super_admin' else None
+    if campus_ctx is None and session.get('user_type') != 'super_admin':
+        _me = db.session.get(User, session.get('user_id'))
+        campus_ctx = _me.campus_id if _me else None
+
     query = AuditLog.query
+    if campus_ctx:
+        query = query.join(User, AuditLog.user_id == User.id, isouter=True).filter(
+            db.or_(User.campus_id == campus_ctx, User.campus_id.is_(None)))
     if category:
         query = query.filter_by(category=category)
     if q:
