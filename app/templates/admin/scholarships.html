@@ -307,7 +307,6 @@
             <select class="form-select" name="status">
               <option value="active" {% if s.status and s.status.value=='active' %}selected{% endif %}>Open (Accepting Applications)</option>
               <option value="closed" {% if s.status and s.status.value=='closed' %}selected{% endif %}>Closed (Applications Finished)</option>
-              <option value="inactive" {% if s.status and s.status.value=='inactive' %}selected{% endif %}>Inactive</option>
             </select>
           </div>
           <div class="mb-3">

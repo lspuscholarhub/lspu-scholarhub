@@ -256,7 +256,6 @@
             <div class="col-md-4"><label class="form-label fw-semibold">Status</label>
               <select class="form-select" name="status">
                 <option value="active" {% if s.status and s.status.value=='active' %}selected{% endif %}>Active</option>
-                <option value="inactive" {% if s.status and s.status.value=='inactive' %}selected{% endif %}>Inactive</option>
                 <option value="closed" {% if s.status and s.status.value=='closed' %}selected{% endif %}>Closed</option>
               </select>
             </div>
