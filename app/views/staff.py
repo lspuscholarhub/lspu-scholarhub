@@ -935,8 +935,8 @@ def student_directory():
     current_period = get_viewing_period()
     pid = current_period.id if current_period else None
 
-    # When a period is selected, only show students who have applications in that period
-    if pid:
+    # Only filter by period when a specific past period is selected
+    if pid and is_viewing_specific_period():
         from sqlalchemy import select as _sel
         period_student_ids = _sel(ScholarshipApplication.applicant_id).where(
             ScholarshipApplication.academic_period_id == pid).distinct()

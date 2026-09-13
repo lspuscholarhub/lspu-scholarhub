@@ -1515,15 +1515,14 @@ def reports():
         q = User.query.filter(User.user_type == 'student')
         if campus_ctx:
             q = q.filter(User.campus_id == campus_ctx)
-        # Period filtering: only students with applications in this period
-        if pid:
+        # Period filtering: only when a specific past period is selected
+        if pid and is_viewing_specific_period():
             period_student_ids = [r[0] for r in db.session.query(
                 ScholarshipApplication.applicant_id
             ).filter(ScholarshipApplication.academic_period_id == pid).distinct().all()]
             if period_student_ids:
                 q = q.filter(User.id.in_(period_student_ids))
             else:
-                # No students in this period — return empty query
                 q = q.filter(User.id == -1)
         if extra is not None:
             q = q.filter(extra)
@@ -2006,8 +2005,8 @@ def student_directory():
     current_period = get_viewing_period()
     pid = current_period.id if current_period else None
 
-    # When a period is selected, only show students who have applications in that period
-    if pid:
+    # Only filter by period when a specific past period is selected (not Current Period)
+    if pid and is_viewing_specific_period():
         from sqlalchemy import select as _sel
         period_student_ids = _sel(ScholarshipApplication.applicant_id).where(
             ScholarshipApplication.academic_period_id == pid).distinct()
