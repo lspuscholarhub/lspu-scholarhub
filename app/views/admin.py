@@ -1079,6 +1079,7 @@ def edit_user(uid):
             flash(pw_error, 'error')
             return redirect(url_for('admin.manage_users'))
         user.set_password(new_pw)
+        user.must_change_password = False
 
     # Update campus assignment for staff/admin
     if user.user_type in ('staff', 'admin', 'super_admin'):
@@ -1837,6 +1838,7 @@ def create_user_account():
             campus_id=campuses[0].id,
         )
         account.set_password(password)
+        account.must_change_password = True
         db.session.add(account)
         db.session.flush()  # get the id
         # Add all assigned campuses to junction table
@@ -1902,6 +1904,7 @@ def create_student_account():
             campus_id=campus.id,
         )
         account.set_password(password)
+        account.must_change_password = True
         db.session.add(account)
         db.session.commit()
         from app.services.audit_service import log_action
@@ -2708,6 +2711,7 @@ def import_students():
                 is_verified=True,
             )
             new_user.set_password(temp_pw)
+            new_user.must_change_password = True
             db.session.add(new_user)
             db.session.flush()   # get ID before commit
 

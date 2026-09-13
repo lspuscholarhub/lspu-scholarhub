@@ -203,6 +203,9 @@ def login():
                 flash('Your account has been disabled. Contact the scholarship office.', 'error')
                 return render_template('auth/login.html')
 
+            # Detect first login BEFORE updating last_login
+            is_first_login = (user.last_login is None)
+
             user.last_login = datetime.utcnow()
             db.session.commit()
 
@@ -213,7 +216,7 @@ def login():
             session['username']    = user.username
             session['user_type']   = user.user_type
             session['is_verified'] = user.is_verified
-            session['first_login'] = (user.last_login is None)
+            session['first_login'] = is_first_login
             session['last_active'] = datetime.utcnow().timestamp()
 
             # Campus context
@@ -238,6 +241,11 @@ def login():
                        f'Email: {user.email}.',
                        category='auth', target_type='user', target_id=user.id,
                        user_id=user.id, user_name=user.username, user_role=user.user_type)
+
+            # Force password change for users with temporary passwords
+            if user.must_change_password:
+                flash('You must change your password before continuing. This is required on first login.', 'warning')
+                return redirect(url_for('auth.force_change_password'))
 
             flash(f'Welcome back, {user.first_name}!', 'success')
 
@@ -662,6 +670,7 @@ def verify_otp():
                 existing_scholarship_name=pending.get('existing_scholarship_name'),
             )
             new_user.set_password(temp_password)
+            new_user.must_change_password = True
             db.session.add(new_user)
             db.session.flush()   # get new_user.id before adding documents
 
@@ -880,6 +889,7 @@ def reset_password(token):
 
         # Set new password and clear the token
         user.set_password(new_password)
+        user.must_change_password = False
         user.password_reset_token   = None
         user.password_reset_expires = None
         db.session.commit()
@@ -896,6 +906,70 @@ def reset_password(token):
         return redirect(url_for('auth.login'))
 
     return render_template('auth/reset_password.html', token=token)
+
+
+# ── Force Password Change ─────────────────────────────────────────────────────
+
+@auth_bp.route('/change-password/force', methods=['GET', 'POST'])
+def force_change_password():
+    """Force the user to change their temporary password before accessing the system."""
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+
+    user = db.session.get(User, session['user_id'])
+    if not user:
+        session.clear()
+        return redirect(url_for('auth.login'))
+
+    # If password was already changed, redirect to dashboard
+    if not user.must_change_password:
+        return _redirect_to_dashboard(user)
+
+    if request.method == 'POST':
+        new_password     = request.form.get('new_password', '').strip()
+        confirm_password = request.form.get('confirm_password', '').strip()
+
+        if not new_password or not confirm_password:
+            flash('Please fill in both password fields.', 'error')
+            return render_template('auth/force_change_password.html')
+
+        if len(new_password) < 8:
+            flash('Password must be at least 8 characters long.', 'error')
+            return render_template('auth/force_change_password.html')
+
+        if new_password != confirm_password:
+            flash('Passwords do not match.', 'error')
+            return render_template('auth/force_change_password.html')
+
+        if new_password == 'password' or new_password == user.student_id:
+            flash('Password cannot be "password" or your student ID.', 'error')
+            return render_template('auth/force_change_password.html')
+
+        # Update password and clear the flag
+        user.set_password(new_password)
+        user.must_change_password = False
+        db.session.commit()
+
+        from app.services.audit_service import log_action
+        log_action('auth.password_change',
+                   f'{user.get_full_name()} changed their password (forced change on first login).',
+                   category='auth', target_type='user', target_id=user.id,
+                   user_id=user.id, user_name=user.username, user_role=user.user_type)
+
+        flash('Password changed successfully! Welcome to LSPU ScholarHub.', 'success')
+        return _redirect_to_dashboard(user)
+
+    return render_template('auth/force_change_password.html')
+
+
+def _redirect_to_dashboard(user):
+    """Redirect user to their role-appropriate dashboard."""
+    if user.user_type in ('admin', 'super_admin'):
+        return redirect(url_for('admin.dashboard'))
+    elif user.user_type == 'staff':
+        return redirect(url_for('staff.dashboard'))
+    else:
+        return redirect(url_for('student.dashboard'))
 
 
 # ── Logout ────────────────────────────────────────────────────────────────────

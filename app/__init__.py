@@ -209,6 +209,26 @@ def create_app(config_name=None):
         # Update last active timestamp on every request
         _s['last_active'] = now
 
+    @app.before_request
+    def enforce_password_change():
+        """Force password change before any authenticated route is accessible."""
+        from flask import session as _s, request as _req, redirect as _redir, url_for as _uf
+
+        if not _s.get('user_id'):
+            return
+
+        # Skip the force-change-password page itself, logout, and static files
+        allowed_endpoints = ('auth.force_change_password', 'auth.logout', 'static')
+        if _req.endpoint in allowed_endpoints:
+            return
+
+        # Check if user must change password
+        from app.models.user import User as _User
+        from app import db as _db
+        _user = _db.session.get(_User, _s.get('user_id'))
+        if _user and _user.must_change_password:
+            return _redir(_uf('auth.force_change_password'))
+
     # ── Template globals ──────────────────────────────────────────────────
     from datetime import datetime as _dt
 
