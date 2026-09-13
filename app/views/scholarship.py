@@ -11,7 +11,8 @@ from app.models.document import Document
 from app.services.document_service import document_service
 from app.services.notification_service import notification_service
 from app.utils.decorators import login_required, role_required
-from app.utils.period_context import get_viewing_period
+from app.utils.period_context import get_viewing_period, is_viewing_specific_period
+from app.models.academic_period import AcademicPeriod
 
 scholarship_bp = Blueprint('scholarship', __name__)
 logger = logging.getLogger(__name__)
@@ -50,7 +51,6 @@ def list_scholarships():
     # super_admin sees all (no filter)
 
     # Period filtering: students see permanent programs + programs for the selected period
-    from app.utils.period_context import get_viewing_period, is_viewing_specific_period
     viewing_period = get_viewing_period()
     if user_type == 'student':
         from sqlalchemy import or_
@@ -127,7 +127,6 @@ def _active_public_application(user_id, exclude_app_id=None):
     public program again. Private scholarships are combinable — with
     the public one and with each other.
     """
-    from app.models.academic_period import AcademicPeriod
     period = get_viewing_period()
 
     q = (ScholarshipApplication.query
