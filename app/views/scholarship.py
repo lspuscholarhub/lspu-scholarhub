@@ -329,12 +329,18 @@ def apply_scholarship(scholarship_id):
                 pass  # custom_form_fields column may not exist yet
 
             # ── Save application ───────────────────────────────────────────────
+            # Assign the current academic period and campus
+            _app_period = get_viewing_period()
+            _app_campus = user.campus_id
+
             application = ScholarshipApplication(
                 scholarship_id=scholarship_id,
                 applicant_id=user.id,
                 application_data=application_data,
                 documents=[],
                 status=ApplicationStatus.PENDING,
+                academic_period_id=_app_period.id if _app_period else None,
+                campus_id=_app_campus,
             )
             db.session.add(application)
             db.session.flush()

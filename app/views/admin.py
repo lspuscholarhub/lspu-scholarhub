@@ -321,6 +321,16 @@ def create_scholarship():
         period_val = request.form.get('academic_period_id', '').strip()
         academic_period_id_val = int(period_val) if period_val else None
 
+        # Server-side validation: reject negative values
+        award_raw = request.form.get('award_amount', '').strip()
+        if award_raw and float(award_raw) < 0:
+            flash('Award amount cannot be negative.', 'error')
+            return redirect(url_for('admin.scholarships'))
+        max_app_raw = request.form.get('max_applicants', '').strip()
+        if max_app_raw and int(max_app_raw) < 0:
+            flash('Maximum applicants cannot be negative.', 'error')
+            return redirect(url_for('admin.scholarships'))
+
         s = Scholarship(
             title                = request.form['title'],
             category             = request.form.get('category', 'General'),
@@ -329,8 +339,8 @@ def create_scholarship():
             description          = request.form.get('description', '').strip() or None,
             eligibility_criteria = request.form.get('eligibility_criteria', '').strip() or None,
             benefits             = request.form.get('benefits', '').strip() or None,
-            award_amount         = max(0, float(request.form.get('award_amount') or 0)) or None,
-            max_applicants       = max(0, int(request.form.get('max_applicants') or 0)) or None,
+            award_amount         = float(award_raw) if award_raw else None,
+            max_applicants       = int(max_app_raw) if max_app_raw else None,
             application_deadline = datetime.strptime(request.form['application_deadline'], '%Y-%m-%d') if request.form.get('application_deadline') else None,
             status               = ScholarshipStatus.ACTIVE,
             created_by           = session['user_id'],
@@ -420,9 +430,19 @@ def edit_scholarship(sid):
         s.description          = request.form.get('description', s.description)
         s.eligibility_criteria = request.form.get('eligibility_criteria', s.eligibility_criteria)
         s.benefits             = request.form.get('benefits', s.benefits)
-        s.award_amount         = max(0, float(request.form.get('award_amount') or 0)) or s.award_amount
-        if request.form.get('max_applicants'):
-            s.max_applicants = max(0, int(request.form['max_applicants'])) or None
+        # Server-side validation: reject negative values
+        award_raw = request.form.get('award_amount', '').strip()
+        if award_raw and float(award_raw) < 0:
+            flash('Award amount cannot be negative.', 'error')
+            return redirect(url_for('admin.manage_scholarships'))
+        max_app_raw = request.form.get('max_applicants', '').strip()
+        if max_app_raw and int(max_app_raw) < 0:
+            flash('Maximum applicants cannot be negative.', 'error')
+            return redirect(url_for('admin.manage_scholarships'))
+        if award_raw:
+            s.award_amount = float(award_raw)
+        if max_app_raw:
+            s.max_applicants = int(max_app_raw)
         if request.form.get('application_deadline'):
             s.application_deadline = datetime.strptime(
                 request.form['application_deadline'], '%Y-%m-%d')
