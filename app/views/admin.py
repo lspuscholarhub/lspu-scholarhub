@@ -1526,6 +1526,9 @@ from app.models.campus import Campus
 @role_required('admin')
 def manage_campuses():
     """List all campuses."""
+    if session.get('user_type') != 'super_admin':
+        flash('Only the Super Admin can manage campuses.', 'error')
+        return redirect(url_for('admin.dashboard'))
     campuses = Campus.query.order_by(Campus.name).all()
     return render_template('admin/campuses.html', campuses=campuses)
 
@@ -1534,6 +1537,9 @@ def manage_campuses():
 @role_required('admin')
 def create_campus():
     """Create a new campus."""
+    if session.get('user_type') != 'super_admin':
+        flash('Only the Super Admin can manage campuses.', 'error')
+        return redirect(url_for('admin.dashboard'))
     name = request.form.get('name', '').strip()
     short_name = request.form.get('short_name', '').strip()
     if not name:
@@ -1555,6 +1561,9 @@ def create_campus():
 @role_required('admin')
 def edit_campus(cid):
     """Edit a campus."""
+    if session.get('user_type') != 'super_admin':
+        flash('Only the Super Admin can manage campuses.', 'error')
+        return redirect(url_for('admin.dashboard'))
     campus = db.session.get(Campus, cid)
     if not campus:
         flash('Campus not found.', 'error')
@@ -1581,6 +1590,9 @@ def edit_campus(cid):
 @role_required('admin')
 def toggle_campus(cid):
     """Activate/deactivate a campus."""
+    if session.get('user_type') != 'super_admin':
+        flash('Only the Super Admin can manage campuses.', 'error')
+        return redirect(url_for('admin.dashboard'))
     campus = db.session.get(Campus, cid)
     if not campus:
         flash('Campus not found.', 'error')
@@ -1598,6 +1610,9 @@ def toggle_campus(cid):
 @role_required('admin')
 def delete_campus(cid):
     """Delete a campus (only if no users are assigned)."""
+    if session.get('user_type') != 'super_admin':
+        flash('Only the Super Admin can manage campuses.', 'error')
+        return redirect(url_for('admin.dashboard'))
     campus = db.session.get(Campus, cid)
     if not campus:
         flash('Campus not found.', 'error')
