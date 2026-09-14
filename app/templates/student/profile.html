@@ -12,13 +12,13 @@
     </ol>
   </nav>
 
-  {# First-login password change banner #}
+  {# Advisory banner while still on the emailed temporary password #}
   {% if session.get('first_login') %}
   <div class="alert alert-warning d-flex align-items-center gap-3 mb-4 shadow-sm" role="alert">
     <i class="bi bi-key-fill fs-4 flex-shrink-0"></i>
     <div>
-      <strong>You're using a temporary password.</strong>
-      Please scroll down and set a personal password now to secure your account.
+      <strong>Still using your temporary password?</strong>
+      Set a personal password below to secure your account.
     </div>
     <a href="#changePasswordCard" class="btn btn-warning btn-sm ms-auto flex-shrink-0">
       Change Now
@@ -293,7 +293,8 @@
         <div class="card-body">
           <div class="alert alert-warning py-2 px-3 small mb-3">
             <i class="bi bi-exclamation-triangle me-1"></i>
-            If you just registered, you received a <strong>temporary password</strong> by email.
+            If you haven't changed your password yet, you're still using the
+            <strong>temporary password</strong> from your registration email.
             Set a personal password here to secure your account.
           </div>
           <form method="POST" action="{{ url_for('student.update_profile') }}"

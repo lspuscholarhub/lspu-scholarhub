@@ -168,7 +168,7 @@ def _send_credentials_email(user, temp_password):
             <td style="padding:8px 0;"><code style="background:#fff3cd;padding:4px 8px;border-radius:4px;font-size:1.1em;">{temp_password}</code></td>
           </tr>
         </table>
-        <p style="color:#dc3545;"><strong>⚠️ Important:</strong> Please log in and change your password immediately under <em>My Account → Profile</em>.</p>
+        <p style="color:#dc3545;"><strong>⚠️ Important:</strong> When you first log in, the system will ask you to create your own personal password before you can continue.</p>
         <p>You can log in at: <a href="{login_url}">{login_url}</a></p>
         <p>If you have any questions, contact us at <a href="mailto:lspu.scholarhub@gmail.com">lspu.scholarhub@gmail.com</a> or call 0968-365-2615.</p>
         <p>Best regards,<br><strong>LSPU Scholarship Office</strong></p>
