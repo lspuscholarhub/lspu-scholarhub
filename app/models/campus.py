@@ -23,8 +23,6 @@ class Campus(db.Model):
     is_active   = db.Column(db.Boolean, default=True)
     created_at  = db.Column(db.DateTime, default=datetime.utcnow)
 
-    users = db.relationship('User', backref='campus', lazy='dynamic')
-
     def __repr__(self):
         return f'<Campus {self.short_name or self.name}>'
 
