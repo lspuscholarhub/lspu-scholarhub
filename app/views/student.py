@@ -630,8 +630,12 @@ def update_profile():
     user.phone_number = request.form.get('phone_number', user.phone_number or '').strip() or None
     # Existing-scholar declaration (self-declared; office verifies offline)
     user.is_existing_scholar = request.form.get('is_existing_scholar') == '1'
-    user.existing_scholarship_name = (request.form.get('existing_scholarship_name', '').strip()
-                                      if user.is_existing_scholar else None) or None
+    scholar_name = request.form.get('existing_scholarship_name', '').strip()
+    if user.is_existing_scholar and not scholar_name:
+        flash('Since you checked "I am already a scholar in LSPU", '
+              'please enter your Scholarship Program Name.', 'error')
+        return redirect(url_for('student.profile'))
+    user.existing_scholarship_name = scholar_name if user.is_existing_scholar else None
     # student_id and email are read-only — not updated here
 
     new_pw = request.form.get('new_password', '').strip()

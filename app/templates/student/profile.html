@@ -243,10 +243,13 @@
                 </div>
               </div>
               <div class="mt-2 {% if not user.is_existing_scholar %}d-none{% endif %}" id="existingScholarNameWrap">
-                <label class="form-label small fw-semibold">Scholarship Program Name</label>
+                <label class="form-label small fw-semibold">Scholarship Program Name <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" name="existing_scholarship_name"
+                       id="existingScholarName"
                        value="{{ user.existing_scholarship_name or '' }}"
-                       maxlength="150" placeholder="e.g. TES, TDP, Private Scholarship">
+                       maxlength="150" placeholder="e.g. TES, TDP, Private Scholarship"
+                       {% if user.is_existing_scholar %}required{% endif %}>
+                <div class="form-text">Required — please enter your current scholarship program name.</div>
               </div>
             </div>
 
@@ -256,6 +259,25 @@
               </button>
             </div>
           </form>
+
+          <script>
+            (function () {
+              var cb = document.getElementById('isExistingScholar');
+              var wrap = document.getElementById('existingScholarNameWrap');
+              var input = document.getElementById('existingScholarName');
+              if (!cb || !input) return;
+              function sync() {
+                wrap.classList.toggle('d-none', !cb.checked);
+                if (cb.checked) {
+                  input.setAttribute('required', 'required');
+                } else {
+                  input.removeAttribute('required');
+                  input.value = '';
+                }
+              }
+              cb.addEventListener('change', sync);
+            })();
+          </script>
         </div>
       </div>
 
