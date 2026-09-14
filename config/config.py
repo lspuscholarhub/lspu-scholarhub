@@ -62,8 +62,9 @@ class ProductionConfig(Config):
     WTF_CSRF_TIME_LIMIT = None   # no expiry on CSRF tokens
     PREFERRED_URL_SCHEME = 'https'
     # Session cookies — expire when browser is closed
-    SESSION_COOKIE_SECURE   = True    # site is HTTPS-only (Railway terminates TLS);
-                                      # browser will never send the cookie over HTTP
+    SESSION_COOKIE_SECURE   = False   # Railway terminates TLS at the proxy; the app
+                                      # receives plain HTTP internally, so Secure flag
+                                      # would break session cookies
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
     PERMANENT_SESSION_LIFETIME = 3600   # 1 hour if session IS permanent
