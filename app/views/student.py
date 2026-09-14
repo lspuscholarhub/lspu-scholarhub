@@ -887,6 +887,13 @@ def upload_gwa():
             if detected_year and detected_year != user.year_level:
                 if user.year_level not in ('Irregular', 'Graduate'):
                     user.year_level = detected_year
+            # Auto-update units enrolled from the COR's "Total Units"
+            detected_units = verified_data.get('units_enrolled')
+            if detected_units:
+                try:
+                    user.units_enrolled = int(detected_units)
+                except (ValueError, TypeError):
+                    pass
             db.session.commit()
             flash(f'{label} uploaded successfully.', 'success')
             return redirect(url_for('student.upload_gwa'))
@@ -899,16 +906,12 @@ def upload_gwa():
             extracted_gwa = result.get('gwa')
 
             if extracted_gwa:
-                # Update user GWA and units
+                # Update user GWA (units come from the COR, not the grades file)
                 old_gwa = user.gwa
                 user.gwa = round(extracted_gwa, 2)
                 user.grades_file_path = file_path
                 user.grades_cloudinary_id = cloud_id
                 user.grades_updated_at = datetime.utcnow()
-                # Auto-populate units_enrolled if extracted
-                extracted_units = result.get('units_enrolled')
-                if extracted_units:
-                    user.units_enrolled = extracted_units
 
                 # Mark which semester these grades are for
                 from app.models.academic_period import AcademicPeriod

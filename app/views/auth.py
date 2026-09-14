@@ -545,13 +545,16 @@ def register():
                 return render_template('auth/register.html',
                                        form_data=request.form, ocr_errors=None)
 
-        # Units enrolled — pulled from the grades PDF (verification already read it).
-        # GWA and units come from the same document the office needs anyway.
+        # Units enrolled — pulled from the COR (verification already read it).
+        # The COR's "Total Units" is the authoritative semester load; the grades
+        # document is only a fallback for edge cases where the COR omits it.
         auto_units = None
+        cor_data = verification.get('cor_data') or {}
         grades_data = verification.get('grades_data') or {}
-        if grades_data.get('units_enrolled'):
+        units_source = cor_data.get('units_enrolled') or grades_data.get('units_enrolled')
+        if units_source:
             try:
-                auto_units = int(grades_data['units_enrolled'])
+                auto_units = int(units_source)
             except (ValueError, TypeError):
                 auto_units = None
 
@@ -655,7 +658,7 @@ def verify_otp():
                 course=pending['course'],
                 year_level=pending['year_level'],
                 gwa=pending.get('auto_gwa'),       # extracted from grades PDF during verification
-                units_enrolled=pending.get('auto_units'),   # extracted from grades PDF
+                units_enrolled=pending.get('auto_units'),   # extracted from COR (Total Units)
                 campus_id=pending.get('campus_id'),
                 user_type='student',
                 is_active=True,
