@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Manage Campuses — Admin{% endblock %}
+{% block content %}
+<div class="container-fluid py-4">
+  <div class="mb-4 d-flex justify-content-between align-items-start">
+    <div>
+      <h1 class="h3 fw-bold mb-0">Manage Campuses</h1>
+      <p class="text-muted small mb-0">Add, edit, or deactivate campuses used across the system.</p>
+    </div>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createCampusModal">
+      <i class="bi bi-plus-circle me-1"></i>Add Campus
+    </button>
+  </div>
+
+  <div class="card border-0 shadow-sm" style="border-radius:12px;">
+    <div class="card-body px-4">
+      {% if campuses %}
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr style="font-size:.78rem;text-transform:uppercase;letter-spacing:.5px;">
+              <th class="text-muted">Campus Name</th>
+              <th class="text-muted">Short Name</th>
+              <th class="text-muted">Status</th>
+              <th class="text-muted">Users</th>
+              <th class="text-muted text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for c in campuses %}
+            <tr>
+              <td class="fw-semibold">{{ c.name }}</td>
+              <td>
+                {% if c.short_name %}
+                <span class="badge bg-info text-dark">{{ c.short_name }}</span>
+                {% else %}
+                <span class="text-muted">—</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if c.is_active %}
+                <span class="badge bg-success">Active</span>
+                {% else %}
+                <span class="badge bg-secondary">Inactive</span>
+                {% endif %}
+              </td>
+              <td class="small text-muted">{{ c.users|length if c.users else 0 }} user(s)</td>
+              <td class="text-end">
+                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
+                        data-bs-target="#editCampusModal{{ c.id }}">
+                  <i class="bi bi-pencil"></i>
+                </button>
+                <form method="POST" action="{{ url_for('admin.toggle_campus', cid=c.id) }}" class="d-inline">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-sm btn-outline-{{ 'warning' if c.is_active else 'success' }}"
+                          title="{{ 'Deactivate' if c.is_active else 'Activate' }}">
+                    <i class="bi bi-{{ 'pause-circle' if c.is_active else 'play-circle' }}"></i>
+                  </button>
+                </form>
+                <form method="POST" action="{{ url_for('admin.delete_campus', cid=c.id) }}" class="d-inline"
+                      onsubmit="return confirm('Delete {{ c.name }}? This cannot be undone.');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-sm btn-outline-danger">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                </form>
+              </td>
+            </tr>
+
+            <!-- Edit Modal for {{ c.name }} -->
+            <div class="modal fade" id="editCampusModal{{ c.id }}" tabindex="-1">
+              <div class="modal-dialog">
+                <div class="modal-content" style="border-radius:12px;">
+                  <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Edit — {{ c.name }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                  </div>
+                  <form method="POST" action="{{ url_for('admin.edit_campus', cid=c.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="modal-body">
+                      <div class="mb-3">
+                        <label class="form-label fw-semibold">Campus Name</label>
+                        <input type="text" class="form-control" name="name" value="{{ c.name }}" required>
+                      </div>
+                      <div class="mb-3">
+                        <label class="form-label fw-semibold">Short Name</label>
+                        <input type="text" class="form-control" name="short_name" value="{{ c.short_name or '' }}"
+                               maxlength="30" placeholder="e.g. SC, SN, SBC">
+                        <div class="form-text">Abbreviation shown in badges (max 30 characters).</div>
+                      </div>
+                    </div>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                      <button type="submit" class="btn btn-primary">Save Changes</button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="text-center py-4 text-muted">
+        <i class="bi bi-geo-alt display-4"></i>
+        <p class="mt-2">No campuses configured yet.</p>
+        <p class="small">Click "Add Campus" to create the first one.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Create Campus Modal -->
+<div class="modal fade" id="createCampusModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content" style="border-radius:12px;">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">Add Campus</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('admin.create_campus') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Campus Name</label>
+            <input type="text" class="form-control" name="name" required
+                   placeholder="e.g. LSPU Santa Cruz">
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Short Name</label>
+            <input type="text" class="form-control" name="short_name" maxlength="30"
+                   placeholder="e.g. SC, SN, SBC">
+            <div class="form-text">Abbreviation shown in badges (max 30 characters).</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Create Campus</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

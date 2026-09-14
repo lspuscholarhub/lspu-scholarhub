@@ -1517,6 +1517,107 @@ def delete_academic_period(pid):
     return redirect(url_for('admin.settings'))
 
 
+# ── Campus Management ─────────────────────────────────────────────────────
+
+from app.models.campus import Campus
+
+
+@admin_bp.route('/campuses')
+@role_required('admin')
+def manage_campuses():
+    """List all campuses."""
+    campuses = Campus.query.order_by(Campus.name).all()
+    return render_template('admin/campuses.html', campuses=campuses)
+
+
+@admin_bp.route('/campuses/create', methods=['POST'])
+@role_required('admin')
+def create_campus():
+    """Create a new campus."""
+    name = request.form.get('name', '').strip()
+    short_name = request.form.get('short_name', '').strip()
+    if not name:
+        flash('Campus name is required.', 'error')
+        return redirect(url_for('admin.manage_campuses'))
+    if Campus.query.filter(Campus.name.ilike(name)).first():
+        flash('A campus with that name already exists.', 'error')
+        return redirect(url_for('admin.manage_campuses'))
+    campus = Campus(name=name, short_name=short_name or None)
+    db.session.add(campus)
+    db.session.commit()
+    from app.services.audit_service import log_action
+    log_action('campus.create', f'Campus "{campus.name}" created.', category='system')
+    flash(f'Campus "{campus.name}" created.', 'success')
+    return redirect(url_for('admin.manage_campuses'))
+
+
+@admin_bp.route('/campuses/<int:cid>/edit', methods=['POST'])
+@role_required('admin')
+def edit_campus(cid):
+    """Edit a campus."""
+    campus = db.session.get(Campus, cid)
+    if not campus:
+        flash('Campus not found.', 'error')
+        return redirect(url_for('admin.manage_campuses'))
+    name = request.form.get('name', '').strip()
+    short_name = request.form.get('short_name', '').strip()
+    if not name:
+        flash('Campus name is required.', 'error')
+        return redirect(url_for('admin.manage_campuses'))
+    existing = Campus.query.filter(Campus.name.ilike(name), Campus.id != cid).first()
+    if existing:
+        flash('A campus with that name already exists.', 'error')
+        return redirect(url_for('admin.manage_campuses'))
+    campus.name = name
+    campus.short_name = short_name or None
+    db.session.commit()
+    from app.services.audit_service import log_action
+    log_action('campus.edit', f'Campus "{campus.name}" updated.', category='system')
+    flash(f'Campus "{campus.name}" updated.', 'success')
+    return redirect(url_for('admin.manage_campuses'))
+
+
+@admin_bp.route('/campuses/<int:cid>/toggle', methods=['POST'])
+@role_required('admin')
+def toggle_campus(cid):
+    """Activate/deactivate a campus."""
+    campus = db.session.get(Campus, cid)
+    if not campus:
+        flash('Campus not found.', 'error')
+        return redirect(url_for('admin.manage_campuses'))
+    campus.is_active = not campus.is_active
+    db.session.commit()
+    from app.services.audit_service import log_action
+    status = 'activated' if campus.is_active else 'deactivated'
+    log_action('campus.toggle', f'Campus "{campus.name}" {status}.', category='system')
+    flash(f'Campus "{campus.name}" {status}.', 'success')
+    return redirect(url_for('admin.manage_campuses'))
+
+
+@admin_bp.route('/campuses/<int:cid>/delete', methods=['POST'])
+@role_required('admin')
+def delete_campus(cid):
+    """Delete a campus (only if no users are assigned)."""
+    campus = db.session.get(Campus, cid)
+    if not campus:
+        flash('Campus not found.', 'error')
+        return redirect(url_for('admin.manage_campuses'))
+    user_count = User.query.filter(User.campus_id == cid).count()
+    assigned_count = db.session.query(User).filter(
+        User.assigned_campuses.any(campus)
+    ).count() if hasattr(User, 'assigned_campuses') else 0
+    if user_count > 0 or assigned_count > 0:
+        flash(f'Cannot delete "{campus.name}" — {user_count + assigned_count} user(s) are still assigned to it.', 'error')
+        return redirect(url_for('admin.manage_campuses'))
+    name = campus.name
+    db.session.delete(campus)
+    db.session.commit()
+    from app.services.audit_service import log_action
+    log_action('campus.delete', f'Campus "{name}" deleted.', category='system')
+    flash(f'Campus "{name}" deleted.', 'success')
+    return redirect(url_for('admin.manage_campuses'))
+
+
 # ── Reports & Export ──────────────────────────────────────────────────────────
 
 @admin_bp.route('/reports')

@@ -1,0 +1,363 @@
+================================================================
+ LSPU SCHOLARHUB - STORYBOARD SCREENSHOT GUIDE
+ (Follows the APPENDICES sample format: each screenshot gets a
+  caption that DESCRIBES WHAT THE PAGE SHOWS/DOES)
+================================================================
+
+HOW TO USE THIS GUIDE
+---------------------
+1. Take the screenshots in the order below, role by role.
+2. For each shot: follow "HOW TO GET THERE", set up the page using
+   "BEFORE YOU CAPTURE", then screenshot.
+3. Under each screenshot in your document, paste the caption from
+   "CAPTION (paste this)".
+4. Number the figures continuously (Figure 1, Figure 2, ...).
+
+GENERAL TIPS
+------------
+- Use ONE browser for all screenshots (consistent look).
+- Window size: maximize the browser. Do NOT zoom in or out (100%).
+- Always show the top navigation bar and a bit of the page content.
+- Guest shots: use an Incognito / Private window (must be logged out).
+- Log in order: Guest shots first -> Student -> Staff -> Admin ->
+  Super Admin. (You can also fully do one role at a time.)
+- Test accounts: use ONLY the approved test accounts
+  (Staff: Alfonso; Students: the 3 test student accounts;
+  Super Admin: superadmin / lspu.scholarhub@gmail.com).
+- Make sure the pages SHOW DATA (applications, students, programs)
+  before capturing - storyboards look dead with empty tables.
+- Hide/crop any real personal emails or numbers that are not test data.
+
+LEGEND
+------
+[HOW]  = steps to reach the page
+[SETUP]= what to click/prepare so the shot looks complete
+[CAPTION] = the descriptive sentence to paste under the figure
+
+================================================================
+ ROLE 1: GUEST  (take these in an Incognito window, logged out)
+================================================================
+
+G1 - LANDING PAGE
+[HOW] Open the site URL. You land here automatically while logged out.
+[SETUP] Scroll to show the hero section AND the navigation bar.
+[CAPTION] Landing page of LSPU ScholarHub showing the scholarship
+office information, program overview, and options to log in or
+register.
+
+G2 - SCHOLARSHIP LIST (PUBLIC)
+[HOW] From the landing page, click the Scholarships / Programs link
+in the navigation.
+[SETUP] Make sure at least 2-3 visible (not hidden) programs show,
+with their status badges.
+[CAPTION] Public scholarship program list where guests can browse
+available programs with their descriptions, benefits, and open or
+closed status before signing up.
+
+G3 - REGISTRATION PAGE
+[HOW] Click Register on the landing page.
+[SETUP] Show the form with the upload areas for the Certificate of
+Registration (COR) and Report of Grades (ROG), the "I am already a
+scholar in LSPU" option, and the fields that get auto-filled by OCR.
+Do NOT submit.
+[CAPTION] Student registration page where the applicant uploads the
+COR and ROG, and the system automatically reads the student details
+from the files.
+
+G4 - LOGIN PAGE
+[HOW] Click Login in the navigation.
+[SETUP] Show the empty login form.
+[CAPTION] Login page where users enter their credentials and are
+redirected to the dashboard for their role.
+
+================================================================
+ ROLE 2: STUDENT  (log in using a test STUDENT account)
+================================================================
+
+S1 - STUDENT DASHBOARD
+[HOW] Log in as a student with an existing application.
+[SETUP] The stat cards should show real numbers (total applications,
+pending, approved) and the reminder to keep COR and grades updated.
+[CAPTION] Student dashboard displaying application summary, pending
+and approved counts, and the reminder to keep registration documents
+and grades updated.
+
+S2 - BROWSE SCHOLARSHIPS (STUDENT VIEW)
+[HOW] Click Scholarships in the navigation.
+[SETUP] Show open programs with the Apply button visible. If the
+student already has a pending public application, the applied
+program can show its applied state instead.
+[CAPTION] Scholarship list for students showing programs available
+to their campus and academic period, with the option to apply.
+
+S3 - APPLICATION FORM
+[HOW] Click Apply on one open program.
+[SETUP] Show the form pre-filled with the student's details
+(birthday, course, GWA, units) plus the program's custom questions.
+Do NOT submit.
+[CAPTION] Scholarship application form with the student's details
+pre-filled from their profile and registration files.
+
+S4 - MY APPLICATIONS
+[HOW] Submit the application from S3 (or use an existing one), then
+open My Applications.
+[SETUP] The list should show the application with its status
+(Submitted / Under Review) and the progress indicator.
+[CAPTION] My Applications page listing the student's submissions
+with their current status and review progress.
+
+S5 - APPLICATION DETAILS
+[HOW] On My Applications, click View on one application.
+[SETUP] Show the progress tracker (Submitted -> Under Review ->
+Decision) and any review notes.
+[CAPTION] Application details showing the progress tracker from
+submission to decision, including notes from the scholarship office.
+
+S6 - MY SCHOLARSHIP
+[HOW] Open My Scholarship from the navigation.
+[SETUP] This page needs the student to have an APPROVED application.
+If your test student has none, approve one application as staff
+first (see ST4), then come back to this shot.
+[CAPTION] My Scholarship page showing the details of the approved
+scholarship program, including benefits, award amount, and batch
+assignment.
+
+S7 - NOTIFICATIONS
+[HOW] Open Notifications from the navigation.
+[SETUP] There should be at least one announcement (send one as staff
+if needed, see ST7).
+[CAPTION] Notifications page showing announcements sent by the
+scholarship office for the current academic period.
+
+S8 - MY PROFILE
+[HOW] Open My Profile.
+[SETUP] Show the locked fields (name, student number, campus,
+course, year level) with their "contact the scholarship office"
+notes, and the editable email and phone fields.
+[CAPTION] Student profile page showing personal information; the
+name, student number, campus, course, and year level are locked and
+updated only through the scholarship office.
+
+S9 - DOCUMENTS (COR / ROG UPLOAD)
+[HOW] Open the Documents page.
+[SETUP] Show the two document cards (COR and ROG) with their
+upload/replace buttons and the PDF-only note.
+[CAPTION] Documents page where the student uploads or replaces the
+Certificate of Registration and Report of Grades, which the system
+validates on upload.
+
+S10 - AI CHATBOT
+[HOW] Open the AI assistant from the navigation.
+[SETUP] Ask it a real question (e.g. "What scholarships can I apply
+for?") so the answer is visible, then capture.
+[CAPTION] AI assistant answering a scholarship question using live
+data from the system.
+
+================================================================
+ ROLE 3: STAFF  (log in using the Alfonso STAFF test account)
+================================================================
+
+ST1 - STAFF DASHBOARD
+[HOW] Log in as staff.
+[SETUP] Stat cards should show real counts for the campus and
+current period.
+[CAPTION] Staff dashboard showing application counts, pending
+reviews, and approved scholars for the assigned campus and academic
+period.
+
+ST2 - MANAGE SCHOLARSHIPS
+[HOW] Open Scholarships / Manage Scholarships.
+[SETUP] Show the program list with status badges and the action
+buttons (view, close, hide).
+[CAPTION] Scholarship program management page where staff maintain
+programs, their status, and visibility.
+
+ST3 - CREATE SCHOLARSHIP FORM
+[HOW] Click Add New Program.
+[SETUP] Show the full form: name, description, funding type
+(public/private), campus, academic period dropdown, maximum
+applicants, and the custom fields builder. Do NOT save.
+[CAPTION] Scholarship program creation form with funding type,
+campus, academic period, applicant limit, and custom application
+fields.
+
+ST4 - REVIEW APPLICATIONS
+[HOW] Open Review / Applications.
+[SETUP] Open one pending application so the student details, GWA,
+and notes area are visible.
+[CAPTION] Application review page showing the applicant's details
+and grades, where staff approve or reject with notes.
+
+ST5 - BATCHES
+[HOW] Open Batches.
+[SETUP] Show an existing batch for a program with its approved
+students, or the batch creation view.
+[CAPTION] Batch management page where approved applicants are
+grouped per scholarship program and exported to Excel.
+
+ST6 - STUDENT DIRECTORY
+[HOW] Open Students.
+[SETUP] Show the list with a search/filter applied so it looks
+intentional.
+[CAPTION] Student directory listing registered students with their
+profiles, documents, and application status.
+
+ST7 - SEND ANNOUNCEMENT
+[HOW] Open Announcements / Notifications.
+[SETUP] Open the compose modal so recipient options (all students,
+by scholarship, by batch, individual) and the optional attachment
+field are visible. Do NOT send.
+[CAPTION] Announcement composer with recipient selection and
+optional file attachment, delivered through email and SMS.
+
+ST8 - REPORTS
+[HOW] Open Reports.
+[SETUP] Charts need data - use the current period with the most
+applications.
+[CAPTION] Reports page with charts on applications, approvals, and
+GWA distribution for the selected period and campus.
+
+ST9 - MONITOR SCHOLARS
+[HOW] Open Monitoring.
+[SETUP] Show a scholar list and, if available, a submitted
+Monitoring and Evaluation form entry.
+[CAPTION] Scholar monitoring page tracking active scholars and
+their Monitoring and Evaluation form submissions.
+
+================================================================
+ ROLE 4: ADMIN  (log in using your ADMIN test account)
+================================================================
+ NOTE: Admin pages mirror the staff pages, so A3, A7, A8, A9 look
+ like ST2, ST8, ST6, ST7 but with the admin menu. Capture them
+ anyway - the thesis needs the admin set complete.
+
+A1 - ADMIN DASHBOARD
+[HOW] Log in as admin.
+[SETUP] Show the campus selector and academic period selector in
+the header with real stats below.
+[CAPTION] Admin dashboard with campus and academic period selectors
+that scope all displayed data.
+
+A2 - MANAGE USERS
+[HOW] Open Manage Users.
+[SETUP] Show the user list with the role filter, and the actions
+menu (change role, assign campuses) visible on one row.
+[CAPTION] User management page where administrators create accounts,
+change roles, and assign campuses.
+
+A3 - MANAGE SCHOLARSHIPS
+[HOW] Open Scholarships.
+[SETUP] Same setup as ST2.
+[CAPTION] Scholarship management as handled by the campus
+administrator, with the same program controls available to staff.
+
+A4 - MANAGE CAMPUSES
+[HOW] Open Manage > Campuses in the navigation.
+[SETUP] Show the campus list with names, short names, status badges,
+and user counts. If possible, show the Add Campus button.
+[CAPTION] Campus management page where the administrator adds,
+edits, activates or deactivates campuses used across the system.
+
+A5 - ACADEMIC PERIODS
+[SETUP] Show the campus list with codes.
+[CAPTION] Campus management page maintaining the university campuses
+used for registration and data scoping.
+
+A5 - ACADEMIC PERIODS
+[HOW] Open Periods.
+[SETUP] Show the period list, with the current period marked, plus
+the create/delete controls.
+[CAPTION] Academic period management where administrators create,
+delete, and set the current period that scopes system data.
+
+A6 - AUDIT LOG
+[HOW] Open Audit Log.
+[SETUP] Apply the Category and Role filters so they are visible in
+the shot.
+[CAPTION] Audit log with category and role filters recording every
+significant action performed in the system.
+
+A7 - REPORTS
+[HOW] Open Reports. Same as ST8.
+[CAPTION] Campus analytics reporting for the administrator.
+
+A8 - STUDENT DIRECTORY
+[HOW] Open Students. Same as ST6.
+[CAPTION] Student directory as managed by the administrator.
+
+A9 - SEND ANNOUNCEMENT
+[HOW] Open Announcements. Same as ST7.
+[CAPTION] Announcement composer available to the administrator.
+
+================================================================
+ ROLE 5: SUPER ADMIN  (log in as superadmin)
+================================================================
+
+SA1 - SUPER ADMIN DASHBOARD
+[HOW] Log in as superadmin.
+[SETUP] Show university-wide stats and the campus selector.
+[CAPTION] Super admin dashboard showing university-wide statistics
+with the campus selector.
+
+SA2 - MANAGE USERS
+[HOW] Open Manage Users.
+[SETUP] Show a multi-campus user (a user assigned to more than one
+campus) or the role options (Super Admin, Admin, Staff, Student).
+[CAPTION] System-wide user management with role assignment and
+multi-campus access.
+
+SA3 - MANAGE CAMPUSES
+[HOW] Open Manage > Campuses in the navigation.
+[SETUP] Show ALL campuses of the university with their names, short
+names, status, and user counts.
+[CAPTION] University-wide campus management listing every campus in
+the system, with create, edit, activate/deactivate, and delete controls.
+
+SA4 - ACADEMIC PERIODS
+[HOW] Open Periods.
+[SETUP] Show the periods with the current one marked.
+[CAPTION] University-wide academic period management used to scope
+all system data.
+
+SA5 - AUDIT LOG
+[HOW] Open Audit Log.
+[SETUP] Show entries from multiple roles (use the Role filter
+briefly, then clear it).
+[CAPTION] Complete system audit trail covering all campuses and
+user roles.
+
+SA6 - REPORTS
+[HOW] Open Reports.
+[SETUP] Show the aggregated university-wide view.
+[CAPTION] University-wide reports with per-campus or aggregated
+views.
+
+SA7 - CAMPUS SWITCHING
+[HOW] Click the campus selector in the header.
+[SETUP] Capture with the dropdown OPEN so the campus list shows.
+[CAPTION] Campus selector in the header that switches the data
+context for every page.
+
+SA8 - SYSTEM SETTINGS / PERIODS
+[HOW] Open the settings or periods page.
+[SETUP] Show the global configuration options.
+[CAPTION] System settings page for global configuration such as
+academic periods and notification preferences.
+
+================================================================
+ CHECKLIST - 40 SHOTS TOTAL
+================================================================
+ Guest        : G1 G2 G3 G4                          (4)
+ Student      : S1 S2 S3 S4 S5 S6 S7 S8 S9 S10      (10)
+ Staff        : ST1 ST2 ST3 ST4 ST5 ST6 ST7 ST8 ST9 (9)
+ Admin        : A1 A2 A3 A4 A5 A6 A7 A8 A9          (9)
+ Super Admin  : SA1 SA2 SA3 SA4 SA5 SA6 SA7 SA8     (8)
+
+ DEPENDENCIES TO REMEMBER
+ ------------------------
+ - S6 (My Scholarship) needs an APPROVED application -> do ST4 first
+   if no test student is approved yet.
+ - S7 needs at least one announcement -> do ST7 first if none exist.
+ - Reports/monitoring shots look better with data -> capture them
+   while the current period still has applications.
+================================================================
