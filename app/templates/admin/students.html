@@ -136,7 +136,7 @@
           <tbody>
             {% for s in students.items %}
             <tr>
-              <td>
+              <td data-label="Student">
                 <strong>{{ s.get_full_name() }}</strong><br>
                 <small class="text-muted">{{ s.email }}</small>
                 {% if s.is_existing_scholar %}
@@ -146,13 +146,13 @@
                 </span>
                 {% endif %}
               </td>
-              <td class="small">{{ s.student_id or '—' }}</td>
-              <td class="small">
+              <td class="small" data-label="Student ID">{{ s.student_id or '—' }}</td>
+              <td class="small" data-label="Year / Course">
                 {{ s.year_level or '—' }}
                 {% if s.course %}<br><span class="text-muted">{{ s.course }}</span>{% endif %}
               </td>
-              <td class="small">{{ s.town or '—' }}</td>
-              <td class="small">
+              <td class="small" data-label="Town">{{ s.town or '—' }}</td>
+              <td class="small" data-label="Gender">
                 {% if s.gender == 'Male' %}
                   <span class="badge" style="background:#e8f0fe;color:#0d6efd;">
                     <i class="bi bi-gender-male me-1"></i>Male
@@ -163,7 +163,7 @@
                   </span>
                 {% else %}—{% endif %}
               </td>
-              <td>
+              <td data-label="GWA">
                 {% if s.gwa %}
                   {% if s.gwa <= 1.25 %}
                     <span class="badge bg-success">{{ s.gwa }}</span>
@@ -192,14 +192,14 @@
                 {% endif %}
               </td>
               <!-- Units Enrolled -->
-              <td class="small text-center">
+              <td class="small text-center" data-label="Units">
                 {% if s.units_enrolled %}
                   <span class="badge bg-secondary">{{ s.units_enrolled }}</span>
                 {% else %}
                   <span class="text-muted">—</span>
                 {% endif %}
               </td>
-              <td class="small">
+              <td class="small" data-label="Documents">
                 {% if s.cor_file_path %}
                   <a href="{{ url_for('admin.view_reg_document', uid=s.id, doc_type='cor') }}"
                      target="_blank" class="badge bg-primary text-decoration-none me-1">COR</a>
@@ -212,7 +212,7 @@
                   <span class="text-muted">—</span>
                 {% endif %}
               </td>
-              <td>
+              <td data-label="Actions">
                 <a href="{{ url_for('admin.student_profile', uid=s.id) }}"
                    class="btn btn-sm btn-outline-primary">
                   <i class="bi bi-eye me-1"></i>View

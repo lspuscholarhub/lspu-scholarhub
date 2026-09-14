@@ -49,9 +49,9 @@
           <tbody>
             {% for u in users %}
             <tr>
-              <td class="small text-muted">{{ u.id }}</td>
-              <td>{{ u.username }}</td>
-              <td>
+              <td class="small text-muted" data-label="ID">{{ u.id }}</td>
+              <td data-label="Username">{{ u.username }}</td>
+              <td data-label="Name">
                 {{ u.get_full_name() }}
                 {% if u.user_type == 'student' and (not u.student_id or not u.course) %}
                 <br><small class="text-warning">
@@ -59,8 +59,8 @@
                 </small>
                 {% endif %}
               </td>
-              <td class="small">{{ u.email }}</td>
-              <td>
+              <td class="small" data-label="Email">{{ u.email }}</td>
+              <td data-label="Campus">
                 {% if u.assigned_campuses %}
                   {% for c in u.assigned_campuses %}
                     <span class="badge bg-info text-dark">{{ c.short_name or c.name }}</span>
@@ -71,7 +71,7 @@
                   <span class="text-muted small">—</span>
                 {% endif %}
               </td>
-              <td>
+              <td data-label="Role">
                 {% if u.user_type=='super_admin' %}<span class="badge bg-danger">Super Admin</span>
                 {% elif u.user_type=='admin' %}<span class="badge bg-danger">Admin</span>
                 {% elif u.user_type=='staff' %}<span class="badge bg-warning text-dark">Staff</span>
@@ -94,16 +94,16 @@
                 </form>
                 {% endif %}
               </td>
-              <td>
+              <td data-label="Status">
                 {% if u.is_active %}<span class="badge bg-success">Active</span>
                 {% else %}<span class="badge bg-secondary">Disabled</span>{% endif %}
               </td>
-              <td>
+              <td data-label="Verified">
                 {% if u.is_verified %}<span class="badge bg-success">Yes</span>
                 {% else %}<span class="badge bg-warning text-dark">No</span>{% endif %}
               </td>
-              <td class="small">{{ u.created_at.strftime('%b %d, %Y') }}</td>
-              <td>
+              <td class="small" data-label="Registered">{{ u.created_at.strftime('%b %d, %Y') }}</td>
+              <td data-label="Actions">
                 <!-- Edit button -->
                 <button class="btn btn-sm btn-outline-primary"
                         data-bs-toggle="modal"

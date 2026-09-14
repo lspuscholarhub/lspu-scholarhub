@@ -246,12 +246,11 @@
             <span class="badge bg-warning text-dark px-2 py-1" style="font-size:.68rem;">Staff</span>
           </li>
         {% endif %}
-
         {# Campus badge / selector #}
         {% if session.get('user_id') and role != 'guest' %}
           {% if role == 'super_admin' %}
             {# University admin: campus selector dropdown #}
-            <li class="nav-item dropdown d-none d-lg-flex align-items-center me-1">
+            <li class="nav-item dropdown d-lg-flex align-items-center me-1">
               <a class="nav-link dropdown-toggle badge bg-info text-dark px-2 py-1"
                  href="#" data-bs-toggle="dropdown" style="font-size:.68rem;cursor:pointer;">
                 {% if session.get('campus_context_name') %}{{ session.campus_context_name }}{% else %}All Campuses{% endif %}
@@ -273,7 +272,7 @@
             </li>
           {% elif role == 'staff' and session.get('user_id') and session.get('assigned_campus_ids') and session.assigned_campus_ids|length > 1 %}
             {# Staff with multiple campuses: show campus switcher dropdown #}
-            <li class="nav-item dropdown d-none d-lg-flex align-items-center me-1">
+            <li class="nav-item dropdown d-lg-flex align-items-center me-1">
               <a class="nav-link dropdown-toggle badge bg-info text-dark px-2 py-1"
                  href="#" data-bs-toggle="dropdown" style="font-size:.68rem;cursor:pointer;">
                 {% if session.get('campus_context_name') %}{{ session.campus_context_name }}{% else %}All My Campuses{% endif %}
@@ -294,7 +293,7 @@
               </ul>
             </li>
           {% elif session.get('campus_name') %}
-            <li class="nav-item d-none d-lg-flex align-items-center me-1">
+            <li class="nav-item d-lg-flex align-items-center me-1">
               <span class="badge bg-info text-dark px-2 py-1" style="font-size:.68rem;">{{ session.campus_name }}</span>
             </li>
           {% elif session.get('campus_name') %}
@@ -311,7 +310,7 @@
           {% if role in ('super_admin', 'admin') %}
             {% set all_periods = [] %}
           {% endif %}
-          <li class="nav-item dropdown d-none d-lg-flex align-items-center me-1">
+          <li class="nav-item dropdown d-lg-flex align-items-center me-1">
             <a class="nav-link dropdown-toggle badge bg-secondary text-white px-2 py-1"
                href="#" data-bs-toggle="dropdown" style="font-size:.68rem;cursor:pointer;">
               <i class="bi bi-calendar3 me-1"></i>
@@ -392,7 +391,7 @@
       <div class="toast show align-items-center border-0 mb-2 shadow-lg"
            role="alert" aria-live="assertive" aria-atomic="true"
            data-bs-autohide="true" data-bs-delay="5000"
-           style="border-radius:12px;min-width:320px;max-width:420px;
+           style="border-radius:12px;min-width:min(320px, calc(100vw - 1.5rem));max-width:calc(100vw - 1.5rem);
                   background:#fff;border-left:4px solid
                   {% if category == 'error' or category == 'danger' %}#dc3545
                   {% elif category == 'success' %}#198754

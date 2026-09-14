@@ -38,7 +38,7 @@
           <tbody>
             {% for s in scholarships %}
             <tr>
-              <td class="ps-4">
+              <td class="ps-4" data-label="Program">
                 <strong>{{ s.title }}</strong>
                 {% if s.is_hidden %}
                 <span class="badge bg-warning text-dark ms-1" style="font-size:.65rem;">Hidden</span>
@@ -49,7 +49,7 @@
                 <span class="badge bg-success ms-1" style="font-size:.65rem;"><i class="bi bi-infinity me-1"></i>Permanent</span>
                 {% endif %}
               </td>
-              <td>
+              <td data-label="Campus">
                 {% if s.scope == 'university' %}
                   <span class="badge bg-primary"><i class="bi bi-globe me-1"></i>All</span>
                 {% elif s.campus %}
@@ -58,11 +58,11 @@
                   <span class="text-muted small">—</span>
                 {% endif %}
               </td>
-              <td>{% if s.award_amount %}<strong>₱{{ "{:,.0f}".format(s.award_amount) }}</strong>{% else %}<span class="text-muted">—</span>{% endif %}</td>
-              <td>
+              <td data-label="Award">{% if s.award_amount %}<strong>₱{{ "{:,.0f}".format(s.award_amount) }}</strong>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+              <td data-label="Applicants">
                 {{ s.current_applicants or 0 }}{% if s.max_applicants %}<span class="text-muted">/{{ s.max_applicants }}</span>{% endif %}
               </td>
-              <td>
+              <td data-label="Status">
                 {% if s.status and s.status.value == 'active' %}
                   <span class="badge bg-success"><i class="bi bi-circle-fill me-1" style="font-size:.5rem;"></i>Open</span>
                 {% elif s.status and s.status.value == 'closed' %}
@@ -73,7 +73,7 @@
                   <span class="badge bg-secondary">Unknown</span>
                 {% endif %}
               </td>
-              <td class="pe-4 text-end">
+              <td class="pe-4 text-end" data-label="Actions">
                 <div class="d-flex gap-1 justify-content-end">
                   <!-- Open/Close toggle -->
                   <form method="POST" action="{{ url_for('admin.edit_scholarship', sid=s.id) }}" class="d-inline">

@@ -173,11 +173,11 @@
             <tbody>
               {% for app in recent_apps %}
               <tr>
-                <td class="ps-3">
+                <td class="ps-3" data-label="Scholarship">
                   <div class="fw-semibold small">{{ app.scholarship.title[:35] }}</div>
                 </td>
-                <td class="text-muted small">{{ app.submitted_at.strftime('%b %d, %Y') }}</td>
-                <td class="pe-3">
+                <td class="text-muted small" data-label="Submitted">{{ app.submitted_at.strftime('%b %d, %Y') }}</td>
+                <td class="pe-3" data-label="Status">
                   {% set sv = app.status.value %}
                   {% if sv == 'approved' %}<span class="badge bg-success">Approved</span>
                   {% elif sv == 'rejected' %}<span class="badge bg-danger">Rejected</span>
