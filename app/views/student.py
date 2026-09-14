@@ -628,6 +628,13 @@ def update_profile():
             return redirect(url_for('student.profile'))
         user.email = new_email
     user.phone_number = request.form.get('phone_number', user.phone_number or '').strip() or None
+    if user.phone_number:
+        from app.utils.validators import validate_phone
+        phone_ok, phone_clean = validate_phone(user.phone_number)
+        if not phone_ok:
+            flash('Phone number must be exactly 11 digits (e.g. 09123456789).', 'error')
+            return redirect(url_for('student.profile'))
+        user.phone_number = phone_clean
     # Existing-scholar declaration (self-declared; office verifies offline)
     user.is_existing_scholar = request.form.get('is_existing_scholar') == '1'
     scholar_name = request.form.get('existing_scholarship_name', '').strip()

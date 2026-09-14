@@ -1569,6 +1569,13 @@ def update_profile():
     user.first_name   = request.form.get('first_name', user.first_name)
     user.last_name    = request.form.get('last_name', user.last_name)
     user.phone_number = request.form.get('phone_number', user.phone_number)
+    if user.phone_number:
+        from app.utils.validators import validate_phone
+        phone_ok, phone_clean = validate_phone(user.phone_number)
+        if not phone_ok:
+            flash('Phone number must be exactly 11 digits (e.g. 09123456789).', 'error')
+            return redirect(url_for('staff.profile'))
+        user.phone_number = phone_clean
     new_pw = request.form.get('new_password', '').strip()
     if new_pw:
         current_pw = request.form.get('current_password', '').strip()
@@ -1767,6 +1774,12 @@ def import_students():
 
         if not all([sid, first_name, last_name, email, year_level]):
             errors.append(f'Row {i}: Missing required field(s).'); skipped += 1; continue
+        # Validate phone if provided (must be exactly 11 digits)
+        if phone:
+            from app.utils.validators import validate_phone
+            phone_ok, phone = validate_phone(phone)
+            if not phone_ok:
+                errors.append(f'Row {i}: Invalid phone (must be 11 digits).'); skipped += 1; continue
         if User.query.filter_by(student_id=sid).first():
             errors.append(f'Row {i}: Student ID "{sid}" exists.'); skipped += 1; continue
         if User.query.filter_by(email=email).first():

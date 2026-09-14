@@ -1060,6 +1060,13 @@ def edit_user(uid):
     user.last_name    = request.form.get('last_name',  user.last_name).strip().title()
     user.email        = request.form.get('email',        user.email).strip()
     user.phone_number = request.form.get('phone_number', user.phone_number or '').strip() or None
+    if user.phone_number:
+        from app.utils.validators import validate_phone
+        phone_ok, phone_clean = validate_phone(user.phone_number)
+        if not phone_ok:
+            flash('Phone number must be exactly 11 digits (e.g. 09123456789).', 'error')
+            return redirect(url_for('admin.edit_user', uid=user.id))
+        user.phone_number = phone_clean
     user.student_id   = request.form.get('student_id',   user.student_id or '').strip() or None
     user.course       = request.form.get('course',        user.course or '').strip() or None
     user.year_level   = request.form.get('year_level',    user.year_level or '').strip() or None
@@ -1389,6 +1396,13 @@ def update_profile():
     user.last_name    = request.form.get('last_name', user.last_name)
     user.phone_number = request.form.get('phone_number', user.phone_number)
     user.address      = request.form.get('address', user.address)
+    if user.phone_number:
+        from app.utils.validators import validate_phone
+        phone_ok, phone_clean = validate_phone(user.phone_number)
+        if not phone_ok:
+            flash('Phone number must be exactly 11 digits (e.g. 09123456789).', 'error')
+            return redirect(url_for('admin.profile'))
+        user.phone_number = phone_clean
 
     new_pw = request.form.get('new_password', '').strip()
     if new_pw:
@@ -2703,6 +2717,15 @@ def import_students():
             errors.append(f'Row {i}: Invalid email "{email}" — skipped.')
             skipped += 1
             continue
+
+        # Validate phone if provided (must be exactly 11 digits)
+        if phone:
+            from app.utils.validators import validate_phone
+            phone_ok, phone = validate_phone(phone)
+            if not phone_ok:
+                errors.append(f'Row {i}: Invalid phone "{str(row.get("phone_number","") or "").strip()}" (must be 11 digits) — skipped.')
+                skipped += 1
+                continue
 
         # Check duplicates
         if User.query.filter_by(student_id=sid).first():
