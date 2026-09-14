@@ -275,7 +275,7 @@ def create_scholarship():
 
         # Academic period — NULL = permanent
         period_val = request.form.get('academic_period_id', '').strip()
-        academic_period_id_val = int(period_val) if period_val else None
+        academic_period_id_val = int(period_val) if period_val and int(period_val) else None
 
         # Server-side validation: reject negative values
         award_raw = request.form.get('award_amount', '').strip()
@@ -429,7 +429,7 @@ def edit_scholarship(sid):
         s.custom_form_fields = custom_fields if custom_fields else None
         # Academic period
         period_val = request.form.get('academic_period_id', '').strip()
-        s.academic_period_id = int(period_val) if period_val else None
+        s.academic_period_id = int(period_val) if period_val and int(period_val) else None
 
         db.session.commit()
         from app.services.audit_service import log_action
