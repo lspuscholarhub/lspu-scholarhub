@@ -185,6 +185,10 @@ def _build_system_prompt(user_id=None):
     scholarship_ctx = _scholarship_context(user_id)
     user_ctx        = _user_context(user_id)
 
+    # Official TES/TDP guideline rules (CHED-UniFAST 2026) — override generic answers
+    from app.services.guidelines_knowledge import GUIDELINES_PROMPT_SECTION
+    guidelines_ctx = GUIDELINES_PROMPT_SECTION
+
     return f"""You are the official AI assistant for **LSPU ScholarHub** — the scholarship management system of Laguna State Polytechnic University (LSPU), Philippines.
 
 ## Your Persona
@@ -242,6 +246,8 @@ def _build_system_prompt(user_id=None):
 - **Rejected** — Not approved this time; student may apply to other scholarships
 - **Withdrawn** — Student withdrew the application
 
+{guidelines_ctx}
+
 ## NLP Instructions
 - Detect the user's **intent** and answer it directly
 - Extract **entities** from the message (scholarship names, GWA values, course, year level)
@@ -260,6 +266,7 @@ def _build_system_prompt(user_id=None):
 5. If the student is NOT verified, tell them briefly — one sentence only
 6. **Never ask for information you already have** — if you know their GWA, course, year level, or application status from the user context, USE IT instead of asking
 7. Keep responses short and direct — no padding, no unnecessary tips, no lengthy encouragement
+8. For TES/TDP questions, follow the Official Guidelines section — quote those amounts and rules exactly; for private programs use only the live data
 """
 
 
@@ -376,7 +383,9 @@ def _rule_based_response(user_message, user_id=None):
                 "- Certificate of Registration (COR)\n"
                 "- Copy of Grades — your GWA is read from this automatically\n\n"
                 "Formats: PDF, JPG, or PNG. Replace them anytime to update your records. "
-                "No essay or other files are required.")
+                "No essay or other files are required.\n\n"
+                "Note: **TES** and **TDP** grantees' CORs on file are what the office submits to CHED — "
+                "new TDP applicants also need a **Barangay Certificate of Indigency**.")
 
     # Status
     if intent == 'status_inquiry':
@@ -393,6 +402,24 @@ def _rule_based_response(user_message, user_id=None):
 
     # Eligibility
     if intent == 'eligibility_inquiry':
+        msg_lower = user_message.lower()
+        if 'tes' in msg_lower or 'tertiary education subsidy' in msg_lower:
+            return ("**TES (Tertiary Education Subsidy) eligibility:**\n"
+                    "- Filipino citizen enrolled in their FIRST undergraduate degree at LSPU\n"
+                    "- ₱10,000 per semester (₱20,000/year) for SUC/LUC students like LSPU\n"
+                    "- Extra ₱5,000/semester for PWDs (TES-3A), dependents of solo parents, and Indigenous Peoples members\n"
+                    "- Prioritized: 4Ps/Listahanan households first, then by household income\n"
+                    "- NOT eligible: second-degree students, holders of TDP/CHED scholarships or other national StuFAPs, fake documents\n\n"
+                    "Applying in ScholarHub doesn't guarantee a slot — CHED validates and funds decide. "
+                    "Contact the scholarship office to confirm your case.")
+        if 'tdp' in msg_lower or 'tulong dunong' in msg_lower:
+            return ("**TDP (Tulong Dunong Program) eligibility:**\n"
+                    "- Filipino citizen enrolled in their FIRST undergraduate degree\n"
+                    "- ₱7,500 per semester (₱15,000/year)\n"
+                    "- New applicants need a **Barangay Certificate of Indigency** (or Tax Exemption / Social Case Study as substitute)\n"
+                    "- Cannot be combined with TES, CHED scholarships, or other national StuFAPs (Free HE in SUCs/LUCs is fine)\n"
+                    "- Continuing grantees don't re-apply — validated by enrollment each term\n\n"
+                    "Apply through ScholarHub when the office opens the program; the office handles CHED submission.")
         try:
             scholarships = _visible_open_scholarships(user_id)
             if scholarships:
