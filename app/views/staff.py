@@ -128,7 +128,8 @@ def dashboard():
         ).filter(ScholarshipApplication.academic_period_id == pid).distinct().all()]
         if period_student_ids:
             active_students = User.query.filter(User.id.in_(period_student_ids), User.is_active == True).count()
-            new_users = User.query.filter(User.id.in_(period_student_ids)).count()
+            new_users = User.query.filter(
+                User.id.in_(period_student_ids), User.user_type == 'student').count()
             at_risk_count = User.query.filter(
                 User.id.in_(period_student_ids), User.gwa.isnot(None), User.gwa > GWA_THRESHOLD
             ).count()
@@ -143,6 +144,7 @@ def dashboard():
     else:
         active_students = _su(User.query.filter_by(user_type='student', is_active=True)).count()
         new_users = _su(User.query.filter(
+            User.user_type == 'student',
             User.created_at >= datetime.utcnow() - timedelta(days=30)
         )).count()
         at_risk_count = _su(User.query.filter(
@@ -238,7 +240,14 @@ def manage_scholarships():
 def create_scholarship():
     try:
         deadline_str = request.form.get('application_deadline', '').strip()
-        deadline = datetime.strptime(deadline_str, '%Y-%m-%d') if deadline_str else None
+        deadline = None
+        if deadline_str:
+            try:
+                deadline = datetime.strptime(deadline_str, '%Y-%m-%d').replace(
+                    hour=23, minute=59, second=59)
+            except ValueError:
+                flash('Invalid application deadline date.', 'error')
+                return redirect(url_for('staff.manage_scholarships'))
 
         # Build custom form fields from submitted data
         field_labels = request.form.getlist('field_label[]')
@@ -371,11 +380,69 @@ def edit_scholarship(sid):
     _err = _scholarship_campus_guard(s)
     if _err:
         return _err
-    # Block editing if program has applicants
+    # Split lock: once the program has applicants (including scholars added
+    # directly by the office), structural edits are blocked — but deadline
+    # changes and close/reopen always go through.
     if s.current_applicants and s.current_applicants > 0:
-        flash(f'Cannot edit "{s.title}" — it already has {s.current_applicants} applicant(s). '
-              f'Close the program first or contact the scholarship office.', 'error')
-        return redirect(url_for('staff.manage_scholarships'))
+        _keys = set(request.form.keys()) - {'csrf_token'}
+        if _keys and _keys != {'status'}:
+            _changed = []
+
+            def _txt_changed(name, current):
+                raw = request.form.get(name)
+                if raw is None:
+                    return False
+                norm = lambda v: ' '.join((v or '').split())
+                return norm(raw) != norm(current)
+
+            for _f, _cur, _lbl in (
+                ('title', s.title, 'title'),
+                ('category', s.category, 'category'),
+                ('scholarship_type', s.scholarship_type, 'type'),
+                ('funding_type', s.funding_type, 'funding type'),
+                ('description', s.description, 'description'),
+                ('eligibility_criteria', s.eligibility_criteria, 'eligibility criteria'),
+                ('benefits', s.benefits, 'benefits'),
+            ):
+                if _txt_changed(_f, _cur):
+                    _changed.append(_lbl)
+            try:
+                _araw = request.form.get('award_amount', '').strip()
+                if _araw and float(_araw) != float(s.award_amount or 0):
+                    _changed.append('award amount')
+                _mraw = request.form.get('max_applicants', '').strip()
+                if _mraw and int(_mraw) != int(s.max_applicants or 0):
+                    _changed.append('max applicants')
+            except ValueError:
+                pass  # malformed numbers are rejected by the main path
+            if 'is_hidden' in request.form and \
+               (request.form.get('is_hidden') == '1') != bool(s.is_hidden):
+                _changed.append('visibility')
+            if 'allowed_student_ids' in request.form:
+                _ids_new = ','.join(i.strip() for i in
+                                    request.form.get('allowed_student_ids', '')\
+                                    .replace('\n', ',').split(',') if i.strip())
+                if (_ids_new or None) != s.allowed_student_ids:
+                    _changed.append('allowed student IDs')
+            if 'academic_period_id' in request.form:
+                _pval = request.form.get('academic_period_id', '').strip()
+                try:
+                    _pnew = int(_pval) if _pval and int(_pval) else None
+                except ValueError:
+                    _pnew = s.academic_period_id  # main path rejects it instead
+                if _pnew != s.academic_period_id:
+                    _changed.append('academic period')
+            _new_labels = [l.strip() for l in request.form.getlist('field_label[]')
+                           if l.strip()]
+            if _new_labels and _new_labels != [f.get('label', '')
+                                               for f in (s.custom_form_fields or [])]:
+                _changed.append('custom questions')
+            if _changed:
+                flash(f'Cannot change {", ".join(_changed)} on "{s.title}" — '
+                      f'it already has {s.current_applicants} applicant(s). '
+                      'You can still extend the deadline or close/reopen the '
+                      'program.', 'error')
+                return redirect(url_for('staff.manage_scholarships'))
     try:
         s.title = request.form.get('title', s.title)
         s.category = request.form.get('category', s.category)
@@ -398,8 +465,16 @@ def edit_scholarship(sid):
             s.award_amount = float(award_raw)
         if max_app_raw:
             s.max_applicants = int(max_app_raw)
-        if request.form.get('application_deadline'):
-            s.application_deadline = datetime.strptime(request.form['application_deadline'], '%Y-%m-%d')
+        if 'application_deadline' in request.form:
+            dl_raw = request.form.get('application_deadline', '').strip()
+            if dl_raw:
+                try:
+                    s.application_deadline = datetime.strptime(dl_raw, '%Y-%m-%d').replace(
+                        hour=23, minute=59, second=59)
+                except ValueError:
+                    flash('Invalid deadline date — deadline left unchanged.', 'warning')
+            else:
+                s.application_deadline = None   # deadline cleared — open until slots fill
         if request.form.get('status'):
             s.status = ScholarshipStatus(request.form['status'])
         s.is_hidden = request.form.get('is_hidden') == '1'
@@ -940,6 +1015,7 @@ def student_directory():
     sort     = request.args.get('sort', 'name')
     gwa_flag = request.args.get('gwa_flag', '')
     scholar_filter = request.args.get('scholar', '')
+    status_f = request.args.get('status', '')
 
     _me = db.session.get(User, session.get('user_id'))
     campus_ctx = session.get('campus_context') if session.get('user_type') == 'super_admin' else None
@@ -984,6 +1060,8 @@ def student_directory():
         query = query.filter(User.is_existing_scholar.is_(True))
     elif scholar_filter == 'none':
         query = query.filter(User.is_existing_scholar.is_(False))
+    if status_f in ('active', 'graduated', 'dropped_out'):
+        query = query.filter(User.student_status == status_f)
 
     if sort == 'gwa_asc':
         query = query.order_by(db.case((User.gwa.is_(None), 1), else_=0), User.gwa.asc())
@@ -1007,6 +1085,7 @@ def student_directory():
         'staff/student_directory.html',
         students=students, q=q, year=year, course=course, gender=gender, sort=sort, gwa_flag=gwa_flag,
         scholar_filter=scholar_filter,
+        status_f=status_f,
         GWA_THRESHOLD=GWA_THRESHOLD,
         total_students=len(all_s), with_gwa_count=len(with_gwa),
         at_risk_count=len(at_risk), avg_gwa=avg_gwa, courses=courses,
@@ -1022,6 +1101,26 @@ def student_profile(uid):
         flash('User is not a student.', 'error')
         return redirect(url_for('staff.student_directory'))
     return render_template('staff/student_profile.html', student=student)
+
+
+@staff_bp.route('/students/<int:uid>/set-status', methods=['POST'])
+@role_required('staff')
+def set_student_status(uid):
+    """Mark a student Active / Graduated / Dropped Out. Graduated and
+    dropped students are auto-closed out of their active scholarships."""
+    student = User.query.get_or_404(uid)
+    if student.user_type != 'student':
+        flash('User is not a student.', 'error')
+        return redirect(url_for('staff.student_directory'))
+    from app.services.student_status_service import set_student_status as _apply
+    ok, err = _apply(student, request.form.get('student_status', '').strip(),
+                     actor_id=session.get('user_id'))
+    if not ok:
+        flash(err, 'error')
+    else:
+        flash(f'{student.get_full_name()} is now marked as '
+              f'{student.student_status.replace("_", " ")}.', 'success')
+    return redirect(url_for('staff.student_profile', uid=uid))
 
 
 # ── Existing-scholar declaration: add student to a program directly ──────────
@@ -1074,6 +1173,76 @@ def add_existing_scholar(uid):
     return render_template('shared/add_existing_scholar.html',
                            student=student, programs=programs,
                            back_url=url_for('staff.student_profile', uid=uid))
+
+
+@staff_bp.route('/scholarships/<int:sid>/add-student', methods=['GET', 'POST'])
+@role_required('staff')
+def add_student_to_program(sid):
+    """Program-first flow: add any registered student to this scholarship
+    program directly as an approved scholar (same record a normal approval
+    produces — batches, monitoring, reports, My Scholarship, notification)."""
+    s = Scholarship.query.get_or_404(sid)
+    _err = _scholarship_campus_guard(s)
+    if _err:
+        return _err
+
+    if request.method == 'POST':
+        from app.services.scholarship_service import add_existing_scholar_to_program
+        student_id = request.form.get('student_id', '').strip()
+        notes      = request.form.get('notes', '').strip() or None
+        if not student_id:
+            flash('Please choose a student.', 'error')
+            return redirect(url_for('staff.add_student_to_program', sid=sid))
+        student = User.query.get(int(student_id))
+        if not student or student.user_type != 'student':
+            flash('Student not found.', 'error')
+            return redirect(url_for('staff.add_student_to_program', sid=sid))
+
+        application, err = add_existing_scholar_to_program(
+            student, s, session.get('user_id'), notes=notes)
+        if err:
+            flash(err, 'error')
+            return redirect(url_for('staff.add_student_to_program', sid=sid))
+
+        from app.services.audit_service import log_action
+        log_action('scholarship.existing_scholar_added',
+                   f'{student.get_full_name()} ({student.student_id}) added to '
+                   f'"{s.title}" from the program page.',
+                   category='scholarship', target_type='application',
+                   target_id=application.id)
+        flash(f'{student.get_full_name()} has been added to "{s.title}" '
+              f'as an approved scholar and notified.', 'success')
+        return redirect(url_for('staff.add_student_to_program', sid=sid))
+
+    # GET: eligible students — campus-scoped, minus those already in this program
+    if s.campus_id:
+        campus_ctx = s.campus_id
+    else:
+        campus_ctx = session.get('campus_context')
+        if not campus_ctx:
+            _me = db.session.get(User, session.get('user_id'))
+            campus_ctx = _me.campus_id if _me else None
+
+    query = User.query.filter(User.user_type == 'student')
+    if campus_ctx:
+        query = query.filter(User.campus_id == campus_ctx)
+
+    from app.models import AcademicPeriod
+    period = AcademicPeriod.get_current()
+    dup_q = ScholarshipApplication.query.filter_by(scholarship_id=sid)
+    if period:
+        dup_q = dup_q.filter_by(academic_period_id=period.id)
+    busy_ids = {a.applicant_id for a in dup_q.filter(
+        ScholarshipApplication.status.in_([
+            ApplicationStatus.PENDING, ApplicationStatus.UNDER_REVIEW,
+            ApplicationStatus.APPROVED])).all()}
+    if busy_ids:
+        query = query.filter(~User.id.in_(busy_ids))
+
+    students = query.order_by(User.last_name.asc(), User.first_name.asc()).all()
+    return render_template('shared/add_student_to_program.html',
+                           scholarship=s, students=students,
+                           back_url=url_for('staff.manage_scholarships'))
 
 
 # ── Student document verification ─────────────────────────────────────────────
@@ -1347,12 +1516,19 @@ def reports():
     scholarship_stats = []
     for s in scholarships:
         apps = _apps_q().filter(ScholarshipApplication.scholarship_id == s.id).all()
+        _ids = {a.applicant_id for a in apps}
+        _smap = (dict(db.session.query(User.id, User.student_status)
+                      .filter(User.id.in_(_ids)).all()) if _ids else {})
         scholarship_stats.append({
             'scholarship': s,
             'total':    len(apps),
             'approved': sum(1 for a in apps if a.status == ApplicationStatus.APPROVED),
             'rejected': sum(1 for a in apps if a.status == ApplicationStatus.REJECTED),
             'pending':  sum(1 for a in apps if a.status in (ApplicationStatus.PENDING, ApplicationStatus.UNDER_REVIEW)),
+            'graduated': sum(1 for a in apps if a.status == ApplicationStatus.APPROVED
+                             and _smap.get(a.applicant_id) == 'graduated'),
+            'dropped':   sum(1 for a in apps if a.status == ApplicationStatus.APPROVED
+                             and _smap.get(a.applicant_id) == 'dropped_out'),
         })
 
     # GWA distribution
@@ -1390,6 +1566,20 @@ def reports():
         sum(1 for a in all_approved if a.scholar_status == 'termination_warning'),
     ])
 
+    # Graduated / dropped-out counts (distinct approved scholars, period+campus scoped)
+    _appr_ids = {a.applicant_id for a in all_approved}
+    _stat_map = (dict(db.session.query(User.id, User.student_status)
+                      .filter(User.id.in_(_appr_ids)).all()) if _appr_ids else {})
+    total_graduated = sum(1 for _u in _appr_ids if _stat_map.get(_u) == 'graduated')
+    total_dropped   = sum(1 for _u in _appr_ids if _stat_map.get(_u) == 'dropped_out')
+
+    # ── Multi-year comparison + written report (real data, up to 6 AYs) ──
+    from app.services.annual_report_service import (
+        build_yearly_comparison, build_written_report, build_scope_label)
+    comparison = build_yearly_comparison(campus_ctx)
+    written = build_written_report(comparison)
+    scope_label = build_scope_label(campus_ctx)
+
     return render_template('staff/reports.html',
                            total_apps=total_apps, approved=approved,
                            rejected=rejected, pending=pending, approval_rate=approval_rate,
@@ -1397,7 +1587,37 @@ def reports():
                            gwa_labels=gwa_labels, gwa_data=gwa_data,
                            sch_labels=sch_labels, sch_approved=sch_approved,
                            sch_pending=sch_pending, sch_rejected=sch_rejected,
-                           scholar_status_data=scholar_status_data)
+                           scholar_status_data=scholar_status_data,
+                           total_graduated=total_graduated, total_dropped=total_dropped,
+                           comparison=comparison, written=written, scope_label=scope_label)
+
+
+@staff_bp.route('/reports/annual')
+@role_required('staff')
+def export_annual_report():
+    """Download the written multi-year annual report (PDF/DOCX)."""
+    from app.services.annual_report_service import (
+        build_yearly_comparison, build_written_report, build_scope_label,
+        export_written_report)
+
+    fmt = request.args.get('format', 'pdf')
+    if session.get('user_type') == 'super_admin':
+        campus_ctx = session.get('campus_context')
+    else:
+        _me = db.session.get(User, session.get('user_id'))
+        campus_ctx = _me.campus_id if _me else None
+
+    try:
+        comp = build_yearly_comparison(campus_ctx)
+        written = build_written_report(comp)
+        buf, mime, filename = export_written_report(
+            fmt, comp=comp, written=written,
+            scope_label=build_scope_label(campus_ctx))
+        return send_file(buf, mimetype=mime,
+                         as_attachment=True, download_name=filename)
+    except Exception as e:
+        flash(f'Annual report export failed: {e}', 'error')
+        return redirect(url_for('staff.reports'))
 
 
 @staff_bp.route('/reports/export')

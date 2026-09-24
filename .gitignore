@@ -37,3 +37,6 @@ add_*.py
 # OS
 .DS_Store
 Thumbs.db
+
+# Database backups (contain personal data - NEVER commit)
+backups/

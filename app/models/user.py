@@ -40,6 +40,9 @@ class User(db.Model):
     # Existing-scholar declaration (self-declared at registration or via profile)
     is_existing_scholar       = db.Column(db.Boolean, default=False, nullable=False, server_default='0')
     existing_scholarship_name = db.Column(db.String(150), nullable=True)  # free-text program name they currently hold
+    # Student lifecycle status (data-keeping; will later sync from the LSPU portal via ICTS)
+    student_status = db.Column(db.String(20), default='active', nullable=False, server_default='active')  # active | graduated | dropped_out
+    status_date    = db.Column(db.Date, nullable=True)  # when graduated/dropped_out was recorded
     campus_id  = db.Column(db.Integer, db.ForeignKey('campuses.id'), nullable=True)   # NULL for university admin
     user_type = db.Column(db.Enum('student', 'admin', 'staff', 'super_admin', 'admin'), default='student', nullable=False)
     is_active = db.Column(db.Boolean, default=True, nullable=False)

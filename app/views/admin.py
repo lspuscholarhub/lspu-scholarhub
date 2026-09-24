@@ -156,12 +156,19 @@ def dashboard():
             ScholarshipApplication.applicant_id
         ).filter(ScholarshipApplication.academic_period_id == pid).distinct().all()]
         if period_student_ids:
-            total_students = User.query.filter(User.id.in_(period_student_ids)).count()
-            male_students = User.query.filter(User.id.in_(period_student_ids), User.gender == 'Male').count()
-            female_students = User.query.filter(User.id.in_(period_student_ids), User.gender == 'Female').count()
-            new_users = User.query.filter(User.id.in_(period_student_ids)).count()
+            total_students = User.query.filter(
+                User.id.in_(period_student_ids), User.user_type == 'student').count()
+            male_students = User.query.filter(
+                User.id.in_(period_student_ids), User.user_type == 'student',
+                User.gender == 'Male').count()
+            female_students = User.query.filter(
+                User.id.in_(period_student_ids), User.user_type == 'student',
+                User.gender == 'Female').count()
+            new_users = User.query.filter(
+                User.id.in_(period_student_ids), User.user_type == 'student').count()
             at_risk_count = User.query.filter(
-                User.id.in_(period_student_ids), User.gwa.isnot(None), User.gwa > 3.00
+                User.id.in_(period_student_ids), User.user_type == 'student',
+                User.gwa.isnot(None), User.gwa > 3.00
             ).count()
             total_users = total_students
         else:
@@ -176,12 +183,14 @@ def dashboard():
         male_students = _scoped_users(User.query.filter_by(user_type='student', gender='Male')).count()
         female_students = _scoped_users(User.query.filter_by(user_type='student', gender='Female')).count()
         new_users = _scoped_users(User.query.filter(
+            User.user_type == 'student',
             User.created_at >= datetime.utcnow() - timedelta(days=30)
         )).count()
         at_risk_count = _scoped_users(User.query.filter(
             User.user_type == 'student', User.gwa.isnot(None), User.gwa > 3.00
         )).count()
-        total_users = _scoped_users(User.query).count()
+        # Dashboard numbers must add up: every figure here counts STUDENTS only
+        total_users = total_students
 
     # Active scholarships — scoped by period if set
     _sch_q = Scholarship.query.filter_by(status=ScholarshipStatus.ACTIVE)
@@ -230,6 +239,33 @@ def dashboard():
                       .order_by(User.gwa.asc())
                       .limit(5).all())
 
+    # Dashboard quick charts (simple versions of the Reports charts — ICTS request)
+    rejected_count = _apps_q.filter(
+        ScholarshipApplication.status == ApplicationStatus.REJECTED).count()
+    _gwa_students = _scoped_users(User.query.filter(
+        User.user_type == 'student', User.gwa.isnot(None))).all()
+    gwa_buckets = {
+        '1.00–1.25': 0, '1.26–1.75': 0, '1.76–2.25': 0, '2.26–2.75': 0,
+        '2.76–3.00': 0, '3.01–3.99': 0, '4.00+': 0,
+    }
+    for s in _gwa_students:
+        g = s.gwa
+        if g <= 1.25:   gwa_buckets['1.00–1.25'] += 1
+        elif g <= 1.75: gwa_buckets['1.26–1.75'] += 1
+        elif g <= 2.25: gwa_buckets['1.76–2.25'] += 1
+        elif g <= 2.75: gwa_buckets['2.26–2.75'] += 1
+        elif g <= 3.00: gwa_buckets['2.76–3.00'] += 1
+        elif g < 4.00:  gwa_buckets['3.01–3.99'] += 1
+        else:           gwa_buckets['4.00+'] += 1
+    import json as _json
+    dash_gwa_labels = _json.dumps(list(gwa_buckets.keys()))
+    dash_gwa_data   = _json.dumps(list(gwa_buckets.values()))
+
+    # Staff & admin accounts shown separately so the hero numbers (students)
+    # visibly add up with the System Overview card.
+    all_staff_count = User.query.filter(
+        User.user_type.in_(['staff', 'admin', 'super_admin'])).count()
+
     return render_template(
         'admin/dashboard.html',
         total_users=total_users,
@@ -239,6 +275,10 @@ def dashboard():
         total_applications=total_applications,
         pending_review=pending_review,
         approved_count=approved_count,
+        rejected_count=rejected_count,
+        dash_gwa_labels=dash_gwa_labels,
+        dash_gwa_data=dash_gwa_data,
+        all_staff_count=all_staff_count,
         male_students=male_students,
         female_students=female_students,
         total_funds=total_funds,
@@ -325,11 +365,23 @@ def create_scholarship():
         award_raw = request.form.get('award_amount', '').strip()
         if award_raw and float(award_raw) < 0:
             flash('Award amount cannot be negative.', 'error')
-            return redirect(url_for('admin.scholarships'))
+            return redirect(url_for('admin.manage_scholarships'))
         max_app_raw = request.form.get('max_applicants', '').strip()
         if max_app_raw and int(max_app_raw) < 0:
             flash('Maximum applicants cannot be negative.', 'error')
-            return redirect(url_for('admin.scholarships'))
+            return redirect(url_for('admin.manage_scholarships'))
+
+        # Application deadline — stored at end-of-day so students can apply
+        # through the whole deadline day. Blank = no deadline (open until full).
+        dl_raw = request.form.get('application_deadline', '').strip()
+        deadline_val = None
+        if dl_raw:
+            try:
+                deadline_val = datetime.strptime(dl_raw, '%Y-%m-%d').replace(
+                    hour=23, minute=59, second=59)
+            except ValueError:
+                flash('Invalid application deadline date.', 'error')
+                return redirect(url_for('admin.manage_scholarships'))
 
         s = Scholarship(
             title                = request.form['title'],
@@ -341,7 +393,7 @@ def create_scholarship():
             benefits             = request.form.get('benefits', '').strip() or None,
             award_amount         = float(award_raw) if award_raw else None,
             max_applicants       = int(max_app_raw) if max_app_raw else None,
-            application_deadline = datetime.strptime(request.form['application_deadline'], '%Y-%m-%d') if request.form.get('application_deadline') else None,
+            application_deadline = deadline_val,
             status               = ScholarshipStatus.ACTIVE,
             created_by           = session['user_id'],
             custom_form_fields   = custom_fields if custom_fields else None,
@@ -415,11 +467,69 @@ def edit_scholarship(sid):
     _err = _scholarship_campus_guard(s)
     if _err:
         return _err
-    # Block editing if program has applicants
+    # Split lock: once the program has applicants (including scholars added
+    # directly by the office), structural edits are blocked — but deadline
+    # changes and close/reopen always go through.
     if s.current_applicants and s.current_applicants > 0:
-        flash(f'Cannot edit "{s.title}" — it already has {s.current_applicants} applicant(s). '
-              f'Close the program first or contact the scholarship office.', 'error')
-        return redirect(url_for('admin.manage_scholarships'))
+        _keys = set(request.form.keys()) - {'csrf_token'}
+        if _keys and _keys != {'status'}:
+            _changed = []
+
+            def _txt_changed(name, current):
+                raw = request.form.get(name)
+                if raw is None:
+                    return False
+                norm = lambda v: ' '.join((v or '').split())
+                return norm(raw) != norm(current)
+
+            for _f, _cur, _lbl in (
+                ('title', s.title, 'title'),
+                ('category', s.category, 'category'),
+                ('scholarship_type', s.scholarship_type, 'type'),
+                ('funding_type', s.funding_type, 'funding type'),
+                ('description', s.description, 'description'),
+                ('eligibility_criteria', s.eligibility_criteria, 'eligibility criteria'),
+                ('benefits', s.benefits, 'benefits'),
+            ):
+                if _txt_changed(_f, _cur):
+                    _changed.append(_lbl)
+            try:
+                _araw = request.form.get('award_amount', '').strip()
+                if _araw and float(_araw) != float(s.award_amount or 0):
+                    _changed.append('award amount')
+                _mraw = request.form.get('max_applicants', '').strip()
+                if _mraw and int(_mraw) != int(s.max_applicants or 0):
+                    _changed.append('max applicants')
+            except ValueError:
+                pass  # malformed numbers are rejected by the main path
+            if 'is_hidden' in request.form and \
+               (request.form.get('is_hidden') == '1') != bool(s.is_hidden):
+                _changed.append('visibility')
+            if 'allowed_student_ids' in request.form:
+                _ids_new = ','.join(i.strip() for i in
+                                    request.form.get('allowed_student_ids', '')\
+                                    .replace('\n', ',').split(',') if i.strip())
+                if (_ids_new or None) != s.allowed_student_ids:
+                    _changed.append('allowed student IDs')
+            if 'academic_period_id' in request.form:
+                _pval = request.form.get('academic_period_id', '').strip()
+                try:
+                    _pnew = int(_pval) if _pval and int(_pval) else None
+                except ValueError:
+                    _pnew = s.academic_period_id  # main path rejects it instead
+                if _pnew != s.academic_period_id:
+                    _changed.append('academic period')
+            _new_labels = [l.strip() for l in request.form.getlist('field_label[]')
+                           if l.strip()]
+            if _new_labels and _new_labels != [f.get('label', '')
+                                               for f in (s.custom_form_fields or [])]:
+                _changed.append('custom questions')
+            if _changed:
+                flash(f'Cannot change {", ".join(_changed)} on "{s.title}" — '
+                      f'it already has {s.current_applicants} applicant(s). '
+                      'You can still extend the deadline or close/reopen the '
+                      'program.', 'error')
+                return redirect(url_for('admin.manage_scholarships'))
     try:
         s.title                = request.form.get('title', s.title)
         s.category             = request.form.get('category', s.category)
@@ -443,9 +553,16 @@ def edit_scholarship(sid):
             s.award_amount = float(award_raw)
         if max_app_raw:
             s.max_applicants = int(max_app_raw)
-        if request.form.get('application_deadline'):
-            s.application_deadline = datetime.strptime(
-                request.form['application_deadline'], '%Y-%m-%d')
+        if 'application_deadline' in request.form:
+            dl_raw = request.form.get('application_deadline', '').strip()
+            if dl_raw:
+                try:
+                    s.application_deadline = datetime.strptime(dl_raw, '%Y-%m-%d').replace(
+                        hour=23, minute=59, second=59)
+                except ValueError:
+                    flash('Invalid deadline date — deadline left unchanged.', 'warning')
+            else:
+                s.application_deadline = None   # deadline cleared — open until slots fill
         if request.form.get('status'):
             s.status = ScholarshipStatus(request.form['status'])
         # Visibility
@@ -1432,6 +1549,48 @@ def update_profile():
 
 # ── System Settings ─────────────────────────────────────────────────────────
 
+def _validate_academic_year(year, sem):
+    """Strict AY check: YYYY-YYYY with the second year exactly +1 of the first
+    (blocks typos like '20206-2027'). Returns an error message, or None."""
+    import re
+    m = re.fullmatch(r'(\d{4})-(\d{4})', year)
+    if not m:
+        return ('Invalid academic year — enter exactly YYYY-YYYY '
+                '(e.g. 2027-2028).')
+    if int(m.group(2)) != int(m.group(1)) + 1:
+        return (f'Invalid academic year "{year}" — the second year must be '
+                f'the first year +1 (e.g. {m.group(1)}-{int(m.group(1)) + 1}).')
+    if sem not in ('1st Semester', '2nd Semester', 'Inter-Semester'):
+        return ('Invalid semester — choose 1st Semester, 2nd Semester, '
+                'or Inter-Semester.')
+    return None
+
+def _next_period_suggestion(periods):
+    """Suggest the next period (+1 promotion) so the super admin never types
+    the year from scratch:  1st -> 2nd -> Inter-Semester -> 1st of the next
+    academic year (start year +1). Falls back to today's academic year."""
+    import re
+    from datetime import date
+    latest = periods[0] if periods else None
+    if latest:
+        m = re.fullmatch(r'(\d{4})-(\d{4})',
+                         (latest.academic_year or '').strip())
+        if m and int(m.group(2)) == int(m.group(1)) + 1:
+            y = int(m.group(1))
+            sem = (latest.semester or '').strip()
+            if sem == '1st Semester':
+                return latest.academic_year, '2nd Semester'
+            if sem == '2nd Semester':
+                return latest.academic_year, 'Inter-Semester'
+            # Inter-Semester (or unknown) -> next academic year, 1st semester
+            return f'{y + 1}-{y + 2}', '1st Semester'
+    # No periods yet (or the latest one has a malformed year): derive the
+    # current academic year from today (AY starts in August).
+    today = date.today()
+    y = today.year if today.month >= 8 else today.year - 1
+    return f'{y}-{y + 1}', '1st Semester'
+
+
 @admin_bp.route('/settings')
 @role_required('admin')
 def settings():
@@ -1442,7 +1601,9 @@ def settings():
     from app.models import AcademicPeriod, ScholarshipBatch
     periods = AcademicPeriod.query.order_by(AcademicPeriod.id.desc()).all()
     current = get_viewing_period()
-    return render_template('admin/settings.html', periods=periods, current=current)
+    suggest_year, suggest_sem = _next_period_suggestion(periods)
+    return render_template('admin/settings.html', periods=periods, current=current,
+                           suggest_year=suggest_year, suggest_sem=suggest_sem)
 
 
 @admin_bp.route('/settings/period/create', methods=['POST'])
@@ -1456,6 +1617,10 @@ def create_academic_period():
     sem  = request.form.get('semester', '').strip()
     if not year or not sem:
         flash('Academic year and semester are required.', 'error')
+        return redirect(url_for('admin.settings'))
+    _err = _validate_academic_year(year, sem)
+    if _err:
+        flash(_err, 'error')
         return redirect(url_for('admin.settings'))
     period = AcademicPeriod(academic_year=year, semester=sem, is_current=True)
     # Unset any existing current period
@@ -1500,20 +1665,73 @@ def delete_academic_period(pid):
     if period.is_current:
         flash('Cannot delete the current active period. Set another period as current first.', 'error')
         return redirect(url_for('admin.settings'))
-    # Check for linked data
-    has_apps = ScholarshipApplication.query.filter_by(academic_period_id=pid).count() > 0
-    has_batches = ScholarshipBatch.query.filter_by(academic_period_id=pid).count() > 0
-    has_monitoring = MonitoringSubmission.query.filter_by(academic_period_id=pid).count() > 0
-    if has_apps or has_batches or has_monitoring:
-        flash(f'Cannot delete "{period.display_name}" — it has linked applications, batches, or monitoring records.', 'error')
-        return redirect(url_for('admin.settings'))
+    # Check for linked data — every table with a foreign key to academic_periods
     name = period.display_name
-    db.session.delete(period)
-    db.session.commit()
+    blockers = []
+    if Scholarship.query.filter_by(academic_period_id=pid).count():
+        blockers.append('scholarship programs')
+    if ScholarshipApplication.query.filter_by(academic_period_id=pid).count():
+        blockers.append('applications')
+    if ScholarshipBatch.query.filter_by(academic_period_id=pid).count():
+        blockers.append('batches')
+    if MonitoringSubmission.query.filter_by(academic_period_id=pid).count():
+        blockers.append('monitoring records')
+    if Notification.query.filter_by(academic_period_id=pid).count():
+        blockers.append('announcements/notifications')
+    if blockers:
+        flash(f'Cannot delete "{name}" — it still has linked '
+              + ', '.join(blockers) + '. Remove or reassign them first.', 'error')
+        return redirect(url_for('admin.settings'))
+    # Safety net: any foreign key the guard above may have missed yields a
+    # clear message instead of an unhandled 500.
+    try:
+        db.session.delete(period)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        flash(f'Cannot delete "{name}" — it is still referenced by existing '
+              'records (programs, applications, or announcements). '
+              'Remove those first.', 'error')
+        return redirect(url_for('admin.settings'))
     log_action('settings.period_delete',
                f'Admin deleted academic period: {name}',
                category='system')
+    # If the deleting user was viewing this period, stop viewing it
+    if session.get('viewing_period_id') == pid:
+        session.pop('viewing_period_id', None)
+        session.pop('viewing_period_name', None)
     flash(f'Academic period "{name}" deleted.', 'success')
+    return redirect(url_for('admin.settings'))
+
+
+@admin_bp.route('/settings/period/<int:pid>/edit', methods=['POST'])
+@role_required('admin')
+def edit_academic_period(pid):
+    """Correct an existing period's year/semester in place (fix typos like
+    '20206-2027' without deleting and recreating the period)."""
+    if session.get('user_type') != 'super_admin':
+        flash('Only the Super Admin can manage periods.', 'error')
+        return redirect(url_for('admin.dashboard'))
+    from app.models import AcademicPeriod
+    period = AcademicPeriod.query.get(pid)
+    if not period:
+        flash('Period not found.', 'error')
+        return redirect(url_for('admin.settings'))
+    year = request.form.get('academic_year', '').strip()
+    sem  = request.form.get('semester', '').strip()
+    _err = _validate_academic_year(year, sem)
+    if _err:
+        flash(_err, 'error')
+        return redirect(url_for('admin.settings'))
+    old = period.display_name
+    period.academic_year = year
+    period.semester = sem
+    db.session.commit()
+    from app.services.audit_service import log_action
+    log_action('settings.period_edit',
+               f'Academic period edited: "{old}" -> "{period.display_name}"',
+               category='system')
+    flash(f'Academic period updated to "{period.display_name}".', 'success')
     return redirect(url_for('admin.settings'))
 
 
@@ -1712,6 +1930,9 @@ def reports():
     scholarship_stats = []
     for s in scholarships:
         apps = _apps_q().filter(ScholarshipApplication.scholarship_id == s.id).all()
+        _ids = {a.applicant_id for a in apps}
+        _smap = (dict(db.session.query(User.id, User.student_status)
+                      .filter(User.id.in_(_ids)).all()) if _ids else {})
         scholarship_stats.append({
             'scholarship': s,
             'total':    len(apps),
@@ -1719,6 +1940,10 @@ def reports():
             'rejected': sum(1 for a in apps if a.status == ApplicationStatus.REJECTED),
             'pending':  sum(1 for a in apps if a.status in (
                 ApplicationStatus.PENDING, ApplicationStatus.UNDER_REVIEW)),
+            'graduated': sum(1 for a in apps if a.status == ApplicationStatus.APPROVED
+                             and _smap.get(a.applicant_id) == 'graduated'),
+            'dropped':   sum(1 for a in apps if a.status == ApplicationStatus.APPROVED
+                             and _smap.get(a.applicant_id) == 'dropped_out'),
         })
 
     # ── GWA distribution for chart ────────────────────────────────────────────
@@ -1767,6 +1992,20 @@ def reports():
         sum(1 for a in all_approved if a.scholar_status == 'termination_warning'),
     ])
 
+    # Graduated / dropped-out counts (distinct approved scholars, period+campus scoped)
+    _appr_ids = {a.applicant_id for a in all_approved}
+    _stat_map = (dict(db.session.query(User.id, User.student_status)
+                      .filter(User.id.in_(_appr_ids)).all()) if _appr_ids else {})
+    total_graduated = sum(1 for _u in _appr_ids if _stat_map.get(_u) == 'graduated')
+    total_dropped   = sum(1 for _u in _appr_ids if _stat_map.get(_u) == 'dropped_out')
+
+    # ── Multi-year comparison + written report (real data, up to 6 AYs) ──
+    from app.services.annual_report_service import (
+        build_yearly_comparison, build_written_report, build_scope_label)
+    comparison = build_yearly_comparison(campus_ctx)
+    written = build_written_report(comparison)
+    scope_label = build_scope_label(campus_ctx)
+
     return render_template(
         'admin/reports.html',
         total_apps=total_apps,
@@ -1786,7 +2025,37 @@ def reports():
         sch_pending=sch_pending,
         sch_rejected=sch_rejected,
         scholar_status_data=scholar_status_data,
+        total_graduated=total_graduated, total_dropped=total_dropped,
+        comparison=comparison, written=written, scope_label=scope_label,
     )
+
+
+@admin_bp.route('/reports/annual')
+@role_required('admin')
+def export_annual_report():
+    """Download the written multi-year annual report (PDF/DOCX)."""
+    from app.services.annual_report_service import (
+        build_yearly_comparison, build_written_report, build_scope_label,
+        export_written_report)
+
+    fmt = request.args.get('format', 'pdf')
+    if session.get('user_type') == 'super_admin':
+        campus_ctx = session.get('campus_context')
+    else:
+        _me = db.session.get(User, session.get('user_id'))
+        campus_ctx = _me.campus_id if _me else None
+
+    try:
+        comp = build_yearly_comparison(campus_ctx)
+        written = build_written_report(comp)
+        buf, mime, filename = export_written_report(
+            fmt, comp=comp, written=written,
+            scope_label=build_scope_label(campus_ctx))
+        return send_file(buf, mimetype=mime,
+                         as_attachment=True, download_name=filename)
+    except Exception as e:
+        flash(f'Annual report export failed: {e}', 'error')
+        return redirect(url_for('admin.reports'))
 
 
 @admin_bp.route('/reports/export')
@@ -2148,6 +2417,7 @@ def student_directory():
     sort       = request.args.get('sort', 'name')
     gwa_flag   = request.args.get('gwa_flag', '')
     scholar_filter = request.args.get('scholar', '')
+    status_f = request.args.get('status', '')
     GWA_THRESHOLD = 3.00
 
     # Strict campus scoping (super admin honors campus selector)
@@ -2187,6 +2457,8 @@ def student_directory():
         query = query.filter(User.is_existing_scholar.is_(True))
     elif scholar_filter == 'none':
         query = query.filter(User.is_existing_scholar.is_(False))
+    if status_f in ('active', 'graduated', 'dropped_out'):
+        query = query.filter(User.student_status == status_f)
 
     if sort == 'gwa_asc':
         query = query.order_by(db.case((User.gwa.is_(None), 1), else_=0), User.gwa.asc())
@@ -2211,6 +2483,7 @@ def student_directory():
         students=students,
         q=q, year=year, course=course, gender=gender, sort=sort, gwa_flag=gwa_flag,
         scholar_filter=scholar_filter,
+        status_f=status_f,
         GWA_THRESHOLD=GWA_THRESHOLD,
         total_students=len(all_students),
         with_gwa_count=len(with_gwa),
@@ -2230,6 +2503,32 @@ def student_profile(uid):
         flash('User is not a student.', 'error')
         return redirect(url_for('admin.student_directory'))
     return render_template('admin/student_profile.html', student=student)
+
+
+@admin_bp.route('/students/<int:uid>/set-status', methods=['POST'])
+@role_required('admin')
+def set_student_status(uid):
+    """Mark a student Active / Graduated / Dropped Out. Graduated and
+    dropped students are auto-closed out of their active scholarships."""
+    student = User.query.get_or_404(uid)
+    if student.user_type != 'student':
+        flash('Student status can only be set on students.', 'error')
+        return redirect(url_for('admin.student_directory'))
+    # Campus guard: campus admins only touch their own campus
+    if session.get('user_type') != 'super_admin' and student.campus_id:
+        _me = db.session.get(User, session.get('user_id'))
+        if _me and _me.campus_id and student.campus_id != _me.campus_id:
+            flash('This student belongs to a different campus.', 'error')
+            return redirect(url_for('admin.student_directory'))
+    from app.services.student_status_service import set_student_status as _apply
+    ok, err = _apply(student, request.form.get('student_status', '').strip(),
+                     actor_id=session.get('user_id'))
+    if not ok:
+        flash(err, 'error')
+    else:
+        flash(f'{student.get_full_name()} is now marked as '
+              f'{student.student_status.replace("_", " ")}.', 'success')
+    return redirect(url_for('admin.student_profile', uid=uid))
 
 
 # ── Existing-scholar declaration: add student to a program directly ──────────
@@ -2290,6 +2589,76 @@ def add_existing_scholar(uid):
     return render_template('shared/add_existing_scholar.html',
                            student=student, programs=programs,
                            back_url=url_for('admin.student_profile', uid=uid))
+
+
+@admin_bp.route('/scholarships/<int:sid>/add-student', methods=['GET', 'POST'])
+@role_required('admin')
+def add_student_to_program(sid):
+    """Program-first flow: add any registered student to this scholarship
+    program directly as an approved scholar (same record a normal approval
+    produces — batches, monitoring, reports, My Scholarship, notification)."""
+    s = Scholarship.query.get_or_404(sid)
+    _err = _scholarship_campus_guard(s)
+    if _err:
+        return _err
+
+    if request.method == 'POST':
+        from app.services.scholarship_service import add_existing_scholar_to_program
+        student_id = request.form.get('student_id', '').strip()
+        notes      = request.form.get('notes', '').strip() or None
+        if not student_id:
+            flash('Please choose a student.', 'error')
+            return redirect(url_for('admin.add_student_to_program', sid=sid))
+        student = User.query.get(int(student_id))
+        if not student or student.user_type != 'student':
+            flash('Student not found.', 'error')
+            return redirect(url_for('admin.add_student_to_program', sid=sid))
+
+        application, err = add_existing_scholar_to_program(
+            student, s, session.get('user_id'), notes=notes)
+        if err:
+            flash(err, 'error')
+            return redirect(url_for('admin.add_student_to_program', sid=sid))
+
+        from app.services.audit_service import log_action
+        log_action('scholarship.existing_scholar_added',
+                   f'{student.get_full_name()} ({student.student_id}) added to '
+                   f'"{s.title}" from the program page.',
+                   category='scholarship', target_type='application',
+                   target_id=application.id)
+        flash(f'{student.get_full_name()} has been added to "{s.title}" '
+              f'as an approved scholar and notified.', 'success')
+        return redirect(url_for('admin.add_student_to_program', sid=sid))
+
+    # GET: eligible students — campus-scoped, minus those already in this program
+    if s.campus_id:
+        campus_ctx = s.campus_id
+    else:
+        campus_ctx = session.get('campus_context') if session.get('user_type') == 'super_admin' else None
+        if campus_ctx is None and session.get('user_type') != 'super_admin':
+            _me = db.session.get(User, session.get('user_id'))
+            campus_ctx = _me.campus_id if _me else None
+
+    query = User.query.filter(User.user_type == 'student')
+    if campus_ctx:
+        query = query.filter(User.campus_id == campus_ctx)
+
+    from app.models import AcademicPeriod
+    period = AcademicPeriod.get_current()
+    dup_q = ScholarshipApplication.query.filter_by(scholarship_id=sid)
+    if period:
+        dup_q = dup_q.filter_by(academic_period_id=period.id)
+    busy_ids = {a.applicant_id for a in dup_q.filter(
+        ScholarshipApplication.status.in_([
+            ApplicationStatus.PENDING, ApplicationStatus.UNDER_REVIEW,
+            ApplicationStatus.APPROVED])).all()}
+    if busy_ids:
+        query = query.filter(~User.id.in_(busy_ids))
+
+    students = query.order_by(User.last_name.asc(), User.first_name.asc()).all()
+    return render_template('shared/add_student_to_program.html',
+                           scholarship=s, students=students,
+                           back_url=url_for('admin.manage_scholarships'))
 
 
 # ── Student document verification ─────────────────────────────────────────────

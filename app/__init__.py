@@ -178,6 +178,35 @@ def create_app(config_name=None):
         except Exception as e:
             _migrate_log.error(f'MIGRATION FAILED (me_form_deadline): {e}')
 
+    # Migration 3: student lifecycle status (active / graduated / dropped_out)
+    with app.app_context():
+        import logging
+        _migrate_log = logging.getLogger('migrate')
+        try:
+            from sqlalchemy import text
+            with db.engine.connect() as conn:
+                for _col, _ddl in (
+                    ('student_status',
+                     "ALTER TABLE users ADD COLUMN student_status "
+                     "VARCHAR(20) NOT NULL DEFAULT 'active'"),
+                    ('status_date',
+                     'ALTER TABLE users ADD COLUMN status_date DATE NULL'),
+                ):
+                    result = conn.execute(text(
+                        "SELECT COUNT(*) FROM information_schema.columns "
+                        "WHERE table_schema = DATABASE() "
+                        "AND table_name = 'users' "
+                        f"AND column_name = '{_col}'"
+                    ))
+                    if result.scalar() == 0:
+                        conn.execute(text(_ddl))
+                        conn.commit()
+                        _migrate_log.info(f'SUCCESS: Added {_col} column to users.')
+                    else:
+                        _migrate_log.info(f'OK: {_col} column already exists.')
+        except Exception as e:
+            _migrate_log.error(f'MIGRATION FAILED (student_status): {e}')
+
     # ── Inactivity timeout ────────────────────────────────────────────────
     # Log out users who have been inactive for more than 30 minutes.
     # Checked on every request — if last_active is older than timeout, clear session.

@@ -26,5 +26,10 @@ def is_viewing_specific_period():
     vid = session.get('viewing_period_id')
     if not vid:
         return False
+    # The selected period may have been deleted (by anyone) — treat as no selection
+    if not AcademicPeriod.query.get(vid):
+        session.pop('viewing_period_id', None)
+        session.pop('viewing_period_name', None)
+        return False
     current = AcademicPeriod.get_current()
     return current is None or vid != current.id

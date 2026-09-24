@@ -318,20 +318,21 @@
             <a class="nav-link dropdown-toggle badge bg-secondary text-white px-2 py-1"
                href="#" data-bs-toggle="dropdown" style="font-size:.68rem;cursor:pointer;">
               <i class="bi bi-calendar3 me-1"></i>
-              {% if session.get('viewing_period_name') %}{{ session.viewing_period_name }}{% else %}Current Period{% endif %}
+              {% set _pill = namespace(name='') %}
+              {% if session.get('viewing_period_id') %}
+                {% for p in all_academic_periods %}{% if p.id == session.get('viewing_period_id') %}{% set _pill.name = p.display_name %}{% endif %}{% endfor %}
+              {% endif %}
+              {% if not _pill.name %}
+                {% for p in all_academic_periods %}{% if p.is_current and not _pill.name %}{% set _pill.name = p.display_name %}{% endif %}{% endfor %}
+              {% endif %}
+              {{ _pill.name or 'No Period' }}
             </a>
             <ul class="dropdown-menu dropdown-menu-end" style="min-width:240px;">
               <li class="px-3 pt-2 pb-1"><div class="fw-semibold small text-muted">Select Academic Period</div></li>
               <li><hr class="dropdown-divider"></li>
-              <li>
-                <a class="dropdown-item {% if not session.get('viewing_period_id') %}active{% endif %}"
-                   href="{{ url_for('admin.set_period_context' if role in ('super_admin', 'admin') else ('staff.set_period_context' if role == 'staff' else 'student.set_period_context'), period_id=0) }}">
-                  <i class="bi bi-clock-history me-1"></i> Current Period
-                </a>
-              </li>
               {% for p in all_academic_periods %}
               <li>
-                <a class="dropdown-item {% if session.get('viewing_period_id') == p.id %}active{% endif %}"
+                <a class="dropdown-item {% if session.get('viewing_period_id') == p.id or (not session.get('viewing_period_id') and p.is_current) %}active{% endif %}"
                    href="{{ url_for('admin.set_period_context' if role in ('super_admin', 'admin') else ('staff.set_period_context' if role == 'staff' else 'student.set_period_context'), period_id=p.id) }}">
                   {% if p.is_current %}<i class="bi bi-check-circle-fill text-success me-1"></i>{% endif %}
                   {{ p.display_name }}

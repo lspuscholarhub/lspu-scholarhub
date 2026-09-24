@@ -109,6 +109,15 @@
               <option value="none"     {% if scholar_filter=='none'     %}selected{% endif %}>No declaration</option>
             </select>
           </div>
+          <div class="col-md-2">
+            <label class="form-label small fw-semibold" for="sd-status">Student Status</label>
+            <select id="sd-status" name="status" class="form-select">
+              <option value=""           {% if status_f==''           %}selected{% endif %}>All Statuses</option>
+              <option value="active"      {% if status_f=='active'      %}selected{% endif %}>Active</option>
+              <option value="graduated"   {% if status_f=='graduated'   %}selected{% endif %}>Graduated</option>
+              <option value="dropped_out" {% if status_f=='dropped_out' %}selected{% endif %}>Dropped Out</option>
+            </select>
+          </div>
           <div class="col-md-1"></div>
           <div class="col-md-3 d-flex justify-content-end">
             <a href="{{ url_for('staff.student_directory') }}" class="btn btn-outline-secondary btn-sm">
@@ -120,6 +129,17 @@
     </div>
   </div>
 
+  <!-- GWA legend -->
+  <div class="d-flex flex-wrap justify-content-end align-items-center gap-2 small mb-2">
+    <span class="fw-semibold text-muted me-1">GWA:</span>
+    <span class="badge bg-success">1.00–2.25 · Excellent–Satisfactory</span>
+    <span class="badge bg-info text-dark">2.26–2.75 · Fair</span>
+    <span class="badge bg-warning text-dark">2.76–3.00 · Passed</span>
+    <span class="badge" style="background-color:#fd7e14;color:#fff;">3.01–4.00 · At Risk</span>
+    <span class="badge bg-danger">4.01+ · Failed</span>
+    <span class="badge bg-secondary">Not set</span>
+  </div>
+
   <!-- Table -->
   <div class="card border-0 shadow-sm">
     <div class="card-body p-0">
@@ -129,7 +149,7 @@
           <thead class="table-light">
             <tr>
               <th>Student</th><th>Student ID</th><th>Year / Course</th>
-              <th>Gender</th><th>GWA</th><th>Units</th><th>Documents</th><th></th>
+              <th>Gender</th><th>GWA</th><th>Units</th><th class="text-center">COR</th><th class="text-center">Grades</th><th></th>
             </tr>
           </thead>
           <tbody>
@@ -143,6 +163,11 @@
                       data-bs-toggle="tooltip" title="Self-declared existing scholar: {{ s.existing_scholarship_name or 'program not specified' }}">
                   <i class="bi bi-award me-1"></i>Existing scholar
                 </span>
+                {% endif %}
+                {% if s.student_status == 'graduated' %}
+                <span class="badge bg-success mt-1"><i class="bi bi-mortarboard me-1"></i>Graduated</span>
+                {% elif s.student_status == 'dropped_out' %}
+                <span class="badge bg-danger mt-1"><i class="bi bi-exclamation-octagon me-1"></i>Dropped Out</span>
                 {% endif %}
               </td>
               <td data-label="ID" class="small">{{ s.student_id or '—' }}</td>
@@ -163,27 +188,16 @@
               </td>
               <td data-label="GWA">
                 {% if s.gwa %}
-                  {% if s.gwa <= 1.25 %}
+                  {% if s.gwa <= 2.25 %}
                     <span class="badge bg-success">{{ s.gwa }}</span>
-                    <small class="text-success d-block">Excellent</small>
-                  {% elif s.gwa <= 1.75 %}
-                    <span class="badge bg-success">{{ s.gwa }}</span>
-                    <small class="text-success d-block">Very Good</small>
-                  {% elif s.gwa <= 2.25 %}
-                    <span class="badge bg-success">{{ s.gwa }}</span>
-                    <small class="text-success d-block">Satisfactory</small>
                   {% elif s.gwa <= 2.75 %}
                     <span class="badge bg-info">{{ s.gwa }}</span>
-                    <small class="text-info d-block">Fair</small>
                   {% elif s.gwa <= 3.00 %}
                     <span class="badge bg-warning text-dark">{{ s.gwa }}</span>
-                    <small class="text-warning d-block">Passed</small>
                   {% elif s.gwa <= 4.00 %}
                     <span class="badge" style="background-color:#fd7e14;color:#fff;">{{ s.gwa }}</span>
-                    <small class="d-block" style="color:#fd7e14;">At Risk</small>
                   {% else %}
                     <span class="badge bg-danger">{{ s.gwa }}</span>
-                    <small class="text-danger d-block">Failed</small>
                   {% endif %}
                 {% else %}
                   <span class="text-muted small">Not set</span>
@@ -196,18 +210,25 @@
                   <span class="text-muted">—</span>
                 {% endif %}
               </td>
-              <td data-label="Docs" class="small">
+              <td data-label="COR" class="small text-center">
                 {% if s.cor_file_path %}
                   <a href="{{ url_for('staff.view_reg_document', uid=s.id, doc_type='cor') }}"
-                     target="_blank" class="badge bg-primary text-decoration-none me-1"
-                     data-bs-toggle="tooltip" title="View Certificate of Registration">COR</a>
+                     target="_blank" class="text-success text-decoration-none"
+                     title="View Certificate of Registration">
+                    <i class="bi bi-check-circle-fill"></i>
+                  </a>
+                {% else %}
+                  <span class="text-muted">—</span>
                 {% endif %}
+              </td>
+              <td data-label="Grades" class="small text-center">
                 {% if s.grades_file_path %}
                   <a href="{{ url_for('staff.view_reg_document', uid=s.id, doc_type='grades') }}"
-                     target="_blank" class="badge bg-info text-decoration-none"
-                     data-bs-toggle="tooltip" title="View Copy of Grades">Grades</a>
-                {% endif %}
-                {% if not s.cor_file_path and not s.grades_file_path %}
+                     target="_blank" class="text-success text-decoration-none"
+                     title="View Copy of Grades">
+                    <i class="bi bi-check-circle-fill"></i>
+                  </a>
+                {% else %}
                   <span class="text-muted">—</span>
                 {% endif %}
               </td>

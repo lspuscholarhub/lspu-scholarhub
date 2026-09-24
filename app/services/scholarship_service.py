@@ -169,7 +169,7 @@ class ScholarshipService:
 
 
 def add_existing_scholar_to_program(user, scholarship, staff_user_id, notes=None):
-    """Add a self-declared existing scholar to a scholarship program directly.
+    """Add a registered student to a scholarship program directly.
 
     Creates a pre-approved application — the exact same record a normal approval
     would produce — so the student flows into batches, monitoring, reports and
@@ -221,7 +221,7 @@ def add_existing_scholar_to_program(user, scholarship, staff_user_id, notes=None
         submitted_at=datetime.utcnow(),
         reviewed_at=datetime.utcnow(),
         reviewed_by=staff_user_id,
-        review_notes=notes or 'Added directly by the Scholarship Office (existing scholar declaration).',
+        review_notes=notes or 'Added directly by the Scholarship Office.',
         final_decision_date=datetime.utcnow(),
         approved_at=datetime.utcnow(),
         is_active=True,
@@ -242,8 +242,7 @@ def add_existing_scholar_to_program(user, scholarship, staff_user_id, notes=None
         _ns.send_application_status_update(
             user.email, user.phone_number or '', user.id,
             scholarship.title, 'approved',
-            'You have been added to this scholarship program by the Scholarship Office '
-            'based on your existing-scholar declaration.',
+            'You have been added to this scholarship program by the Scholarship Office.',
         )
     except Exception:
         pass

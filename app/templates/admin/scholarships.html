@@ -28,9 +28,9 @@
             <tr>
               <th class="ps-4">Program Name</th>
               <th>Campus</th>
-              <th>Campus</th>
-              <th>Amount</th>
+              <th>Award</th>
               <th>Applicants</th>
+              <th>Deadline</th>
               <th>Status</th>
               <th class="pe-4 text-end">Actions</th>
             </tr>
@@ -62,6 +62,7 @@
               <td data-label="Applicants">
                 {{ s.current_applicants or 0 }}{% if s.max_applicants %}<span class="text-muted">/{{ s.max_applicants }}</span>{% endif %}
               </td>
+              <td data-label="Deadline">{% if s.application_deadline %}{{ s.application_deadline.strftime('%b %d, %Y') }}{% if s.application_deadline < now %} <span class="badge bg-danger" style="font-size:.6rem;">Passed</span>{% endif %}{% else %}<span class="text-muted">—</span>{% endif %}</td>
               <td data-label="Status">
                 {% if s.status and s.status.value == 'active' %}
                   <span class="badge bg-success"><i class="bi bi-circle-fill me-1" style="font-size:.5rem;"></i>Open</span>
@@ -88,6 +89,9 @@
                       {% endif %}
                     </button>
                   </form>
+                  <!-- Add student -->
+                  <a href="{{ url_for('admin.add_student_to_program', sid=s.id) }}"
+                     class="btn btn-sm btn-outline-success" title="Add student to program"><i class="bi bi-person-plus"></i></a>
                   <!-- Edit -->
                   <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editModal{{ s.id }}">
                     <i class="bi bi-pencil"></i>
@@ -198,6 +202,11 @@
                      min="0" placeholder="Leave blank for unlimited">
             </div>
           </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Application Deadline</label>
+            <input type="date" class="form-control" name="application_deadline">
+            <div class="form-text">Last day students can apply (they can apply through the whole day). Leave blank to keep it open until slots fill — you can extend it anytime by editing the program.</div>
+          </div>
 
           <!-- Custom Form Builder -->
           <div class="border rounded p-3 mb-3" style="background:#f8f9fa;">
@@ -301,6 +310,12 @@
                      min="0" value="{{ s.max_applicants or '' }}" placeholder="No limit">
               <div class="form-text">Leave blank for unlimited.</div>
             </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Application Deadline</label>
+            <input type="date" class="form-control" name="application_deadline"
+                   value="{{ s.application_deadline.strftime('%Y-%m-%d') if s.application_deadline else '' }}">
+            <div class="form-text">Extend or shorten the application period here. Clear the field to remove the deadline (open until slots fill).</div>
           </div>
           <div class="mb-3">
             <label class="form-label fw-semibold">Status</label>

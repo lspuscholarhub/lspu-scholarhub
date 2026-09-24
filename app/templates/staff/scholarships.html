@@ -27,7 +27,7 @@
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
           <thead class="table-light">
-            <tr><th class="ps-4">Title</th><th>Award</th><th>Slots</th><th>Status</th><th>Visibility</th><th class="pe-4">Actions</th></tr>
+            <tr><th class="ps-4">Title</th><th>Award</th><th>Slots</th><th>Deadline</th><th>Status</th><th>Visibility</th><th class="pe-4">Actions</th></tr>
           </thead>
           <tbody>
             {% for s in scholarships %}
@@ -41,6 +41,7 @@
                 <br><small class="text-muted">{{ (s.description[:60] + '…') if s.description else '' }}</small></td>
               <td data-label="Award">{% if s.award_amount %}₱{{ "{:,.0f}".format(s.award_amount) }}{% else %}<span class="text-muted">TBA</span>{% endif %}</td>
               <td data-label="Slots">{{ s.current_applicants or 0 }}{% if s.max_applicants %}/{{ s.max_applicants }}{% endif %}</td>
+              <td data-label="Deadline">{% if s.application_deadline %}{{ s.application_deadline.strftime('%b %d, %Y') }}{% if s.application_deadline < now %} <span class="badge bg-danger" style="font-size:.6rem;">Passed</span>{% endif %}{% else %}<span class="text-muted">—</span>{% endif %}</td>
               <td data-label="Status">
                 {% if s.status and s.status.value=='active' %}<span class="badge bg-success">Active</span>
                 {% elif s.status and s.status.value=='closed' %}<span class="badge bg-secondary">Closed</span>
@@ -55,6 +56,8 @@
               </td>
               <td data-label="Actions" class="pe-4">
                 <div class="d-flex gap-1">
+                  <a href="{{ url_for('staff.add_student_to_program', sid=s.id) }}"
+                     class="btn btn-sm btn-outline-success" title="Add student to program"><i class="bi bi-person-plus"></i></a>
                   <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editModal{{ s.id }}"
                           data-bs-toggle="tooltip" title="Edit scholarship"><i class="bi bi-pencil"></i></button>
                   <form method="POST" action="{{ url_for('staff.delete_scholarship', sid=s.id) }}" class="d-inline"
@@ -164,6 +167,11 @@
                      min="0" placeholder="Leave blank for unlimited">
             </div>
           </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Application Deadline</label>
+            <input type="date" class="form-control" name="application_deadline">
+            <div class="form-text">Last day students can apply (they can apply through the whole day). Leave blank to keep it open until slots fill — you can extend it anytime by editing the program.</div>
+          </div>
 
           <!-- Custom Form Builder -->
           <div class="border rounded p-3 mb-3" style="background:#f8f9fa;">
@@ -259,6 +267,12 @@
                 <option value="closed" {% if s.status and s.status.value=='closed' %}selected{% endif %}>Closed</option>
               </select>
             </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Application Deadline</label>
+            <input type="date" class="form-control" name="application_deadline"
+                   value="{{ s.application_deadline.strftime('%Y-%m-%d') if s.application_deadline else '' }}">
+            <div class="form-text">Extend or shorten the application period here. Clear the field to remove the deadline (open until slots fill).</div>
           </div>
           <div class="mb-3">
             <label class="form-label fw-semibold">Academic Period</label>

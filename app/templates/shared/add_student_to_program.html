@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block title %}Add Student — {{ scholarship.title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4 py-4">
+  <nav aria-label="breadcrumb" class="mb-3">
+    <ol class="breadcrumb mb-0 small">
+      <li class="breadcrumb-item"><a href="{{ back_url }}">Scholarship Programs</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Add Student to Program</li>
+    </ol>
+  </nav>
+
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-sm" style="border-radius:12px;">
+        <div class="card-header bg-white border-bottom py-3">
+          <h5 class="m-0 fw-bold text-primary">
+            <i class="bi bi-person-plus me-2"></i>Add Student to “{{ scholarship.title }}”
+          </h5>
+        </div>
+        <div class="card-body p-4">
+
+          <!-- Program summary -->
+          <div class="p-3 rounded-3 mb-4" style="background:#f8f9fa;border:1px solid #e9ecef;">
+            <div class="fw-bold">{{ scholarship.title }}</div>
+            <div class="small text-muted">
+              {% if scholarship.award_amount %}₱{{ "{:,.0f}".format(scholarship.award_amount) }} · {% endif %}
+              {{ scholarship.funding_type|capitalize }} ·
+              {% if scholarship.campus %}{{ scholarship.campus.name }}{% else %}University-wide{% endif %}
+              · Slots: {{ scholarship.current_applicants or 0 }}{% if scholarship.max_applicants %}/{{ scholarship.max_applicants }}{% endif %}
+              {% if scholarship.academic_period %} · {{ scholarship.academic_period.display_name }}{% endif %}
+            </div>
+          </div>
+
+          <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="mb-3">
+              <label class="form-label fw-semibold" for="studentSearch">
+                Student <span class="text-danger">*</span>
+              </label>
+              <input type="text" class="form-control mb-2" id="studentSearch"
+                     placeholder="Search by name, student ID, or course…" autocomplete="off">
+              <div class="border rounded-3" style="max-height:320px;overflow-y:auto;">
+                {% if students %}
+                {% for st in students %}
+                <label class="d-flex align-items-center gap-2 px-3 py-2 border-bottom student-option mb-0 cursor-pointer"
+                       data-search="{{ (st.get_full_name() ~ ' ' ~ (st.student_id or '') ~ ' ' ~ (st.course or ''))|lower }}">
+                  <input type="radio" name="student_id" value="{{ st.id }}" required>
+                  <span class="fw-semibold">{{ st.get_full_name() }}</span>
+                  <span class="small text-muted">
+                    {{ st.student_id or 'No ID' }} · {{ st.year_level or '—' }}{% if st.course %} · {{ st.course }}{% endif %}
+                  </span>
+                  {% if st.is_existing_scholar %}
+                  <span class="badge ms-auto" style="background:#e7f3ff;color:#0a58ca;font-size:.65rem;">
+                    <i class="bi bi-award me-1"></i>Declared scholar
+                  </span>
+                  {% endif %}
+                </label>
+                {% endfor %}
+                {% else %}
+                <div class="p-3 text-muted small mb-0">
+                  No students available to add — they may already be in this program,
+                  or none match this campus.
+                </div>
+                {% endif %}
+              </div>
+              <div class="form-text">
+                Choosing a student creates an <strong>approved application</strong> — they
+                appear in batches, monitoring, reports and their My Scholarship page
+                exactly like a normally-approved scholar, and are notified by email/SMS.
+              </div>
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label fw-semibold" for="notesInput">Notes (optional)</label>
+              <textarea class="form-control" id="notesInput" name="notes" rows="2"
+                        placeholder="e.g. Verified against office records — active scholar of this program"></textarea>
+            </div>
+
+            <div class="alert alert-warning py-2 px-3 small d-flex gap-2 align-items-start">
+              <i class="bi bi-shield-exclamation mt-1 flex-shrink-0"></i>
+              <div>
+                The one-public-scholarship-per-period rule still applies — the system will
+                block this if the student already holds a public scholarship this period.
+                Private programs can be combined freely.
+              </div>
+            </div>
+
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-primary px-4">
+                <i class="bi bi-check-lg me-1"></i>Add as Approved Scholar
+              </button>
+              <a href="{{ back_url }}" class="btn btn-outline-secondary px-4">Cancel</a>
+            </div>
+          </form>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var box = document.getElementById('studentSearch');
+  if (!box) return;
+  box.addEventListener('input', function () {
+    var q = this.value.toLowerCase().trim();
+    document.querySelectorAll('.student-option').forEach(function (el) {
+      var hay = el.getAttribute('data-search') || '';
+      el.style.display = (!q || hay.indexOf(q) !== -1) ? '' : 'none';
+    });
+  });
+})();
+</script>
+{% endblock %}

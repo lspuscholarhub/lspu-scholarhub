@@ -43,12 +43,12 @@
             <div class="small text-muted">
               {{ student.existing_scholarship_name or 'Program not specified' }}
             </div>
-            <a href="{{ url_for('staff.add_existing_scholar', uid=student.id) }}"
-               class="btn btn-sm btn-primary mt-2 w-100">
-              <i class="bi bi-plus-circle me-1"></i>Add to Program
-            </a>
           </div>
           {% endif %}
+          <a href="{{ url_for('staff.add_existing_scholar', uid=student.id) }}"
+             class="btn btn-sm btn-primary mt-2 w-100">
+            <i class="bi bi-person-plus me-1"></i>Add to Program
+          </a>
           <div class="mt-2">
             {% if student.is_verified %}
               <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Verified</span>
@@ -77,6 +77,38 @@
               <div class="small fw-semibold">{{ student.created_at.strftime('%b %d, %Y') }}</div>
             </div>
           </div>
+        </div>
+      </div>
+
+      <!-- Student status -->
+      <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+          <h6 class="fw-bold mb-3">Student Status</h6>
+          <div class="mb-3">
+            {% if student.student_status == 'graduated' %}
+            <span class="badge bg-success"><i class="bi bi-mortarboard me-1"></i>Graduated</span>
+            {% elif student.student_status == 'dropped_out' %}
+            <span class="badge bg-danger"><i class="bi bi-exclamation-octagon me-1"></i>Dropped Out</span>
+            {% else %}
+            <span class="badge bg-secondary"><i class="bi bi-person-check me-1"></i>Active</span>
+            {% endif %}
+            {% if student.status_date %}
+            <span class="text-muted small ms-1">since {{ student.status_date.strftime('%b %d, %Y') }}</span>
+            {% endif %}
+          </div>
+          <form method="POST" action="{{ url_for('staff.set_student_status', uid=student.id) }}"
+                onsubmit="return confirm('Change the status of this student? Marking as graduated or dropped out automatically closes their active scholarships.')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="input-group input-group-sm">
+              <select name="student_status" class="form-select">
+                <option value="active" {% if student.student_status == 'active' %}selected{% endif %}>Active</option>
+                <option value="graduated" {% if student.student_status == 'graduated' %}selected{% endif %}>Graduated</option>
+                <option value="dropped_out" {% if student.student_status == 'dropped_out' %}selected{% endif %}>Dropped Out</option>
+              </select>
+              <button class="btn btn-primary" type="submit">Update</button>
+            </div>
+          </form>
+          <div class="form-text">Graduated and dropped-out students stay in the directory and reports as historical records.</div>
         </div>
       </div>
     </div>

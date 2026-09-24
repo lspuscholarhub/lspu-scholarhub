@@ -19,7 +19,9 @@
         ('Pending Review',     pending,          'warning', 'bi-clock-fill'),
         ('Active Scholars',    active_scholars,  'info',    'bi-mortarboard-fill'),
         ('Total Users',        total_users,      'secondary','bi-people-fill'),
-        ('Students',           total_students,   'primary', 'bi-person-fill')] %}
+        ('Students',           total_students,   'primary', 'bi-person-fill'),
+        ('Graduated',          total_graduated,  'success', 'bi-mortarboard-fill'),
+        ('Dropped Out',        total_dropped,    'danger',  'bi-person-x-fill')] %}
     <div class="col-xl-2 col-md-4 mb-3">
       <div class="card border-left-{{ color }} shadow h-100 py-2">
         <div class="card-body">
@@ -110,6 +112,85 @@
         </div>
       </div>
       {% endif %}
+    </div>
+  </div>
+
+  <!-- ── Multi-Year Comparison (up to 6 AYs, real data) ── -->
+  <div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <h6 class="m-0 fw-bold text-primary">
+        <i class="bi bi-graph-up-arrow me-2"></i>Multi-Year Comparison (up to 6 Academic Years)
+      </h6>
+      <div class="d-flex gap-2">
+        <a class="btn btn-sm btn-outline-primary"
+           href="{{ url_for('admin.export_annual_report', format='pdf') }}" target="_blank">
+          <i class="bi bi-file-earmark-pdf me-1"></i>Annual Report PDF
+        </a>
+        <a class="btn btn-sm btn-outline-success"
+           href="{{ url_for('admin.export_annual_report', format='docx') }}" target="_blank">
+          <i class="bi bi-file-earmark-word me-1"></i>Annual Report DOCX
+        </a>
+      </div>
+    </div>
+    <div class="card-body p-3">
+      {% if comparison.years %}
+      <div class="table-responsive">
+        <table class="table table-bordered table-hover align-middle text-center mb-4">
+          <thead class="table-light">
+            <tr>
+              <th class="text-start">Metric</th>
+              {% for y in comparison.years %}<th>AY {{ y }}</th>{% endfor %}
+              <th>Δ Latest vs Prior</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for key, label, fmt in comparison.metrics %}
+            <tr>
+              <td class="text-start fw-semibold">{{ label }}</td>
+              {% for v in comparison.rows[key] %}
+              <td>{% if v is none %}—{% elif fmt == 'pct' %}{{ '%.1f'|format(v) }}%{% elif fmt == 'gwa' %}{{ '%.2f'|format(v) }}{% else %}{{ v }}{% endif %}</td>
+              {% endfor %}
+              {% set d = comparison.deltas[key] %}
+              <td>
+                {% if d.text %}
+                  <span class="badge {{ 'bg-success' if d.good else ('bg-secondary' if d.good is none else 'bg-danger') }}">{{ d.text }}</span>
+                {% else %}<span class="text-muted">—</span>{% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="alert alert-light border text-muted small mb-0">
+        No academic periods are configured yet — add them under Admin → Settings → Academic Periods.
+        The comparison and written report will appear automatically once periods exist.
+      </div>
+      {% endif %}
+
+      {% if comparison.years|length > 1 %}
+      <div style="position:relative;height:280px;">
+        <canvas id="yearlyTrendChart"></canvas>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ── Written Report (auto-generated) ── -->
+  <div class="card shadow mb-4">
+    <div class="card-header py-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+      <h6 class="m-0 fw-bold text-primary">
+        <i class="bi bi-journal-text me-2"></i>Written Report — {{ scope_label }}
+      </h6>
+      <span class="badge bg-light text-dark border">Auto-generated from real system data</span>
+    </div>
+    <div class="card-body px-4 py-3">
+      {% for heading, paras in written.sections %}
+      <h6 class="fw-bold mt-3 mb-2 text-secondary">{{ heading }}</h6>
+      {% for p in paras %}
+      <p class="mb-2" style="line-height:1.65;">{{ p }}</p>
+      {% endfor %}
+      {% endfor %}
     </div>
   </div>
 
@@ -213,7 +294,7 @@
           <thead class="table-light">
             <tr>
               <th>Scholarship</th><th>Total</th><th>Approved</th>
-              <th>Pending</th><th>Rejected</th><th>Fill Rate</th><th>Export</th>
+              <th>Pending</th><th>Rejected</th><th>Graduated</th><th>Dropped Out</th><th>Fill Rate</th><th>Export</th>
             </tr>
           </thead>
           <tbody>
@@ -229,6 +310,8 @@
               <td><span class="text-success fw-bold">{{ row.approved }}</span></td>
               <td><span class="text-warning fw-bold">{{ row.pending }}</span></td>
               <td><span class="text-danger fw-bold">{{ row.rejected }}</span></td>
+              <td><span class="text-success fw-bold">{{ row.graduated }}</span></td>
+              <td><span class="text-danger fw-bold">{{ row.dropped }}</span></td>
               <td>
                 {% if row.scholarship.max_applicants %}
                   {% set pct = ((row.scholarship.current_applicants or 0) / row.scholarship.max_applicants * 100)|int %}
@@ -287,6 +370,29 @@
 {% block scripts %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
+// ── Chart 6: Year-over-year trend (multi-year comparison) ────────────────────
+{% if comparison.years|length > 1 %}
+new Chart(document.getElementById('yearlyTrendChart'), {
+  type: 'line',
+  data: {
+    labels: [{% for y in comparison.years %}'AY {{ y }}'{% if not loop.last %},{% endif %}{% endfor %}],
+    datasets: [
+      { label: 'Applications',  data: {{ comparison.rows.apps|tojson|safe }},          borderColor: '#4e73df', backgroundColor: 'rgba(78,115,223,.08)', fill: true, tension: .3 },
+      { label: 'Approved',      data: {{ comparison.rows.approved|tojson|safe }},      borderColor: '#1cc88a', tension: .3 },
+      { label: 'Active Scholars', data: {{ comparison.rows.active|tojson|safe }},      borderColor: '#36b9cc', tension: .3 },
+      { label: 'Graduated',     data: {{ comparison.rows.graduated|tojson|safe }},     borderColor: '#858796', borderDash: [5,5], tension: .3 },
+      { label: 'Dropped Out',   data: {{ comparison.rows.dropped|tojson|safe }},       borderColor: '#e74a3b', borderDash: [5,5], tension: .3 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: { legend: { position: 'top', labels: { font: { size: 11 } } } },
+    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+  }
+});
+{% endif %}
+
 // ── Chart 1: Application status bar ──────────────────────────────────────────
 new Chart(document.getElementById('statusChart'), {
   type: 'bar',

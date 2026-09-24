@@ -49,7 +49,7 @@
     {% set metrics = [
       ('Total Scholars',    total_students,      '#0d6efd', '#e8f0fe', 'bi-people-fill'),
       ('New Users',         new_users,           '#20c997', '#d5f5eb', 'bi-person-plus-fill'),
-      ('Active Programs',   active_scholarships, '#198754', '#d1f2e0', 'bi-mortarboard-fill'),
+      ('Active Scholarship Programs', active_scholarships, '#198754', '#d1f2e0', 'bi-mortarboard-fill'),
       ('Applications',      total_applications,  '#6f42c1', '#ede8f5', 'bi-file-earmark-text-fill'),
       ('Pending Review',    pending_review,      '#fd7e14', '#fff3e0', 'bi-clock-fill'),
       ('Approved',          approved_count,      '#198754', '#d1f2e0', 'bi-check-circle-fill'),
@@ -136,6 +136,12 @@
               <span class="small text-muted"><i class="bi bi-people me-2"></i>Total Users</span>
               <span class="fw-bold">{{ total_users }}</span>
             </div>
+            {% if all_staff_count %}
+            <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
+              <span class="small text-muted"><i class="bi bi-person-badge me-2"></i>Staff &amp; Admins</span>
+              <span class="fw-bold">{{ all_staff_count }}</span>
+            </div>
+            {% endif %}
             <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
               <span class="small text-muted"><i class="bi bi-collection me-2"></i>Active Batches</span>
               <span class="fw-bold">{{ active_batches }}</span>
@@ -294,5 +300,65 @@
     </div>
   </div>
 
+  <!-- ══ QUICK CHARTS (moved up from Reports — simple versions) ═══════════════ -->
+  <div class="row g-3 mb-4">
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0" style="border-radius:16px;">
+        <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
+          <h6 class="fw-bold text-dark mb-0">Application Status</h6>
+        </div>
+        <div class="card-body p-4">
+          <div style="height:240px;"><canvas id="dashStatusChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="card shadow-sm border-0" style="border-radius:16px;">
+        <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
+          <h6 class="fw-bold text-dark mb-0">Scholar GWA Distribution</h6>
+        </div>
+        <div class="card-body p-4">
+          <div style="height:240px;"><canvas id="dashGwaChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  var c1 = document.getElementById('dashStatusChart');
+  if (c1) {
+    new Chart(c1, {
+      type: 'doughnut',
+      data: {
+        labels: ['Pending', 'Approved', 'Rejected'],
+        datasets: [{ data: [{{ pending_review }}, {{ approved_count }}, {{ rejected_count }}],
+          backgroundColor: ['#f6c23e', '#1cc88a', '#e74a3b'], borderWidth: 2 }]
+      },
+      options: { maintainAspectRatio: false, cutout: '62%',
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } } }
+    });
+  }
+  var c2 = document.getElementById('dashGwaChart');
+  if (c2) {
+    new Chart(c2, {
+      type: 'bar',
+      data: {
+        labels: {{ dash_gwa_labels|safe }},
+        datasets: [{ label: 'Students', data: {{ dash_gwa_data|safe }},
+          backgroundColor: ['#198754','#198754','#198754','#0dcaf0','#f6c23e','#fd7e14','#e74a3b'] }]
+      },
+      options: { maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+    });
+  }
+});
+</script>
 {% endblock %}

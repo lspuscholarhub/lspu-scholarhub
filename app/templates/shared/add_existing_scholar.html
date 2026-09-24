@@ -36,7 +36,8 @@
                 </div>
               </div>
               <span class="ms-auto badge" style="background:#e7f3ff;color:#0a58ca;">
-                <i class="bi bi-award me-1"></i>Declared existing scholar
+                <i class="bi bi-award me-1"></i>
+                {%- if student.is_existing_scholar %}Declared existing scholar{% else %}Registered student{% endif %}
               </span>
             </div>
             {% if student.existing_scholarship_name %}
@@ -45,10 +46,15 @@
               “{{ student.existing_scholarship_name }}”
               <span class="text-muted">(self-declared by the student — verify with the office's records)</span>
             </div>
-            {% else %}
+            {% elif student.is_existing_scholar %}
             <div class="mt-3 small text-warning">
               <i class="bi bi-exclamation-triangle me-1"></i>
               The student did not specify a program name.
+            </div>
+            {% else %}
+            <div class="mt-3 small text-muted">
+              This student did not declare an existing scholarship — choose the
+              program to add them to below.
             </div>
             {% endif %}
           </div>
