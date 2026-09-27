@@ -214,49 +214,56 @@
               <label class="form-label fw-semibold">Course</label>
               <select class="form-select" name="course">
                 <option value="">— Select —</option>
-                {% for c in [
+                {% set course_options = [
+                  'Bachelor Elementary Education major in Generalist',
                   'Bachelor of Secondary Education major in English',
                   'Bachelor of Secondary Education major in Filipino',
-                  'Bachelor of Secondary Education major in Social Science',
                   'Bachelor of Secondary Education major in Mathematics',
+                  'Bachelor of Secondary Education major in Social Studies',
                   'Bachelor of Secondary Education major in Science',
-                  'Bachelor of Elementary Education',
                   'Bachelor of Physical Education',
-                  'Bachelor of Technical-Vocational Teacher Education',
-                  'Bachelor of Technology and Livelihood Education',
-                  'Bachelor of Science in Psychology',
+                  'Bachelor of Technical-Vocational Teacher Education major in Computer Programming',
+                  'Bachelor of Technical-Vocational Teacher Education major in Food and Service Management',
+                  'Bachelor of Technical-Vocational Teacher Education major in Garments, Fashion and Design',
+                  'Bachelor of Technology and Livelihood Education major in Home Economics',
+                  'Bachelor of Technology and Livelihood Education major in Industrial Arts',
+                  'Bachelor of Technology and Livelihood Education major in Information and Communication Technology',
                   'Bachelor of Arts in Broadcasting',
                   'Bachelor of Science in Biology',
-                  'Bachelor of Science in Mathematics',
                   'Bachelor of Science in Chemistry',
+                  'Bachelor of Science in Mathematics',
+                  'Bachelor of Science in Psychology',
                   'Bachelor of Science in Nursing',
-                  'Bachelor of Science in Computer Engineering',
-                  'Bachelor of Science in Mechanical Engineering',
                   'Bachelor of Science in Civil Engineering',
+                  'Bachelor of Science in Computer Engineering',
                   'Bachelor of Science in Electrical Engineering',
                   'Bachelor of Science in Electronics Engineering',
-                  'Bachelor of Science in Office Administration',
-                  'Bachelor of Science in Entrepreneurship',
+                  'Bachelor of Science in Mechanical Engineering',
                   'Bachelor of Science in Accountancy',
-                  'Bachelor of Science in Business Administration major in Marketing',
-                  'Bachelor of Public Administration',
                   'Bachelor of Science in Business Administration major in Financial Management',
-                  'Bachelor of Science in Financial Management',
+                  'Bachelor of Science in Business Administration major in Marketing Management',
+                  'Bachelor of Science in Entrepreneurship',
+                  'Bachelor of Science in Office Administration',
+                  'Bachelor of Public Administration',
                   'Bachelor of Science in Hospitality Management',
                   'Bachelor of Science in Tourism Management',
-                  'Bachelor of Science in Industrial Technology – Food Processing',
-                  'Bachelor of Science in Industrial Technology – Automotive',
-                  'Bachelor of Science in Industrial Technology – Drafting',
-                  'Bachelor of Science in Industrial Technology – Electrical',
-                  'Bachelor of Science in Industrial Technology – Electronics',
-                  'Bachelor of Science in Industrial Technology – Heating, Ventilation, and Air Conditioning',
-                  'Bachelor of Science in Information Technology',
+                  'Bachelor of Science in Criminology',
                   'Bachelor of Science in Computer Science',
-                  'Bachelor of Science in Criminal Justice Education',
+                  'Bachelor of Science in Information Technology',
+                  'Bachelor of Science in Industrial Technology major in Architectural Drafting Technology',
+                  'Bachelor of Science in Industrial Technology major in Automotive Technology',
+                  'Bachelor of Science in Industrial Technology major in Electrical Technology',
+                  'Bachelor of Science in Industrial Technology major in Electronics Technology',
+                  'Bachelor of Science in Industrial Technology major in Food Beverages Preparation and Service Management',
+                  'Bachelor of Science in Industrial Technology major in Heating, Ventilating, Air-Conditioning and Refrigeration',
                 ] %}
+                {% for c in course_options %}
                 <option value="{{ c }}"
                   {% if u.course == c %}selected{% endif %}>{{ c }}</option>
                 {% endfor %}
+                {% if u.course and u.course not in course_options %}
+                <option value="{{ u.course }}" selected>{{ u.course }}</option>
+                {% endif %}
               </select>
             </div>
             <div class="col-md-4">

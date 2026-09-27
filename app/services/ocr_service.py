@@ -44,7 +44,7 @@ COURSE_ALIASES = {
     'bsme':   'bachelor of science in mechanical engineering',
     'bsece':  'bachelor of science in electronics engineering',
     'bscoe':  'bachelor of science in computer engineering',
-    'beed':   'bachelor of elementary education',
+    'beed':   'bachelor elementary education major in generalist',
     'bsed':   'bachelor of secondary education',
     'bped':   'bachelor of physical education',
     'btvted': 'bachelor of technical-vocational teacher education',
@@ -61,9 +61,9 @@ COURSE_ALIASES = {
     'bshm':   'bachelor of science in hospitality management',
     'bstm':   'bachelor of science in tourism management',
     'bpa':    'bachelor of public administration',
-    'bsfm':   'bachelor of science in financial management',
+    'bsfm':   'bachelor of science in business administration major in financial management',
     'ab':     'bachelor of arts in broadcasting',
-    'bscje':  'bachelor of science in criminal justice education',
+    'bscje':  'bachelor of science in criminology',
     # Short "BS" forms that appear on CORs
     'bs information technology':           'bachelor of science in information technology',
     'bs computer science':                 'bachelor of science in computer science',
@@ -82,33 +82,71 @@ COURSE_ALIASES = {
     'bs nursing':                          'bachelor of science in nursing',
     'bs hospitality management':           'bachelor of science in hospitality management',
     'bs tourism management':               'bachelor of science in tourism management',
-    'bs financial management':             'bachelor of science in financial management',
-    'bs criminal justice':                 'bachelor of science in criminal justice education',
-    'bs criminal justice education':       'bachelor of science in criminal justice education',
+    'bs financial management':             'bachelor of science in business administration major in financial management',
+    'bs criminal justice':                 'bachelor of science in criminology',
+    'bs criminal justice education':       'bachelor of science in criminology',
     'bs business administration':          'bachelor of science in business administration major in financial management',
-    'bs business administration major in marketing': 'bachelor of science in business administration major in marketing',
+    'bs business administration major in marketing': 'bachelor of science in business administration major in marketing management',
     'bs business administration major in financial management': 'bachelor of science in business administration major in financial management',
     # Industrial Technology short forms
     'bs industrial technology':                         'bachelor of science in industrial technology',
-    'bsit food processing':                             'bachelor of science in industrial technology – food processing',
-    'bsit automotive':                                  'bachelor of science in industrial technology – automotive',
-    'bsit drafting':                                    'bachelor of science in industrial technology – drafting',
-    'bsit electrical':                                  'bachelor of science in industrial technology – electrical',
-    'bsit electronics':                                 'bachelor of science in industrial technology – electronics',
-    'bsit hvac':                                        'bachelor of science in industrial technology – heating, ventilation, and air conditioning',
-    'bsit heating ventilation':                         'bachelor of science in industrial technology – heating, ventilation, and air conditioning',
+    'bsit food processing':                             'bachelor of science in industrial technology major in food beverages preparation and service management',
+    'bsit automotive':                                  'bachelor of science in industrial technology major in automotive technology',
+    'bsit drafting':                                    'bachelor of science in industrial technology major in architectural drafting technology',
+    'bsit electrical':                                  'bachelor of science in industrial technology major in electrical technology',
+    'bsit electronics':                                 'bachelor of science in industrial technology major in electronics technology',
+    'bsit hvac':                                        'bachelor of science in industrial technology major in heating, ventilating, air-conditioning and refrigeration',
+    'bsit heating ventilation':                         'bachelor of science in industrial technology major in heating, ventilating, air-conditioning and refrigeration',
     # Education short forms
     'bsed english':                        'bachelor of secondary education major in english',
     'bsed filipino':                       'bachelor of secondary education major in filipino',
-    'bsed social science':                 'bachelor of secondary education major in social science',
+    'bsed social science':                 'bachelor of secondary education major in social studies',
     'bsed mathematics':                    'bachelor of secondary education major in mathematics',
     'bsed math':                           'bachelor of secondary education major in mathematics',
     'bsed science':                        'bachelor of secondary education major in science',
     'bachelor of secondary education major in english':       'bachelor of secondary education major in english',
     'bachelor of secondary education major in filipino':      'bachelor of secondary education major in filipino',
-    'bachelor of secondary education major in social science':'bachelor of secondary education major in social science',
+    'bachelor of secondary education major in social science':'bachelor of secondary education major in social studies',
     'bachelor of secondary education major in mathematics':   'bachelor of secondary education major in mathematics',
     'bachelor of secondary education major in science':       'bachelor of secondary education major in science',
+    # Old official titles that CORs may still print → current official names
+    'bachelor of science in criminal justice education': 'bachelor of science in criminology',
+    'bachelor of elementary education': 'bachelor elementary education major in generalist',
+    'bachelor of science in financial management': 'bachelor of science in business administration major in financial management',
+    'bachelor of science in business administration major in marketing': 'bachelor of science in business administration major in marketing management',
+    'bachelor of science in industrial technology – food processing': 'bachelor of science in industrial technology major in food beverages preparation and service management',
+    'bachelor of science in industrial technology - food processing': 'bachelor of science in industrial technology major in food beverages preparation and service management',
+    'bachelor of science in industrial technology – automotive': 'bachelor of science in industrial technology major in automotive technology',
+    'bachelor of science in industrial technology - automotive': 'bachelor of science in industrial technology major in automotive technology',
+    'bachelor of science in industrial technology – drafting': 'bachelor of science in industrial technology major in architectural drafting technology',
+    'bachelor of science in industrial technology - drafting': 'bachelor of science in industrial technology major in architectural drafting technology',
+    'bachelor of science in industrial technology – electrical': 'bachelor of science in industrial technology major in electrical technology',
+    'bachelor of science in industrial technology - electrical': 'bachelor of science in industrial technology major in electrical technology',
+    'bachelor of science in industrial technology – electronics': 'bachelor of science in industrial technology major in electronics technology',
+    'bachelor of science in industrial technology - electronics': 'bachelor of science in industrial technology major in electronics technology',
+    'bachelor of science in industrial technology – heating, ventilation, and air conditioning': 'bachelor of science in industrial technology major in heating, ventilating, air-conditioning and refrigeration',
+    'bachelor of science in industrial technology - heating, ventilation, and air conditioning': 'bachelor of science in industrial technology major in heating, ventilating, air-conditioning and refrigeration',
+    # Short forms of the official majors
+    'bscrim': 'bachelor of science in criminology',
+    'bs criminology': 'bachelor of science in criminology',
+    'bsba marketing': 'bachelor of science in business administration major in marketing management',
+    'bsba marketing management': 'bachelor of science in business administration major in marketing management',
+    'bs marketing management': 'bachelor of science in business administration major in marketing management',
+    'bsba financial management': 'bachelor of science in business administration major in financial management',
+    'beed generalist': 'bachelor elementary education major in generalist',
+    'btvted computer programming': 'bachelor of technical-vocational teacher education major in computer programming',
+    'btvted food and service management': 'bachelor of technical-vocational teacher education major in food and service management',
+    'btvted garments fashion and design': 'bachelor of technical-vocational teacher education major in garments, fashion and design',
+    'btle home economics': 'bachelor of technology and livelihood education major in home economics',
+    'btle industrial arts': 'bachelor of technology and livelihood education major in industrial arts',
+    'btle ict': 'bachelor of technology and livelihood education major in information and communication technology',
+    'btle information and communication technology': 'bachelor of technology and livelihood education major in information and communication technology',
+    'bsit architectural drafting': 'bachelor of science in industrial technology major in architectural drafting technology',
+    'bsit automotive technology': 'bachelor of science in industrial technology major in automotive technology',
+    'bsit electrical technology': 'bachelor of science in industrial technology major in electrical technology',
+    'bsit electronics technology': 'bachelor of science in industrial technology major in electronics technology',
+    'bsit food beverages': 'bachelor of science in industrial technology major in food beverages preparation and service management',
+    'bsit heating ventilating air conditioning and refrigeration': 'bachelor of science in industrial technology major in heating, ventilating, air-conditioning and refrigeration',
 }
 GWA_PATTERN = re.compile(
     r'(?:GWA|General\s+Weighted\s+Average|GENERAL\s+WEIGHTED\s+AVERAGE'
@@ -169,6 +207,12 @@ def _course_similarity(doc_course: str, form_course: str) -> float:
     if doc_lower == form_lower:
         return 1.0
 
+    # Truncated capture (a long program name was cut short during extraction):
+    # a long shared prefix means it is the same program, just incomplete.
+    _short, _long = sorted((doc_lower, form_lower), key=len)
+    if len(_short) >= 20 and _long.startswith(_short):
+        return 0.85
+
     # Try expanding abbreviations
     doc_expanded  = COURSE_ALIASES.get(doc_lower, doc_lower)
     form_expanded = COURSE_ALIASES.get(form_lower, form_lower)
@@ -198,6 +242,22 @@ def _course_similarity(doc_course: str, form_course: str) -> float:
     base_sim = SequenceMatcher(None, doc_lower, form_lower).ratio()
     if keyword_sim < 0.5:
         base_sim = base_sim * 0.5   # penalise base sim when keywords don't agree
+
+    # Same rule for alias expansions: "BS Civil Engineering" expands to a full
+    # program name that is 0.89 similar to ANY other engineering program, so the
+    # expanded text must also agree on keywords before it is trusted.
+    if doc_was_expanded or form_was_expanded:
+        _dw = [w for w in doc_expanded.split() if len(w) > 3 and w not in STOP_WORDS]
+        _fw = [w for w in form_expanded.split() if len(w) > 3 and w not in STOP_WORDS]
+        if _dw and _fw:
+            _sh = sum(1 for w in _fw if any(w in dw or dw in w for dw in _dw))
+            exp_keyword_sim = _sh / max(len(_fw), len(_dw))
+        else:
+            exp_keyword_sim = 0
+        if exp_keyword_sim < 0.5:
+            exp_sim       *= 0.5
+            form_exp_sim  *= 0.5
+            both_exp_sim  *= 0.5
 
     return max(base_sim, exp_sim, form_exp_sim, both_exp_sim, keyword_sim)
 
@@ -313,11 +373,12 @@ def _parse_text(text: str, doc_type: str = 'auto') -> dict:
     # Course — try multiple patterns to handle COR and Grades formats
     course_patterns = [
         # COR: "Course : Bachelor of Science in Information Technology   Year Level"
-        r'Course\s*[:\-]\s*([A-Za-z][A-Za-z\s]+?)(?:\s{2,}|Year\s+Level|\n|$)',
+        # Majors contain commas/hyphens: "Heating, Ventilating, Air-Conditioning..."
+        r'Course\s*[:\-]\s*([A-Za-z][A-Za-z0-9\s,\-/&()]+?)(?:\s{2,}|Year\s+Level|\n|$)',
         # Grades: "Program: Bachelor of Science in Information Technology"
-        r'Program\s*[:\-]\s*([A-Za-z][A-Za-z\s]+?)(?:\s{2,}|\n|$)',
+        r'Program\s*[:\-]\s*([A-Za-z][A-Za-z0-9\s,\-/&()]+?)(?:\s{2,}|Year\s+Level|\n|$)',
         # Abbreviated: "BSIT" or "BS Information Technology" on its own line
-        r'\b(BS\s+[A-Za-z][A-Za-z\s]{3,50}|Bachelor\s+of\s+[A-Za-z][A-Za-z\s]{3,50})\b',
+        r'\b(BS\s+[A-Za-z0-9][A-Za-z0-9\s,\-/&()]{3,60}|Bachelor\s+of\s+[A-Za-z0-9][A-Za-z0-9\s,\-/&()]{3,60})\b',
     ]
     for pat in course_patterns:
         course_m = re.search(pat, text, re.IGNORECASE)
