@@ -310,19 +310,9 @@ CREATE TABLE `notifications` (
 -- Default admin account
 -- Password: Admin@1234  (change after first login)
 -- ─────────────────────────────────────────────────────────────────────────────
-INSERT INTO `users` (
-  `username`, `email`, `password_hash`,
-  `first_name`, `last_name`,
-  `user_type`, `is_active`, `is_verified`,
-  `created_at`, `updated_at`
-) VALUES (
-  'admin',
-  'admin@lspu-scholarhub.edu',
-  'REDACTED_ADMIN_HASH',
-  'Admin', 'User',
-  'admin', 1, 1,
-  NOW(), NOW()
-);
+-- No accounts are seeded here: a committed password hash is a credential leak.
+-- Run `python seed_database.py` after import to create the initial admin account,
+-- then change its password on first login.
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Restore settings

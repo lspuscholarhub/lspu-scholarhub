@@ -41,5 +41,12 @@ Thumbs.db
 # Database backups (contain personal data - NEVER commit)
 backups/
 
+# Real student records kept only on this machine (COG/COR/grades) - NEVER commit
+_local_private/
+
+# Sample student documents that may contain personal data
+sample/
+database/sample_documents/
+
 # Freebuff / agent workspace metadata (local only)
 .freebuff/
