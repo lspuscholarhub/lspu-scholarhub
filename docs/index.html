@@ -34,13 +34,14 @@
 
 <header class="hero" id="top">
   <div class="wrap">
-    <span class="eyebrow">Laguna State Polytechnic University &middot; Scholarship Office</span>
+    <span class="eyebrow">Laguna State Polytechnic University &middot; Scholarship and Financial Assistance Office</span>
     <h1>LSPU <em>ScholarHub</em></h1>
-    <p class="subtitle">An AI-Enabled Web-Based Scholarship Management and Monitoring System</p>
+    <p class="subtitle">An AI-Enabled Web-Based Scholarship Management and Monitoring System with Chatbot and Multi-Channel Notifications</p>
     <p class="lede">
-      One platform for the whole scholarship lifecycle — from document-verified student
+      Developed for the Scholarship and Financial Assistance Office (SFAO) of LSPU&ndash;Santa Cruz
+      Campus: one platform for the whole scholarship lifecycle &mdash; from document-verified student
       registration and program creation, to application review, scholar batching, and
-      Monitoring &amp; Evaluation compliance across the four LSPU campuses.
+      Monitoring &amp; Evaluation compliance, with multi-campus support for all four LSPU campuses.
     </p>
     <ul class="chips">
       <li>Flask &amp; MySQL</li>
@@ -54,6 +55,9 @@
         View Source on GitHub
       </a>
       <a class="btn btn-ghost" href="#screenshots">See the System</a>
+      <a class="btn btn-ghost" href="https://github.com/lspuscholarhub/lspu-scholarhub/blob/main/papers/LSPU_ScholarHub_Manuscript.pdf" target="_blank" rel="noopener">
+        Read the Manuscript
+      </a>
     </div>
   </div>
 </header>
@@ -94,21 +98,21 @@
           <div class="icon-badge">🎯</div>
           <h3>General objective</h3>
           <p>
-            To develop an AI-enabled web-based scholarship management and monitoring system
-            for the Laguna State Polytechnic University Scholarship Office that centralizes
-            scholarship programs, applications, awarding, and scholar monitoring.
+            To design, develop, test, and evaluate LSPU ScholarHub as an AI-enabled web-based
+            scholarship management and monitoring system for the Scholarship and Financial
+            Assistance Office (SFAO) of Laguna State Polytechnic University&ndash;Santa Cruz Campus,
+            supporting its operational requirements and those of student scholars through
+            integrated document processing, academic monitoring, communication, information
+            management, and administrative functions.
           </p>
         </div>
         <div class="card">
           <div class="icon-badge">✅</div>
           <h3>Specific objectives</h3>
           <ul class="objective-list">
-            <li>Automate student identity verification at registration by extracting and cross-checking data from the COR and Copy of Grades.</li>
-            <li>Centralize scholarship program creation, application intake, and review with custom form fields in place of paper and Google Forms.</li>
-            <li>Provide one-click batching of approved scholars with exportable records for disbursement.</li>
-            <li>Track Monitoring &amp; Evaluation compliance per scholar, per academic period, with configurable deadlines.</li>
-            <li>Enforce role-based access control with campus-level data isolation across all four campuses.</li>
-            <li>Deliver AI-assisted scholarship guidance, multi-channel notifications, reports, and an audit trail.</li>
+            <li>Design and develop LSPU ScholarHub based on the identified functional and operational requirements of the SFAO and student scholars.</li>
+            <li>Evaluate the functional performance of the major modules &mdash; user account management, AI-powered document verification, academic monitoring, AI-enabled chatbot, multi-channel notifications, document repository, administrative dashboard, and super user management &mdash; in terms of accuracy, response time, reliability, and delivery rate.</li>
+            <li>Determine the perceived software quality and user acceptance of LSPU ScholarHub based on the applicable ISO/IEC 25010 characteristics: Functional Suitability, Performance Efficiency, Usability, Reliability, Security, and Maintainability.</li>
           </ul>
         </div>
       </div>
@@ -157,10 +161,12 @@
         </div>
         <div class="card">
           <div class="icon-badge">🧪</div>
-          <h3>Testing</h3>
+          <h3>Testing &amp; evaluation</h3>
           <p>
-            Black-box testing was performed per role and per workflow, with verification
-            scripts for exports, registration gating, record merging, and batch operations.
+            Functional performance was measured per module in terms of accuracy, response
+            time, reliability, and delivery rate, then perceived software quality and user
+            acceptance were evaluated by the intended users using ISO/IEC 25010
+            characteristics after demonstration and hands-on use.
           </p>
         </div>
         <div class="card">
@@ -374,25 +380,21 @@
 
       <div class="team">
         <div class="member">
-          <div class="role">Lead Developer &amp; Researcher</div>
+          <div class="role">Researcher &amp; Developer</div>
+          <div class="name">Alfonso Marcelo G. Castillo</div>
+          <div class="detail">BS Information Technology, major in Web and Mobile Application Development</div>
+        </div>
+        <div class="member">
+          <div class="role">Researcher &amp; Developer</div>
           <div class="name">John Onyx A. Masa</div>
-          <div class="detail">BS Information Technology &middot; Laguna State Polytechnic University</div>
+          <div class="detail">BS Information Technology, major in Web and Mobile Application Development</div>
         </div>
         <div class="member">
-          <div class="role">Project Adviser</div>
-          <div class="name">To be confirmed</div>
-          <div class="detail">Laguna State Polytechnic University &middot; College of Computer Studies</div>
-        </div>
-        <div class="member">
-          <div class="role">Team Members</div>
-          <div class="name">To be confirmed</div>
-          <div class="detail">Laguna State Polytechnic University &middot; College of Computer Studies</div>
+          <div class="role">Thesis Adviser</div>
+          <div class="name">Mark P. Bernardino, MSCS</div>
+          <div class="detail">College of Computer Studies, Laguna State Polytechnic University</div>
         </div>
       </div>
-
-      <p class="note">
-        Placeholder names above (adviser and team members) still need to be filled in before submission.
-      </p>
     </div>
   </section>
 
@@ -427,9 +429,15 @@
         </ul>
         <ul class="link-list">
           <li>
+            <a href="https://github.com/lspuscholarhub/lspu-scholarhub/blob/main/papers/LSPU_ScholarHub_Manuscript.pdf" target="_blank" rel="noopener">
+              <span>📘</span>
+              <span>Latest manuscript (PDF)<small>Complete capstone manuscript, 333 pages</small></span>
+            </a>
+          </li>
+          <li>
             <a href="https://github.com/lspuscholarhub/lspu-scholarhub/tree/main/papers" target="_blank" rel="noopener">
               <span>📚</span>
-              <span>Manuscript &amp; system documentation<small>Thesis documentation, ERD, data dictionary, and process flows</small></span>
+              <span>Manuscript &amp; system documentation<small>Thesis manuscript plus ERD, data dictionary, and process flows</small></span>
             </a>
           </li>
           <li>
@@ -455,7 +463,7 @@
   <div class="wrap">
     <strong>LSPU ScholarHub</strong>
     <span class="dot">&bull;</span>
-    <span>Laguna State Polytechnic University &mdash; Scholarship Office</span>
+    <span>Laguna State Polytechnic University &mdash; Scholarship and Financial Assistance Office</span>
     <span class="dot">&bull;</span>
     <span>College of Computer Studies</span>
     <span class="dot">&bull;</span>
