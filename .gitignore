@@ -48,5 +48,10 @@ _local_private/
 sample/
 database/sample_documents/
 
+# Personal documents (CV, resumes) - never publish
+*_CV_*.docx
+*CV*.docx
+*resume*.docx
+
 # Freebuff / agent workspace metadata (local only)
 .freebuff/
