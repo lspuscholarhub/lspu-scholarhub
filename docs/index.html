@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LSPU ScholarHub — AI-Enabled Scholarship Management and Monitoring System</title>
+<meta name="description" content="Capstone project of Laguna State Polytechnic University: a web-based, AI-enabled scholarship management and monitoring system for the LSPU Scholarship Office.">
+<meta property="og:title" content="LSPU ScholarHub — AI-Enabled Scholarship Management and Monitoring System">
+<meta property="og:description" content="Document-verified registration, scholarship programs, application review, scholar batching, and M&amp;E monitoring across the four LSPU campuses.">
+<meta property="og:type" content="website">
+<link rel="icon" href="assets/lspu-logo.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="site-nav">
+  <div class="wrap">
+    <a class="brand" href="#top">
+      <img src="assets/lspu-logo.png" alt="LSPU logo">
+      LSPU <span>ScholarHub</span>
+    </a>
+    <div class="nav-links">
+      <a href="#problem">Problem</a>
+      <a href="#objectives">Objectives</a>
+      <a href="#methodology">Methodology</a>
+      <a href="#features">Features</a>
+      <a href="#screenshots">Screenshots</a>
+      <a href="#diagrams">Diagrams</a>
+      <a href="#team">Team</a>
+      <a href="#links">Links</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <span class="eyebrow">Laguna State Polytechnic University &middot; Scholarship Office</span>
+    <h1>LSPU <em>ScholarHub</em></h1>
+    <p class="subtitle">An AI-Enabled Web-Based Scholarship Management and Monitoring System</p>
+    <p class="lede">
+      One platform for the whole scholarship lifecycle — from document-verified student
+      registration and program creation, to application review, scholar batching, and
+      Monitoring &amp; Evaluation compliance across the four LSPU campuses.
+    </p>
+    <ul class="chips">
+      <li>Flask &amp; MySQL</li>
+      <li>Google Gemini AI</li>
+      <li>Bootstrap 5</li>
+      <li>Multi-campus RBAC</li>
+      <li>Railway deployment</li>
+    </ul>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="https://github.com/lspuscholarhub/lspu-scholarhub" target="_blank" rel="noopener">
+        View Source on GitHub
+      </a>
+      <a class="btn btn-ghost" href="#screenshots">See the System</a>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- Problem ------------------------------------------------------------ -->
+  <section class="section" id="problem">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">The Problem</span>
+        <h2>Scholarship processing that depended on paper, spreadsheets, and legwork</h2>
+        <p>
+          Before ScholarHub, the Scholarship Office handled every stage of a scholarship
+          manually. The system was built to replace that workflow end to end.
+        </p>
+      </div>
+
+      <ul class="problem-list">
+        <li>Student registration and eligibility were verified by hand — Certificates of Registration and copies of grades were checked manually, with no cross-validation against the encoded details.</li>
+        <li>Program applications were collected through paper forms and Google Forms, then re-encoded, so student data was duplicated in several places.</li>
+        <li>Approved scholars were batched and tracked per student in spreadsheets, making disbursement records slow to prepare and easy to desynchronize.</li>
+        <li>Monitoring &amp; Evaluation forms were filed on paper, so compliance per scholar and per semester was not centrally visible.</li>
+        <li>Announcements and reminders were sent one by one, and records were fragmented across the Santa Cruz, Siniloan, Los Ba&ntilde;os, and San Pablo City campuses.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Objectives --------------------------------------------------------- -->
+  <section class="section alt" id="objectives">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">Objectives</span>
+        <h2>What the study set out to achieve</h2>
+      </div>
+      <div class="grid two">
+        <div class="card">
+          <div class="icon-badge">🎯</div>
+          <h3>General objective</h3>
+          <p>
+            To develop an AI-enabled web-based scholarship management and monitoring system
+            for the Laguna State Polytechnic University Scholarship Office that centralizes
+            scholarship programs, applications, awarding, and scholar monitoring.
+          </p>
+        </div>
+        <div class="card">
+          <div class="icon-badge">✅</div>
+          <h3>Specific objectives</h3>
+          <ul class="objective-list">
+            <li>Automate student identity verification at registration by extracting and cross-checking data from the COR and Copy of Grades.</li>
+            <li>Centralize scholarship program creation, application intake, and review with custom form fields in place of paper and Google Forms.</li>
+            <li>Provide one-click batching of approved scholars with exportable records for disbursement.</li>
+            <li>Track Monitoring &amp; Evaluation compliance per scholar, per academic period, with configurable deadlines.</li>
+            <li>Enforce role-based access control with campus-level data isolation across all four campuses.</li>
+            <li>Deliver AI-assisted scholarship guidance, multi-channel notifications, reports, and an audit trail.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Methodology -------------------------------------------------------- -->
+  <section class="section" id="methodology">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">Methodology</span>
+        <h2>How the system was designed and built</h2>
+        <p>
+          Development followed the system development life cycle: requirements gathering,
+          analysis and design, development, testing, and deployment.
+        </p>
+      </div>
+
+      <div class="grid three">
+        <div class="card">
+          <div class="icon-badge">📋</div>
+          <h3>Requirements</h3>
+          <p>
+            Processes of the LSPU Scholarship Office were documented and analyzed together
+            with the official 2026 UniFAST TES and TDP guidelines, which the system's
+            assistant also uses as its source of truth.
+          </p>
+        </div>
+        <div class="card">
+          <div class="icon-badge">🧩</div>
+          <h3>Analysis &amp; design</h3>
+          <p>
+            A three-tier Model&ndash;View&ndash;Controller architecture was designed, supported by
+            a context diagram, use-case diagram, entity-relationship diagram of the twelve
+            core entities, and ten process-flow diagrams.
+          </p>
+        </div>
+        <div class="card">
+          <div class="icon-badge">💻</div>
+          <h3>Development</h3>
+          <p>
+            Built with Flask 2.3.3 and Jinja2 templates on a MySQL database, with a service
+            layer for OCR verification, chatbot, batching, exports, notifications, and
+            campus scoping.
+          </p>
+        </div>
+        <div class="card">
+          <div class="icon-badge">🧪</div>
+          <h3>Testing</h3>
+          <p>
+            Black-box testing was performed per role and per workflow, with verification
+            scripts for exports, registration gating, record merging, and batch operations.
+          </p>
+        </div>
+        <div class="card">
+          <div class="icon-badge">🚀</div>
+          <h3>Deployment</h3>
+          <p>
+            The system runs on Railway with Gunicorn, stores uploaded documents on
+            Cloudinary, and sends email and SMS through Brevo and Semaphore/Twilio.
+          </p>
+        </div>
+        <div class="card">
+          <div class="icon-badge">🤖</div>
+          <h3>AI integration</h3>
+          <p>
+            Google Gemini powers two features: OCR document intelligence for PDF
+            verification, and the ScholarHub Assistant, which answers scholarship questions
+            using live, visibility-scoped data.
+          </p>
+        </div>
+      </div>
+
+      <h3 style="margin:44px 0 18px;font-size:1.15rem;">End-to-end scholarship lifecycle</h3>
+      <div class="lifecycle">
+        <div class="stage"><strong>Registration</strong><span>Documents verified by OCR before the account is activated.</span></div>
+        <div class="stage"><strong>Program creation</strong><span>Programs with custom questions, slots, and campus scope.</span></div>
+        <div class="stage"><strong>Review &amp; decision</strong><span>Staff review applications, approve or reject with notes.</span></div>
+        <div class="stage"><strong>Batching &amp; awarding</strong><span>Approved scholars grouped into batches and exported.</span></div>
+        <div class="stage"><strong>Monitoring</strong><span>M&amp;E forms uploaded, compliance tracked, renewal next period.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features ----------------------------------------------------------- -->
+  <section class="section alt" id="features">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">System Features</span>
+        <h2>Role-based features for the whole Scholarship Office</h2>
+      </div>
+
+      <div class="grid three">
+        <div class="card">
+          <div class="icon-badge">👤</div>
+          <h3>Student</h3>
+          <ul>
+            <li>Dashboard with application counters, GWA card, and document reminders</li>
+            <li>Campus-scoped scholarship list and pre-filled application form</li>
+            <li>Application status tracking, edit, and withdraw while pending</li>
+            <li>My Scholarship: batch details and M&amp;E form download/upload</li>
+            <li>Document replacement with OCR re-verification</li>
+            <li>In-app, email, and SMS notifications</li>
+            <li>ScholarHub AI Assistant</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="icon-badge">🗂️</div>
+          <h3>Staff</h3>
+          <ul>
+            <li>Review queue with approve, reject, and under-review actions</li>
+            <li>Scholarship program creation and management with custom fields</li>
+            <li>One-click batching by program with Excel export</li>
+            <li>Monitoring and tracking with M&amp;E compliance column</li>
+            <li>Reports with Chart.js visualizations</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="icon-badge">🛡️</div>
+          <h3>Administrator</h3>
+          <ul>
+            <li>All staff capabilities, scoped to the assigned campus</li>
+            <li>User management, role changes, and campus assignment</li>
+            <li>Campus settings such as the M&amp;E deadline</li>
+            <li>Audit log and campus-wide reports</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="icon-badge">🏛️</div>
+          <h3>Super Administrator</h3>
+          <ul>
+            <li>University-wide view with campus context switcher</li>
+            <li>Campus management and academic period configuration</li>
+            <li>University-wide scholarship programs</li>
+            <li>Full audit log and analytics across all campuses</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="icon-badge">🌐</div>
+          <h3>Guest</h3>
+          <ul>
+            <li>Landing page and public scholarship browsing</li>
+            <li>AI Assistant for public, non-hidden programs</li>
+            <li>Registration and login</li>
+          </ul>
+        </div>
+        <div class="card">
+          <div class="icon-badge">🔗</div>
+          <h3>Cross-cutting</h3>
+          <ul>
+            <li>Multi-channel notifications: in-app, email, SMS</li>
+            <li>Document-verified registration and renewal</li>
+            <li>Audit trail for administrative actions</li>
+            <li>Campus-level data isolation enforced in queries</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Screenshots -------------------------------------------------------- -->
+  <section class="section" id="screenshots">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">Screenshots</span>
+        <h2>The system in action</h2>
+        <p>Click any screenshot to open it at full size.</p>
+      </div>
+
+      <div class="shots">
+        <figure class="shot wide">
+          <a href="assets/screenshot-home.png" target="_blank" rel="noopener">
+            <img src="assets/screenshot-home.png" alt="LSPU ScholarHub landing page with campus background and calls to browse scholarships or register">
+          </a>
+          <figcaption><strong>Landing page.</strong> Public entry point for guests with scholarship browsing and registration.</figcaption>
+        </figure>
+
+        <figure class="shot">
+          <a href="assets/screenshot-scholarships.png" target="_blank" rel="noopener">
+            <img src="assets/screenshot-scholarships.png" alt="Available scholarships list showing TDP and TES programs with stipend amounts and status badges">
+          </a>
+          <figcaption><strong>Scholarship listing.</strong> Campus-scoped and visibility-scoped programs with award amounts and status badges.</figcaption>
+        </figure>
+
+        <figure class="shot">
+          <a href="assets/screenshot-register.png" target="_blank" rel="noopener">
+            <img src="assets/screenshot-register.png" alt="Student registration page with identity fields and document upload">
+          </a>
+          <figcaption><strong>Document-verified registration.</strong> Students upload their COR and Copy of Grades for OCR verification.</figcaption>
+        </figure>
+
+        <figure class="shot">
+          <a href="assets/screenshot-login.png" target="_blank" rel="noopener">
+            <img src="assets/screenshot-login.png" alt="Login page for students, staff, and administrators">
+          </a>
+          <figcaption><strong>Secure login.</strong> Role-based access for students, staff, campus administrators, and the super administrator.</figcaption>
+        </figure>
+
+        <figure class="shot">
+          <a href="assets/screenshot-chatbot.png" target="_blank" rel="noopener">
+            <img src="assets/screenshot-chatbot.png" alt="ScholarHub AI Assistant chat interface with suggested questions">
+          </a>
+          <figcaption><strong>ScholarHub Assistant.</strong> Gemini-powered chatbot answering scholarship questions with live system data.</figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- Diagrams ----------------------------------------------------------- -->
+  <section class="section alt" id="diagrams">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">System Documentation</span>
+        <h2>Architecture and design diagrams</h2>
+      </div>
+
+      <div class="grid three">
+        <figure class="diagram">
+          <a href="assets/diagram-context.png" target="_blank" rel="noopener">
+            <img src="assets/diagram-context.png" alt="Context diagram of LSPU ScholarHub">
+          </a>
+          <figcaption><strong>Context diagram.</strong> External entities and data flows of the system.</figcaption>
+        </figure>
+        <figure class="diagram">
+          <a href="assets/diagram-usecase.png" target="_blank" rel="noopener">
+            <img src="assets/diagram-usecase.png" alt="Use-case diagram of LSPU ScholarHub">
+          </a>
+          <figcaption><strong>Use-case diagram.</strong> Actors and the functions available to each role.</figcaption>
+        </figure>
+        <figure class="diagram">
+          <a href="assets/diagram-erd.png" target="_blank" rel="noopener">
+            <img src="assets/diagram-erd.png" alt="Entity-relationship diagram of the LSPU ScholarHub database">
+          </a>
+          <figcaption><strong>Entity-relationship diagram.</strong> The twelve core entities and their relationships.</figcaption>
+        </figure>
+      </div>
+
+      <div class="table-wrap" style="margin-top:32px;">
+        <table>
+          <thead>
+            <tr><th>Layer</th><th>Technology</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Frontend</td><td>HTML5, CSS3, Bootstrap 5.1.3, JavaScript ES6, Chart.js</td></tr>
+            <tr><td>Backend</td><td>Python, Flask 2.3.3, Jinja2, Gunicorn, MVC with blueprints and a service layer</td></tr>
+            <tr><td>Database</td><td>MySQL with SQLAlchemy ORM; twelve core entities</td></tr>
+            <tr><td>AI</td><td>Google Gemini for OCR document verification and the conversational assistant</td></tr>
+            <tr><td>Storage &amp; messaging</td><td>Cloudinary for documents; Brevo email; Semaphore/Twilio SMS</td></tr>
+            <tr><td>Deployment</td><td>Railway with Gunicorn workers</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Team --------------------------------------------------------------- -->
+  <section class="section" id="team">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">The Team</span>
+        <h2>Researchers and adviser</h2>
+      </div>
+
+      <div class="team">
+        <div class="member">
+          <div class="role">Lead Developer &amp; Researcher</div>
+          <div class="name">John Onyx A. Masa</div>
+          <div class="detail">BS Information Technology &middot; Laguna State Polytechnic University</div>
+        </div>
+        <div class="member">
+          <div class="role">Project Adviser</div>
+          <div class="name">To be confirmed</div>
+          <div class="detail">Laguna State Polytechnic University &middot; College of Computer Studies</div>
+        </div>
+        <div class="member">
+          <div class="role">Team Members</div>
+          <div class="name">To be confirmed</div>
+          <div class="detail">Laguna State Polytechnic University &middot; College of Computer Studies</div>
+        </div>
+      </div>
+
+      <p class="note">
+        Placeholder names above (adviser and team members) still need to be filled in before submission.
+      </p>
+    </div>
+  </section>
+
+  <!-- Links -------------------------------------------------------------- -->
+  <section class="section alt" id="links">
+    <div class="wrap">
+      <div class="section-head">
+        <span class="kicker">Project Links</span>
+        <h2>Source code, documentation, and setup guide</h2>
+      </div>
+
+      <div class="grid two">
+        <ul class="link-list">
+          <li>
+            <a href="https://github.com/lspuscholarhub/lspu-scholarhub" target="_blank" rel="noopener">
+              <span>📦</span>
+              <span>GitHub repository<small>Complete source code of the system</small></span>
+            </a>
+          </li>
+          <li>
+            <a href="https://github.com/lspuscholarhub/lspu-scholarhub/blob/main/README.md" target="_blank" rel="noopener">
+              <span>📄</span>
+              <span>README &amp; project overview<small>Features, structure, and API endpoints</small></span>
+            </a>
+          </li>
+          <li>
+            <a href="https://github.com/lspuscholarhub/lspu-scholarhub/blob/main/SETUP_GUIDE.md" target="_blank" rel="noopener">
+              <span>⚙️</span>
+              <span>Setup guide<small>Requirements, installation, and configuration</small></span>
+            </a>
+          </li>
+        </ul>
+        <ul class="link-list">
+          <li>
+            <a href="https://github.com/lspuscholarhub/lspu-scholarhub/tree/main/papers" target="_blank" rel="noopener">
+              <span>📚</span>
+              <span>Manuscript &amp; system documentation<small>Thesis documentation, ERD, data dictionary, and process flows</small></span>
+            </a>
+          </li>
+          <li>
+            <a href="https://github.com/lspuscholarhub/lspu-scholarhub/tree/main/docs" target="_blank" rel="noopener">
+              <span>🗃️</span>
+              <span>Additional documentation<small>Testing policy, verification scripts, and flowcharts</small></span>
+            </a>
+          </li>
+          <li>
+            <a href="https://github.com/lspuscholarhub/lspu-scholarhub/issues" target="_blank" rel="noopener">
+              <span>💬</span>
+              <span>Issues &amp; feedback<small>Report a problem or suggest an improvement</small></span>
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <strong>LSPU ScholarHub</strong>
+    <span class="dot">&bull;</span>
+    <span>Laguna State Polytechnic University &mdash; Scholarship Office</span>
+    <span class="dot">&bull;</span>
+    <span>College of Computer Studies</span>
+    <span class="dot">&bull;</span>
+    <span>Capstone Project, 2026</span>
+  </div>
+</footer>
+
+</body>
+</html>
