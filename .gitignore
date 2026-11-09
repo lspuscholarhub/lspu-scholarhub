@@ -40,3 +40,6 @@ Thumbs.db
 
 # Database backups (contain personal data - NEVER commit)
 backups/
+
+# Freebuff / agent workspace metadata (local only)
+.freebuff/

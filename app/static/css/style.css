@@ -549,3 +549,121 @@ footer .container { max-width: 1140px; }
 
 /* ── Tooltip overrides ────────────────────────────────────────────────────── */
 [data-bs-toggle="tooltip"] { cursor: help; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   GLASSMORPHISM LAYER — frosted translucent surfaces across the whole system
+   Depends on the light gradient body background below for refraction.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root {
+  --glass-bg:        rgba(255,255,255,.58);
+  --glass-bg-strong: rgba(255,255,255,.78);
+  --glass-bg-soft:   rgba(255,255,255,.45);
+  --glass-border:    rgba(255,255,255,.65);
+  --glass-shadow:    0 8px 30px rgba(26,58,71,.10), 0 1px 3px rgba(26,58,107,.06);
+  --glass-blur:      blur(16px) saturate(170%);
+  --glass-body-bg:
+    radial-gradient(1100px 700px at 8% -12%, rgba(13,110,253,.16), transparent 60%),
+    radial-gradient(1000px 720px at 108% 8%, rgba(26,58,107,.14), transparent 55%),
+    radial-gradient(900px 900px at 50% 118%, rgba(13,202,240,.12), transparent 60%),
+    linear-gradient(180deg, #eef3fb 0%, #f7f9fd 45%, #eef2f9 100%);
+}
+
+/* Canvas — fixed so the blur has something to refract while scrolling */
+body { background: var(--glass-body-bg); background-attachment: fixed; }
+
+/* ── Glass surfaces ───────────────────────────────────────────────────────── */
+.card,
+.filter-card,
+.quick-action-btn,
+.list-group-item,
+.stat-card,
+.features .card {
+  background-color: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), inset 0 1px 0 rgba(255,255,255,.55);
+}
+.card:hover { box-shadow: 0 12px 36px rgba(26,58,107,.14), inset 0 1px 0 rgba(255,255,255,.6); }
+.stat-card:hover { box-shadow: 0 14px 40px rgba(26,58,107,.16), inset 0 1px 0 rgba(255,255,255,.6); }
+.card-header {
+  background-color: rgba(255,255,255,.42);
+  border-bottom: 1px solid rgba(255,255,255,.6);
+}
+/* Keep the accent left-rule on scholarship cards (border shorthand above resets it) */
+.scholarship-card { border-left: 4px solid var(--sh-accent); }
+.scholarship-card:hover { border-left-color: var(--sh-primary); }
+
+/* ── Modals & dropdowns ───────────────────────────────────────────────────── */
+.modal-content {
+  background-color: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: 0 24px 60px rgba(10,25,55,.28), inset 0 1px 0 rgba(255,255,255,.6);
+}
+.dropdown-menu {
+  background-color: rgba(255,255,255,.82);
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+  backdrop-filter: blur(18px) saturate(170%);
+  box-shadow: 0 12px 36px rgba(10,25,55,.18);
+}
+
+/* ── Forms — frosted inputs, solid on focus for typing clarity ────────────── */
+.form-control:not([type="checkbox"]):not([type="radio"]),
+.form-select,
+.input-group > .form-control,
+textarea.form-control {
+  background-color: rgba(255,255,255,.7);
+}
+.form-control:focus, .form-select:focus { background-color: #fff; }
+
+/* ── Tables stay legible over glass ───────────────────────────────────────── */
+.table thead th {
+  background-color: rgba(255,255,255,.45);
+  border-bottom: 2px solid rgba(26,58,107,.18);
+}
+.table tbody tr:hover { background-color: rgba(255,255,255,.5); }
+
+/* Mobile stacked rows */
+@media (max-width: 768px) {
+  .table-responsive .table tbody tr {
+    background-color: var(--glass-bg-strong);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border-color: var(--glass-border);
+  }
+}
+
+/* ── Alerts & toasts — lightly frosted, keep semantic colors ──────────────── */
+.alert {
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,.55);
+}
+
+/* ── Page canvas parallax polish ──────────────────────────────────────────── */
+.hero-section {
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,.2), 0 12px 40px rgba(13,58,110,.25);
+}
+
+/* Fallback where backdrop-filter is unsupported: keep panels readable */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .card, .filter-card, .quick-action-btn, .list-group-item, .stat-card,
+  .features .card, .modal-content, .dropdown-menu {
+    background-color: rgba(255,255,255,.94);
+  }
+}
+
+/* Print — never let blur/tint pollute paper output */
+@media print {
+  body { background: #fff !important; }
+  .card, .filter-card, .quick-action-btn, .list-group-item, .stat-card,
+  .features .card, .modal-content, .dropdown-menu, .alert,
+  .table-responsive .table tbody tr {
+    background: #fff !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    border: 1px solid #dee2e6 !important;
+  }
+}

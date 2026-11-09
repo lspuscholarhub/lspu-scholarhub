@@ -331,7 +331,7 @@
 
 <style>
 /* ── Page shell ── */
-body  { background: #f7f7f8; }
+body  { background: var(--glass-body-bg); background-attachment: fixed; }
 main  { padding: 0 !important; }
 footer{ display: none !important; }
 
@@ -342,8 +342,10 @@ footer{ display: none !important; }
 /* ── Top bar ── */
 #chatTopBar {
   display: flex; align-items: center; gap: 12px;
-  padding: 12px 20px; border-bottom: 1px solid #e5e7eb;
-  background: #fff; flex-shrink: 0;
+  padding: 12px 20px; border-bottom: 1px solid rgba(255,255,255,.6);
+  background: rgba(255,255,255,.55); flex-shrink: 0;
+  -webkit-backdrop-filter: blur(16px) saturate(170%);
+  backdrop-filter: blur(16px) saturate(170%);
 }
 .chat-title { font-weight: 700; font-size: .95rem; color: #111827;
               flex: 1; display: flex; align-items: center; }
@@ -376,7 +378,8 @@ footer{ display: none !important; }
 /* Starter grid (ChatGPT-style 2×3) */
 .starter-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px;
                 text-align:left; }
-.starter-card { background:#fff; border:1px solid #e5e7eb; border-radius:12px;
+.starter-card { background:rgba(255,255,255,.6); border:1px solid rgba(255,255,255,.7); border-radius:12px;
+                -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px);
                 padding:14px 16px; cursor:pointer; text-align:left;
                 transition:all .15s; display:flex; flex-direction:column; gap:3px; }
 .starter-card:hover { border-color:#0d6efd; background:#f0f7ff;
@@ -399,8 +402,9 @@ footer{ display: none !important; }
 .msg-bubble { padding:12px 18px; border-radius:18px;
               font-size:.9rem; line-height:1.7; word-break:break-word;
               max-width:85%; }
-.bot-bubble  { background:#fff; color:#111827; border:1px solid #e5e7eb;
+.bot-bubble  { background:rgba(255,255,255,.7); color:#111827; border:1px solid rgba(255,255,255,.8);
                border-radius:4px 18px 18px 18px;
+               -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px);
                box-shadow:0 1px 3px rgba(0,0,0,.06); max-width:92%; }
 .user-bubble { background:linear-gradient(135deg,#1a3a6b,#0d6efd); color:#fff;
                border-radius:18px 4px 18px 18px; }
@@ -429,12 +433,13 @@ footer{ display: none !important; }
 
 /* History divider */
 .history-divider { text-align:center; padding:12px 0; margin:8px 0; }
-.history-divider span { font-size:.72rem; color:#9ca3af; background:#f7f7f8;
+.history-divider span { font-size:.72rem; color:#9ca3af; background:rgba(255,255,255,.6);
                         padding:2px 14px; border-radius:10px;
                         border:1px solid #e5e7eb; }
 
 /* ── Input area ── */
-#inputArea { padding:10px 16px 14px; background:#f7f7f8; flex-shrink:0; }
+#inputArea { padding:10px 16px 14px; background:rgba(247,247,248,.55); flex-shrink:0;
+            -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); }
 
 #suggestedTopics { display:flex; flex-wrap:wrap; gap:7px; margin-bottom:10px;
                    justify-content:center; }
@@ -444,7 +449,8 @@ footer{ display: none !important; }
 .topic-chip:hover { background:#f0f7ff; color:#0d6efd; border-color:#0d6efd; }
 
 #inputBox { display:flex; align-items:flex-end; gap:10px;
-            background:#fff; border:1px solid #d1d5db; border-radius:16px;
+            background:rgba(255,255,255,.75); border:1px solid rgba(255,255,255,.85); border-radius:16px;
+            -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px);
             padding:10px 10px 10px 18px; box-shadow:0 1px 4px rgba(0,0,0,.06);
             transition:border-color .2s, box-shadow .2s; }
 #inputBox:focus-within { border-color:#0d6efd; box-shadow:0 0 0 3px rgba(13,110,253,.1); }
