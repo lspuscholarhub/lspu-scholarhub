@@ -338,9 +338,9 @@ def get_app():
                 for line in f:
                     if line.startswith('DATABASE_URL='):
                         db_url = line.split('=', 1)[1].strip()
-    # Railway fallback
+    # No hard-coded fallback: credentials must come from the environment or .env
     if not db_url or 'localhost' in db_url:
-        db_url = 'mysql+pymysql://root:REDACTED_DB_PASSWORD@altaria.proxy.rlwy.net:56613/railway'
+        sys.exit('Set DATABASE_URL to a non-local database before running.')
 
     os.environ['DATABASE_URL'] = db_url
     from app import create_app

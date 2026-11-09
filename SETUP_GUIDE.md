@@ -176,11 +176,11 @@ The chatbot uses Google Gemini AI for free (no credit card needed).
 
 1. Go to your Google Account → Security → **2-Step Verification** (enable it)
 2. Go to **App Passwords** → Select app: Mail → Select device: Windows Computer
-3. Copy the 16-character password (e.g., `REDACTED_GMAIL_APP_PASSWORD`)
+3. Copy the 16-character password (e.g., `abcd efgh ijkl mnop`)
 4. Open `.env` and update:
    ```
    MAIL_USERNAME=your-email@gmail.com
-   MAIL_PASSWORD=REDACTED_GMAIL_APP_PASSWORD
+   MAIL_PASSWORD=your-gmail-app-password
    ```
 
 ---

@@ -19,8 +19,9 @@ for b in bad:
     print('  ERR', b)
 
 # Boot the app against the live DB
-os.environ.setdefault('DATABASE_URL',
-    'mysql://root:REDACTED_DB_PASSWORD@altaria.proxy.rlwy.net:56613/railway')
+# Set DATABASE_URL in the environment (or .env) — never hard-code credentials here.
+if not os.environ.get('DATABASE_URL'):
+    sys.exit('Set DATABASE_URL before running this script.')
 try:
     from app import create_app, db
     app = create_app()

@@ -6,7 +6,6 @@ Tests every route for every user role and reports any 500 errors.
 Uses session injection (no password needed) for authenticated routes.
 Run: python papers/error_sweep.py
 """
-
 import os, sys, io
 
 if sys.platform == 'win32':
@@ -85,8 +84,15 @@ CHATBOT_ROUTES = [
 
 
 def get_app():
-    db_url = 'mysql+pymysql://root:REDACTED_DB_PASSWORD@altaria.proxy.rlwy.net:56613/railway'
+    db_url = os.environ.get('DATABASE_URL', '')
+    if not db_url:
+        sys.exit('Set DATABASE_URL before running the sweep (never hard-code it here).')
     os.environ['DATABASE_URL'] = db_url
+    # Pool recycling + timeouts so a stalled Railway proxy connection can
+    # never hang the whole sweep (observed: run sat for 15+ min after
+    # migrations on a dead pooled connection).
+    db_url += ('&' if '?' in db_url else '?') + \
+        'connect_timeout=15&read_timeout=45&write_timeout=45'
     from app import create_app
     return create_app()
 
@@ -131,6 +137,27 @@ def main():
     print(f"{C.D}")
 
     app = get_app()
+
+    # Cover detail/form pages added recently (real IDs so they render, not 404)
+    with app.app_context():
+        from app.models import User, Scholarship
+        _row = Scholarship.query.with_entities(Scholarship.id).first()
+        _sid = _row[0] if _row else None
+        _row = User.query.with_entities(User.id).filter_by(user_type='student', is_active=True).first()
+        _uid = _row[0] if _row else None
+    if _sid:
+        ADMIN_ROUTES.append(f'/admin/scholarships/{_sid}/add-student')
+        STAFF_ROUTES.append(f'/staff/scholarships/{_sid}/add-student')
+        SUPER_ADMIN_ROUTES.append(f'/admin/scholarships/{_sid}/add-student')
+    if _uid:
+        ADMIN_ROUTES.extend([f'/admin/students/{_uid}',
+                             f'/admin/students/{_uid}/add-existing-scholar'])
+        STAFF_ROUTES.extend([f'/staff/students/{_uid}',
+                             f'/staff/students/{_uid}/add-existing-scholar'])
+    ADMIN_ROUTES.append('/admin/campuses')
+    SUPER_ADMIN_ROUTES.extend(['/admin/settings', '/admin/campuses',
+                               '/admin/students'])
+
     tp = tf = ts = 0
 
     with app.test_client() as c:

@@ -87,13 +87,13 @@ MYSQL_DATABASE=lspu_scholarhub
 
 # Email — keep the same Gmail credentials
 MAIL_USERNAME=scholarhubtest@gmail.com
-MAIL_PASSWORD=REDACTED_GMAIL_APP_PASSWORD
+MAIL_PASSWORD=your-gmail-app-password
 
 # Gemini AI — keep the same API key
-GEMINI_API_KEY=REDACTED_GEMINI_KEY
+GEMINI_API_KEY=your-gemini-api-key
 
 # SMS — keep the same Semaphore key
-SEMAPHORE_API_KEY=REDACTED_SEMAPHORE_KEY
+SEMAPHORE_API_KEY=your-semaphore-api-key
 ```
 
 ---
