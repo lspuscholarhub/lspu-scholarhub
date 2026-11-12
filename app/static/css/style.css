@@ -3,7 +3,11 @@
    Bootstrap 5.1.3 Enhancement Layer
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── Design Tokens ────────────────────────────────────────────────────────── */
+/* ── Design Tokens — MOBILE-FIRST ───────────────────────────────────────────
+   Base values below target small screens (< 960px). Desktop refinements
+   live in the `@media (min-width: 960px)` block after the component rules.
+   Touch targets follow WCAG 2.5.5 / Apple HIG (44px minimum).
+   ──────────────────────────────────────────────────────────────────────────── */
 :root {
   /* Primary palette */
   --sh-primary:     #1a3a6b;
@@ -27,25 +31,64 @@
   --sh-gray-700:    #374151;
   --sh-gray-900:    #111827;
 
-  /* Spacing & Radius */
+  /* Typography — fluid scale (small screens get the low end) */
+  --sh-font:        'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --sh-text-2xs:    .6875rem;                                  /* 11px micro labels  */
+  --sh-text-xs:     .75rem;                                    /* 12px captions      */
+  --sh-text-sm:     .8125rem;                                  /* 13px secondary     */
+  --sh-text-base:   .875rem;                                   /* 14px body          */
+  --sh-text-md:     .9375rem;                                  /* 15px emphasis      */
+  --sh-text-lg:     1rem;                                      /* 16px — also input font (no iOS zoom) */
+  --sh-text-xl:     clamp(1.0625rem, 1rem + .3vw, 1.1875rem);
+  --sh-text-2xl:    clamp(1.25rem, 1.1rem + .6vw, 1.5rem);
+  --sh-text-3xl:    clamp(1.5rem, 1.25rem + 1vw, 1.875rem);
+  --sh-text-4xl:    clamp(1.875rem, 1.4rem + 2vw, 2.5rem);
+  --sh-text-hero:   clamp(2.125rem, 1.5rem + 3vw, 3.25rem);
+
+  /* Spacing — 4px rhythm; page/card padding is tight on phones */
+  --sh-space-1:     .25rem;   /*  4px */
+  --sh-space-2:     .5rem;    /*  8px */
+  --sh-space-3:     .75rem;   /* 12px */
+  --sh-space-4:     1rem;     /* 16px */
+  --sh-space-5:     1.5rem;   /* 24px */
+  --sh-space-6:     2rem;     /* 32px */
+  --sh-space-7:     3rem;     /* 48px */
+  --sh-page-pad:    var(--sh-space-3);   /* page gutter (mobile) */
+  --sh-card-pad:    var(--sh-space-3);   /* card inner padding (mobile) */
+
+  /* Radius — slightly tighter on small screens, fluid upward */
   --sh-radius-sm:   8px;
-  --sh-radius-md:   12px;
-  --sh-radius-lg:   16px;
-  --sh-radius-xl:   20px;
+  --sh-radius-md:   clamp(10px, 9px + .5vw, 12px);
+  --sh-radius-lg:   clamp(12px, 10px + 1vw, 16px);
+  --sh-radius-xl:   clamp(14px, 11px + 1.5vw, 20px);
   --sh-shadow-sm:   0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
   --sh-shadow-md:   0 4px 12px rgba(0,0,0,.08);
   --sh-shadow-lg:   0 8px 25px rgba(0,0,0,.1);
 
-  /* Typography */
-  --sh-font:        'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* Touch targets & control sizes */
+  --sh-tap-min:     44px;    /* WCAG 2.5.5 minimum target          */
+  --sh-tap-compact: 36px;    /* fine-pointer desktop target        */
+  --sh-control-h:   44px;    /* inputs / selects on touch          */
+  --sh-control-h-sm:36px;    /* inline / table controls            */
+  --sh-control-h-lg:48px;    /* primary full-width actions         */
+
+  /* App shell layout */
+  --sh-topbar-h:    56px;
+  --sh-sidebar-w:   264px;
+  --sh-sidebar-mini:72px;
+  --sh-bottomnav-h: 60px;
+  --sh-content-max: 1200px;
+  /* Shell breakpoint: bottom nav below, sidebar at/above — 960px */
 }
 
 /* ── Base ─────────────────────────────────────────────────────────────────── */
 body {
   font-family: var(--sh-font);
+  font-size: var(--sh-text-base);
   background: var(--sh-gray-50);
   color: var(--sh-gray-700);
   -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
 }
 
 /* ── Cards — the building block of every page ─────────────────────────────── */
@@ -64,14 +107,15 @@ body {
   border-radius: var(--sh-radius-lg) var(--sh-radius-lg) 0 0 !important;
   padding: 1rem 1.25rem;
 }
-.card-body { padding: 1.25rem; }
+.card-body { padding: var(--sh-card-pad); }
 
-/* ── Buttons ──────────────────────────────────────────────────────────────── */
+/* ── Buttons — touch-sized by default, compact on desktop ─────────────────── */
 .btn {
   border-radius: var(--sh-radius-sm);
   font-weight: 600;
-  font-size: .875rem;
-  padding: .5rem 1rem;
+  font-size: var(--sh-text-base);
+  padding: .55rem 1rem;
+  min-height: var(--sh-tap-min);
   transition: all .15s ease;
   letter-spacing: .01em;
 }
@@ -84,14 +128,17 @@ body {
 .btn-primary:hover { background: #0b5ed7; border-color: #0b5ed7; }
 .btn-outline-primary { border-color: var(--sh-accent); color: var(--sh-accent); }
 .btn-outline-primary:hover { background: var(--sh-primary-light); border-color: var(--sh-accent); color: var(--sh-accent); }
-.btn-lg { padding: .65rem 1.5rem; font-size: .95rem; border-radius: var(--sh-radius-md); }
-.btn-sm { padding: .3rem .7rem; font-size: .78rem; border-radius: 6px; }
+.btn-lg { padding: .7rem 1.5rem; min-height: var(--sh-control-h-lg); font-size: var(--sh-text-md); border-radius: var(--sh-radius-md); }
+.btn-sm { padding: .35rem .7rem; min-height: var(--sh-control-h-sm); font-size: var(--sh-text-xs); border-radius: 6px; }
+/* .btn-xs — for dense toolbars where 36px is still too tall */
+.btn-xs { padding: .2rem .5rem; min-height: 30px; font-size: var(--sh-text-2xs); border-radius: 6px; }
 
-/* ── Forms ────────────────────────────────────────────────────────────────── */
+/* ── Forms — 16px inputs prevent iOS auto-zoom; 44px tall for thumbs ─────── */
 .form-control, .form-select {
   border-radius: var(--sh-radius-sm);
   border: 1px solid var(--sh-gray-300);
-  font-size: .875rem;
+  font-size: var(--sh-text-lg);
+  min-height: var(--sh-control-h);
   padding: .55rem .85rem;
   transition: border-color .15s, box-shadow .15s;
 }
@@ -99,21 +146,26 @@ body {
   border-color: var(--sh-accent);
   box-shadow: 0 0 0 3px rgba(13,110,253,.12);
 }
+.form-control-sm, .form-select-sm {
+  min-height: var(--sh-control-h-sm);
+  font-size: var(--sh-text-base);
+  padding: .3rem .6rem;
+}
 .form-label {
-  font-size: .82rem;
+  font-size: var(--sh-text-sm);
   font-weight: 600;
   color: var(--sh-gray-700);
   margin-bottom: .35rem;
 }
-.form-text { font-size: .75rem; color: var(--sh-gray-500); }
+.form-text { font-size: var(--sh-text-xs); color: var(--sh-gray-500); }
 
 /* ── Tables ───────────────────────────────────────────────────────────────── */
 .table {
-  font-size: .85rem;
+  font-size: var(--sh-text-base);
   --bs-table-hover-bg: var(--sh-gray-50);
 }
 .table thead th {
-  font-size: .75rem;
+  font-size: var(--sh-text-xs);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: .04em;
@@ -148,7 +200,7 @@ body {
     border-bottom: 1px solid var(--sh-gray-100);
     font-size: .82rem;
   }
-  .table-responsive .table tbody td::before {
+  .table-responsive .table tbody td[data-label]::before {
     content: attr(data-label);
     font-weight: 600;
     color: var(--sh-gray-500);
@@ -166,17 +218,34 @@ body {
 /* ── Badges ───────────────────────────────────────────────────────────────── */
 .badge {
   font-weight: 600;
-  font-size: .72rem;
+  font-size: var(--sh-text-2xs);
   padding: .35em .65em;
   border-radius: 6px;
+  /* Bootstrap sets nowrap here — on narrow screens a long pill (e.g. the
+     hero campus badge) would then exceed the viewport. Let labels wrap;
+     topbar pills re-apply nowrap + ellipsis in their own rule below. */
+  white-space: normal;
+  max-width: 100%;
   letter-spacing: .02em;
+}
+
+/* Small flex clusters (badge rows, action buttons): allow wrapping under
+   space pressure so a card header can never push the page wider than the
+   viewport (e.g. scholarship cards at 360px). */
+.d-flex.gap-1 { flex-wrap: wrap; }
+
+/* Dropdown items — thumb-friendly rows on touch, compact with a mouse */
+.dropdown-item {
+  min-height: var(--sh-tap-min);
+  display: flex;
+  align-items: center;
 }
 
 /* ── Alerts ───────────────────────────────────────────────────────────────── */
 .alert {
   border-radius: var(--sh-radius-md);
   border: none;
-  font-size: .875rem;
+  font-size: var(--sh-text-base);
 }
 
 /* ── Modals ───────────────────────────────────────────────────────────────── */
@@ -206,12 +275,13 @@ body {
   .modal-footer { padding: .75rem 1rem; flex-wrap: wrap; }
 }
 
-/* ── Navbar ───────────────────────────────────────────────────────────────── */
-.navbar { min-height: 60px; }
+/* ── Navbar / top bar ────────────────────────────────────────────────────── */
+.navbar { min-height: var(--sh-topbar-h); }
 .navbar .nav-link {
-  font-size: .84rem;
+  font-size: var(--sh-text-base);
   font-weight: 500;
-  padding: .5rem .85rem;
+  padding: .55rem .85rem;
+  min-height: var(--sh-tap-min);
   border-radius: var(--sh-radius-sm);
   transition: background .15s;
 }
@@ -459,20 +529,18 @@ footer .container { max-width: 1140px; }
 /* ── Responsive ───────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .hero-section .display-4 { font-size: 1.8rem; }
-  .stat-card .stat-value { font-size: 1.4rem; }
+  .stat-card .stat-value { font-size: var(--sh-text-2xl); }
   .stat-card .stat-icon { width: 40px; height: 40px; font-size: 1.1rem; }
   .quick-action-btn { padding: .75rem .5rem; }
   .quick-action-btn i { font-size: 1.2rem; }
-  .card-body { padding: 1rem; }
-  .btn { font-size: .82rem; padding: .4rem .8rem; }
+  .empty-state { padding: 2.25rem 1rem; }
+  .card-body { padding: var(--sh-card-pad); }
+  .btn { font-size: var(--sh-text-base); padding: .5rem .85rem; }
   footer .row > div { text-align: center !important; }
   footer .row > div .btn { margin: .25rem !important; }
 
-  /* Comfortable tap targets on touch screens (Apple HIG: 44px minimum) */
-  .btn { min-height: 38px; }
-  .form-control, .form-select { min-height: 42px; font-size: 16px; }
-  .nav-link { min-height: 42px; display: inline-flex; align-items: center; }
-  .dropdown-item { padding: .65rem 1rem; }
+  /* Tap targets are 44px+ by default (mobile-first); keep them generous */
+  .dropdown-item { padding: .65rem 1rem; min-height: var(--sh-tap-min); display: flex; align-items: center; }
   .form-check-input { width: 1.25rem; height: 1.25rem; }
 
   /* Prevent horizontal page scroll from wide content */
@@ -497,15 +565,30 @@ footer .container { max-width: 1140px; }
 
 @media (max-width: 576px) {
   .container-fluid { padding-left: .75rem; padding-right: .75rem; }
-  .stat-card .stat-value { font-size: 1.2rem; }
-  .period-badge { font-size: .72rem; padding: .4rem .75rem; }
-  .navbar .nav-link { font-size: .8rem; padding: .45rem .6rem; }
+  .stat-card .stat-value { font-size: var(--sh-text-xl); }
+  .period-badge { font-size: var(--sh-text-xs); padding: .4rem .75rem; }
+  .navbar .nav-link { font-size: var(--sh-text-sm); padding: .45rem .6rem; }
 
   /* Campus/period badge pills shrink but stay readable */
   .navbar .badge { max-width: 130px; overflow: hidden; text-overflow: ellipsis; display: inline-block; vertical-align: middle; white-space: nowrap; }
 
+  /* Top bar: campus pill label drops; the brand name stays visible */
+  .app-topbar .pill-label { display: none; }
+  .app-topbar .brand-text { font-size: .92rem; }
+
   /* Timeline labels shrink to icons + tiny text */
   .small[style*="white-space:nowrap"] { font-size: .62rem !important; }
+}
+
+/* ── Desktop refinements (≥960px): compact controls for fine pointers ────── */
+@media (min-width: 960px) {
+  .btn { min-height: var(--sh-tap-compact); }
+  .btn-lg { min-height: 42px; }
+  .form-control, .form-select { min-height: var(--sh-tap-compact); font-size: var(--sh-text-base); }
+  .form-control-sm, .form-select-sm { min-height: 32px; }
+  .navbar .nav-link { min-height: var(--sh-tap-compact); }
+  .dropdown-item { min-height: var(--sh-tap-compact); }
+  .card-body { padding: 1.25rem; }
 }
 
 /* ── Utility: border-left colors (legacy compat) ──────────────────────────── */
@@ -667,3 +750,291 @@ textarea.form-control {
     border: 1px solid #dee2e6 !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   APP SHELL — fixed top bar, desktop sidebar (≥960px),
+   mobile bottom nav (<960px), back-then-forward history controls.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Top bar ──────────────────────────────────────────────────────────────── */
+.app-topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--sh-topbar-h);
+  z-index: 1030;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  gap: .35rem;
+  padding: 0 var(--sh-space-3);
+  background: linear-gradient(135deg, rgba(26,58,107,.94) 0%, rgba(13,110,253,.86) 100%);
+  -webkit-backdrop-filter: blur(18px) saturate(180%);
+  backdrop-filter: blur(18px) saturate(180%);
+  border-bottom: 1px solid rgba(255,255,255,.18);
+  box-shadow: 0 2px 14px rgba(10,25,55,.25);
+}
+.app-topbar .navbar-brand {
+  padding-top: 0; padding-bottom: 0;
+  margin-right: var(--sh-space-2);
+  min-width: 0;
+}
+.app-topbar .brand-text {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.app-topbar .navbar-nav { flex-direction: row; flex-wrap: nowrap; margin: 0; }
+.app-topbar .navbar-nav .nav-link { white-space: nowrap; }
+/* Keep long pill labels from pushing controls off-screen */
+.app-topbar .pill-label {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-block;
+  vertical-align: middle;
+}
+body { padding-top: var(--sh-topbar-h); }
+
+/* Back-then-forward history controls */
+.history-controls { display: flex; gap: 4px; flex-shrink: 0; }
+.hist-btn {
+  width: 36px; height: 36px;
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 0;
+  border-radius: var(--sh-radius-sm);
+  border: 1px solid rgba(255,255,255,.28);
+  background: rgba(255,255,255,.12);
+  color: #fff;
+  font-size: 1rem;
+  transition: background .15s, opacity .15s;
+}
+.hist-btn:hover:not(:disabled) { background: rgba(255,255,255,.24); }
+.hist-btn:active:not(:disabled) { background: rgba(255,255,255,.34); }
+.hist-btn:disabled { opacity: .35; cursor: default; }
+
+/* Sidebar collapse toggle (desktop only) */
+.sidebar-toggle {
+  display: none;
+  width: 36px; height: 36px;
+  align-items: center; justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+  border-radius: var(--sh-radius-sm);
+  border: 1px solid rgba(255,255,255,.28);
+  background: rgba(255,255,255,.12);
+  color: #fff;
+  font-size: .95rem;
+  transition: background .15s;
+}
+.sidebar-toggle:hover { background: rgba(255,255,255,.24); }
+
+/* ── Sidebar (desktop ≥960px) ─────────────────────────────────────────────── */
+.app-sidebar {
+  display: none;
+  position: fixed;
+  top: var(--sh-topbar-h);
+  bottom: 0;
+  left: 0;
+  width: var(--sh-sidebar-w);
+  z-index: 1020;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--sh-space-3) var(--sh-space-2) var(--sh-space-6);
+  background: rgba(255,255,255,.92);
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+  backdrop-filter: blur(18px) saturate(170%);
+  border-right: 1px solid rgba(26,58,107,.10);
+  box-shadow: 4px 0 24px rgba(10,25,55,.06);
+  transition: width .2s ease;
+}
+.side-nav { display: flex; flex-direction: column; gap: 2px; }
+.side-group-label {
+  font-size: var(--sh-text-2xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--sh-gray-500);
+  padding: var(--sh-space-4) var(--sh-space-3) var(--sh-space-1);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.side-link {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  padding: .6rem .8rem;
+  min-height: var(--sh-tap-min);
+  border-radius: var(--sh-radius-sm);
+  color: var(--sh-gray-700);
+  font-size: var(--sh-text-base);
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background .15s, color .15s;
+}
+.side-link i { font-size: 1.05rem; width: 1.35rem; text-align: center; flex-shrink: 0; }
+.side-link:hover { background: var(--sh-primary-light); color: var(--sh-accent); }
+.side-link.active {
+  background: linear-gradient(135deg, rgba(13,110,253,.14), rgba(26,58,107,.10));
+  color: var(--sh-accent);
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--sh-accent);
+}
+.side-label { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+.side-badge { flex-shrink: 0; }
+
+/* Collapsed: icon rail */
+body.sidebar-collapsed .app-sidebar { width: var(--sh-sidebar-mini); }
+body.sidebar-collapsed .side-label,
+body.sidebar-collapsed .side-group-label,
+body.sidebar-collapsed .side-badge { display: none; }
+body.sidebar-collapsed .side-link { justify-content: center; padding: .6rem .5rem; gap: 0; }
+body.sidebar-collapsed .side-link i { width: auto; }
+
+/* ── Content shell ────────────────────────────────────────────────────────── */
+.app-shell {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ── Bottom nav (mobile <960px) ───────────────────────────────────────────── */
+.app-bottomnav {
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  z-index: 1030;
+  background: rgba(255,255,255,.94);
+  -webkit-backdrop-filter: blur(18px) saturate(170%);
+  backdrop-filter: blur(18px) saturate(170%);
+  border-top: 1px solid rgba(26,58,107,.12);
+  box-shadow: 0 -4px 20px rgba(10,25,55,.10);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.bottomnav-list {
+  display: flex;
+  align-items: stretch;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-height: var(--sh-bottomnav-h);
+}
+.bottomnav-list > li { flex: 1 1 0; display: flex; min-width: 0; }
+.bottomnav-list > li.dropup { position: relative; }
+.bottomnav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 2px;
+  min-height: var(--sh-bottomnav-h);
+  color: var(--sh-gray-500);
+  font-size: .625rem;
+  font-weight: 600;
+  letter-spacing: .01em;
+  text-decoration: none;
+  text-align: center;
+  background: none;
+  border: 0;
+  position: relative;
+}
+.bottomnav-item i { font-size: 1.25rem; line-height: 1; }
+.bottomnav-item.active { color: var(--sh-accent); }
+.bottomnav-item.active::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 22%; right: 22%;
+  height: 3px;
+  border-radius: 0 0 4px 4px;
+  background: var(--sh-accent);
+}
+.bottomnav-label {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bottomnav-badge {
+  position: absolute;
+  top: 5px;
+  left: calc(50% + 5px);
+  font-size: .58rem;
+  padding: .15em .4em;
+}
+.app-bottomnav .dropdown-menu {
+  width: min(340px, calc(100vw - 1rem));
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
+  border: 1px solid var(--sh-glass-border, rgba(26,58,107,.12));
+  border-radius: var(--sh-radius-lg);
+  box-shadow: 0 -12px 36px rgba(10,25,55,.22);
+  padding: .5rem;
+}
+.app-bottomnav .dropdown-header {
+  font-size: var(--sh-text-2xs);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--sh-gray-500);
+  padding: .6rem .75rem .25rem;
+}
+
+/* ── Shell breakpoints ────────────────────────────────────────────────────── */
+@media (min-width: 960px) {
+  .sidebar-toggle { display: inline-flex; }
+  .app-sidebar { display: block; }
+  .app-shell { margin-left: var(--sh-sidebar-w); transition: margin-left .2s ease; }
+  body.sidebar-collapsed .app-shell { margin-left: var(--sh-sidebar-mini); }
+  .app-bottomnav { display: none; }
+}
+@media (max-width: 959.98px) {
+  /* History arrows are a desktop affordance; phones already have Back gestures */
+  .history-controls { display: none; }
+  /* Keep the last row of content clear of the fixed bottom nav */
+  .app-shell { padding-bottom: calc(var(--sh-bottomnav-h) + env(safe-area-inset-bottom, 0px)); }
+  .back-to-top-btn { bottom: calc(var(--sh-bottomnav-h) + 16px + env(safe-area-inset-bottom, 0px)) !important; }
+}
+
+/* Top bar: at phone widths drop pill labels & brand text so controls fit */
+@media (max-width: 575.98px) {
+  .app-topbar { padding: 0 .5rem; }
+  .app-topbar .pill-label { display: none; }
+  .app-topbar .brand-text { font-size: .92rem; }
+  .app-topbar .navbar-nav { gap: .15rem; }
+  .app-topbar .navbar .nav-link { padding: .45rem .5rem; }
+  .hist-btn, .sidebar-toggle { width: 32px; height: 32px; }
+}
+/* Very narrow phones (≤400px): name-only brand (logo drops) so auth buttons never clip */
+@media (max-width: 400px) {
+  .app-topbar .navbar-brand img { display: none; }
+}
+
+/* ── Print: shell chrome off, content full width ─────────────────────────── */
+@media print {
+  .app-topbar, .app-sidebar, .app-bottomnav,
+  .sidebar-toggle, .history-controls, #backToTop { display: none !important; }
+  body { padding-top: 0 !important; }
+  .app-shell { margin-left: 0 !important; padding-bottom: 0 !important; }
+}
+
+/* ── Scrollbar — themed so the right-edge gutter reads as UI, not a gap ──── */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(26,58,107,.40) rgba(26,58,107,.08);
+}
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: rgba(26,58,107,.06); }
+::-webkit-scrollbar-thumb {
+  background: rgba(26,58,107,.38);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(26,58,107,.60); background-clip: padding-box; }
+
+/* Scholarship card titles: long unbroken tokens (e.g. __QA_PRIVATE_TEST__) wrap */
+.scholarship-card .card-title { overflow-wrap: anywhere; }

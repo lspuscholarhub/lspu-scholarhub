@@ -2,7 +2,7 @@
 {% block title %}Verify Your Email - LSPU ScholarHub{% endblock %}
 
 {% block content %}
-<div class="container py-5">
+<div class="container py-4 py-md-5">
   <div class="row justify-content-center">
     <div class="col-md-6 col-lg-5">
       <div class="card shadow border-0" style="border-radius:12px;">
@@ -51,7 +51,7 @@
                        inputmode="numeric"
                        pattern="[0-9]"
                        autocomplete="off"
-                       style="width:52px;height:60px;border-radius:10px;
+                       style="width:clamp(38px,11vw,52px);height:clamp(50px,14vw,60px);border-radius:10px;
                               border:2px solid #dee2e6;">
                 {% endfor %}
               </div>

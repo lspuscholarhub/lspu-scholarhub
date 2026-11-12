@@ -5,28 +5,30 @@
 <style>
 .stat-card {
   border: 1px solid rgba(255,255,255,.65);
-  border-radius: 16px;
+  border-radius: var(--sh-radius-lg);
   transition: transform .15s, box-shadow .15s;
   overflow: hidden;
 }
 .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(0,0,0,.1); }
 .stat-card .stat-icon {
-  width: 52px; height: 52px; border-radius: 12px;
+  width: clamp(40px, 3vw + 30px, 52px); height: clamp(40px, 3vw + 30px, 52px);
+  border-radius: var(--sh-radius-md);
   display: flex; align-items: center; justify-content: center;
-  font-size: 1.4rem;
+  font-size: clamp(1.1rem, .5vw + 1rem, 1.4rem);
 }
-.stat-card .stat-value { font-size: 1.8rem; font-weight: 800; line-height: 1.1; }
-.stat-card .stat-label { font-size: .78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: #6b7280; }
+.stat-card .stat-value { font-size: clamp(1.35rem, .8vw + 1.15rem, 1.8rem); font-weight: 800; line-height: 1.1; }
+.stat-card .stat-label { font-size: var(--sh-text-xs); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: #6b7280; }
 .quick-action-btn {
-  border-radius: 14px; padding: 1.2rem 1rem; border: 1px solid rgba(255,255,255,.65);
+  border-radius: var(--sh-radius-lg); padding: clamp(.8rem, 1.5vw, 1.2rem) 1rem;
+  border: 1px solid rgba(255,255,255,.65);
   transition: all .15s; text-decoration: none; color: #374151;
   background: rgba(255,255,255,.55);
   -webkit-backdrop-filter: blur(16px) saturate(170%);
   backdrop-filter: blur(16px) saturate(170%);
 }
 .quick-action-btn:hover { border-color: #0d6efd; background: #f0f7ff; color: #0d6efd; transform: translateY(-2px); }
-.quick-action-btn i { font-size: 1.6rem; }
-.period-badge { background: linear-gradient(135deg, #1a3a6b, #0d6efd); color: #fff; border-radius: 10px; padding: 8px 16px; font-size: .82rem; }
+.quick-action-btn i { font-size: clamp(1.3rem, 1vw + 1rem, 1.6rem); }
+.period-badge { background: linear-gradient(135deg, #1a3a6b, #0d6efd); color: #fff; border-radius: var(--sh-radius-sm); padding: 8px 16px; font-size: var(--sh-text-sm); }
 </style>
 {% endblock %}
 
@@ -34,9 +36,9 @@
 <div class="container-fluid px-4 py-4">
 
   <!-- Header row -->
-  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+  <div class="d-flex justify-content-between align-items-start align-items-md-center mb-4 flex-wrap gap-2 gap-md-3">
     <div>
-      <h1 class="h3 fw-bold mb-1">Dashboard</h1>
+      <h1 class="h4 h-md-3 fw-bold mb-1">Dashboard</h1>
       <p class="text-muted small mb-0">Welcome back, {{ session.get('username') }}. Here's your scholarship overview.</p>
     </div>
     {% if current_period %}
