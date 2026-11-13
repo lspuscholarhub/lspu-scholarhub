@@ -53,5 +53,15 @@ database/sample_documents/
 *CV*.docx
 *resume*.docx
 
+# Local tooling output: scan reports, logs and backup scripts (may quote credentials)
+papers/*_out.txt
+papers/extract_log.txt
+papers/backup_db.py
+papers/backup_task.xml
+papers/daily_backup.bat
+papers/storyboard_images/
+papers/flowchart_symbols/
+papers/generate_cv.py
+
 # Freebuff / agent workspace metadata (local only)
 .freebuff/
