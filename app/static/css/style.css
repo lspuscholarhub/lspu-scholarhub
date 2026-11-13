@@ -181,38 +181,40 @@ body {
 }
 .table-responsive { border-radius: var(--sh-radius-md); }
 
-/* ── Mobile card layouts for tables ─────────────────────────────────────── */
-@media (max-width: 768px) {
-  .table-responsive .table thead { display: none; }
-  .table-responsive .table tbody tr {
-    display: block;
-    margin-bottom: 1rem;
-    border: 1px solid var(--sh-gray-200);
-    border-radius: var(--sh-radius-md);
-    padding: .75rem;
-    background: #fff;
-  }
-  .table-responsive .table tbody td {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: .4rem .25rem;
-    border-bottom: 1px solid var(--sh-gray-100);
-    font-size: .82rem;
-  }
-  .table-responsive .table tbody td[data-label]::before {
-    content: attr(data-label);
-    font-weight: 600;
-    color: var(--sh-gray-500);
-    font-size: .72rem;
-    text-transform: uppercase;
-    letter-spacing: .03em;
-    flex-shrink: 0;
-    margin-right: .5rem;
-  }
-  .table-responsive .table tbody td:last-child {
-    border-bottom: none;
-  }
+/* ── Tables → stacked cards by default (mobile-first) ───────────────────────
+   A row is a card on phones, so no horizontal scrolling is ever needed.
+   The `@media (min-width: 769px)` block at the end of this file restores the
+   real table layout for wider viewports.
+   ────────────────────────────────────────────────────────────────────────── */
+.table-responsive .table thead { display: none; }
+.table-responsive .table tbody tr {
+  display: block;
+  margin-bottom: 1rem;
+  border: 1px solid var(--sh-gray-200);
+  border-radius: var(--sh-radius-md);
+  padding: .75rem;
+  background: #fff;
+}
+.table-responsive .table tbody td {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: .4rem .25rem;
+  border-bottom: 1px solid var(--sh-gray-100);
+  font-size: .82rem;
+}
+.table-responsive .table tbody td[data-label]::before {
+  content: attr(data-label);
+  font-weight: 600;
+  color: var(--sh-gray-500);
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  flex-shrink: 0;
+  margin-right: .5rem;
+}
+.table-responsive .table tbody td:last-child {
+  border-bottom: none;
 }
 
 /* ── Badges ───────────────────────────────────────────────────────────────── */
@@ -261,19 +263,17 @@ body {
 .modal-body { padding: 1.5rem; }
 .modal-footer { border-top: 1px solid var(--sh-gray-200); padding: 1rem 1.5rem; }
 
-/* Full-screen modals on mobile */
-@media (max-width: 576px) {
-  .modal-dialog {
-    margin: .5rem;
-    max-width: calc(100vw - 1rem);
-  }
-  .modal-content {
-    border-radius: var(--sh-radius-md);
-  }
-  .modal-body { padding: 1rem; }
-  .modal-header { padding: 1rem; }
-  .modal-footer { padding: .75rem 1rem; flex-wrap: wrap; }
+/* Modals are a near-full-screen sheet by default; the ≥577px block relaxes it */
+.modal-dialog {
+  margin: .5rem;
+  max-width: calc(100vw - 1rem);
 }
+.modal-content {
+  border-radius: var(--sh-radius-md);
+}
+.modal-body { padding: 1rem; }
+.modal-header { padding: 1rem; }
+.modal-footer { padding: .75rem 1rem; flex-wrap: wrap; }
 
 /* ── Navbar / top bar ────────────────────────────────────────────────────── */
 .navbar { min-height: var(--sh-topbar-h); }
@@ -526,59 +526,48 @@ footer .container { max-width: 1140px; }
   font-size: 1.15rem;
 }
 
-/* ── Responsive ───────────────────────────────────────────────────────── */
-@media (max-width: 768px) {
-  .hero-section .display-4 { font-size: 1.8rem; }
-  .stat-card .stat-value { font-size: var(--sh-text-2xl); }
-  .stat-card .stat-icon { width: 40px; height: 40px; font-size: 1.1rem; }
-  .quick-action-btn { padding: .75rem .5rem; }
-  .quick-action-btn i { font-size: 1.2rem; }
-  .empty-state { padding: 2.25rem 1rem; }
-  .card-body { padding: var(--sh-card-pad); }
-  .btn { font-size: var(--sh-text-base); padding: .5rem .85rem; }
-  footer .row > div { text-align: center !important; }
-  footer .row > div .btn { margin: .25rem !important; }
+/* ── Page furniture — phone defaults ───────────────────────────────────────
+   Baseline values sized for a 360–430px viewport. Roomier values are added
+   back by the PROGRESSIVE ENHANCEMENT blocks at the end of this file.
+   ────────────────────────────────────────────────────────────────────────── */
+.hero-section .display-4 { font-size: var(--sh-text-3xl); }
+.stat-card .stat-value { font-size: var(--sh-text-xl); }
+.stat-card .stat-icon { width: 40px; height: 40px; font-size: 1.1rem; }
+.quick-action-btn { padding: .75rem .5rem; }
+.quick-action-btn i { font-size: 1.2rem; }
+.empty-state { padding: 2.25rem 1rem; }
+.btn { font-size: var(--sh-text-base); padding: .5rem .85rem; }
+footer .row > div { text-align: center !important; }
+footer .row > div .btn { margin: .25rem !important; }
 
-  /* Tap targets are 44px+ by default (mobile-first); keep them generous */
-  .dropdown-item { padding: .65rem 1rem; min-height: var(--sh-tap-min); display: flex; align-items: center; }
-  .form-check-input { width: 1.25rem; height: 1.25rem; }
+/* Tap targets are 44px+ by default (mobile-first); keep them generous */
+.dropdown-item { padding: .65rem 1rem; min-height: var(--sh-tap-min); display: flex; align-items: center; }
+.form-check-input { width: 1.25rem; height: 1.25rem; }
 
-  /* Prevent horizontal page scroll from wide content */
-  body { overflow-x: hidden; }
-  .table { font-size: .85rem; }
+/* Prevent horizontal page scroll from wide content */
+body { overflow-x: hidden; }
+.table { font-size: .85rem; }
 
-  /* Detail key-value tables (modal summaries) stay compact */
-  .table-sm td { word-break: break-word; }
+/* Detail key-value tables (modal summaries) stay compact */
+.table-sm td { word-break: break-word; }
 
-  /* Application status timeline: smaller labels so 3 steps fit */
-  .d-flex .rounded-circle { flex-shrink: 0; }
+/* Application status timeline: smaller labels so 3 steps fit */
+.d-flex .rounded-circle { flex-shrink: 0; }
 
-  /* Navbar dropdowns use nearly full width when open */
-  .navbar .dropdown-menu {
-    max-width: calc(100vw - 1.5rem);
-  }
+/* Navbar dropdowns use nearly full width when open */
+.navbar .dropdown-menu { max-width: calc(100vw - 1.5rem); }
+.modal-dialog { margin: .5rem; }
+.modal-footer .btn { flex: 1 1 auto; }
 
-  /* Modals: nearly full-screen sheet feel */
-  .modal-dialog { margin: .5rem; }
-  .modal-footer .btn { flex: 1 1 auto; }
-}
+.container-fluid { padding-left: .75rem; padding-right: .75rem; }
+.period-badge { font-size: var(--sh-text-xs); padding: .4rem .75rem; }
+.navbar .nav-link { font-size: var(--sh-text-sm); padding: .45rem .6rem; }
 
-@media (max-width: 576px) {
-  .container-fluid { padding-left: .75rem; padding-right: .75rem; }
-  .stat-card .stat-value { font-size: var(--sh-text-xl); }
-  .period-badge { font-size: var(--sh-text-xs); padding: .4rem .75rem; }
-  .navbar .nav-link { font-size: var(--sh-text-sm); padding: .45rem .6rem; }
+/* Campus/period badge pills shrink but stay readable */
+.navbar .badge { max-width: 130px; overflow: hidden; text-overflow: ellipsis; display: inline-block; vertical-align: middle; white-space: nowrap; }
 
-  /* Campus/period badge pills shrink but stay readable */
-  .navbar .badge { max-width: 130px; overflow: hidden; text-overflow: ellipsis; display: inline-block; vertical-align: middle; white-space: nowrap; }
-
-  /* Top bar: campus pill label drops; the brand name stays visible */
-  .app-topbar .pill-label { display: none; }
-  .app-topbar .brand-text { font-size: .92rem; }
-
-  /* Timeline labels shrink to icons + tiny text */
-  .small[style*="white-space:nowrap"] { font-size: .62rem !important; }
-}
+/* Timeline labels shrink to icons + tiny text */
+.small[style*="white-space:nowrap"] { font-size: .62rem !important; }
 
 /* ── Desktop refinements (≥960px): compact controls for fine pointers ────── */
 @media (min-width: 960px) {
@@ -707,14 +696,12 @@ textarea.form-control {
 }
 .table tbody tr:hover { background-color: rgba(255,255,255,.5); }
 
-/* Mobile stacked rows */
-@media (max-width: 768px) {
-  .table-responsive .table tbody tr {
-    background-color: var(--glass-bg-strong);
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
-    border-color: var(--glass-border);
-  }
+/* Stacked rows (the default layout) get the frosted treatment directly */
+.table-responsive .table tbody tr {
+  background-color: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-color: var(--glass-border);
 }
 
 /* ── Alerts & toasts — lightly frosted, keep semantic colors ──────────────── */
@@ -983,34 +970,33 @@ body.sidebar-collapsed .side-link i { width: auto; }
   padding: .6rem .75rem .25rem;
 }
 
-/* ── Shell breakpoints ────────────────────────────────────────────────────── */
+/* Mobile shell baseline: the bottom nav owns navigation and history arrows are
+   a desktop affordance (phones already have Back gestures). */
+.history-controls { display: none; }
+/* Keep the last row of content clear of the fixed bottom nav */
+.app-shell { padding-bottom: calc(var(--sh-bottomnav-h) + env(safe-area-inset-bottom, 0px)); }
+.back-to-top-btn { bottom: calc(var(--sh-bottomnav-h) + 16px + env(safe-area-inset-bottom, 0px)) !important; }
+
+/* Phone top bar: tight gutters, labels drop, controls shrink so nothing clips */
+.app-topbar { padding: 0 .5rem; }
+.app-topbar .pill-label { display: none; }
+.app-topbar .brand-text { font-size: .92rem; }
+.app-topbar .navbar-nav { gap: .15rem; }
+.app-topbar .navbar .nav-link { padding: .45rem .5rem; }
+.hist-btn, .sidebar-toggle { width: 32px; height: 32px; }
+/* Name-only brand on very narrow phones so auth buttons never clip */
+.app-topbar .navbar-brand img { display: none; }
+
+/* ── Shell breakpoints (mobile-first: ≥960px gains the sidebar) ──────────── */
 @media (min-width: 960px) {
   .sidebar-toggle { display: inline-flex; }
   .app-sidebar { display: block; }
-  .app-shell { margin-left: var(--sh-sidebar-w); transition: margin-left .2s ease; }
+  .app-shell { margin-left: var(--sh-sidebar-w); transition: margin-left .2s ease; padding-bottom: 0; }
   body.sidebar-collapsed .app-shell { margin-left: var(--sh-sidebar-mini); }
   .app-bottomnav { display: none; }
-}
-@media (max-width: 959.98px) {
-  /* History arrows are a desktop affordance; phones already have Back gestures */
-  .history-controls { display: none; }
-  /* Keep the last row of content clear of the fixed bottom nav */
-  .app-shell { padding-bottom: calc(var(--sh-bottomnav-h) + env(safe-area-inset-bottom, 0px)); }
-  .back-to-top-btn { bottom: calc(var(--sh-bottomnav-h) + 16px + env(safe-area-inset-bottom, 0px)) !important; }
-}
-
-/* Top bar: at phone widths drop pill labels & brand text so controls fit */
-@media (max-width: 575.98px) {
-  .app-topbar { padding: 0 .5rem; }
-  .app-topbar .pill-label { display: none; }
-  .app-topbar .brand-text { font-size: .92rem; }
-  .app-topbar .navbar-nav { gap: .15rem; }
-  .app-topbar .navbar .nav-link { padding: .45rem .5rem; }
-  .hist-btn, .sidebar-toggle { width: 32px; height: 32px; }
-}
-/* Very narrow phones (≤400px): name-only brand (logo drops) so auth buttons never clip */
-@media (max-width: 400px) {
-  .app-topbar .navbar-brand img { display: none; }
+  /* Mouse + keyboard users get the history arrows back */
+  .history-controls { display: flex; }
+  .back-to-top-btn { bottom: 24px !important; }
 }
 
 /* ── Print: shell chrome off, content full width ─────────────────────────── */
@@ -1038,3 +1024,80 @@ html {
 
 /* Scholarship card titles: long unbroken tokens (e.g. __QA_PRIVATE_TEST__) wrap */
 .scholarship-card .card-title { overflow-wrap: anywhere; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PROGRESSIVE ENHANCEMENT — the mobile-first scale
+   Everything above is the phone baseline. Each block below only adds the
+   room, density or affordance a wider viewport can afford — never removes
+   something a phone needs.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── ≥401px — the brand logo returns beside the wordmark ─────────────────── */
+@media (min-width: 401px) {
+  .app-topbar .navbar-brand img { display: inline-block; }
+}
+
+/* ── ≥577px — large phones and small tablets get standard chrome back ────── */
+@media (min-width: 577px) {
+  .app-topbar { padding: 0 var(--sh-space-3); }
+  .app-topbar .navbar-nav { gap: .35rem; }
+  .app-topbar .navbar .nav-link { padding: .55rem .85rem; }
+  .app-topbar .pill-label { display: inline-block; }
+  .app-topbar .brand-text { font-size: 1rem; }
+  .hist-btn, .sidebar-toggle { width: 36px; height: 36px; }
+
+  .container-fluid { padding-left: 1rem; padding-right: 1rem; }
+  .stat-card .stat-value { font-size: var(--sh-text-2xl); }
+  .period-badge { font-size: .8rem; padding: .5rem 1rem; }
+  .navbar .nav-link { font-size: var(--sh-text-base); padding: .55rem .85rem; }
+  .navbar .badge {
+    max-width: none; overflow: visible; text-overflow: clip;
+    white-space: normal; vertical-align: baseline;
+  }
+  .small[style*="white-space:nowrap"] { font-size: .75rem !important; }
+
+  .modal-dialog { margin: 1.75rem auto; max-width: 500px; }
+  .modal-content { border-radius: var(--sh-radius-lg); }
+  .modal-header { padding: 1.25rem 1.5rem; }
+  .modal-body { padding: 1.5rem; }
+  .modal-footer { padding: 1rem 1.5rem; flex-wrap: nowrap; }
+}
+
+/* ── ≥769px — real tables and roomier page furniture ────────────────────── */
+@media (min-width: 769px) {
+  /* Stacked cards become a genuine table again */
+  .table-responsive .table thead { display: table-header-group; }
+  .table-responsive .table tbody tr {
+    display: table-row;
+    margin-bottom: 0;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    background-color: transparent;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .table-responsive .table tbody td {
+    display: table-cell;
+    padding: .7rem 1rem;
+    border-bottom: 1px solid var(--sh-gray-100);
+    font-size: var(--sh-text-base);
+  }
+  .table-responsive .table tbody td[data-label]::before { content: none; }
+
+  body { overflow-x: visible; }
+  .table { font-size: var(--sh-text-base); }
+  .form-check-input { width: 1rem; height: 1rem; }
+
+  .hero-section .display-4 { font-size: var(--sh-text-hero); }
+  .stat-card .stat-value { font-size: 1.7rem; }
+  .stat-card .stat-icon { width: 48px; height: 48px; font-size: 1.3rem; }
+  .quick-action-btn { padding: 1rem .75rem; }
+  .quick-action-btn i { font-size: 1.5rem; }
+  .empty-state { padding: 3rem 1.5rem; }
+  .btn { padding: .55rem 1rem; }
+  footer .row > div { text-align: left !important; }
+  footer .row > div .btn { margin: 0 !important; }
+  .navbar .dropdown-menu { max-width: none; }
+  .modal-footer .btn { flex: 0 1 auto; }
+}
