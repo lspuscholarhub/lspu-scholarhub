@@ -52,7 +52,8 @@ def index():
     else:
         recent_scholarships = [s for s in all_active if s.is_visible_to(student_id)][:4]
 
-    return render_template('index.html', recent_scholarships=recent_scholarships)
+    return render_template('index.html', recent_scholarships=recent_scholarships,
+                           open_count=len(all_active))
 
 @main_bp.route('/contact', methods=['GET', 'POST'])
 @limiter.limit('10 per hour')
