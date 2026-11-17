@@ -783,6 +783,26 @@ textarea.form-control {
   display: inline-block;
   vertical-align: middle;
 }
+/* Academic-period selector: a quiet glass chip wide enough for the full
+   "1st Semester AY 2026-2027" label instead of a truncated grey block. */
+.app-topbar .period-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  background: rgba(255,255,255,.16) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,255,255,.3);
+  border-radius: 999px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-decoration: none;
+}
+.app-topbar .period-pill:hover,
+.app-topbar .period-pill:focus-visible {
+  background: rgba(255,255,255,.28) !important;
+  color: #fff !important;
+}
+.app-topbar .period-pill .pill-label { max-width: 200px; }
 body { padding-top: var(--sh-topbar-h); }
 
 /* Back-then-forward history controls */

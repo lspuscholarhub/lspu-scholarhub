@@ -2,7 +2,7 @@
 {% block title %}Dashboard — LSPU ScholarHub{% endblock %}
 
 {% block head %}
-<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261118" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261119" rel="stylesheet">
 <style>main { padding: 0 !important; margin: 0 !important; }</style>
 {% endblock %}
 
@@ -151,14 +151,6 @@
       </div>
       {% endif %}
     </section>
-
-    <div class="st-alert st-alert--info">
-      <i class="bi bi-info-circle" aria-hidden="true"></i>
-      <div>
-        Keep your documents current — programs are matched against your latest COR and grades.
-        <a href="{{ url_for('student.profile') }}">Update your documents</a>.
-      </div>
-    </div>
 
   </div>
 </div>
