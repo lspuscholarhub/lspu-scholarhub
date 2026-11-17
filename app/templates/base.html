@@ -15,11 +15,6 @@
 </head>
 <body class="d-flex flex-column min-vh-100">
 
-<script>
-  // Apply sidebar state before paint (no flash of expanded sidebar)
-  try { if (localStorage.getItem('sh-sidebar-collapsed') === '1') document.body.classList.add('sidebar-collapsed'); } catch (e) {}
-</script>
-
 <!-- ═══ Skip to content (accessibility) ══════════════════════════════════════ -->
 <a href="#main-content" class="visually-hidden-focusable position-absolute top-0 start-0 bg-primary text-white px-3 py-2 z-3" style="z-index:10000;">
   Skip to main content
@@ -39,7 +34,8 @@
   {% set nav.items = [
     {'label':'Home',          'short':'Home',     'icon':'bi-house',        'url':url_for('main.index'),                        'eps':['main.index'],                       'bottom':True},
     {'label':'Scholarships',  'short':'Browse',   'icon':'bi-search',       'url':url_for('scholarship.list_scholarships'),     'eps':['scholarship.list_scholarships','scholarship.view_scholarship','scholarship.apply_scholarship'], 'bottom':True},
-    {'label':'AI Assistant',  'short':'AI',       'icon':'bi-robot',        'url':url_for('chatbot.chatbot_page'),              'eps':['chatbot.chatbot_page'],             'bottom':True}
+    {'label':'AI Assistant',  'short':'AI',       'icon':'bi-robot',        'url':url_for('chatbot.chatbot_page'),              'eps':['chatbot.chatbot_page'],             'bottom':True},
+    {'label':'Contact',       'short':'Contact',  'icon':'bi-envelope',     'url':url_for('main.contact'),                      'eps':['main.contact'],                     'bottom':True}
   ] %}
 
 {% elif role == 'student' %}
@@ -103,12 +99,6 @@
 
 <!-- ═══ TOP BAR — brand, back/forward history, context + account ═════════════ -->
 <header class="navbar navbar-dark app-topbar">
-
-  <!-- Sidebar collapse (desktop only) -->
-  <button type="button" class="sidebar-toggle" id="sidebarToggle"
-          aria-controls="appSidebar" aria-expanded="true" aria-label="Collapse sidebar">
-    <i class="bi bi-chevron-double-left" id="sidebarToggleIcon" aria-hidden="true"></i>
-  </button>
 
   <!-- Brand -->
   {% if role in ('admin', 'staff', 'super_admin') %}
@@ -500,36 +490,14 @@
 })();
 </script>
 
-<!-- ── App shell: sidebar collapse + back/forward history controls ─────────── -->
+<!-- ── App shell: back/forward history controls ───────────────────────────── -->
 <script>
 (function () {
-  var SIDEBAR_KEY = 'sh-sidebar-collapsed';
   function ready(fn) {
     if (document.readyState !== 'loading') fn();
     else document.addEventListener('DOMContentLoaded', fn);
   }
   ready(function () {
-    // Sidebar collapse (desktop)
-    var toggle = document.getElementById('sidebarToggle');
-    var icon = document.getElementById('sidebarToggleIcon');
-    if (toggle) {
-      var syncToggle = function () {
-        var collapsed = document.body.classList.contains('sidebar-collapsed');
-        toggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
-        toggle.setAttribute('aria-label', collapsed ? 'Expand sidebar' : 'Collapse sidebar');
-        if (icon) icon.className = 'bi ' + (collapsed ? 'bi-chevron-double-right' : 'bi-chevron-double-left');
-      };
-      syncToggle();
-      toggle.addEventListener('click', function () {
-        document.body.classList.toggle('sidebar-collapsed');
-        try {
-          localStorage.setItem(SIDEBAR_KEY,
-            document.body.classList.contains('sidebar-collapsed') ? '1' : '0');
-        } catch (e) {}
-        syncToggle();
-      });
-    }
-
     // Back-then-forward history controls
     var back = document.getElementById('navBack');
     var fwd = document.getElementById('navFwd');

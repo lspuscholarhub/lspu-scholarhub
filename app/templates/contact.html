@@ -1,114 +1,118 @@
 {% extends "base.html" %}
 {% block title %}Contact — LSPU ScholarHub{% endblock %}
+
+{% block head %}
+<link href="{{ url_for('static', filename='css/guest-pages.css') }}?v=20261117" rel="stylesheet">
+<style>main { padding: 0 !important; margin: 0 !important; }</style>
+{% endblock %}
+
 {% block content %}
-<div class="container py-5">
-  <div class="row g-4">
-    <!-- Contact Info -->
-    <div class="col-lg-5">
-      <div class="card border-0 shadow-sm" style="border-radius:12px;">
-        <div class="card-body p-4">
-          <h3 class="fw-bold mb-4">Contact Us</h3>
+<div class="gc">
+  <div class="gc-wrap">
 
-          <div class="d-flex gap-3 mb-4">
-            <div class="bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                 style="width:48px;height:48px;">
-              <i class="bi bi-geo-alt-fill text-primary"></i>
-            </div>
+    <header class="gc-head">
+      <p class="gc-kicker">Contact</p>
+      <h1>Talk to the scholarship office</h1>
+      <p class="gc-sub">
+        Questions about a program, a document, or your account? Send a message and the
+        Student Affairs staff will reply during office hours.
+      </p>
+    </header>
+
+    <div class="gc-grid">
+
+      <!-- ── office details ─────────────────────────────────────────────── -->
+      <section class="gc-panel" aria-labelledby="gcOfficeTitle">
+        <h2 id="gcOfficeTitle">Scholarship office</h2>
+        <dl class="gc-rows">
+          <div class="gc-row">
+            <div class="gc-ico"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i></div>
             <div>
-              <div class="fw-semibold">Address</div>
-              <div class="text-muted small">Student Affairs Building, 2nd Floor<br>LSPU Sta. Cruz, Laguna</div>
+              <dt>Address</dt>
+              <dd>Student Affairs Building, 2nd Floor<br>LSPU Sta. Cruz, Laguna</dd>
             </div>
           </div>
-
-          <div class="d-flex gap-3 mb-4">
-            <div class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                 style="width:48px;height:48px;">
-              <i class="bi bi-envelope-fill text-success"></i>
-            </div>
+          <div class="gc-row">
+            <div class="gc-ico gc-ico--teal"><i class="bi bi-envelope-fill" aria-hidden="true"></i></div>
             <div>
-              <div class="fw-semibold">Email</div>
-              <div class="text-muted small">lspu.scholarhub@gmail.com</div>
+              <dt>Email</dt>
+              <dd><a href="mailto:lspu.scholarhub@gmail.com">lspu.scholarhub@gmail.com</a></dd>
             </div>
           </div>
-
-          <div class="d-flex gap-3 mb-4">
-            <div class="bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                 style="width:48px;height:48px;">
-              <i class="bi bi-telephone-fill text-warning"></i>
-            </div>
+          <div class="gc-row">
+            <div class="gc-ico gc-ico--amber"><i class="bi bi-telephone-fill" aria-hidden="true"></i></div>
             <div>
-              <div class="fw-semibold">Phone</div>
-              <div class="text-muted small">0968-365-2615</div>
+              <dt>Phone</dt>
+              <dd><a href="tel:+639683652615">0968-365-2615</a></dd>
             </div>
           </div>
-
-          <div class="d-flex gap-3">
-            <div class="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center flex-shrink-0"
-                 style="width:48px;height:48px;">
-              <i class="bi bi-clock-fill text-info"></i>
-            </div>
+          <div class="gc-row">
+            <div class="gc-ico gc-ico--slate"><i class="bi bi-clock-fill" aria-hidden="true"></i></div>
             <div>
-              <div class="fw-semibold">Office Hours</div>
-              <div class="text-muted small">Monday – Friday, 8:00 AM – 5:00 PM</div>
+              <dt>Office hours</dt>
+              <dd>Monday – Friday<br>8:00 AM – 5:00 PM</dd>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
+        </dl>
+        <p class="gc-note">
+          <i class="bi bi-info-circle" aria-hidden="true"></i>
+          Messages sent after office hours are answered the next working day.
+        </p>
+      </section>
 
-    <!-- Contact Form -->
-    <div class="col-lg-7">
-      <div class="card border-0 shadow-sm" style="border-radius:12px;">
-        <div class="card-body p-4">
-          <h3 class="fw-bold mb-2">Send Us a Message</h3>
-          <p class="text-muted small mb-4">Have questions about scholarships or need assistance? Fill out the form below and we'll get back to you.</p>
+      <!-- ── message form ───────────────────────────────────────────────── -->
+      <section class="gc-panel" aria-labelledby="gcFormTitle">
+        <h2 id="gcFormTitle">Send a message</h2>
 
-          <form method="POST" action="{{ url_for('main.contact') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <form class="gc-form" method="POST" action="{{ url_for('main.contact') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label small fw-semibold">Full Name</label>
-                <input type="text" class="form-control" name="name" required
-                       placeholder="Juan Dela Cruz"
-                       value="{{ session.get('username', '') }}">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label small fw-semibold">Email Address</label>
-                <input type="email" class="form-control" name="email" required
-                       placeholder="you@student.lspu.edu">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label small fw-semibold">Student ID (optional)</label>
-                <input type="text" class="form-control" name="student_id"
-                       placeholder="0123-1714">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label small fw-semibold">Subject</label>
-                <select class="form-select" name="subject" required>
-                  <option value="">Select a topic...</option>
-                  <option value="Application Inquiry">Application Inquiry</option>
-                  <option value="Scholarship Information">Scholarship Information</option>
-                  <option value="Document Upload Issue">Document Upload Issue</option>
-                  <option value="Account Problem">Account Problem</option>
-                  <option value="GWA / Grades Concern">GWA / Grades Concern</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              <div class="col-12">
-                <label class="form-label small fw-semibold">Message</label>
-                <textarea class="form-control" name="message" rows="5" required
-                          placeholder="Type your message here..."></textarea>
-              </div>
-              <div class="col-12">
-                <button type="submit" class="btn btn-primary px-4">
-                  <i class="bi bi-send me-1"></i>Send Message
-                </button>
-              </div>
-            </div>
-          </form>
-        </div>
-      </div>
+          <div class="gc-field">
+            <label for="gcName">Full name</label>
+            <input id="gcName" type="text" name="name" required
+                   placeholder="Juan Dela Cruz"
+                   value="{{ session.get('username', '') }}">
+          </div>
+
+          <div class="gc-field">
+            <label for="gcEmail">Email address</label>
+            <input id="gcEmail" type="email" name="email" required
+                   placeholder="you@student.lspu.edu">
+          </div>
+
+          <div class="gc-field">
+            <label for="gcStudentId">Student ID <span style="text-transform:none;font-weight:500;">(optional)</span></label>
+            <input id="gcStudentId" type="text" name="student_id" placeholder="0123-1714">
+          </div>
+
+          <div class="gc-field">
+            <label for="gcSubject">Subject</label>
+            <select id="gcSubject" name="subject" required>
+              <option value="">Select a topic…</option>
+              <option value="Application Inquiry">Application inquiry</option>
+              <option value="Scholarship Information">Scholarship information</option>
+              <option value="Document Upload Issue">Document upload issue</option>
+              <option value="Account Problem">Account problem</option>
+              <option value="GWA / Grades Concern">GWA / grades concern</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div class="gc-field gc-field--full">
+            <label for="gcMessage">Message</label>
+            <textarea id="gcMessage" name="message" rows="5" required
+                      placeholder="Tell us what you need help with…"></textarea>
+          </div>
+
+          <div class="gc-form-foot">
+            <button type="submit" class="gc-submit">
+              <i class="bi bi-send" aria-hidden="true"></i>Send message
+            </button>
+            <p class="gc-hint">We never ask for your password.</p>
+          </div>
+        </form>
+      </section>
+
     </div>
   </div>
 </div>

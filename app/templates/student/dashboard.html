@@ -1,221 +1,165 @@
 {% extends "base.html" %}
-{% block title %}Dashboard - LSPU ScholarHub{% endblock %}
+{% block title %}Dashboard — LSPU ScholarHub{% endblock %}
+
+{% block head %}
+<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261118" rel="stylesheet">
+<style>main { padding: 0 !important; margin: 0 !important; }</style>
+{% endblock %}
 
 {% block content %}
-<div class="container py-4 px-3">
+<div class="st">
+  <div class="st-wrap">
 
-  <!-- Welcome banner -->
-  <div class="mb-4">
-    <h1 class="h4 fw-bold mb-1">Welcome, {{ user.first_name }}</h1>
-    <p class="text-muted small mb-0">
-      {{ user.student_id }} · {{ user.course or 'No course set' }} · {{ user.year_level or '' }}
-      {% if now %} · Last updated: {{ now.strftime('%b %d, %Y') }}{% endif %}
-    </p>
-  </div>
+    <header class="st-head">
+      <p class="st-kicker">Student dashboard</p>
+      <h1 class="st-title">Hi, {{ user.first_name }}</h1>
+      <p class="st-sub">
+        {{ user.student_id or '—' }}{% if user.course %} · {{ user.course }}{% endif %}{% if user.year_level %} · {{ user.year_level }}{% endif %}
+      </p>
+    </header>
 
-  <!-- Alerts -->
-  {% if not session.get('is_verified') %}
-  <div class="alert alert-danger d-flex align-items-center gap-3 mb-4 py-3" role="alert" style="border-radius:12px;">
-    <i class="bi bi-shield-exclamation fs-4"></i>
-    <div class="flex-grow-1">
-      <strong>Account not verified.</strong>
-      You cannot apply for scholarships until verified. Contact the scholarship office.
-    </div>
-  </div>
-  {% endif %}
-
-  {% if not user.gwa %}
-  <div class="alert alert-warning d-flex align-items-center gap-3 mb-4 py-3" role="alert" style="border-radius:12px;">
-    <i class="bi bi-graph-up-arrow fs-4"></i>
-    <div class="flex-grow-1">
-      <strong>GWA not recorded.</strong>
-      <a href="{{ url_for('student.upload_gwa') }}" class="alert-link">Upload your Copy of Grades</a> to get started.
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- TOP ROW: Stats + GWA -->
-  <div class="row g-3 mb-4">
-    <!-- Stats cards -->
-    <div class="col-lg-8">
-      <div class="row g-3">
-        {% for label, value, color, icon, link in [
-          ('Applications',  total_apps,             '#0d6efd', 'bi-file-earmark-text', url_for('student.my_applications')),
-          ('Approved',      approved_count,         '#198754', 'bi-check-circle-fill', url_for('student.my_applications')),
-          ('Pending',       pending_count,          '#fd7e14', 'bi-hourglass-split', url_for('student.my_applications')),
-        ] %}
-        <div class="col-4 col-sm-4">
-          <a href="{{ link }}" class="text-decoration-none">
-            <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
-              <div class="card-body p-3 text-center">
-                <div class="d-inline-flex align-items-center justify-content-center mb-2" style="width:40px;height:40px;border-radius:10px;background:{{ color }}15;">
-                  <i class="bi {{ icon }}" style="color:{{ color }};font-size:1.1rem;"></i>
-                </div>
-                <div class="fw-bold" style="color:{{ color }};font-size:1.4rem;line-height:1;">{{ value }}</div>
-                <div class="text-muted small mt-1">{{ label }}</div>
-              </div>
-            </div>
-          </a>
-        </div>
-        {% endfor %}
+    {% if not session.get('is_verified') %}
+    <div class="st-alert st-alert--danger" role="alert">
+      <i class="bi bi-shield-exclamation" aria-hidden="true"></i>
+      <div>
+        <strong>Your account is not verified</strong>
+        You can browse programs, but you cannot apply until the scholarship office verifies you.
+        <a href="{{ url_for('main.contact') }}">Contact the office</a>.
       </div>
     </div>
+    {% endif %}
 
-    <!-- GWA card -->
-    <div class="col-lg-4">
-      <div class="card border-0 shadow-sm h-100" style="border-radius:12px;">
-        <div class="card-body p-3 d-flex flex-column justify-content-center">
-          {% if user.gwa %}
-          <div class="d-flex align-items-center justify-content-between mb-2">
-            <span class="text-muted small fw-semibold">Current GWA</span>
-          </div>
-          <div class="d-flex align-items-end gap-2 mb-1">
-            <span class="fw-bold" style="font-size:2rem;line-height:1;color:{% if user.gwa <= 3.00 %}#198754{% elif user.gwa <= 3.75 %}#fd7e14{% else %}#dc3545{% endif %};">{{ user.gwa }}</span>
-            <span class="text-muted small mb-1">
-              {% if user.gwa <= 1.25 %}Excellent
-              {% elif user.gwa <= 1.75 %}Very Good
-              {% elif user.gwa <= 2.25 %}Satisfactory
-              {% elif user.gwa <= 2.75 %}Fair
-              {% elif user.gwa <= 3.00 %}Passed
-              {% elif user.gwa <= 3.75 %}At Risk
-              {% else %}Probation{% endif %}
-            </span>
-          </div>
-          {% if user.grades_semester %}
-          <div class="text-muted" style="font-size:.72rem;">{{ user.grades_semester }}</div>
-          {% endif %}
-          {% if user.units_enrolled %}
-          <div class="text-muted" style="font-size:.72rem;">{{ user.units_enrolled }} units enrolled</div>
-          {% endif %}
-          <a href="{{ url_for('student.upload_gwa') }}" class="btn btn-sm btn-outline-primary mt-2" style="font-size:.78rem;">
-            <i class="bi bi-upload me-1"></i>Update Grades
+    {% if not user.gwa %}
+    <div class="st-alert st-alert--warn" role="alert">
+      <i class="bi bi-graph-up-arrow" aria-hidden="true"></i>
+      <div>
+        <strong>No GWA on record yet</strong>
+        <a href="{{ url_for('student.upload_gwa') }}">Upload your Copy of Grades</a> so programs can match you.
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- ── at a glance ──────────────────────────────────────────────────── -->
+    <div class="sd-top">
+      <div>
+        <div class="sd-stats">
+          <a class="sd-stat sd-stat--apps" href="{{ url_for('student.my_applications') }}">
+            <b>{{ total_apps }}</b><span>Applications</span>
           </a>
+          <a class="sd-stat sd-stat--ok" href="{{ url_for('student.my_applications') }}">
+            <b>{{ approved_count }}</b><span>Approved</span>
+          </a>
+          <a class="sd-stat sd-stat--warn" href="{{ url_for('student.my_applications') }}">
+            <b>{{ pending_count }}</b><span>Pending</span>
+          </a>
+        </div>
+
+        <div class="st-card">
+          {% if user.gwa %}
+          {% set band = 'Excellent' if user.gwa <= 1.25 else ('Very good' if user.gwa <= 1.75 else ('Satisfactory' if user.gwa <= 2.25 else ('Fair' if user.gwa <= 2.75 else ('Passed' if user.gwa <= 3.00 else ('At risk' if user.gwa <= 3.75 else 'Probation'))))) %}
+          {% set tone = '#198754' if user.gwa <= 3.00 else ('#b26a00' if user.gwa <= 3.75 else '#dc3545') %}
+          <div class="sd-gwa">
+            <div>
+              <div class="sd-gwa-main">
+                <span class="sd-gwa-value" style="color:{{ tone }};">{{ user.gwa }}</span>
+                <span class="sd-gwa-band" style="color:{{ tone }};">{{ band }}</span>
+              </div>
+              <div class="sd-gwa-meta">
+                Current GWA{% if user.grades_semester %} · {{ user.grades_semester }}{% endif %}{% if user.units_enrolled %} · {{ user.units_enrolled }} units{% endif %}
+              </div>
+            </div>
+            <a class="st-btn st-btn--ghost sd-gwa-side" href="{{ url_for('student.upload_gwa') }}">
+              <i class="bi bi-upload" aria-hidden="true"></i>Update grades
+            </a>
+          </div>
           {% else %}
-          <div class="text-center py-2">
-            <i class="bi bi-graph-up-arrow text-muted fs-3 mb-2 d-block"></i>
-            <div class="text-muted small mb-2">No GWA recorded yet</div>
-            <a href="{{ url_for('student.upload_gwa') }}" class="btn btn-primary btn-sm">
-              <i class="bi bi-upload me-1"></i>Upload Grades
+          <div class="sd-gwa">
+            <div>
+              <div class="sd-gwa-main"><span class="sd-gwa-value" style="color:#98a6b8;">—</span></div>
+              <div class="sd-gwa-meta">No GWA recorded yet</div>
+            </div>
+            <a class="st-btn st-btn--primary sd-gwa-side" href="{{ url_for('student.upload_gwa') }}">
+              <i class="bi bi-upload" aria-hidden="true"></i>Upload grades
             </a>
           </div>
           {% endif %}
         </div>
+
+        {% if has_approved_scholarship %}
+        <a class="sd-scholar" style="margin-top:.8rem;" href="{{ url_for('student.my_scholarship') }}">
+          <span class="sd-scholar-ico"><i class="bi bi-patch-check-fill" aria-hidden="true"></i></span>
+          <span style="flex:1 1 auto;min-width:0;">
+            <b>You are a scholar</b>
+            <span>View your program, benefits and standing</span>
+          </span>
+          <i class="bi bi-chevron-right" style="color:#0f7a4f;" aria-hidden="true"></i>
+        </a>
+        {% endif %}
+      </div>
+
+      <!-- ── quick actions ───────────────────────────────────────────────── -->
+      <div class="st-section" style="margin-bottom:0;">
+        <div class="st-section-head"><h2 class="st-h2">Quick actions</h2></div>
+        <div class="sd-quick">
+          <a href="{{ url_for('scholarship.list_scholarships') }}">
+            <i class="bi bi-search" style="color:#0d6efd;" aria-hidden="true"></i>
+            <b>Browse</b><span>Find programs</span>
+          </a>
+          <a href="{{ url_for('student.my_applications') }}">
+            <i class="bi bi-file-earmark-text" style="color:#198754;" aria-hidden="true"></i>
+            <b>Applications</b><span>Track status</span>
+          </a>
+          <a href="{{ url_for('student.notifications') }}">
+            <i class="bi bi-bell" style="color:#6f42c1;" aria-hidden="true"></i>
+            <b>Alerts</b><span>Announcements</span>
+          </a>
+        </div>
       </div>
     </div>
-  </div>
 
-  {% if has_approved_scholarship %}
-  <!-- My Scholarship — quick access for approved scholars -->
-  <a href="{{ url_for('student.my_scholarship') }}" class="text-decoration-none d-block mb-4">
-    <div class="card border-0 shadow-sm" style="border-radius:12px;border-left:5px solid #198754;">
-      <div class="card-body py-3 px-4 d-flex align-items-center justify-content-between flex-wrap gap-2">
-        <div class="d-flex align-items-center gap-3">
-          <div class="d-flex align-items-center justify-content-center flex-shrink-0"
-               style="width:42px;height:42px;border-radius:10px;background:#19875415;">
-            <i class="bi bi-patch-check-fill" style="color:#198754;font-size:1.3rem;"></i>
-          </div>
-          <div>
-            <div class="fw-bold text-dark">You are a scholar! 🎓</div>
-            <div class="text-muted small">View your scholarship program, benefits, and standing</div>
-          </div>
-        </div>
-        <span class="btn btn-success btn-sm">My Scholarship <i class="bi bi-arrow-right ms-1"></i></span>
+    <!-- ── recent applications ──────────────────────────────────────────── -->
+    <section class="st-section" style="margin-top:1.4rem;">
+      <div class="st-section-head">
+        <h2 class="st-h2">Recent applications</h2>
+        {% if recent_apps %}
+        <a class="st-link" href="{{ url_for('student.my_applications') }}">View all</a>
+        {% endif %}
       </div>
-    </div>
-  </a>
-  {% endif %}
 
-  <!-- QUICK ACTIONS — thirds on phones, fixed cards from sm up -->
-  <div class="row g-3 mb-4 justify-content-center">
-    <div class="col-4">
-      <a href="{{ url_for('student.my_applications') }}" class="text-decoration-none d-block h-100">
-        <div class="card border-0 shadow-sm h-100 text-center py-3" style="border-radius:12px;">
-          <i class="bi bi-file-earmark-text fs-3 mb-2" style="color:#198754;"></i>
-          <div class="fw-semibold small text-dark">My Applications</div>
-          <div class="text-muted" style="font-size:.7rem;">Track status</div>
-        </div>
-      </a>
-    </div>
-    <div class="col-4">
-      <a href="{{ url_for('student.notifications') }}" class="text-decoration-none d-block h-100">
-        <div class="card border-0 shadow-sm h-100 text-center py-3" style="border-radius:12px;">
-          <i class="bi bi-bell fs-3 mb-2" style="color:#6f42c1;"></i>
-          <div class="fw-semibold small text-dark">Notifications</div>
-          <div class="text-muted" style="font-size:.7rem;">Announcements</div>
-        </div>
-      </a>
-    </div>
-    <div class="col-4">
-      <a href="{{ url_for('student.profile') }}" class="text-decoration-none d-block h-100">
-        <div class="card border-0 shadow-sm h-100 text-center py-3" style="border-radius:12px;">
-          <i class="bi bi-person fs-3 mb-2" style="color:#0d6efd;"></i>
-          <div class="fw-semibold small text-dark">My Profile</div>
-          <div class="text-muted" style="font-size:.7rem;">Update info</div>
-        </div>
-      </a>
-    </div>
-  </div>
-
-  <!-- Recent Applications -->
-  <div class="mb-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <h6 class="fw-bold mb-0">Recent Applications</h6>
       {% if recent_apps %}
-      <a href="{{ url_for('student.my_applications') }}" class="text-decoration-none small">View All</a>
+      <div class="sd-list">
+        {% for app in recent_apps %}
+        {% set sv = app.status.value %}
+        <a class="sd-row" href="{{ url_for('student.my_applications') }}">
+          <div class="sd-row-main">
+            <b>{{ app.scholarship.title }}</b>
+            <span>Submitted {{ app.submitted_at.strftime('%b %d, %Y') }}</span>
+          </div>
+          {% if sv == 'approved' %}<span class="st-chip st-chip--ok">Approved</span>
+          {% elif sv == 'rejected' %}<span class="st-chip st-chip--bad">Rejected</span>
+          {% elif sv == 'withdrawn' %}<span class="st-chip st-chip--muted">Withdrawn</span>
+          {% else %}<span class="st-chip st-chip--warn">Pending</span>{% endif %}
+        </a>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="st-empty">
+        <i class="bi bi-inbox" aria-hidden="true"></i>
+        <h3>No applications yet</h3>
+        <p>Browse the open programs and submit your first application.</p>
+        <a class="st-btn st-btn--primary" href="{{ url_for('scholarship.list_scholarships') }}">Browse scholarships</a>
+      </div>
       {% endif %}
-    </div>
-    {% if recent_apps %}
-    <div class="card border-0 shadow-sm" style="border-radius:12px;">
-      <div class="card-body p-0">
-        <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0">
-            <thead class="table-light">
-              <tr>
-                <th class="ps-3 small">Scholarship</th>
-                <th class="small">Submitted</th>
-                <th class="pe-3 small">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for app in recent_apps %}
-              <tr>
-                <td class="ps-3" data-label="Scholarship">
-                  <div class="fw-semibold small">{{ app.scholarship.title[:35] }}</div>
-                </td>
-                <td class="text-muted small" data-label="Submitted">{{ app.submitted_at.strftime('%b %d, %Y') }}</td>
-                <td class="pe-3" data-label="Status">
-                  {% set sv = app.status.value %}
-                  {% if sv == 'approved' %}<span class="badge bg-success">Approved</span>
-                  {% elif sv == 'rejected' %}<span class="badge bg-danger">Rejected</span>
-                  {% elif sv == 'withdrawn' %}<span class="badge bg-secondary">Withdrawn</span>
-                  {% else %}<span class="badge bg-warning text-dark">Pending</span>{% endif %}
-                </td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+    </section>
+
+    <div class="st-alert st-alert--info">
+      <i class="bi bi-info-circle" aria-hidden="true"></i>
+      <div>
+        Keep your documents current — programs are matched against your latest COR and grades.
+        <a href="{{ url_for('student.profile') }}">Update your documents</a>.
       </div>
     </div>
-    {% else %}
-    <div class="card border-0 shadow-sm" style="border-radius:12px;">
-      <div class="card-body empty-state py-4">
-        <i class="bi bi-inbox"></i>
-        <h5>No applications yet</h5>
-        <p class="mb-0">Browse available scholarships and submit your first application.</p>
-      </div>
-    </div>
-    {% endif %}
-  </div>
 
-  <!-- Reminder to update documents -->
-  <div class="alert alert-info d-flex align-items-center gap-3 mb-4 py-3" role="alert" style="border-radius:12px;">
-    <i class="bi bi-info-circle fs-4"></i>
-    <div class="flex-grow-1">
-      Please keep your documents up to date.
-      <a href="{{ url_for('student.profile') }}" class="alert-link">Upload your latest COR and Grades</a>.
-    </div>
   </div>
-
 </div>
 {% endblock %}

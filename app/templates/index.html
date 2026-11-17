@@ -2,7 +2,7 @@
 {% block title %}LSPU ScholarHub — Scholarship Management System{% endblock %}
 
 {% block head %}
-<link href="{{ url_for('static', filename='css/guest-home.css') }}?v=20261117" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/guest-home.css') }}?v=20261117b" rel="stylesheet">
 <style>
   /* the landing page owns the full viewport width */
   main { padding: 0 !important; margin: 0 !important; background: transparent !important; flex-grow: 0 !important; }
@@ -19,7 +19,6 @@
       <div class="gh-hero-grid">
 
         <div class="gh-hero-copy">
-          <p class="gh-eyebrow">Laguna State Polytechnic University · Santa Cruz</p>
           <h1>Scholarships, without the paperwork.</h1>
           <p class="gh-lede">
             Find grants you qualify for, submit your COR and grades once, and follow
@@ -58,9 +57,34 @@
           {% endif %}
         </div>
 
+        {% set campuses = [
+          {'name': 'Sta. Cruz Campus', 'file': 'sta-cruz.jpg'},
+          {'name': 'Siniloan Campus',  'file': 'siniloan.jpg'},
+          {'name': 'Los Baños Campus', 'file': 'los-banos.jpg'},
+          {'name': 'San Pablo Campus', 'file': 'san-pablo.jpg'}
+        ] %}
         <div class="gh-hero-media">
-          <img src="{{ url_for('static', filename='images/lspu-campus.jpg') }}" alt="LSPU Santa Cruz campus">
-          <span class="gh-media-tag">Santa Cruz Campus · Student Affairs</span>
+          <div class="gh-campus-track" id="campusTrack" role="group" aria-label="LSPU campuses">
+            {% for c in campuses %}
+            <figure class="gh-campus{% if not loop.first %} gh-campus--pending{% endif %}"
+                    data-name="{{ c.name }}">
+              <img src="{{ url_for('static', filename='images/campuses/' ~ c.file) }}"
+                   alt="{{ c.name }}"
+                   loading="{{ 'eager' if loop.first else 'lazy' }}"
+                   onerror="this.parentNode.classList.add('is-empty'); this.remove();">
+            </figure>
+            {% endfor %}
+          </div>
+          <div class="gh-campus-bar">
+            <span class="gh-campus-name" id="campusName">Sta. Cruz Campus</span>
+            <div class="gh-campus-dots" aria-hidden="false">
+              {% for c in campuses %}
+              <button type="button" class="gh-dot{% if loop.first %} is-active{% endif %}"
+                      data-target="{{ loop.index0 }}"
+                      aria-label="Show {{ c.name }}"></button>
+              {% endfor %}
+            </div>
+          </div>
         </div>
 
       </div>
@@ -169,4 +193,40 @@
   </div>
 
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+/* ── Campus gallery: swipe / scroll, dots, live campus name ───────────────── */
+(function () {
+  var track = document.getElementById('campusTrack');
+  if (!track) return;
+  var slides = [].slice.call(track.querySelectorAll('.gh-campus'));
+  var dots   = [].slice.call(document.querySelectorAll('.gh-dot'));
+  var label  = document.getElementById('campusName');
+  var ticking = false;
+
+  function sync() {
+    ticking = false;
+    var w = track.clientWidth || 1;
+    var i = Math.min(slides.length - 1, Math.max(0, Math.round(track.scrollLeft / w)));
+    dots.forEach(function (d, n) { d.classList.toggle('is-active', n === i); });
+    if (label && slides[i]) label.textContent = slides[i].getAttribute('data-name');
+  }
+
+  track.addEventListener('scroll', function () {
+    if (!ticking) { ticking = true; window.requestAnimationFrame(sync); }
+  }, { passive: true });
+
+  dots.forEach(function (d) {
+    d.addEventListener('click', function () {
+      var i = parseInt(d.getAttribute('data-target'), 10) || 0;
+      track.scrollTo({ left: i * track.clientWidth, behavior: 'smooth' });
+    });
+  });
+
+  window.addEventListener('resize', sync);
+  sync();
+})();
+</script>
 {% endblock %}

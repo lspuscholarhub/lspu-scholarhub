@@ -1,122 +1,145 @@
 {% extends "base.html" %}
-{% block title %}Scholarships - LSPU ScholarHub{% endblock %}
+{% block title %}Scholarships — LSPU ScholarHub{% endblock %}
+
+{% block head %}
+<link href="{{ url_for('static', filename='css/guest-pages.css') }}?v=20261117" rel="stylesheet">
+<style>main { padding: 0 !important; margin: 0 !important; }</style>
+{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <h1 class="h4 h-md-3 mb-0">Available Scholarships</h1>
-    <form class="auto-filter d-flex gap-2 flex-grow-1" style="min-width:min(100%, 260px);" method="GET">
-      <input type="text" name="q" value="{{ q }}" class="form-control"
-             placeholder="Search scholarships…" style="min-width:0;">
-    </form>
-  </div>
+<div class="gs">
+  <div class="gs-wrap">
 
-  {% if scholarships %}
-  <div class="row">
-    {% for s in scholarships %}
-    {% if s.application_deadline %}
-      {% set days_left = (s.application_deadline - now).days %}
-    {% else %}
-      {% set days_left = None %}
-    {% endif %}
-    <div class="col-md-6 mb-4">
-      <div class="card h-100 shadow-sm scholarship-card">
-        <div class="card-body d-flex flex-column">
-          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
-            <h5 class="card-title mb-0">{{ s.title }}</h5>
-            <div class="d-flex gap-1 ms-auto">
-              {% if s.scope == 'university' %}
-                <span class="badge bg-primary" title="University-wide — open to all campuses">
-                  <i class="bi bi-globe me-1"></i>All Campuses
-                </span>
-              {% elif s.campus %}
-                <span class="badge bg-info text-dark" title="Campus-specific: {{ s.campus.name }}">
-                  <i class="bi bi-geo-alt me-1"></i>{{ s.campus.short_name or s.campus.name }}
-                </span>
-              {% endif %}
-              {% if s.funding_type == 'private' %}
-                <span class="badge bg-info text-dark" title="Private scholarship — can be combined with your other scholarships">
-                  <i class="bi bi-building me-1"></i>Private
-                </span>
-              {% else %}
-                <span class="badge bg-dark" title="Public (government-funded) scholarship — only one may be held at a time">
-                  <i class="bi bi-bank2 me-1"></i>Public
-                </span>
-              {% endif %}
-              {% if s.status and s.status.value == 'active' and (days_left is none or days_left > 7) %}
-                <span class="badge bg-success">Open</span>
-              {% elif s.status and s.status.value == 'active' and days_left >= 0 %}
-                <span class="badge bg-warning text-dark">Closing Soon</span>
-              {% else %}
-                <span class="badge bg-secondary">Closed</span>
-              {% endif %}
-            </div>
-          </div>
-          <p class="card-text text-muted small flex-grow-1">{{ (s.description[:120] if s.description else 'No description available') }}{% if s.description and s.description|length > 120 %}…{% endif %}</p>
-          <div class="mb-3 small text-muted">
-            <div><i class="bi bi-cash me-1"></i>
-              {% if s.award_amount %}₱{{ "{:,.0f}".format(s.award_amount) }}{% else %}TBA{% endif %}
-            </div>
-            <div><i class="bi bi-calendar me-1"></i>
-              {% if s.application_deadline %}Deadline: {{ s.application_deadline.strftime('%b %d, %Y') }}{% if days_left >= 0 %}({{ days_left }} days left){% else %}(Expired){% endif %}{% else %}Open until slots fill{% endif %}
-            </div>
-            {% if s.max_applicants %}
-            <div><i class="bi bi-people me-1"></i>
-              {{ s.current_applicants or 0 }}/{{ s.max_applicants }} applicants
-            </div>
+    <header class="gs-head">
+      <p class="gs-kicker">Scholarship programs</p>
+      <h1>Available scholarships</h1>
+      <p class="gs-sub">
+        {% if scholarships %}
+          {{ scholarships|length }} program{{ 's' if scholarships|length != 1 }} you can review and apply for.
+        {% else %}
+          Programs appear here as soon as the scholarship office opens them.
+        {% endif %}
+        Read the requirements once — your COR and grades carry over to every application.
+      </p>
+    </header>
+
+    <form class="gs-search auto-filter" method="GET" role="search">
+      <i class="bi bi-search" aria-hidden="true"></i>
+      <input type="search" name="q" value="{{ q }}" class="gs-search-input"
+             placeholder="Search scholarships…" aria-label="Search scholarships">
+      {% if q %}
+      <a class="gs-search-clear" href="{{ url_for('scholarship.list_scholarships') }}" aria-label="Clear search">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </a>
+      {% endif %}
+    </form>
+
+    {% if scholarships %}
+    <ul class="gs-list">
+      {% for s in scholarships %}
+        {% if s.application_deadline %}
+          {% set days_left = (s.application_deadline - now).days %}
+        {% else %}
+          {% set days_left = None %}
+        {% endif %}
+        {% set is_open = s.status and s.status.value == 'active' and (days_left is none or days_left >= 0) %}
+        <li class="gs-card">
+          <div class="gs-chips">
+            {% if is_open and days_left is not none and days_left <= 7 %}
+              <span class="gs-chip gs-chip--closing">Closing soon</span>
+            {% elif is_open %}
+              <span class="gs-chip gs-chip--open">Open</span>
+            {% else %}
+              <span class="gs-chip gs-chip--closed">Closed</span>
+            {% endif %}
+            {% if s.funding_type == 'private' %}
+              <span class="gs-chip gs-chip--private" title="Can be combined with your other scholarships">Private</span>
+            {% else %}
+              <span class="gs-chip gs-chip--public" title="Only one public scholarship may be held at a time">Public</span>
+            {% endif %}
+            {% if s.scope == 'university' %}
+              <span class="gs-chip" title="Open to all campuses">All campuses</span>
+            {% elif s.campus %}
+              <span class="gs-chip">{{ s.campus.name }}</span>
             {% endif %}
           </div>
-          <div class="d-flex justify-content-between align-items-center mt-auto">
-            <a href="{{ url_for('scholarship.view_scholarship', scholarship_id=s.id) }}"
-               class="btn btn-outline-primary btn-sm">View Details</a>
+
+          <h2 class="gs-card-title">{{ s.title }}</h2>
+          <p class="gs-card-desc">
+            {% if s.description %}{{ s.description[:120] }}{% if s.description|length > 120 %}…{% endif %}
+            {% else %}Details available on the program page.{% endif %}
+          </p>
+
+          <dl class="gs-meta">
+            <div>
+              <dt>Award</dt>
+              <dd>{% if s.award_amount %}₱{{ "{:,.0f}".format(s.award_amount) }}{% else %}To be announced{% endif %}</dd>
+            </div>
+            <div>
+              <dt>{% if s.application_deadline %}Deadline{% else %}Slots{% endif %}</dt>
+              <dd>
+                {% if s.application_deadline %}
+                  {{ s.application_deadline.strftime('%b %d, %Y') }}
+                  {% if days_left >= 0 %}<span style="font-weight:500;color:#8593a5;">· {{ days_left }}d left</span>{% endif %}
+                {% elif s.max_applicants %}
+                  {{ s.current_applicants or 0 }}/{{ s.max_applicants }}
+                {% else %}
+                  Open until filled
+                {% endif %}
+              </dd>
+            </div>
+          </dl>
+
+          <div class="gs-card-foot">
+            <a class="gs-btn gs-btn--primary"
+               href="{{ url_for('scholarship.view_scholarship', scholarship_id=s.id) }}">View details</a>
+
             {% if session.get('user_type') == 'student' %}
               {% if s.id in applied_ids %}
-                <span class="badge bg-info">Already Applied</span>
+                <span class="gs-disabled"><i class="bi bi-check2-circle" aria-hidden="true"></i>Already applied</span>
               {% elif s.funding_type == 'public' and holds_public %}
-                <span class="badge bg-secondary" title="You already have the public scholarship '{{ active_scholarship_title }}' — only one public scholarship is allowed">
-                  <i class="bi bi-lock-fill me-1"></i>Public Limit Reached
+                <span class="gs-disabled" title="You already have the public scholarship '{{ active_scholarship_title }}'">
+                  <i class="bi bi-lock-fill" aria-hidden="true"></i>Public limit reached
                 </span>
               {% elif s.id in withdrawn_ids or s.id in rejected_ids %}
                 {% if s.is_application_open() %}
-                  <a href="{{ url_for('scholarship.apply_scholarship', scholarship_id=s.id) }}"
-                     class="btn btn-warning btn-sm">
-                    <i class="bi bi-arrow-repeat me-1"></i>{{ 'Re-apply' if s.id in withdrawn_ids else 'Apply Again' }}
+                  <a class="gs-btn gs-btn--warn" href="{{ url_for('scholarship.apply_scholarship', scholarship_id=s.id) }}">
+                    <i class="bi bi-arrow-repeat" aria-hidden="true"></i>{{ 'Re-apply' if s.id in withdrawn_ids else 'Apply again' }}
                   </a>
                 {% else %}
-                  <span class="badge bg-secondary">Closed</span>
+                  <span class="gs-disabled">Closed</span>
                 {% endif %}
               {% elif not session.get('is_verified') %}
-                <span class="badge bg-secondary" title="Account not yet verified">
-                  <i class="bi bi-lock me-1"></i>Unverified
+                <span class="gs-disabled" title="Your account is not verified yet">
+                  <i class="bi bi-lock" aria-hidden="true"></i>Unverified
                 </span>
               {% elif s.is_application_open() %}
-                <a href="{{ url_for('scholarship.apply_scholarship', scholarship_id=s.id) }}"
-                   class="btn btn-primary btn-sm">Apply Now</a>
+                <a class="gs-btn gs-btn--ghost" href="{{ url_for('scholarship.apply_scholarship', scholarship_id=s.id) }}">Apply now</a>
               {% else %}
-                <span class="badge bg-secondary">Closed</span>
+                <span class="gs-disabled">Closed</span>
               {% endif %}
             {% elif not session.get('user_id') %}
-              <a href="{{ url_for('auth.login') }}" class="btn btn-outline-secondary btn-sm">Login to Apply</a>
+              <a class="gs-btn gs-btn--ghost" href="{{ url_for('auth.login') }}">Log in to apply</a>
             {% endif %}
           </div>
-        </div>
-      </div>
+        </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <div class="gs-empty">
+      <i class="bi bi-search" aria-hidden="true"></i>
+      <h2>No scholarships found{% if q %} for “{{ q }}”{% endif %}</h2>
+      <p>
+        {% if q %}Try a different keyword, or clear the search to see every program.
+        {% else %}New scholarship programs will appear here when they open.{% endif %}
+      </p>
+      {% if q %}
+      <a class="gs-btn gs-btn--ghost" style="max-width:220px;margin:0 auto;"
+         href="{{ url_for('scholarship.list_scholarships') }}">Clear search</a>
+      {% endif %}
     </div>
-    {% endfor %}
-  </div>
-  {% else %}
-  <div class="empty-state">
-    <i class="bi bi-search"></i>
-    <h5>No scholarships found{% if q %} for "{{ q }}"{% endif %}</h5>
-    <p>{% if q %}Try a different keyword or clear the search.{% else %}New scholarship programs will appear here when they open.{% endif %}</p>
-    {% if q %}<a href="{{ url_for('scholarship.list_scholarships') }}" class="btn btn-outline-primary btn-sm">Clear Search</a>{% endif %}
-  </div>
-  {% endif %}
-</div>
-{% endblock %}
+    {% endif %}
 
-{% block scripts %}
-<script>
-// Pass current datetime to Jinja via a hidden element — handled server-side via context processor
-</script>
+  </div>
+</div>
 {% endblock %}
