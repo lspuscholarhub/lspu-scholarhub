@@ -212,6 +212,50 @@
 }
 .gh-dot.is-active::before { background: var(--gh-blue); width: 18px; }
 
+.gh-pause {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, .5);
+  border-radius: 50%;
+  background: rgba(11, 18, 32, .42);
+  color: #fff;
+  font-size: .95rem;
+  line-height: 1;
+  cursor: pointer;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 8px 20px -12px rgba(3, 20, 40, .8);
+  transition: background .15s, transform .15s, border-color .15s;
+}
+.gh-pause:hover { background: rgba(11, 18, 32, .68); border-color: #fff; }
+.gh-pause:active { transform: translate(-50%, -50%) scale(.94); }
+.gh-pause:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
+.gh-pause[aria-pressed="true"] {
+  background: #fff;
+  border-color: #fff;
+  color: var(--gh-navy);
+}
+/* label stays available to screen readers, the button itself is icon-only */
+.gh-pause-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .gh-hero-card { display: none; }
 
 /* ── stats band ───────────────────────────────────────────────────────────── */
@@ -426,6 +470,7 @@
   .gh-campus-name { color: rgba(255, 255, 255, .78); }
   .gh-dot::before { background: rgba(255, 255, 255, .45); }
   .gh-dot.is-active::before { background: #fff; }
+  .gh-pause { width: 44px; height: 44px; font-size: 1.05rem; }
 
   .gh-hero-card {
     display: block;

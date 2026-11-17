@@ -2,7 +2,7 @@
 {% block title %}LSPU ScholarHub — Scholarship Management System{% endblock %}
 
 {% block head %}
-<link href="{{ url_for('static', filename='css/guest-home.css') }}?v=20261117c" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/guest-home.css') }}?v=20261117e" rel="stylesheet">
 <style>
   /* the landing page owns the full viewport width */
   main { padding: 0 !important; margin: 0 !important; background: transparent !important; flex-grow: 0 !important; }
@@ -82,6 +82,11 @@
             </button>
             <button type="button" class="gh-nav gh-nav--next" id="campusNext" aria-label="Next campus">
               <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="gh-pause" id="campusPause" aria-pressed="false"
+                    aria-label="Pause campus slideshow">
+              <i class="bi bi-pause-fill" aria-hidden="true"></i>
+              <span class="gh-pause-text">Pause</span>
             </button>
           </div>
           <div class="gh-campus-bar">
@@ -215,11 +220,13 @@
   var label  = document.getElementById('campusName');
   var prev   = document.getElementById('campusPrev');
   var next   = document.getElementById('campusNext');
+  var pauseBtn = document.getElementById('campusPause');
   var ticking = false;
   var current = 0;
   var timer = null;
   var DELAY = 5000;
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var userPaused = false;
 
   function sync() {
     ticking = false;
@@ -242,10 +249,22 @@
 
   function stop() { if (timer) { clearInterval(timer); timer = null; } }
   function start() {
-    if (reduced || timer || slides.length < 2) return;
+    if (reduced || userPaused || timer || slides.length < 2) return;
     timer = setInterval(function () { nextSlide(false); }, DELAY);
   }
   function restart() { stop(); start(); }
+
+  function setPaused(paused) {
+    userPaused = paused;
+    if (paused) { stop(); } else { restart(); }
+    if (!pauseBtn) return;
+    pauseBtn.setAttribute('aria-pressed', paused ? 'true' : 'false');
+    pauseBtn.setAttribute('aria-label', paused ? 'Play campus slideshow' : 'Pause campus slideshow');
+    var icon = pauseBtn.querySelector('i');
+    if (icon) icon.className = paused ? 'bi bi-play-fill' : 'bi bi-pause-fill';
+    var text = pauseBtn.querySelector('.gh-pause-text');
+    if (text) text.textContent = paused ? 'Play' : 'Pause';
+  }
 
   track.addEventListener('scroll', function () {
     if (!ticking) { ticking = true; window.requestAnimationFrame(sync); }
@@ -258,6 +277,7 @@
   });
   if (prev) prev.addEventListener('click', function () { prevSlide(true); });
   if (next) next.addEventListener('click', function () { nextSlide(true); });
+  if (pauseBtn) pauseBtn.addEventListener('click', function () { setPaused(!userPaused); });
 
   /* pause while the guest is looking at / touching the gallery */
   var media = track.closest('.gh-hero-media') || track;

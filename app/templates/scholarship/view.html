@@ -54,7 +54,7 @@
           <dd>{% if scholarship.award_amount %}₱{{ "{:,.0f}".format(scholarship.award_amount) }}{% else %}To be announced{% endif %}</dd>
         </div>
         <div>
-          <dt>{% if scholarship.application_deadline %}Deadline{% else %}Deadline{% endif %}</dt>
+          <dt>Deadline</dt>
           <dd>
             {% if scholarship.application_deadline %}
               {{ scholarship.application_deadline.strftime('%b %d, %Y') }}
