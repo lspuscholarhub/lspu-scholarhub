@@ -80,10 +80,39 @@ def create_app(config_name=None):
             return jsonify({'error': 'Something went wrong on our side. Please try again.'}), 500
         _flash('Something went wrong on our side. Please try again — if it keeps '
                'happening, contact the scholarship office.', 'error')
+
+        # Send the user back to the page they came from so they keep their
+        # context, but NEVER to the URL that just failed: that is a redirect
+        # to itself, and the browser spins until it gives up with
+        # ERR_TOO_MANY_REDIRECTS instead of showing the real problem.
+        from urllib.parse import urlparse
+
+        referrer = _req.referrer or ''
         try:
-            return _redir(_req.referrer or '/'), 302
+            ref = urlparse(referrer)
+            same_host = ref.netloc == _req.host
+            same_path = (ref.path or '/') == _req.path
         except Exception:
+            same_host = same_path = True
+
+        if referrer and same_host and not same_path:
+            return _redir(referrer), 302
+
+        # Otherwise show the error page itself. Keep a plain fallback that
+        # needs no template engine, session, or database to be safe: if the
+        # outage is the database, even base.html may fail to render.
+        try:
             return _render('errors/500.html'), 500
+        except Exception:
+            return ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
+                    '<title>Something went wrong</title></head><body '
+                    'style="font-family:system-ui,sans-serif;max-width:34rem;'
+                    'margin:15vh auto;padding:0 1.5rem;line-height:1.6">'
+                    '<h1 style="font-size:1.4rem">Something went wrong on our '
+                    'side</h1><p>Your request could not be completed. Please try '
+                    'again in a moment — if it keeps happening, contact the '
+                    'scholarship office at 0968-365-2615 or '
+                    'lspu.scholarhub@gmail.com.</p></body></html>'), 500
 
     # Friendly handling when a rate limit is hit
     @app.errorhandler(429)
