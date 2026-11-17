@@ -2,7 +2,7 @@
 {% block title %}LSPU ScholarHub — Scholarship Management System{% endblock %}
 
 {% block head %}
-<link href="{{ url_for('static', filename='css/guest-home.css') }}?v=20261117e" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/guest-home.css') }}?v=20261117f" rel="stylesheet">
 <style>
   /* the landing page owns the full viewport width */
   main { padding: 0 !important; margin: 0 !important; background: transparent !important; flex-grow: 0 !important; }
@@ -227,6 +227,7 @@
   var DELAY = 5000;
   var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   var userPaused = false;
+  var hideTimer = null;
 
   function sync() {
     ticking = false;
@@ -254,9 +255,24 @@
   }
   function restart() { stop(); start(); }
 
+  function showPause(hold) {
+    if (!pauseBtn) return;
+    pauseBtn.classList.add('is-visible');
+    window.clearTimeout(hideTimer);
+    if (!hold && !userPaused) {
+      hideTimer = window.setTimeout(function () { hidePause(); }, 3200);
+    }
+  }
+  function hidePause() {
+    if (!pauseBtn || userPaused) return;
+    window.clearTimeout(hideTimer);
+    pauseBtn.classList.remove('is-visible');
+  }
+
   function setPaused(paused) {
     userPaused = paused;
     if (paused) { stop(); } else { restart(); }
+    showPause(paused);
     if (!pauseBtn) return;
     pauseBtn.setAttribute('aria-pressed', paused ? 'true' : 'false');
     pauseBtn.setAttribute('aria-label', paused ? 'Play campus slideshow' : 'Pause campus slideshow');
@@ -279,8 +295,17 @@
   if (next) next.addEventListener('click', function () { nextSlide(true); });
   if (pauseBtn) pauseBtn.addEventListener('click', function () { setPaused(!userPaused); });
 
-  /* pause while the guest is looking at / touching the gallery */
+  /* the toggle only shows up once the guest touches / clicks the photos */
   var media = track.closest('.gh-hero-media') || track;
+  media.addEventListener('click', function () { showPause(false); });
+  if (pauseBtn) {
+    pauseBtn.addEventListener('pointerenter', function () { showPause(true); });
+    pauseBtn.addEventListener('pointerleave', function () { showPause(false); });
+    pauseBtn.addEventListener('focus', function () { showPause(true); });
+    pauseBtn.addEventListener('blur', function () { showPause(false); });
+  }
+
+  /* pause while the guest is looking at / touching the gallery */
   media.addEventListener('pointerenter', stop);
   media.addEventListener('pointerleave', start);
   media.addEventListener('focusin', stop);
@@ -290,6 +315,8 @@
   });
   track.addEventListener('touchstart', stop, { passive: true });
   track.addEventListener('touchend', restart, { passive: true });
+  /* a swipe wakes the toggle too */
+  media.addEventListener('touchstart', function () { showPause(false); }, { passive: true });
 
   window.addEventListener('resize', sync);
   sync();
