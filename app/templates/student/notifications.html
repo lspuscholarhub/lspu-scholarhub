@@ -1,77 +1,89 @@
 {% extends "base.html" %}
-{% block title %}Announcements - Student{% endblock %}
+{% block title %}Announcements — LSPU ScholarHub{% endblock %}
+
+{% block head %}
+<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261118" rel="stylesheet">
+<style>main { padding: 0 !important; margin: 0 !important; }</style>
+{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-  <!-- Breadcrumb -->
-  <nav aria-label="breadcrumb">
-    <ol class="breadcrumb mb-3">
-      <li class="breadcrumb-item"><a href="{{ url_for('student.dashboard') }}">Dashboard</a></li>
-      <li class="breadcrumb-item active" aria-current="page">Notifications</li>
-    </ol>
-  </nav>
+<div class="st">
+  <div class="st-wrap">
 
-  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <h1 class="h3"><i class="bi bi-megaphone me-2 text-primary"></i>My Announcements
+    <header class="st-head">
+      <p class="st-kicker">Student</p>
+      <h1 class="st-title">Announcements</h1>
+      <p class="st-sub">Deadlines, decisions and office notices for your account.</p>
+    </header>
+
+    <div class="sn-toolbar">
       {% if unread_count > 0 %}
-        <span class="badge bg-danger ms-2">{{ unread_count }}</span>
+      <span class="sn-count">{{ unread_count }}</span>
+      <span style="font-size:.82rem;color:#5b6878;">unread</span>
+      {% else %}
+      <span class="st-chip st-chip--ok"><i class="bi bi-check2-all" aria-hidden="true"></i>All read</span>
       {% endif %}
-    </h1>
-    <div class="d-flex gap-2">
+
+      {% if unread_count > 0 %}
       <form method="POST" action="{{ url_for('student.mark_all_read') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="btn btn-outline-secondary btn-sm">Mark All as Read</button>
+        <button class="st-btn st-btn--ghost" style="min-height:38px;padding:.35rem .7rem;font-size:.78rem;">
+          <i class="bi bi-check2-all" aria-hidden="true"></i>Mark all as read
+        </button>
       </form>
+      {% endif %}
     </div>
-  </div>
 
-  <!-- Filter tabs -->
-  <ul class="nav nav-tabs mb-4">
-    {% for f, label in [('all','All'),('unread','Unread'),('applications','Applications'),('scholarships','Scholarships')] %}
-    <li class="nav-item">
-      <a class="nav-link {% if filter_type == f %}active{% endif %}"
+    <nav class="sn-filters" aria-label="Filter announcements">
+      {% for f, label in [('all','All'),('unread','Unread'),('applications','Applications'),('scholarships','Scholarships')] %}
+      <a class="sn-filter{% if filter_type == f %} is-active{% endif %}"
          href="{{ url_for('student.notifications', filter=f) }}">{{ label }}</a>
-    </li>
-    {% endfor %}
-  </ul>
+      {% endfor %}
+    </nav>
 
-  <div class="card shadow">
-    <div class="card-body p-0">
-      {% if notifications %}
-      <div class="list-group list-group-flush">
-        {% for n in notifications %}
-        <div class="list-group-item {% if not n.is_read %}list-group-item-light border-start border-primary border-3{% endif %}">
-          <div class="d-flex justify-content-between align-items-start">
-            <div class="flex-grow-1">
-              <div class="d-flex align-items-center gap-2 mb-1">
-                {% if not n.is_read %}
-                  <span class="badge bg-primary rounded-circle p-1" style="width:10px;height:10px;"></span>
-                {% endif %}
-                <h6 class="mb-0">{{ n.title }}</h6>
-                <span class="badge bg-secondary small">{{ n.notification_type.value.replace('_',' ')|title }}</span>
-              </div>
-              <p class="mb-1 text-muted small">{{ n.message }}</p>
-              <small class="text-muted">{{ n.sent_at.strftime('%B %d, %Y %I:%M %p') }}</small>
-            </div>
+    {% if notifications %}
+    <div class="sn-list">
+      {% for n in notifications %}
+      <article class="sn-item{% if not n.is_read %} is-unread{% endif %}">
+        <span class="sn-dot" aria-hidden="true"></span>
+        <div class="sn-body">
+          <div class="sn-title-row">
+            <h2 class="sn-title">{{ n.title }}</h2>
+            <span class="st-chip">{{ n.notification_type.value.replace('_',' ')|title }}</span>
+          </div>
+          <p class="sn-msg">{{ n.message }}</p>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap;">
+            <span class="sn-time">{{ n.sent_at.strftime('%B %d, %Y · %I:%M %p') }}</span>
             {% if not n.is_read %}
-            <form method="POST"
-                  action="{{ url_for('student.mark_notification_read', notif_id=n.id) }}"
-                  class="ms-3">
+            <form method="POST" action="{{ url_for('student.mark_notification_read', notif_id=n.id) }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button class="btn btn-sm btn-outline-secondary">Mark Read</button>
+              <button class="st-btn st-btn--ghost" style="min-height:34px;padding:.3rem .6rem;font-size:.74rem;">
+                Mark read
+              </button>
             </form>
             {% endif %}
           </div>
         </div>
-        {% endfor %}
-      </div>
-      {% else %}
-      <div class="text-center py-5">
-        <i class="bi bi-megaphone display-4 text-muted"></i>
-        <p class="mt-3 text-muted">No announcements found.</p>
-      </div>
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="st-empty">
+      <i class="bi bi-megaphone" aria-hidden="true"></i>
+      <h3>No announcements{% if filter_type != 'all' %} in this filter{% endif %}</h3>
+      <p>
+        {% if filter_type != 'all' %}
+          Nothing here yet — try All to see every announcement.
+        {% else %}
+          Office announcements and deadline reminders will appear here.
+        {% endif %}
+      </p>
+      {% if filter_type != 'all' %}
+      <a class="st-btn st-btn--ghost" href="{{ url_for('student.notifications') }}">Show all</a>
       {% endif %}
     </div>
+    {% endif %}
+
   </div>
 </div>
 {% endblock %}
