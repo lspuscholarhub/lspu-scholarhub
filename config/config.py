@@ -1,7 +1,35 @@
 import os
+import secrets as _secrets
 from dotenv import load_dotenv
 
 load_dotenv()
+
+
+def _production_like():
+    """True when this process looks like a real deployment."""
+    return bool(os.environ.get('RAILWAY_ENVIRONMENT')
+                or os.environ.get('FLASK_ENV') == 'production'
+                or os.environ.get('RAILWAY_PROJECT_ID'))
+
+
+def _secret(name, dev_default):
+    """
+    Never fall back to a value that is published in this repository.
+    Local dev keeps its convenient default; a real deployment gets a random
+    key generated at boot, so the app stays up but no published string can
+    ever sign a real session or token.
+    """
+    value = os.environ.get(name)
+    if value:
+        return value
+    if _production_like():
+        generated = _secrets.token_urlsafe(48)
+        print(f'[security] {name} is not set in the environment. Generated an '
+              f'ephemeral key for this process. Sessions/tokens issued before a '
+              f'restart will stop validating \u2014 set {name} in your host variables '
+              f'to make it permanent.')
+        return generated
+    return dev_default
 
 
 def _fix_db_url(url: str) -> str:
@@ -13,7 +41,7 @@ def _fix_db_url(url: str) -> str:
 
 class Config:
     """Base configuration"""
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
+    SECRET_KEY = _secret('SECRET_KEY', 'dev-secret-key-change-in-production')
     SQLALCHEMY_DATABASE_URI = _fix_db_url(
         os.environ.get('DATABASE_URL') or 'mysql+pymysql://root:@localhost/lspu_scholarhub'
     )
@@ -33,7 +61,7 @@ class Config:
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
 
     # JWT
-    JWT_SECRET_KEY             = os.environ.get('JWT_SECRET_KEY') or 'jwt-secret-string'
+    JWT_SECRET_KEY             = _secret('JWT_SECRET_KEY', 'jwt-secret-string')
     JWT_ACCESS_TOKEN_EXPIRES   = int(os.environ.get('JWT_ACCESS_TOKEN_EXPIRES', 3600))
 
     # Chatbot

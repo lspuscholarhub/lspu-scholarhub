@@ -3,6 +3,18 @@ from app import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_jwt_extended import create_access_token
 
+# Method + cost prefix of the hash scheme Werkzeug produces today.
+# e.g. 'scrypt:32768:8:1' (modern) vs 'pbkdf2:sha256:6000' (legacy, weak).
+# Computed once per process because hashing the probe is deliberately slow.
+_HASH_PREFIX_CACHE = None
+
+
+def _current_hash_prefix():
+    global _HASH_PREFIX_CACHE
+    if _HASH_PREFIX_CACHE is None:
+        _HASH_PREFIX_CACHE = generate_password_hash('scholarhub-probe').split('$', 1)[0]
+    return _HASH_PREFIX_CACHE
+
 class User(db.Model):
     """User model for authentication and user management"""
     __tablename__ = 'users'
@@ -74,6 +86,24 @@ class User(db.Model):
     def check_password(self, password):
         """Check password against hash"""
         return check_password_hash(self.password_hash, password)
+
+    def password_needs_rehash(self):
+        """
+        True when this hash was made with an older/weaker scheme than the one
+        Werkzeug currently defaults to (e.g. pbkdf2:sha256:6000 vs the modern
+        scrypt default). The method+cost prefix is part of the stored string,
+        so comparing prefixes is enough and costs nothing.
+        """
+        if not self.password_hash:
+            return True
+        return self.password_hash.split('$', 1)[0] != _current_hash_prefix()
+
+    def upgrade_password_hash(self, password):
+        """Re-hash a just-verified password with the current scheme."""
+        if self.password_needs_rehash():
+            self.password_hash = generate_password_hash(password)
+            return True
+        return False
     
     def generate_access_token(self):
         """Generate JWT access token"""

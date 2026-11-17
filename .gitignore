@@ -65,3 +65,6 @@ papers/generate_cv.py
 
 # Freebuff / agent workspace metadata (local only)
 .freebuff/
+
+# Local design mockups (large inlined previews, not shipped)
+design_previews/

@@ -206,8 +206,24 @@ def login():
             # Detect first login BEFORE updating last_login
             is_first_login = (user.last_login is None)
 
+            # Silent hash upgrade: accounts created with an older/weaker scheme
+            # (e.g. pbkdf2:sha256:6000) are re-hashed with the current default the
+            # first time the user signs in with the correct password.
+            hash_upgraded = user.upgrade_password_hash(password)
+
             user.last_login = datetime.utcnow()
             db.session.commit()
+
+            if hash_upgraded:
+                try:
+                    from app.services.audit_service import log_action as _log
+                    _log('auth.password_hash_upgraded',
+                         f'Password hash for {user.username} was upgraded to the current '
+                         f'hashing scheme on successful login.',
+                         category='auth', target_type='user', target_id=user.id,
+                         user_id=user.id, user_name=user.username, user_role=user.user_type)
+                except Exception:
+                    pass
 
             # Regenerate session to prevent session fixation attacks
             session.clear()
