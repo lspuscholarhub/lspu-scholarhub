@@ -1,194 +1,219 @@
 {% extends "base.html" %}
 {% block title %}{{ scholarship.title }} - LSPU ScholarHub{% endblock %}
 
+{% block head %}
+<link href="{{ url_for('static', filename='css/guest-pages.css') }}?v=20261117b" rel="stylesheet">
+<style>main { padding: 0 !important; margin: 0 !important; }</style>
+{% endblock %}
+
 {% block content %}
-<div class="container py-5">
-  <div class="row">
-    <div class="col-lg-8 mx-auto">
-      <div class="card shadow">
-        <div class="card-body p-4">
+{% set status_value = scholarship.status.value if scholarship.status else None %}
+{% set is_open = scholarship.is_application_open() %}
+<div class="gs gv">
+  <div class="gs-wrap">
 
-          <!-- Header -->
-          <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-2">
-            <h1 class="card-title h3 mb-0">{{ scholarship.title }}</h1>
-            {% if scholarship.funding_type == 'private' %}
-              <span class="badge bg-info text-dark fs-6" title="Can be combined with your other scholarships">
-                <i class="bi bi-building me-1"></i>Private
-              </span>
-            {% else %}
-              <span class="badge bg-dark fs-6" title="Only one public scholarship may be held at a time">
-                <i class="bi bi-bank2 me-1"></i>Public
-              </span>
-            {% endif %}
-            <div class="text-end">
-              {% if scholarship.status and scholarship.status.value == 'active' %}
-                <span class="badge bg-success fs-6">Active</span>
-              {% elif scholarship.status and scholarship.status.value == 'closed' %}
-                <span class="badge bg-secondary fs-6">Closed</span>
-              {% elif scholarship.status %}
-                <span class="badge bg-warning text-dark fs-6">{{ scholarship.status.value|title }}</span>
-              {% else %}
-                <span class="badge bg-secondary fs-6">Unknown</span>
-              {% endif %}
-              <div class="mt-1 small text-muted">
-                Deadline: {% if scholarship.application_deadline %}{{ scholarship.application_deadline.strftime('%b %d, %Y') }}{% else %}No deadline set{% endif %}
-              </div>
-            </div>
-          </div>
+    <a class="gv-back" href="{{ url_for('scholarship.list_scholarships') }}">
+      <i class="bi bi-arrow-left" aria-hidden="true"></i>All scholarships
+    </a>
 
-          <!-- Overview -->
-          <div class="row mb-4">
-            <div class="col-md-8">
-              <p class="lead">{{ scholarship.description }}</p>
-            </div>
-            <div class="col-md-4">
-              <div class="card bg-light text-center">
-                <div class="card-body">
-                  {% if scholarship.award_amount %}
-                    <h4 class="text-primary">₱{{ "{:,.0f}".format(scholarship.award_amount) }}</h4>
-                  {% else %}
-                    <h4 class="text-primary">TBA</h4>
-                  {% endif %}
-                  <p class="mb-0 small">award amount</p>
-                </div>
-              </div>
-            </div>
-          </div>
+    <!-- ── programme header ──────────────────────────────────────────────── -->
+    <header class="gv-hero">
+      <div class="gs-chips">
+        {% if is_open %}
+          {% if days_left is not none and days_left <= 7 %}
+            <span class="gs-chip gs-chip--closing">Closing soon</span>
+          {% else %}
+            <span class="gs-chip gs-chip--open">Open</span>
+          {% endif %}
+        {% else %}
+          <span class="gs-chip gs-chip--closed">Closed</span>
+        {% endif %}
 
-          <!-- Quick stats -->
-          <div class="row mb-4 text-center">
-            <div class="col-6 col-md-3">
-              <h5 class="text-primary">
-                {{ scholarship.current_applicants or 0 }}{% if scholarship.max_applicants %}/{{ scholarship.max_applicants }}{% endif %}
-              </h5>
-              <small class="text-muted">Slots Filled</small>
-            </div>
-            <div class="col-6 col-md-3">
-              <h5 class="text-success">{{ fill_pct }}%</h5>
-              <small class="text-muted">Filled</small>
-            </div>
-            <div class="col-6 col-md-3">
-              {% if days_left is none %}
-                <h5 class="text-info">Open</h5>
-              {% elif days_left >= 0 %}
-                <h5 class="text-info">{{ days_left }} days</h5>
-              {% else %}
-                <h5 class="text-danger">Expired</h5>
-              {% endif %}
-              <small class="text-muted">Time Left</small>
-            </div>
-            <div class="col-6 col-md-3">
-              {% if fill_pct >= 80 %}
-                <h5 class="text-danger">High</h5>
-              {% elif fill_pct >= 50 %}
-                <h5 class="text-warning">Medium</h5>
-              {% else %}
-                <h5 class="text-success">Low</h5>
-              {% endif %}
-              <small class="text-muted">Competition</small>
-            </div>
-          </div>
+        {% if scholarship.funding_type == 'private' %}
+          <span class="gs-chip gs-chip--private" title="Can be combined with your other scholarships">Private</span>
+        {% else %}
+          <span class="gs-chip gs-chip--public" title="Only one public scholarship may be held at a time">Public</span>
+        {% endif %}
 
-          <!-- Benefits -->
-          <div class="mb-4">
-            <h4>Benefits</h4>
-            <p>{{ scholarship.benefits }}</p>
-          </div>
+        {% if scholarship.scope == 'university' %}
+          <span class="gs-chip" title="Open to all campuses">All campuses</span>
+        {% elif scholarship.campus %}
+          <span class="gs-chip">{{ scholarship.campus.name }}</span>
+        {% endif %}
+      </div>
 
-          <!-- Eligibility -->
-          <div class="mb-4">
-            <h4>Eligibility Criteria</h4>
-            <p>{{ scholarship.eligibility_criteria }}</p>
-          </div>
+      <h1>{{ scholarship.title }}</h1>
 
-          <!-- Required Documents -->
-          <div class="mb-4">
-            <h4>How to Apply</h4>
-            <div class="alert alert-info border-0" style="background:#e8f4fd;">
-              <div class="d-flex align-items-start gap-3">
-                <i class="bi bi-info-circle-fill text-primary fs-4 flex-shrink-0 mt-1"></i>
-                <div>
-                  <p class="fw-semibold mb-2">Application is simple — just 2 steps:</p>
-                  <ol class="mb-2 ps-3">
-                    <li>Confirm your student information (auto-filled from your profile)</li>
-                    <li>Upload your <strong>most updated Copy of Grades</strong> (PDF or image)</li>
-                  </ol>
-                  <p class="mb-0 small text-muted">
-                    <i class="bi bi-shield-check me-1"></i>
-                    No essay, no transcript, no other documents needed. Just your grades!
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+      {% if scholarship.description %}
+      <p class="gv-lede">{{ scholarship.description }}</p>
+      {% endif %}
 
-          <!-- Actions -->
-          <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <a href="{{ url_for('scholarship.list_scholarships') }}" class="btn btn-outline-secondary">
-              <i class="bi bi-arrow-left"></i> Back
-            </a>
-            <div>
-              {% if session.get('user_type') == 'student' %}
-                {% if already_applied %}
-                  <span class="btn btn-secondary disabled">Already Applied</span>
-                {% elif scholarship.funding_type == 'public' and holds_public %}
-                  <span class="btn btn-secondary disabled">
-                    <i class="bi bi-lock-fill me-1"></i>Public Limit Reached
-                  </span>
-                  <div class="mt-2">
-                    <small class="text-muted">
-                      <i class="bi bi-info-circle me-1"></i>
-                      You already have the public scholarship "{{ active_scholarship_title }}".
-                      Only one public scholarship is allowed — private programs remain open to you.
-                    </small>
-                  </div>
-                {% elif can_reapply %}
-                  {% if scholarship.is_application_open() %}
-                    <a href="{{ url_for('scholarship.apply_scholarship', scholarship_id=scholarship.id) }}"
-                       class="btn btn-warning btn-lg">
-                      <i class="bi bi-arrow-repeat me-1"></i>{{ 'Re-apply' if reapply_reason == 'withdrawn' else 'Apply Again' }}
-                    </a>
-                    <div class="mt-2">
-                      <small class="text-muted">
-                        <i class="bi bi-info-circle me-1"></i>
-                        {% if reapply_reason == 'withdrawn' %}
-                          You previously withdrew your application. You may re-apply.
-                        {% else %}
-                          Your previous application was not approved. You may submit a new one.
-                        {% endif %}
-                      </small>
-                    </div>
-                  {% else %}
-                    <span class="btn btn-secondary disabled">Applications Closed</span>
-                  {% endif %}
-                {% elif not session.get('is_verified') %}
-                  <div>
-                    <span class="btn btn-secondary disabled">
-                      <i class="bi bi-lock me-1"></i>Apply Now
-                    </span>
-                    <div class="mt-2">
-                      <small class="text-warning fw-semibold">
-                        <i class="bi bi-exclamation-triangle me-1"></i>
-                        Your account is not yet verified. Please contact the
-                        scholarship office or ask an admin to verify your account.
-                      </small>
-                    </div>
-                  </div>
-                {% elif scholarship.is_application_open() %}
-                  <a href="{{ url_for('scholarship.apply_scholarship', scholarship_id=scholarship.id) }}"
-                     class="btn btn-primary btn-lg">
-                    <i class="bi bi-send"></i> Apply Now
-                  </a>
-                {% else %}
-                  <span class="btn btn-secondary disabled">Applications Closed</span>
-                {% endif %}
-              {% elif not session.get('user_id') %}
-                <a href="{{ url_for('auth.login') }}" class="btn btn-primary btn-lg">Login to Apply</a>
-              {% endif %}
-            </div>
-          </div>
-
+      <dl class="gv-facts">
+        <div>
+          <dt>Award</dt>
+          <dd>{% if scholarship.award_amount %}₱{{ "{:,.0f}".format(scholarship.award_amount) }}{% else %}To be announced{% endif %}</dd>
         </div>
+        <div>
+          <dt>{% if scholarship.application_deadline %}Deadline{% else %}Deadline{% endif %}</dt>
+          <dd>
+            {% if scholarship.application_deadline %}
+              {{ scholarship.application_deadline.strftime('%b %d, %Y') }}
+              {% if days_left is not none and days_left >= 0 %}
+                <span class="gv-fact-note">{{ days_left }} day{{ 's' if days_left != 1 }} left</span>
+              {% elif days_left is not none %}
+                <span class="gv-fact-note gv-fact-note--bad">Expired</span>
+              {% endif %}
+            {% else %}
+              No deadline set
+            {% endif %}
+          </dd>
+        </div>
+        <div>
+          <dt>Slots filled</dt>
+          <dd>
+            {{ scholarship.current_applicants or 0 }}{% if scholarship.max_applicants %}/{{ scholarship.max_applicants }}{% endif %}
+            {% if scholarship.max_applicants %}
+            <span class="gv-bar" role="img" aria-label="{{ fill_pct }}% of slots filled">
+              <span class="gv-bar-fill" style="width: {{ [fill_pct, 100]|min }}%;"></span>
+            </span>
+            {% endif %}
+          </dd>
+        </div>
+      </dl>
+    </header>
+
+    <div class="gv-layout">
+
+      <!-- ── apply card ─────────────────────────────────────────────────── -->
+      <aside class="gv-aside">
+        <div class="gv-apply">
+          <p class="gv-apply-kicker">Applications</p>
+
+          {% if session.get('user_type') == 'student' %}
+            {% if already_applied %}
+              <span class="gv-state gv-state--ok"><i class="bi bi-check2-circle" aria-hidden="true"></i>Already applied</span>
+              <p class="gv-note">Your application is in. Follow it from your applications page.</p>
+              <a class="gv-btn gv-btn--ghost" href="{{ url_for('student.my_applications') }}">
+                <i class="bi bi-file-earmark-text" aria-hidden="true"></i>My applications
+              </a>
+
+            {% elif scholarship.funding_type == 'public' and holds_public %}
+              <span class="gv-state"><i class="bi bi-lock-fill" aria-hidden="true"></i>Public limit reached</span>
+              <p class="gv-note">
+                You already have the public scholarship “{{ active_scholarship_title }}”.
+                Only one public scholarship is allowed — private programs remain open to you.
+              </p>
+              <a class="gv-btn gv-btn--ghost" href="{{ url_for('scholarship.list_scholarships') }}">
+                <i class="bi bi-search" aria-hidden="true"></i>See private programs
+              </a>
+
+            {% elif can_reapply %}
+              {% if is_open %}
+                <a class="gv-btn gv-btn--warn" href="{{ url_for('scholarship.apply_scholarship', scholarship_id=scholarship.id) }}">
+                  <i class="bi bi-arrow-repeat" aria-hidden="true"></i>{{ 'Re-apply' if reapply_reason == 'withdrawn' else 'Apply again' }}
+                </a>
+                <p class="gv-note">
+                  {% if reapply_reason == 'withdrawn' %}
+                    You previously withdrew your application. You may re-apply.
+                  {% else %}
+                    Your previous application was not approved. You may submit a new one.
+                  {% endif %}
+                </p>
+              {% else %}
+                <span class="gv-state">Applications closed</span>
+                <p class="gv-note">This program is no longer accepting submissions.</p>
+              {% endif %}
+
+            {% elif not session.get('is_verified') %}
+              <span class="gv-state"><i class="bi bi-lock" aria-hidden="true"></i>Apply now</span>
+              <p class="gv-note gv-note--warn">
+                <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+                Your account is not yet verified. Please contact the scholarship office
+                or ask an admin to verify your account.
+              </p>
+
+            {% elif is_open %}
+              <a class="gv-btn gv-btn--primary" href="{{ url_for('scholarship.apply_scholarship', scholarship_id=scholarship.id) }}">
+                <i class="bi bi-send" aria-hidden="true"></i>Apply now
+              </a>
+              <p class="gv-note">Free to apply. You will confirm your details and upload your most updated Copy of Grades.</p>
+
+            {% else %}
+              <span class="gv-state">Applications closed</span>
+              <p class="gv-note">This program is not accepting new applications right now.</p>
+            {% endif %}
+
+          {% elif not session.get('user_id') %}
+            <a class="gv-btn gv-btn--primary" href="{{ url_for('auth.login') }}">
+              <i class="bi bi-box-arrow-in-right" aria-hidden="true"></i>Log in to apply
+            </a>
+            <p class="gv-note">
+              New here? <a href="{{ url_for('auth.register') }}">Create an account</a> —
+              it takes about five minutes and only needs your portal documents.
+            </p>
+          {% endif %}
+
+          <div class="gv-apply-foot">
+            <div>
+              <span>Status</span>
+              <b>{{ status_value|title if status_value else 'Unknown' }}</b>
+            </div>
+            <div>
+              <span>Competition</span>
+              <b>
+                {% if fill_pct >= 80 %}High{% elif fill_pct >= 50 %}Medium{% else %}Low{% endif %}
+              </b>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ── details ────────────────────────────────────────────────────── -->
+      <div class="gv-main">
+
+        <section class="gv-section">
+          <h2>Benefits</h2>
+          {% if scholarship.benefits %}
+            <div class="gv-prose">{{ scholarship.benefits }}</div>
+          {% else %}
+            <p class="gv-muted">The scholarship office has not posted the benefits yet.</p>
+          {% endif %}
+        </section>
+
+        <section class="gv-section">
+          <h2>Eligibility criteria</h2>
+          {% if scholarship.eligibility_criteria %}
+            <div class="gv-prose">{{ scholarship.eligibility_criteria }}</div>
+          {% else %}
+            <p class="gv-muted">Ask the scholarship office about the requirements for this program.</p>
+          {% endif %}
+        </section>
+
+        <section class="gv-section">
+          <h2>How to apply</h2>
+          <p class="gv-muted" style="margin-bottom:.85rem;">Application is simple — just 2 steps.</p>
+          <ol class="gv-steps">
+            <li>
+              <span class="gv-step-num" aria-hidden="true">1</span>
+              <div>
+                <h3>Confirm your student information</h3>
+                <p>Auto-filled from your profile, so you only check it.</p>
+              </div>
+            </li>
+            <li>
+              <span class="gv-step-num" aria-hidden="true">2</span>
+              <div>
+                <h3>Upload your Copy of Grades</h3>
+                <p>Your most updated COG, as a PDF or an image.</p>
+              </div>
+            </li>
+          </ol>
+          <p class="gv-safe">
+            <i class="bi bi-shield-check" aria-hidden="true"></i>
+            No essay, no transcript, no other documents needed. Just your grades.
+          </p>
+        </section>
+
       </div>
     </div>
   </div>
