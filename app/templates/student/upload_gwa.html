@@ -71,7 +71,7 @@
         {% endif %}
 
         <form method="POST" action="{{ url_for('student.upload_gwa') }}" enctype="multipart/form-data"
-              class="upload-dropzone sdoc-form">
+              class="sdoc-form">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="doc_type" value="cor">
           <label class="sdoc-drop{% if user.cor_file_path %} sdoc-drop--filled{% endif %}" for="corInput">
@@ -81,10 +81,10 @@
             <b>{% if user.cor_file_path %}Replace current file{% else %}Drop your COR here{% endif %}</b>
             <span>{% if user.cor_file_path %}or tap to choose a new PDF{% else %}or tap to browse{% endif %} · PDF only · max 5 MB</span>
           </label>
-          <div class="file-selected sdoc-selected d-none">
+          <div class="sdoc-selected d-none">
             <i class="bi bi-check-circle" aria-hidden="true"></i><span class="file-name"></span>
           </div>
-          <button type="submit" class="st-btn st-btn--primary w-100 mt-2 submit-upload d-none">
+          <button type="submit" class="st-btn st-btn--primary w-100 mt-2 sdoc-submit d-none">
             <i class="bi bi-upload" aria-hidden="true"></i>{% if user.cor_file_path %}Replace COR{% else %}Upload COR{% endif %}
           </button>
         </form>
@@ -127,7 +127,7 @@
         {% endif %}
 
         <form method="POST" action="{{ url_for('student.upload_gwa') }}" enctype="multipart/form-data"
-              class="upload-dropzone sdoc-form">
+              class="sdoc-form">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="doc_type" value="grades">
           <label class="sdoc-drop{% if user.grades_file_path %} sdoc-drop--filled{% endif %}" for="gradesInput">
@@ -137,10 +137,10 @@
             <b>{% if user.grades_file_path %}Replace current file{% else %}Drop your grades here{% endif %}</b>
             <span>{% if user.grades_file_path %}or tap to choose a new PDF{% else %}or tap to browse{% endif %} · PDF only · max 5 MB</span>
           </label>
-          <div class="file-selected sdoc-selected d-none">
+          <div class="sdoc-selected d-none">
             <i class="bi bi-check-circle" aria-hidden="true"></i><span class="file-name"></span>
           </div>
-          <button type="submit" class="st-btn st-btn--primary w-100 mt-2 submit-upload d-none">
+          <button type="submit" class="st-btn st-btn--primary w-100 mt-2 sdoc-submit d-none">
             <i class="bi bi-upload" aria-hidden="true"></i>{% if user.grades_file_path %}Replace Grades{% else %}Upload Grades{% endif %}
           </button>
         </form>
@@ -188,11 +188,11 @@
 
 {% block scripts %}
 <script>
-  document.querySelectorAll('.upload-dropzone').forEach(function (form) {
+  document.querySelectorAll('.sdoc-form').forEach(function (form) {
     var input    = form.querySelector('input[type="file"]');
     var area     = form.querySelector('.sdoc-drop');
-    var selected = form.querySelector('.file-selected');
-    var submit   = form.querySelector('.submit-upload');
+    var selected = form.querySelector('.sdoc-selected');
+    var submit   = form.querySelector('.sdoc-submit');
 
     // Clicking the drop area opens the picker
     area.addEventListener('click', function () { input.click(); });
@@ -208,7 +208,6 @@
           input.value = '';
           selected.classList.add('d-none');
           submit.classList.add('d-none');
-          submit.classList.remove('d-block');
           return;
         }
         if (f.size > 5 * 1024 * 1024) {
@@ -217,17 +216,14 @@
           input.value = '';
           selected.classList.add('d-none');
           submit.classList.add('d-none');
-          submit.classList.remove('d-block');
           return;
         }
         selected.querySelector('.file-name').textContent = f.name;
         selected.classList.remove('d-none');
         submit.classList.remove('d-none');
-        submit.classList.add('d-block');
       } else {
         selected.classList.add('d-none');
         submit.classList.add('d-none');
-        submit.classList.remove('d-block');
       }
     });
 

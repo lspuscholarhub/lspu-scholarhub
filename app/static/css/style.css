@@ -784,25 +784,30 @@ textarea.form-control {
   vertical-align: middle;
 }
 /* Academic-period selector: a quiet glass chip wide enough for the full
-   "1st Semester AY 2026-2027" label instead of a truncated grey block. */
-.app-topbar .period-pill {
+   "1st Semester AY 2026-2027" label instead of a truncated grey block.
+   The .navbar compound and the .navbar-nav hop outrank Bootstrap's
+   navbar-dark link colour and the shared .navbar .nav-link sizing rules. */
+.app-topbar.navbar .navbar-nav .period-pill {
   display: inline-flex;
   align-items: center;
   gap: .35rem;
-  background: rgba(255,255,255,.16) !important;
-  color: #fff !important;
+  padding: .3rem .55rem;
   border: 1px solid rgba(255,255,255,.3);
   border-radius: 999px;
+  background: rgba(255,255,255,.16);
+  color: #fff;
+  font-size: .68rem;
   font-weight: 600;
   line-height: 1.25;
   text-decoration: none;
+  cursor: pointer;
 }
-.app-topbar .period-pill:hover,
-.app-topbar .period-pill:focus-visible {
-  background: rgba(255,255,255,.28) !important;
-  color: #fff !important;
+.app-topbar.navbar .navbar-nav .period-pill:hover,
+.app-topbar.navbar .navbar-nav .period-pill:focus-visible {
+  background: rgba(255,255,255,.28);
+  color: #fff;
 }
-.app-topbar .period-pill .pill-label { max-width: 200px; }
+.app-topbar.navbar .navbar-nav .period-pill .pill-label { max-width: 200px; }
 body { padding-top: var(--sh-topbar-h); }
 
 /* Back-then-forward history controls */
@@ -978,7 +983,6 @@ body { padding-top: var(--sh-topbar-h); }
 .app-topbar .pill-label { display: none; }
 .app-topbar .brand-text { font-size: .92rem; }
 .app-topbar .navbar-nav { gap: .15rem; }
-.app-topbar .navbar .nav-link { padding: .45rem .5rem; }
 .hist-btn { width: 32px; height: 32px; }
 /* Name-only brand on very narrow phones so auth buttons never clip */
 .app-topbar .navbar-brand img { display: none; }
@@ -1035,7 +1039,6 @@ html {
 @media (min-width: 577px) {
   .app-topbar { padding: 0 var(--sh-space-3); }
   .app-topbar .navbar-nav { gap: .35rem; }
-  .app-topbar .navbar .nav-link { padding: .55rem .85rem; }
   .app-topbar .pill-label { display: inline-block; }
   .app-topbar .brand-text { font-size: 1rem; }
   .hist-btn { width: 36px; height: 36px; }
