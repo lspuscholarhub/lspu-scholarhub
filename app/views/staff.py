@@ -513,6 +513,27 @@ def add_campus_form():
             flash('Invalid due date — form not added.', 'error')
             return redirect(url_for('staff.monitoring'))
 
+    # Blank copy for scholars: an office link, an uploaded file, or neither.
+    template_url = (request.form.get('template_url') or '').strip()
+    if template_url and not template_url.lower().startswith(('http://', 'https://')):
+        flash('The blank-copy link must start with http:// or https://.', 'error')
+        return redirect(url_for('staff.monitoring'))
+
+    template_file = request.files.get('template_file')
+    template_bytes = b''
+    if template_file and template_file.filename:
+        ext = template_file.filename.rsplit('.', 1)[-1].lower() \
+            if '.' in template_file.filename else ''
+        if ext not in ('pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'):
+            flash('The blank copy must be a PDF, Word document or image.', 'error')
+            return redirect(url_for('staff.monitoring'))
+        template_bytes = template_file.read()
+        if len(template_bytes) > 5 * 1024 * 1024:
+            flash('The blank copy is larger than 5MB. Please compress it.', 'error')
+            return redirect(url_for('staff.monitoring'))
+    else:
+        template_file = None
+
     # Every form belongs to exactly one campus: staff covering several campuses
     # must say which one, otherwise the form would leak to every campus.
     scope = _staff_campus_scope()
@@ -539,10 +560,27 @@ def add_campus_form():
         title=title[:150],
         instructions=(request.form.get('instructions') or '').strip()[:255] or None,
         due_date=due_date,
+        template_url=template_url or None,
         is_required=request.form.get('is_required') == '1',
         sort_order=_max + 1,
         created_by=session.get('user_id'))
     db.session.add(form)
+    db.session.flush()          # need the id for the upload folder
+
+    if template_file:
+        from app.services.storage_service import upload_file as _upload
+        stored = _upload(template_bytes, template_file.filename,
+                         folder=f'campus_form_templates/{form.id}')
+        if not stored.get('success'):
+            db.session.rollback()
+            flash('The blank copy could not be stored — the form was not added.', 'error')
+            return redirect(url_for('staff.monitoring'))
+        form.template_filename = template_file.filename[:255]
+        form.template_file_url = stored.get('url')
+        form.template_cloudinary_public_id = stored.get('public_id')
+        form.template_local_path = (stored.get('url')
+                                    if stored.get('provider') == 'local' else None)
+
     db.session.commit()
 
     from app.services.audit_service import log_action
@@ -1093,17 +1131,22 @@ def monitoring():
               .filter(User.campus_id == form.campus_id))
         if pid:
             _q = _q.filter(ScholarshipApplication.academic_period_id == pid)
-        scholar_ids = {a.applicant_id for a in _q.all()}
+        apps = _q.all()
+        scholar_ids = {a.applicant_id for a in apps}
 
         subs = (CampusFormSubmission.query.filter_by(form_id=form.id)
                 .order_by(CampusFormSubmission.uploaded_at.desc()).all())
         subs = [s for s in subs if s.user_id in scholar_ids]
         submitted_ids = {s.user_id for s in subs}
+        pending = sorted((a.applicant for a in apps
+                          if a.applicant_id not in submitted_ids),
+                         key=lambda u: (u.last_name or '', u.first_name or ''))
         form_rows.append({
             'form': form,
             'subs': subs,
             'submitted': len(submitted_ids),
-            'pending': max(len(scholar_ids) - len(submitted_ids), 0),
+            'pending': len(pending),
+            'pending_scholars': pending,
             'total': len(scholar_ids),
         })
 

@@ -23,6 +23,12 @@ class CampusForm(db.Model):
                                    nullable=True)
     title              = db.Column(db.String(150), nullable=False)
     instructions       = db.Column(db.String(255), nullable=True)
+    # Blank copy the office hands out: an uploaded file, a link, or both
+    template_url                  = db.Column(db.String(500), nullable=True)
+    template_filename             = db.Column(db.String(255), nullable=True)
+    template_file_url             = db.Column(db.String(500), nullable=True)
+    template_local_path           = db.Column(db.String(500), nullable=True)
+    template_cloudinary_public_id = db.Column(db.String(255), nullable=True)
     due_date           = db.Column(db.Date, nullable=True)
     is_required        = db.Column(db.Boolean, nullable=False, default=True)
     sort_order         = db.Column(db.Integer, nullable=False, default=0)
@@ -38,6 +44,12 @@ class CampusForm(db.Model):
     @property
     def is_overdue(self):
         return bool(self.due_date and self.due_date < date.today())
+
+    @property
+    def has_template(self):
+        """True when scholars can download a blank copy or open the office link."""
+        return bool(self.template_url or self.template_file_url
+                    or self.template_local_path)
 
     def __repr__(self):
         return f'<CampusForm {self.title} (campus={self.campus_id})>'

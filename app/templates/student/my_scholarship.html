@@ -133,6 +133,10 @@
           </p>
         </div>
         <div class="ss-req-side">
+          {% if f.has_template %}
+            <a class="ss-req-view" href="{{ url_for('student.download_campus_form', fid=f.id) }}"
+               target="_blank" rel="noopener">Download blank</a>
+          {% endif %}
           {% if sub %}
             <span class="st-chip st-chip--ok">Submitted</span>
             <a class="ss-req-view" href="{{ url_for('student.view_campus_form_submission', sub_id=sub.id) }}" target="_blank" rel="noopener">View</a>
@@ -277,6 +281,13 @@
         <div class="modal-body">
           {% if f.instructions %}<p class="small text-muted">{{ f.instructions }}</p>{% endif %}
           {% if f.due_date %}<p class="small"><strong>Due {{ f.due_date.strftime('%B %d, %Y') }}</strong></p>{% endif %}
+          {% if f.has_template %}
+          <p class="small mb-2">
+            <a href="{{ url_for('student.download_campus_form', fid=f.id) }}" target="_blank" rel="noopener">
+              <i class="bi bi-download me-1"></i>Download the blank copy
+            </a>
+          </p>
+          {% endif %}
           <label class="form-label fw-semibold">Your file</label>
           <input type="file" class="form-control" name="campus_form_file" accept=".pdf,.jpg,.jpeg,.png" required>
           <div class="form-text">PDF or image (JPG/PNG), max 5MB. Uploading again replaces your previous file.</div>

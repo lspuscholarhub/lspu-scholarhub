@@ -459,6 +459,37 @@ def upload_campus_form(fid):
     return redirect(url_for('student.my_scholarship'))
 
 
+@student_bp.route('/campus-forms/<int:fid>/template')
+@role_required('student')
+def download_campus_form(fid):
+    """Download the blank copy of a campus form, or open the office's link."""
+    from app.services.storage_service import get_signed_url
+
+    user = User.query.get(session['user_id'])
+    form = CampusForm.query.get_or_404(fid)
+    if form.id not in [f.id for f in _visible_campus_forms(user)]:
+        flash('That form is not open for your campus.', 'error')
+        return redirect(url_for('student.my_scholarship'))
+
+    if form.template_cloudinary_public_id:
+        signed = get_signed_url(form.template_cloudinary_public_id, resource_type='raw')
+        if signed:
+            return redirect(signed)
+    if form.template_local_path and os.path.exists(form.template_local_path):
+        from flask import send_file
+        return send_file(os.path.abspath(form.template_local_path),
+                         as_attachment=True,
+                         download_name=form.template_filename or 'form.pdf')
+    if form.template_url:
+        return redirect(form.template_url)
+    if form.template_file_url and form.template_file_url.startswith('http'):
+        return redirect(form.template_file_url)
+
+    flash('No blank copy is available yet. Please contact the Scholarship Office.',
+          'warning')
+    return redirect(url_for('student.my_scholarship'))
+
+
 @student_bp.route('/campus-forms/submission/<int:sub_id>/view')
 @role_required('student')
 def view_campus_form_submission(sub_id):
