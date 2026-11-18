@@ -496,17 +496,61 @@ def _staff_campus_form(fid):
 
 
 def _read_form_template():
-    """Return (file, bytes, error) for the blank copy in the request."""
+    """Return (file, bytes, url, error) for the blank copy in the request."""
+    url = (request.form.get('template_url') or '').strip()
+    if url and not url.lower().startswith(('http://', 'https://')):
+        return None, b'', '', 'The blank-copy link must start with http:// or https://.'
+
     file = request.files.get('template_file')
     if not file or not file.filename:
-        return None, b'', None
+        return None, b'', url, None
     ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
     if ext not in ('pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'):
-        return None, b'', 'The blank copy must be a PDF, Word document or image.'
+        return None, b'', url, 'The blank copy must be a PDF, Word document or image.'
     data = file.read()
     if len(data) > 5 * 1024 * 1024:
-        return None, b'', 'The blank copy is larger than 5MB. Please compress it.'
-    return file, data, None
+        return None, b'', url, 'The blank copy is larger than 5MB. Please compress it.'
+    return file, data, url, None
+
+
+def _drop_form_template_file(form):
+    """Delete a form's stored blank-copy file (if any) and forget it."""
+    from app.services.storage_service import delete_file as _delete
+
+    if form.template_cloudinary_public_id:
+        try:
+            _delete(public_id=form.template_cloudinary_public_id)
+        except Exception:
+            pass
+    elif form.template_local_path:
+        try:
+            _delete(file_path=form.template_local_path)
+        except Exception:
+            pass
+
+    form.template_filename = None
+    form.template_file_url = None
+    form.template_local_path = None
+    form.template_cloudinary_public_id = None
+
+
+def _store_form_template_file(form, template_file, template_bytes):
+    """Store an uploaded blank copy on the form, replacing any previous one."""
+    from app.services.storage_service import upload_file as _upload
+
+    stored = _upload(template_bytes, template_file.filename,
+                     folder=f'campus_form_templates/{form.id}')
+    if not stored.get('success'):
+        return False
+
+    _drop_form_template_file(form)
+    form.template_url = None            # the uploaded file wins over an old link
+    form.template_filename = template_file.filename[:255]
+    form.template_file_url = stored.get('url')
+    form.template_cloudinary_public_id = stored.get('public_id')
+    form.template_local_path = (stored.get('url')
+                                if stored.get('provider') == 'local' else None)
+    return True
 
 
 @staff_bp.route('/forms/add', methods=['POST'])
@@ -528,12 +572,7 @@ def add_campus_form():
             return redirect(url_for('staff.monitoring'))
 
     # Blank copy for scholars: an office link, an uploaded file, or neither.
-    template_url = (request.form.get('template_url') or '').strip()
-    if template_url and not template_url.lower().startswith(('http://', 'https://')):
-        flash('The blank-copy link must start with http:// or https://.', 'error')
-        return redirect(url_for('staff.monitoring'))
-
-    template_file, template_bytes, template_err = _read_form_template()
+    template_file, template_bytes, template_url, template_err = _read_form_template()
     if template_err:
         flash(template_err, 'error')
         return redirect(url_for('staff.monitoring'))
@@ -571,19 +610,10 @@ def add_campus_form():
     db.session.add(form)
     db.session.flush()          # need the id for the upload folder
 
-    if template_file:
-        from app.services.storage_service import upload_file as _upload
-        stored = _upload(template_bytes, template_file.filename,
-                         folder=f'campus_form_templates/{form.id}')
-        if not stored.get('success'):
-            db.session.rollback()
-            flash('The blank copy could not be stored — the form was not added.', 'error')
-            return redirect(url_for('staff.monitoring'))
-        form.template_filename = template_file.filename[:255]
-        form.template_file_url = stored.get('url')
-        form.template_cloudinary_public_id = stored.get('public_id')
-        form.template_local_path = (stored.get('url')
-                                    if stored.get('provider') == 'local' else None)
+    if template_file and not _store_form_template_file(form, template_file, template_bytes):
+        db.session.rollback()
+        flash('The blank copy could not be stored — the form was not added.', 'error')
+        return redirect(url_for('staff.monitoring'))
 
     db.session.commit()
 
@@ -603,6 +633,7 @@ def delete_campus_form(fid):
         return redirect(url_for('staff.monitoring'))
 
     title = form.title
+    _drop_form_template_file(form)      # don't leave the blank copy orphaned
     db.session.delete(form)
     db.session.commit()
 
@@ -642,19 +673,11 @@ def view_campus_form_submission(sub_id):
 @role_required('staff')
 def update_campus_form_template(fid):
     """Attach or replace a form's blank copy: a stored file or an office link."""
-    from app.services.storage_service import delete_file as _delete
-    from app.services.storage_service import upload_file as _upload
-
     form = _staff_campus_form(fid)
     if form is None:
         return redirect(url_for('staff.monitoring'))
 
-    template_url = (request.form.get('template_url') or '').strip()
-    if template_url and not template_url.lower().startswith(('http://', 'https://')):
-        flash('The blank-copy link must start with http:// or https://.', 'error')
-        return redirect(url_for('staff.monitoring'))
-
-    template_file, template_bytes, template_err = _read_form_template()
+    template_file, template_bytes, template_url, template_err = _read_form_template()
     if template_err:
         flash(template_err, 'error')
         return redirect(url_for('staff.monitoring'))
@@ -663,39 +686,13 @@ def update_campus_form_template(fid):
         flash('Choose a file or paste a link to set the blank copy.', 'error')
         return redirect(url_for('staff.monitoring'))
 
-    stored = None
     if template_file is not None:
-        stored = _upload(template_bytes, template_file.filename,
-                         folder=f'campus_form_templates/{form.id}')
-        if not stored.get('success'):
+        if not _store_form_template_file(form, template_file, template_bytes):
             flash('The blank copy could not be stored. Please try again.', 'error')
             return redirect(url_for('staff.monitoring'))
-
-    # Whatever was there before is replaced, including its stored file.
-    if form.template_cloudinary_public_id:
-        try:
-            _delete(public_id=form.template_cloudinary_public_id)
-        except Exception:
-            pass
-    elif form.template_local_path:
-        try:
-            _delete(file_path=form.template_local_path)
-        except Exception:
-            pass
-
-    form.template_url = None
-    form.template_filename = None
-    form.template_file_url = None
-    form.template_local_path = None
-    form.template_cloudinary_public_id = None
-
-    if template_file is not None:
-        form.template_filename = template_file.filename[:255]
-        form.template_file_url = stored.get('url')
-        form.template_cloudinary_public_id = stored.get('public_id')
-        form.template_local_path = (stored.get('url')
-                                    if stored.get('provider') == 'local' else None)
     else:
+        # A link replaces whatever file was stored before.
+        _drop_form_template_file(form)
         form.template_url = template_url
 
     db.session.commit()
