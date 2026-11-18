@@ -292,6 +292,8 @@ def create_scholarship():
             flash('Award amount cannot be negative.', 'error')
             return redirect(url_for('staff.manage_scholarships'))
         max_app_raw = request.form.get('max_applicants', '').strip()
+        if request.form.get('unlimited_slots') == '1':
+            max_app_raw = ''
         if max_app_raw and int(max_app_raw) < 0:
             flash('Maximum applicants cannot be negative.', 'error')
             return redirect(url_for('staff.manage_scholarships'))
@@ -380,6 +382,36 @@ def edit_scholarship(sid):
     _err = _scholarship_campus_guard(s)
     if _err:
         return _err
+
+    # ── Slot cap ──────────────────────────────────────────────────────────
+    # Ticking "No slot limit" clears the cap (unlimited programs). A blank
+    # number field means "leave the cap as it is", so editing any other field
+    # can never silently wipe it.
+    _cap_clear = request.form.get('unlimited_slots') == '1'
+    _cap_raw = request.form.get('max_applicants', '').strip()
+    if _cap_clear:
+        _new_cap = None
+    elif _cap_raw:
+        try:
+            _new_cap = int(_cap_raw)
+        except ValueError:
+            flash('Maximum applicants must be a whole number.', 'error')
+            return redirect(url_for('staff.manage_scholarships'))
+        if _new_cap < 0:
+            flash('Maximum applicants cannot be negative.', 'error')
+            return redirect(url_for('staff.manage_scholarships'))
+    else:
+        _new_cap = s.max_applicants
+    # Never shrink the cap below the students who already applied — that would
+    # leave existing applications stranded past the limit. Raising it or
+    # removing it entirely is always safe, so both stay allowed after
+    # applications arrive.
+    if _new_cap is not None and _new_cap < (s.current_applicants or 0):
+        flash(f'Cannot set the slot limit to {_new_cap} — {s.current_applicants} '
+              f'student(s) have already applied to "{s.title}". Raise the limit '
+              'or tick "No slot limit".', 'error')
+        return redirect(url_for('staff.manage_scholarships'))
+
     # Split lock: once the program has applicants (including scholars added
     # directly by the office), structural edits are blocked — but deadline
     # changes and close/reopen always go through.
@@ -410,9 +442,6 @@ def edit_scholarship(sid):
                 _araw = request.form.get('award_amount', '').strip()
                 if _araw and float(_araw) != float(s.award_amount or 0):
                     _changed.append('award amount')
-                _mraw = request.form.get('max_applicants', '').strip()
-                if _mraw and int(_mraw) != int(s.max_applicants or 0):
-                    _changed.append('max applicants')
             except ValueError:
                 pass  # malformed numbers are rejected by the main path
             if 'is_hidden' in request.form and \
@@ -457,14 +486,9 @@ def edit_scholarship(sid):
         if award_raw and float(award_raw) < 0:
             flash('Award amount cannot be negative.', 'error')
             return redirect(url_for('staff.manage_scholarships'))
-        max_app_raw = request.form.get('max_applicants', '').strip()
-        if max_app_raw and int(max_app_raw) < 0:
-            flash('Maximum applicants cannot be negative.', 'error')
-            return redirect(url_for('staff.manage_scholarships'))
         if award_raw:
             s.award_amount = float(award_raw)
-        if max_app_raw:
-            s.max_applicants = int(max_app_raw)
+        s.max_applicants = _new_cap
         if 'application_deadline' in request.form:
             dl_raw = request.form.get('application_deadline', '').strip()
             if dl_raw:
