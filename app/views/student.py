@@ -63,6 +63,10 @@ def set_period_context(period_id):
 @student_bp.route('/dashboard')
 @role_required('student')
 def dashboard():
+    from datetime import date
+
+    from app.models import MonitoringSubmission
+
     user = User.query.get(session['user_id'])
     current_period = get_viewing_period()
     pid = current_period.id if current_period else None
@@ -70,41 +74,134 @@ def dashboard():
     # Filter by selected period if viewing a specific one
     apps = [a for a in all_apps if pid is None or a.academic_period_id == pid]
 
-    total_apps     = len(apps)
-    approved_count = sum(1 for a in apps if a.status == ApplicationStatus.APPROVED)
-    pending_count  = sum(1 for a in apps if a.status in (ApplicationStatus.PENDING,
-                                                          ApplicationStatus.UNDER_REVIEW))
+    total_apps = len(apps)
+    approved_apps = [a for a in apps if a.status == ApplicationStatus.APPROVED]
+    approved_count = len(approved_apps)
+    pending_count = sum(1 for a in apps
+                        if a.status in (ApplicationStatus.PENDING,
+                                        ApplicationStatus.UNDER_REVIEW))
 
     # Available scholarships the student hasn't applied to yet — respect visibility
-    applied_ids   = {a.scholarship_id for a in apps}
+    applied_ids = {a.scholarship_id for a in apps}
     all_active = Scholarship.query.filter(
         Scholarship.status == ScholarshipStatus.ACTIVE,
         ~Scholarship.id.in_(applied_ids) if applied_ids else True,
     ).order_by(Scholarship.application_deadline.asc()).all()
 
     # Filter by visibility for this student
-    new_scholarships = [s for s in all_active if s.is_visible_to(user.student_id)][:3]
+    open_scholarships = [s for s in all_active if s.is_visible_to(user.student_id)]
+    new_scholarships = open_scholarships[:3]
 
     # Recent notifications (unread first)
     recent_notifications = (Notification.query
                             .filter_by(recipient_id=user.id)
                             .order_by(Notification.is_read.asc(),
                                       Notification.sent_at.desc())
-                            .limit(5).all())
+                            .limit(3).all())
+    unread_count = (Notification.query
+                    .filter_by(recipient_id=user.id, is_read=False).count())
 
     # Recent applications for the dashboard table
     recent_apps = sorted(apps, key=lambda a: a.submitted_at, reverse=True)[:5]
 
+    # ── Academic standing band ───────────────────────────────────────────
+    gwa = float(user.gwa) if user.gwa is not None else None
+    if gwa is None:
+        gwa_label, gwa_tone = 'No GWA yet', 'muted'
+    elif gwa <= 1.75:
+        gwa_label, gwa_tone = 'Very good', 'ok'
+    elif gwa <= 2.75:
+        gwa_label, gwa_tone = 'Satisfactory', 'ok'
+    elif gwa <= 3.00:
+        gwa_label, gwa_tone = 'Passed', 'ok'
+    elif gwa <= 3.75:
+        gwa_label, gwa_tone = 'At risk', 'warn'
+    else:
+        gwa_label, gwa_tone = 'Probation', 'bad'
+
+    # ── "Do this next": outstanding obligations, most urgent first ───────
+    today = date.today()
+    actions = []
+
+    def _due(date_value):
+        if not date_value:
+            return 'No deadline', 'muted', 9999, False
+        days = (date_value - today).days
+        if days < 0:
+            return f'Overdue by {abs(days)}d', 'bad', days, True
+        if days == 0:
+            return 'Due today', 'warn', 0, False
+        if days <= 14:
+            return f'Due {date_value.strftime("%b %d")}', 'warn', days, False
+        return f'Due {date_value.strftime("%b %d, %Y")}', 'muted', days, False
+
+    def _add(title, label, date_value, href, icon):
+        state, tone, days, overdue = _due(date_value)
+        actions.append({'title': title, 'label': label, 'state': state,
+                        'tone': tone, 'days': days, 'overdue': overdue,
+                        'href': href, 'icon': icon})
+
+    for form in _visible_campus_forms(user):
+        sub = (CampusFormSubmission.query
+               .filter_by(form_id=form.id, user_id=user.id).first())
+        if not sub:
+            _add(form.title, 'Campus semester form', form.due_date,
+                 url_for('student.my_scholarship'), 'bi-clipboard-check')
+
+    for a in approved_apps:
+        for r in sorted(a.scholarship.requirements or [],
+                        key=lambda x: (x.sort_order, x.id)):
+            sub = (RequirementSubmission.query
+                   .filter_by(requirement_id=r.id, user_id=user.id).first())
+            if not sub:
+                _add(r.title, a.scholarship.title, r.due_date,
+                     url_for('student.my_scholarship'),
+                     'bi-file-earmark-arrow-up')
+
+    if approved_apps:
+        me_q = MonitoringSubmission.query.filter(
+            MonitoringSubmission.application_id.in_([a.id for a in approved_apps]))
+        if current_period:
+            me_q = me_q.filter(
+                (MonitoringSubmission.academic_period_id == current_period.id) |
+                (MonitoringSubmission.academic_period_id.is_(None)))
+        if not me_q.first():
+            _add('Monitoring & Evaluation form', 'Submit your M&E form',
+                 current_period.me_form_deadline if current_period else None,
+                 url_for('student.my_scholarship'), 'bi-clipboard-data')
+
+    if not user.phone_number:
+        _add('Add a phone number', 'Profile', None,
+             url_for('student.profile'), 'bi-phone')
+    elif not user.phone_verified:
+        _add('Verify your phone number', 'Profile', None,
+             url_for('student.profile'), 'bi-phone')
+    if gwa is None:
+        _add('Upload your Copy of Grades', 'Documents', None,
+             url_for('student.upload_gwa'), 'bi-file-earmark-text')
+
+    actions.sort(key=lambda a: (0 if a['overdue'] else 1, a['days']))
+    actions_total = len(actions)
+    actions = actions[:4]
+
     return render_template(
         'student/dashboard.html',
         user=user,
+        current_period=current_period,
         total_apps=total_apps,
         approved_count=approved_count,
         pending_count=pending_count,
-        new_scholarships_count=len(new_scholarships),
+        new_scholarships_count=len(open_scholarships),
         new_scholarships=new_scholarships,
         recent_notifications=recent_notifications,
+        unread_count=unread_count,
         recent_apps=recent_apps,
+        has_approved_scholarship=bool(approved_apps),
+        gwa=gwa,
+        gwa_label=gwa_label,
+        gwa_tone=gwa_tone,
+        actions=actions,
+        actions_total=actions_total,
     )
 
 
