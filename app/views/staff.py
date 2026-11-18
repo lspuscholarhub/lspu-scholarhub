@@ -677,6 +677,19 @@ def update_campus_form_template(fid):
     if form is None:
         return redirect(url_for('staff.monitoring'))
 
+    if request.form.get('clear_template') == '1':
+        _drop_form_template_file(form)
+        form.template_url = None
+        db.session.commit()
+
+        from app.services.audit_service import log_action
+        log_action('campus_form.template.clear',
+                   f'Blank copy removed from campus form "{form.title}".',
+                   category='scholarship', target_type='campus_form', target_id=form.id)
+        flash(f'Blank copy removed from "{form.title}". Scholars no longer see '
+              'the Download action.', 'success')
+        return redirect(url_for('staff.monitoring'))
+
     template_file, template_bytes, template_url, template_err = _read_form_template()
     if template_err:
         flash(template_err, 'error')

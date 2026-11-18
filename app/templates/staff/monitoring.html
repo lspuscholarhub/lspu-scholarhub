@@ -498,6 +498,15 @@
                    placeholder="https://drive.google.com/…">
           </div>
           <div class="form-text">Saving a file or a link replaces the current blank copy.</div>
+          {% if f.has_template %}
+          <div class="form-check mt-3">
+            <input class="form-check-input" type="checkbox" name="clear_template"
+                   value="1" id="clearTpl{{ f.id }}">
+            <label class="form-check-label small" for="clearTpl{{ f.id }}">
+              Remove the blank copy (scholars lose the Download action)
+            </label>
+          </div>
+          {% endif %}
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
