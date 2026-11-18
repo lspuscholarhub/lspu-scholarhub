@@ -4,7 +4,8 @@ from flask import (Blueprint, render_template, request, flash,
                    redirect, url_for, session, send_file, jsonify, current_app,
                    send_from_directory)
 from app import db
-from app.models import User, Scholarship, ScholarshipApplication, Notification
+from app.models import (User, Scholarship, ScholarshipApplication, Notification,
+                        ScholarshipRequirement)
 from app.models.scholarship import ScholarshipStatus, ApplicationStatus
 from app.models.notification import NotificationType, NotificationChannel
 from app.services.notification_service import notification_service
@@ -391,6 +392,74 @@ def create_scholarship():
     except Exception as e:
         db.session.rollback()
         flash(f'Error: {e}', 'error')
+    return redirect(url_for('staff.manage_scholarships'))
+
+
+# ── Per-program requirements ("keep your scholarship" checklist) ─────────
+
+@staff_bp.route('/scholarships/<int:sid>/requirements/add', methods=['POST'])
+@role_required('staff')
+def add_requirement(sid):
+    """Add one item the scholars of this program must submit."""
+    s = Scholarship.query.get_or_404(sid)
+    _err = _scholarship_campus_guard(s)
+    if _err:
+        return _err
+
+    title = (request.form.get('title') or '').strip()
+    if not title:
+        flash('Give the requirement a name.', 'error')
+        return redirect(url_for('staff.manage_scholarships'))
+
+    due_date = None
+    due_raw = (request.form.get('due_date') or '').strip()
+    if due_raw:
+        try:
+            due_date = datetime.strptime(due_raw, '%Y-%m-%d').date()
+        except ValueError:
+            flash('Invalid due date — requirement not added.', 'error')
+            return redirect(url_for('staff.manage_scholarships'))
+
+    _max = (db.session.query(db.func.max(ScholarshipRequirement.sort_order))
+            .filter_by(scholarship_id=s.id).scalar() or 0)
+    req = ScholarshipRequirement(
+        scholarship_id=s.id,
+        title=title[:150],
+        instructions=(request.form.get('instructions') or '').strip()[:255] or None,
+        due_date=due_date,
+        is_required=request.form.get('is_required') == '1',
+        sort_order=_max + 1,
+        created_by=session.get('user_id'))
+    db.session.add(req)
+    db.session.commit()
+
+    from app.services.audit_service import log_action
+    log_action('scholarship.requirement.add',
+               f'Requirement "{title}" added to "{s.title}".',
+               category='scholarship', target_type='scholarship', target_id=s.id)
+    flash(f'Added "{title}" to the requirements for "{s.title}".', 'success')
+    return redirect(url_for('staff.manage_scholarships'))
+
+
+@staff_bp.route('/requirements/<int:rid>/delete', methods=['POST'])
+@role_required('staff')
+def delete_requirement(rid):
+    """Remove a requirement (and the scholar uploads filed against it)."""
+    req = ScholarshipRequirement.query.get_or_404(rid)
+    s = req.scholarship
+    _err = _scholarship_campus_guard(s)
+    if _err:
+        return _err
+
+    title = req.title
+    db.session.delete(req)
+    db.session.commit()
+
+    from app.services.audit_service import log_action
+    log_action('scholarship.requirement.delete',
+               f'Requirement "{title}" removed from "{s.title}".',
+               category='scholarship', target_type='scholarship', target_id=s.id)
+    flash(f'Removed "{title}" from "{s.title}".', 'success')
     return redirect(url_for('staff.manage_scholarships'))
 
 

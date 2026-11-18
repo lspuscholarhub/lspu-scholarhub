@@ -287,6 +287,21 @@ def create_app(config_name=None):
         except Exception as e:
             _migrate_log.error(f'MIGRATION FAILED (portal): {e}')
 
+    # Migration 5: per-scholarship requirements + scholar submissions.
+    # New tables only, so create them if they're missing (works on MySQL and
+    # on the SQLite test database alike).
+    with app.app_context():
+        import logging
+        _migrate_log = logging.getLogger('migrate')
+        try:
+            from app.models.scholarship_requirement import (RequirementSubmission,
+                                                            ScholarshipRequirement)
+            ScholarshipRequirement.__table__.create(db.engine, checkfirst=True)
+            RequirementSubmission.__table__.create(db.engine, checkfirst=True)
+            _migrate_log.info('OK: scholarship requirement tables ready.')
+        except Exception as e:
+            _migrate_log.error(f'MIGRATION FAILED (requirements): {e}')
+
     # ── Inactivity timeout ────────────────────────────────────────────────
     # Log out users who have been inactive for more than 30 minutes.
     # Checked on every request — if last_active is older than timeout, clear session.

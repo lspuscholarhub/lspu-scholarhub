@@ -2,131 +2,131 @@
 {% block title %}My Scholarship — LSPU ScholarHub{% endblock %}
 
 {% block head %}
-<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261119" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261119g" rel="stylesheet">
 <style>main { padding: 0 !important; margin: 0 !important; }</style>
 {% endblock %}
 
 {% block content %}
 {% set chipmap = {'success':'st-chip--ok','warning':'st-chip--warn','danger':'st-chip--bad','secondary':'st-chip--muted'} %}
-{% set memap = {'submitted':'ss-me--ok','overdue':'ss-me--bad','due_soon':'ss-me--warn','pending':'ss-me--info','none':'ss-me--muted','no_deadline':'ss-me--muted'} %}
+{% set plural = 's' if scholarship_details|length > 1 else '' %}
+{% set me_tone = {'submitted':'ok','overdue':'bad','due_soon':'warn','pending':'info','no_deadline':'muted'}.get(me_state, 'muted') %}
 <div class="st">
   <div class="st-wrap">
 
-    <header class="st-head">
-      <p class="st-kicker">Student</p>
-      <h1 class="st-title">My scholarship{{ 's' if scholarship_details|length > 1 else '' }}</h1>
-      <p class="st-sub">
-        Your approved program{{ 's' if scholarship_details|length > 1 else '' }} and current standing.
-      </p>
+    <header class="ss-head">
+      <div class="ss-head-main">
+        <p class="st-kicker">Student</p>
+        <h1 class="st-title">My scholarship{{ plural }}</h1>
+        <p class="st-sub">
+          <b>{{ current_period.display_name if current_period else 'No academic period' }}</b>
+          · {{ scholarship_details|length }} program{{ plural }} held
+        </p>
+      </div>
+      <div class="ss-head-actions">
+        <span class="st-chip {{ chipmap.get(standing_color, 'st-chip--muted') }}">
+          <i class="bi bi-patch-check-fill" aria-hidden="true"></i>{{ standing_label }}
+        </span>
+        <a class="st-btn st-btn--ghost st-btn--sm" href="{{ url_for('student.my_applications') }}">My applications</a>
+      </div>
     </header>
 
-    <div class="sn-toolbar">
-      <span class="st-chip {{ chipmap.get(standing_color, 'st-chip--muted') }}">
-        <i class="bi bi-patch-check-fill" aria-hidden="true"></i>{{ standing_label }}
-      </span>
-      <a class="st-link" style="margin-left:auto;" href="{{ url_for('student.my_applications') }}">My applications</a>
-    </div>
+    <section class="ss-stats">
+      <div class="ss-stat">
+        <span>Programs</span>
+        <b>{{ scholarship_details|length }}</b>
+        <small>{{ public_count }} public · {{ scholarship_details|length - public_count }} private</small>
+      </div>
+      <div class="ss-stat ss-stat--money">
+        <span>Total award</span>
+        <b>₱{{ '{:,.0f}'.format(total_award) }}</b>
+        <small>per semester</small>
+      </div>
+      <div class="ss-stat">
+        <span>Received</span>
+        <b>₱{{ '{:,.0f}'.format(total_received) }}</b>
+        <small>{% if to_release %}₱{{ '{:,.0f}'.format(to_release) }} still to release{% else %}Fully released{% endif %}</small>
+      </div>
+      <div class="ss-stat ss-stat--gwa">
+        <span>Current GWA</span>
+        <b>{% if gwa_val is not none %}{{ '%.2f'|format(gwa_val) }}{% else %}—{% endif %}</b>
+        <small>Requirement: 2.00 or better</small>
+      </div>
+    </section>
 
-    <!-- ── Monitoring & Evaluation form ─────────────────────────────────── -->
-    {% if me_state == 'submitted' %}
-    <div class="ss-me ss-me--ok">
-      <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
-      <div class="ss-me-main">
-        <b>Monitoring &amp; Evaluation form submitted</b>
-        {% if current_period %}For {{ current_period.display_name }} — {% endif %}uploaded {{ me_submission.uploaded_at.strftime('%B %d, %Y') }}.
+    <!-- ── Monitoring & Evaluation ──────────────────────────────────────── -->
+    <article class="ss-action ss-action--{{ me_tone }}">
+      <span class="ss-action-icon" aria-hidden="true">
+        <i class="bi {% if me_state == 'submitted' %}bi-check-circle-fill{% elif me_state == 'overdue' %}bi-exclamation-triangle-fill{% elif me_state in ('due_soon', 'pending') %}bi-alarm{% else %}bi-clipboard-check{% endif %}"></i>
+      </span>
+      <div class="ss-action-body">
+        <p class="ss-action-tag">
+          {% if me_state == 'submitted' %}
+            Submitted{% if me_submission.uploaded_at %} · {{ me_submission.uploaded_at.strftime('%b %d, %Y') }}{% endif %}
+          {% elif me_state == 'overdue' %}
+            Action needed · overdue
+          {% elif me_state == 'due_soon' %}
+            Action needed · due {{ me_deadline.strftime('%b %d') }}
+          {% elif me_state == 'pending' %}
+            Due {{ me_deadline.strftime('%b %d, %Y') }}
+          {% else %}
+            No deadline set
+          {% endif %}
+        </p>
+        <h2 class="ss-action-title">Monitoring &amp; Evaluation form</h2>
+        <p class="ss-action-text">
+          {% if me_state == 'submitted' %}
+            Your form is on file{% if current_period %} for {{ current_period.display_name }}{% endif %}.
+            Uploading again replaces this semester's submission.
+          {% elif me_state == 'overdue' %}
+            It was due {{ me_deadline.strftime('%B %d, %Y') }}. Submit it to keep your
+            scholarship in good standing.
+          {% elif me_state == 'due_soon' %}
+            Due {{ me_deadline.strftime('%B %d, %Y') }} · {{ me_days_left }} day{{ '' if me_days_left == 1 else 's' }} left.
+            Download the form, have your instructors sign each subject line, then upload it.
+          {% elif me_state == 'pending' %}
+            Due {{ me_deadline.strftime('%B %d, %Y') }}{% if me_days_left is not none %} · {{ me_days_left }} day{{ '' if me_days_left == 1 else 's' }} left{% endif %}.
+            Download the form, have your instructors sign each subject line, then upload it.
+          {% else %}
+            No deadline set for this semester yet — you can download and submit it anytime.
+          {% endif %}
+        </p>
       </div>
-      <div class="ss-me-actions">
-        <a class="st-btn st-btn--ok" style="min-height:36px;padding:.35rem .7rem;font-size:.78rem;"
-           href="{{ url_for('student.view_me_form', sub_id=me_submission.id) }}" target="_blank">
-          <i class="bi bi-eye" aria-hidden="true"></i>View
-        </a>
-        <button type="button" class="st-btn st-btn--ghost" style="min-height:36px;padding:.35rem .7rem;font-size:.78rem;"
-                data-bs-toggle="modal" data-bs-target="#meFormModal">
-          <i class="bi bi-arrow-repeat" aria-hidden="true"></i>Replace
-        </button>
+      <div class="ss-action-btns">
+        {% if me_state == 'submitted' %}
+          <a class="st-btn st-btn--ok st-btn--sm" href="{{ url_for('student.view_me_form', sub_id=me_submission.id) }}" target="_blank">
+            <i class="bi bi-eye" aria-hidden="true"></i>View
+          </a>
+          <button type="button" class="st-btn st-btn--ghost st-btn--sm"
+                  data-bs-toggle="modal" data-bs-target="#meFormModal">
+            <i class="bi bi-arrow-repeat" aria-hidden="true"></i>Replace
+          </button>
+        {% elif me_state == 'overdue' %}
+          <button type="button" class="st-btn st-btn--danger st-btn--sm"
+                  data-bs-toggle="modal" data-bs-target="#meFormModal">
+            <i class="bi bi-upload" aria-hidden="true"></i>Submit now
+          </button>
+        {% else %}
+          <a class="st-btn st-btn--ghost st-btn--sm" href="{{ url_for('student.download_me_form') }}">
+            <i class="bi bi-download" aria-hidden="true"></i>Download
+          </a>
+          <button type="button" class="st-btn {% if me_state == 'due_soon' %}st-btn--primary{% else %}st-btn--ghost{% endif %} st-btn--sm"
+                  data-bs-toggle="modal" data-bs-target="#meFormModal">
+            <i class="bi bi-upload" aria-hidden="true"></i>Upload form
+          </button>
+        {% endif %}
       </div>
-    </div>
-    {% elif me_state == 'overdue' %}
-    <div class="ss-me ss-me--bad">
-      <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
-      <div class="ss-me-main">
-        <b>M&amp;E form overdue</b>
-        It was due {{ me_deadline.strftime('%B %d, %Y') }}. Submit it to keep your scholarship in good standing.
-      </div>
-      <div class="ss-me-actions">
-        <button type="button" class="st-btn st-btn--danger" style="min-height:36px;padding:.35rem .7rem;font-size:.78rem;"
-                data-bs-toggle="modal" data-bs-target="#meFormModal">
-          <i class="bi bi-upload" aria-hidden="true"></i>Submit now
-        </button>
-      </div>
-    </div>
-    {% elif me_state == 'due_soon' %}
-    <div class="ss-me ss-me--warn">
-      <i class="bi bi-clock-fill" aria-hidden="true"></i>
-      <div class="ss-me-main">
-        <b>M&amp;E form due {{ me_deadline.strftime('%B %d, %Y') }}</b>
-        Download the form, have your instructors sign it, then upload a photo or PDF.
-      </div>
-      <div class="ss-me-actions">
-        <a class="st-btn st-btn--ghost" style="min-height:36px;padding:.35rem .7rem;font-size:.78rem;"
-           href="{{ url_for('student.download_me_form') }}">
-          <i class="bi bi-download" aria-hidden="true"></i>Download
-        </a>
-        <button type="button" class="st-btn st-btn--warn" style="min-height:36px;padding:.35rem .7rem;font-size:.78rem;"
-                data-bs-toggle="modal" data-bs-target="#meFormModal">
-          <i class="bi bi-upload" aria-hidden="true"></i>Upload
-        </button>
-      </div>
-    </div>
-    {% elif me_state == 'pending' %}
-    <div class="ss-me ss-me--info">
-      <i class="bi bi-clipboard-check" aria-hidden="true"></i>
-      <div class="ss-me-main">
-        <b>Monitoring &amp; Evaluation form</b>
-        Due {{ me_deadline.strftime('%B %d, %Y') }}.
-      </div>
-      <div class="ss-me-actions">
-        <a class="st-btn st-btn--ghost" style="min-height:36px;padding:.35rem .7rem;font-size:.78rem;"
-           href="{{ url_for('student.download_me_form') }}">
-          <i class="bi bi-download" aria-hidden="true"></i>Download
-        </a>
-        <button type="button" class="st-btn st-btn--primary" style="min-height:36px;padding:.35rem .7rem;font-size:.78rem;"
-                data-bs-toggle="modal" data-bs-target="#meFormModal">
-          <i class="bi bi-upload" aria-hidden="true"></i>Upload
-        </button>
-      </div>
-    </div>
-    {% else %}
-    <div class="ss-me ss-me--muted">
-      <i class="bi bi-clipboard-check" aria-hidden="true"></i>
-      <div class="ss-me-main">
-        <b>Monitoring &amp; Evaluation form</b>
-        No deadline set for this semester yet — you can download and submit it anytime.
-      </div>
-      <div class="ss-me-actions">
-        <a class="st-btn st-btn--ghost" style="min-height:36px;padding:.35rem .7rem;font-size:.78rem;"
-           href="{{ url_for('student.download_me_form') }}">
-          <i class="bi bi-download" aria-hidden="true"></i>Download
-        </a>
-        <button type="button" class="st-btn st-btn--ghost" style="min-height:36px;padding:.35rem .7rem;font-size:.78rem;"
-                data-bs-toggle="modal" data-bs-target="#meFormModal">
-          <i class="bi bi-upload" aria-hidden="true"></i>Upload
-        </button>
-      </div>
-    </div>
-    {% endif %}
+    </article>
 
     <div class="ss-grid">
 
-      <!-- ── programs ───────────────────────────────────────────────────── -->
-      <div>
+      <!-- ── programs + compliance checklist ────────────────────────────── -->
+      <div class="ss-main">
         {% for sd in scholarship_details %}
         {% set app = sd.app %}
         {% set program = sd.program %}
         {% set batch = sd.batch %}
-        {% set period = sd.period %}
-        <article class="st-card ss-program" style="border-left:4px solid #198754;">
-          <div class="ss-program-top">
+        <article class="st-card ss-prog">
+          <div class="ss-prog-top">
             <div style="min-width:0;">
               <h2>{{ program.title }}</h2>
               <div class="ss-chips">
@@ -139,17 +139,14 @@
                 <span class="st-chip {{ chipmap.get(sd.compliance_color, 'st-chip--muted') }}">{{ sd.compliance_label }}</span>
               </div>
             </div>
-            <div class="ss-amount">₱{{ '%.2f'|format(app.amount_received or program.award_amount or 0) }}</div>
+            <div class="ss-amount">
+              <small>Amount received</small>
+              ₱{{ '{:,.0f}'.format(app.amount_received or 0) }}
+            </div>
           </div>
 
-          {% if program.description %}
-          <p class="ss-label">About the program</p>
-          <p class="ss-text">{{ program.description }}</p>
-          {% endif %}
-
-          {% if program.benefits %}
-          <p class="ss-label">What you receive</p>
-          <p class="ss-text">{{ program.benefits }}</p>
+          {% if program.benefits or program.description %}
+          <p class="ss-what">{{ program.benefits or program.description }}</p>
           {% endif %}
 
           <dl class="ss-facts">
@@ -158,154 +155,109 @@
               <dd>{{ app.approved_at.strftime('%b %d, %Y') if app.approved_at else '—' }}</dd>
             </div>
             <div class="ss-fact">
-              <dt>Amount received</dt>
-              <dd>{% if app.amount_received %}₱{{ '%.2f'|format(app.amount_received) }}{% else %}Not recorded{% endif %}</dd>
-            </div>
-            <div class="ss-fact">
               <dt>Batch</dt>
-              <dd>{% if batch %}{{ batch.batch_name }}{% else %}Not assigned{% endif %}</dd>
+              {% if batch %}<dd>{{ batch.batch_name }}</dd>
+              {% else %}<dd class="is-muted">Not assigned yet</dd>{% endif %}
             </div>
             <div class="ss-fact">
               <dt>Semester</dt>
-              <dd>{{ period.display_name if period else '—' }}</dd>
+              <dd>
+                {% if sd.period %}{{ sd.period.display_name }}
+                {% elif current_period %}{{ current_period.display_name }}
+                {% else %}—{% endif %}
+              </dd>
+            </div>
+            <div class="ss-fact">
+              <dt>Out of</dt>
+              <dd>{% if program.award_amount %}₱{{ '{:,.0f}'.format(program.award_amount) }}{% else %}—{% endif %}</dd>
             </div>
           </dl>
+
+          {% if sd.requirements %}
+          <div class="ss-reqs">
+            <p class="ss-req-h"><i class="bi bi-list-check" aria-hidden="true"></i> To keep this scholarship</p>
+            {% for item in sd.requirements %}
+            {% set r = item.req %}
+            {% set sub = item.sub %}
+            <div class="ss-req">
+              <div class="ss-req-body">
+                <b>{{ r.title }}{% if not r.is_required %} <span class="ss-req-opt">optional</span>{% endif %}</b>
+                {% if r.instructions %}<p>{{ r.instructions }}</p>{% endif %}
+                <p class="ss-req-meta">
+                  {% if r.due_date %}Due {{ r.due_date.strftime('%b %d, %Y') }}{% if r.is_overdue %} · overdue{% endif %}{% else %}No deadline{% endif %}
+                  {% if sub %} · uploaded {{ sub.uploaded_at.strftime('%b %d, %Y') }}{% endif %}
+                </p>
+              </div>
+              <div class="ss-req-side">
+                {% if sub %}
+                  <span class="st-chip st-chip--ok">Submitted</span>
+                  {% if sub.file_url %}<a class="ss-req-view" href="{{ sub.file_url }}" target="_blank" rel="noopener">View</a>{% endif %}
+                  <button type="button" class="st-btn st-btn--ghost st-btn--sm"
+                          data-bs-toggle="modal" data-bs-target="#reqUp{{ r.id }}">Replace</button>
+                {% else %}
+                  <span class="st-chip {{ 'st-chip--bad' if r.is_overdue else 'st-chip--warn' }}">{{ 'Overdue' if r.is_overdue else 'To submit' }}</span>
+                  <button type="button" class="st-btn st-btn--primary st-btn--sm"
+                          data-bs-toggle="modal" data-bs-target="#reqUp{{ r.id }}">Upload</button>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
         </article>
         {% endfor %}
-
-        <!-- ── keeping the scholarship ─────────────────────────────────── -->
-        <section class="st-card" style="margin-top:.9rem;">
-          <div class="st-section-head" style="margin-bottom:.8rem;">
-            <h2 class="st-h2">
-              <i class="bi bi-shield-check" style="color:#198754;" aria-hidden="true"></i>
-              Keeping your scholarship{{ 's' if scholarship_details|length > 1 else '' }}
-            </h2>
-          </div>
-          <p class="ss-text" style="margin-bottom:.9rem;">What the Scholarship Office expects from you every semester.</p>
-
-          <ol class="ss-steps">
-            <li>
-              <span class="ss-step-num" aria-hidden="true">1</span>
-              <div>
-                <b>Maintain your grades.</b>
-                <p>
-                  Keep your GWA at <strong>2.00 or better</strong> (3.00 is the absolute limit).
-                  {% if gwa_val is not none %}
-                  Your current GWA is
-                  <span class="st-chip {{ chipmap.get(gwa_color, 'st-chip--muted') }}">{{ '%.2f'|format(gwa_val) }}</span> — {{ gwa_hint }}
-                  {% else %}
-                  It is not set yet.
-                  {% endif %}
-                </p>
-              </div>
-            </li>
-            <li>
-              <span class="ss-step-num" aria-hidden="true">2</span>
-              <div>
-                <b>Submit your grades every semester.</b>
-                <p>
-                  {% if grades_semester %}The office has your grades for <strong>{{ grades_semester }}</strong>.{% else %}The office has no grades on file for you yet.{% endif %}
-                  {% if current_period %}
-                  Upload your latest Copy of Grades for <strong>{{ current_period.display_name }}</strong> in
-                  <a href="{{ url_for('student.upload_gwa') }}">My Documents</a> once enrollment is done.
-                  {% endif %}
-                </p>
-              </div>
-            </li>
-            <li>
-              <span class="ss-step-num" aria-hidden="true">3</span>
-              <div>
-                <b>Stay enrolled.</b>
-                <p>Dropping to zero units or withdrawing from the university ends the grant. Keep your units up to date in your profile.</p>
-              </div>
-            </li>
-            <li>
-              <span class="ss-step-num" aria-hidden="true">4</span>
-              <div>
-                <b>Watch your notifications.</b>
-                <p>
-                  Renewal reminders and office announcements arrive in your
-                  <a href="{{ url_for('student.notifications') }}">Notifications</a> — act before the deadline.
-                </p>
-              </div>
-            </li>
-          </ol>
-
-          <div style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:1rem;">
-            <a class="st-btn st-btn--primary" href="{{ url_for('student.upload_gwa') }}">
-              <i class="bi bi-upload" aria-hidden="true"></i>Upload latest grades
-            </a>
-          </div>
-        </section>
       </div>
 
-      <!-- ── side column ────────────────────────────────────────────────── -->
-      <div>
-        <section class="st-card">
-          <div class="st-section-head" style="margin-bottom:.4rem;">
-            <h2 class="st-h2">My standing</h2>
-          </div>
-          <div class="ss-standing-row">
-            <span>Scholar status</span>
-            <span class="st-chip {{ chipmap.get(standing_color, 'st-chip--muted') }}">{{ standing_label }}</span>
-          </div>
-          <div class="ss-standing-row">
-            <span>Current GWA</span>
-            {% if gwa_val is not none %}
-            <span class="st-chip {{ chipmap.get(gwa_color, 'st-chip--muted') }}">{{ '%.2f'|format(gwa_val) }}</span>
-            {% else %}
-            <span class="st-chip st-chip--muted">Not set</span>
-            {% endif %}
-          </div>
-          <div class="ss-standing-row">
-            <span>Units enrolled</span>
-            <b>{{ user.units_enrolled or '—' }}</b>
-          </div>
-
-          {% if gwa_val is not none %}
-          <div class="ss-me ss-me--{{ 'ok' if gwa_color == 'success' else ('warn' if gwa_color == 'warning' else 'bad') }}" style="margin:.9rem 0 0;">
-            <i class="bi bi-info-circle" aria-hidden="true"></i>
-            <div class="ss-me-main">{{ gwa_hint }}</div>
-          </div>
-          {% endif %}
-
-          {% if scholarship_details|length > 1 %}
-          <p class="ss-label">Compliance by program</p>
-          {% for sd in scholarship_details %}
-          <div class="ss-standing-row">
-            <span>{{ sd.program.title }}</span>
-            <span class="st-chip {{ chipmap.get(sd.compliance_color, 'st-chip--muted') }}">{{ sd.compliance_label }}</span>
-          </div>
-          {% endfor %}
-          {% endif %}
-        </section>
-
-        <section class="st-card" style="margin-top:.9rem;">
-          <div class="st-section-head" style="margin-bottom:.4rem;">
-            <h2 class="st-h2">Questions about your grant{{ 's' if scholarship_details|length > 1 else '' }}?</h2>
-          </div>
-          <p class="ss-text" style="margin-bottom:.7rem;">
-            For disbursement schedules, document requests or concerns about your
-            scholarship{{ 's' if scholarship_details|length > 1 else '' }}, contact the Scholarship Office:
-          </p>
-          <div class="ss-standing-row">
+      <!-- ── rail ───────────────────────────────────────────────────────── -->
+      <aside class="ss-rail">
+        <section class="st-card ss-contact">
+          <p class="ss-rail-h">Questions about your grant{{ plural }}?</p>
+          <div class="ss-row">
             <span><i class="bi bi-envelope" aria-hidden="true"></i> Email</span>
-            <b><a href="mailto:lspu.scholarhub@gmail.com" style="color:inherit;">lspu.scholarhub@gmail.com</a></b>
+            <b><a href="mailto:lspu.scholarhub@gmail.com">lspu.scholarhub@gmail.com</a></b>
           </div>
-          <div class="ss-standing-row">
+          <div class="ss-row">
             <span><i class="bi bi-telephone" aria-hidden="true"></i> Phone</span>
             <b>0968-365-2615</b>
           </div>
-          <div class="ss-standing-row">
+          <div class="ss-row">
             <span><i class="bi bi-clock" aria-hidden="true"></i> Hours</span>
             <b>Mon–Fri, 8AM–5PM</b>
           </div>
         </section>
-      </div>
+      </aside>
 
     </div>
   </div>
 </div>
+
+<!-- ── Requirement upload modals ────────────────────────────────────────── -->
+{% for sd in scholarship_details %}{% for item in sd.requirements %}{% set r = item.req %}
+<div class="modal fade" id="reqUp{{ r.id }}" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content" style="border-radius:14px;">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold"><i class="bi bi-upload me-2 text-primary"></i>{{ r.title }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('student.upload_requirement', rid=r.id) }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-body">
+          {% if r.instructions %}<p class="small text-muted">{{ r.instructions }}</p>{% endif %}
+          {% if r.due_date %}<p class="small"><strong>Due {{ r.due_date.strftime('%B %d, %Y') }}</strong></p>{% endif %}
+          <label class="form-label fw-semibold">Your file</label>
+          <input type="file" class="form-control" name="requirement_file" accept=".pdf,.jpg,.jpeg,.png" required>
+          <div class="form-text">PDF or image (JPG/PNG), max 5MB. Uploading again replaces your previous file.</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-upload me-1"></i>Submit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}{% endfor %}
 
 <!-- ── M&E Form Upload Modal ────────────────────────────────────────────── -->
 <div class="modal fade" id="meFormModal" tabindex="-1">

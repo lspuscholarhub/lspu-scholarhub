@@ -58,6 +58,8 @@
                 <div class="d-flex gap-1">
                   <a href="{{ url_for('staff.add_student_to_program', sid=s.id) }}"
                      class="btn btn-sm btn-outline-success" title="Add student to program"><i class="bi bi-person-plus"></i></a>
+                  <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#reqModal{{ s.id }}"
+                          title="Requirements to keep this scholarship"><i class="bi bi-list-check"></i></button>
                   <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editModal{{ s.id }}"
                           data-bs-toggle="tooltip" title="Edit scholarship"><i class="bi bi-pencil"></i></button>
                   <form method="POST" action="{{ url_for('staff.delete_scholarship', sid=s.id) }}" class="d-inline"
@@ -447,4 +449,89 @@ function toggleFieldOptions(sel) {
   }
 }
 </script>
+
+<!-- Requirements modals — one per program -->
+{% for s in scholarships %}
+<div class="modal fade" id="reqModal{{ s.id }}" tabindex="-1">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content" style="border-radius:12px;">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold"><i class="bi bi-list-check me-2 text-primary"></i>Requirements — {{ s.title }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted small">
+          What a scholar of this program must submit to keep their grant. Students see this
+          list on their My Scholarship page and upload one file per requirement.
+        </p>
+
+        {% if s.requirements %}
+        <div class="table-responsive mb-3">
+          <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+              <tr><th>Requirement</th><th>Due</th><th>Submitted</th><th></th></tr>
+            </thead>
+            <tbody>
+              {% for r in s.requirements %}
+              <tr>
+                <td>
+                  <strong>{{ r.title }}</strong>
+                  {% if r.is_required %}<span class="badge bg-danger" style="font-size:.6rem;">Required</span>
+                  {% else %}<span class="badge bg-secondary" style="font-size:.6rem;">Optional</span>{% endif %}
+                  {% if r.instructions %}<br><small class="text-muted">{{ r.instructions }}</small>{% endif %}
+                </td>
+                <td class="small">
+                  {% if r.due_date %}{{ r.due_date.strftime('%b %d, %Y') }}
+                    {% if r.is_overdue %}<span class="badge bg-danger" style="font-size:.6rem;">Overdue</span>{% endif %}
+                  {% else %}<span class="text-muted">—</span>{% endif %}
+                </td>
+                <td class="small">{{ r.submissions|length }} scholar(s)</td>
+                <td class="text-end">
+                  <form method="POST" action="{{ url_for('staff.delete_requirement', rid=r.id) }}"
+                        onsubmit="return confirm('Remove this requirement? Scholar uploads filed against it are deleted too.')">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-sm btn-outline-danger" title="Remove requirement"><i class="bi bi-trash"></i></button>
+                  </form>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="alert alert-light border small mb-3">
+          No extra requirements yet — scholars of this program only submit the standard
+          Monitoring &amp; Evaluation form and their grades.
+        </div>
+        {% endif %}
+
+        <h6 class="fw-bold mb-2">Add a requirement</h6>
+        <form method="POST" action="{{ url_for('staff.add_requirement', sid=s.id) }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div class="row g-2">
+            <div class="col-md-7">
+              <input type="text" class="form-control form-control-sm" name="title" maxlength="150" required
+                     placeholder="e.g. Certificate of Enrollment">
+            </div>
+            <div class="col-md-5">
+              <input type="date" class="form-control form-control-sm" name="due_date">
+            </div>
+            <div class="col-12">
+              <input type="text" class="form-control form-control-sm" name="instructions" maxlength="255"
+                     placeholder="What exactly should the student submit?">
+            </div>
+            <div class="col-12">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="is_required" value="1" id="reqOn{{ s.id }}" checked>
+                <label class="form-check-label small" for="reqOn{{ s.id }}">Required to keep the scholarship</label>
+              </div>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-sm mt-2"><i class="bi bi-plus-lg me-1"></i>Add requirement</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %}
 {% endblock %}

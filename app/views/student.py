@@ -3,7 +3,8 @@ from datetime import datetime
 from flask import (Blueprint, render_template, request, flash,
                    redirect, url_for, session, current_app, send_from_directory)
 from app import db
-from app.models import User, Scholarship, ScholarshipApplication, Notification
+from app.models import (User, Scholarship, ScholarshipApplication, Notification,
+                        RequirementSubmission, ScholarshipRequirement)
 from app.models.scholarship import ScholarshipStatus, ApplicationStatus
 from app.models.document import Document
 from app.models.notification import NotificationType
@@ -319,6 +320,71 @@ def mark_all_read():
     return redirect(url_for('student.notifications'))
 
 
+# ── Scholarship requirements (set per program by the office) ─────────────────
+
+@student_bp.route('/requirements/<int:rid>/upload', methods=['POST'])
+@role_required('student')
+def upload_requirement(rid):
+    """Upload (or replace) the student's file for one program requirement."""
+    from app.services.storage_service import upload_file as _upload
+
+    user = User.query.get(session['user_id'])
+    req = ScholarshipRequirement.query.get_or_404(rid)
+
+    # Only a scholar of that program can submit its requirements.
+    app_q = ScholarshipApplication.query.filter_by(
+        applicant_id=user.id, scholarship_id=req.scholarship_id,
+        status=ApplicationStatus.APPROVED)
+    period = get_viewing_period()
+    if period:
+        app_q = app_q.filter(ScholarshipApplication.academic_period_id == period.id)
+    application = app_q.first()
+    if not application:
+        flash('You can only submit requirements for a scholarship you hold.', 'error')
+        return redirect(url_for('student.my_scholarship'))
+
+    file = request.files.get('requirement_file')
+    if not file or not file.filename:
+        flash('Please choose a file to upload.', 'error')
+        return redirect(url_for('student.my_scholarship'))
+
+    ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+    if ext not in ('pdf', 'jpg', 'jpeg', 'png'):
+        flash('Invalid file type. Please upload a PDF or an image (JPG/PNG).', 'error')
+        return redirect(url_for('student.my_scholarship'))
+
+    file_bytes = file.read()
+    if len(file_bytes) > 5 * 1024 * 1024:
+        flash('That file is larger than 5MB. Please compress it and try again.', 'error')
+        return redirect(url_for('student.my_scholarship'))
+
+    stored = _upload(file_bytes, file.filename, folder=f'requirements/{req.id}')
+    if not stored.get('success'):
+        flash(f'Could not store the file: {stored.get("error", "unknown error")}', 'error')
+        return redirect(url_for('student.my_scholarship'))
+
+    sub = (RequirementSubmission.query
+           .filter_by(requirement_id=req.id, user_id=user.id).first())
+    if sub is None:
+        sub = RequirementSubmission(requirement_id=req.id, user_id=user.id)
+        db.session.add(sub)
+
+    sub.application_id     = application.id
+    sub.academic_period_id = application.academic_period_id
+    sub.original_filename  = file.filename[:255]
+    sub.file_url           = stored.get('url')
+    sub.cloudinary_public_id = stored.get('public_id')
+    sub.local_path         = stored.get('url') if stored.get('provider') == 'local' else None
+    sub.file_type          = ext
+    sub.file_size          = len(file_bytes)
+    sub.status             = 'submitted'
+    sub.uploaded_at        = datetime.utcnow()
+    db.session.commit()
+
+    flash(f'Submitted "{req.title}". The office can now review it.', 'success')
+    return redirect(url_for('student.my_scholarship'))
+
+
 # ── Documents ─────────────────────────────────────────────────────────────────
 
 @student_bp.route('/my-scholarship')
@@ -363,10 +429,21 @@ def my_scholarship():
             (a.scholar_status or 'active').lower(), ('Active', 'secondary'))
         compliance_label, compliance_color = compliance_labels.get(
             (a.compliance_status or 'compliant').lower(), ('For Review', 'warning'))
+        # Requirements the office set for this program, with the student's
+        # latest upload for each.
+        req_items = []
+        for r in sorted(program.requirements or [],
+                        key=lambda x: (x.sort_order, x.id)):
+            sub = (RequirementSubmission.query
+                   .filter_by(requirement_id=r.id, user_id=user.id)
+                   .order_by(RequirementSubmission.uploaded_at.desc()).first())
+            req_items.append({'req': r, 'sub': sub})
+
         scholarship_details.append({
             'app': a, 'program': program, 'batch': batch, 'period': period,
             'standing_label': standing_label, 'standing_color': standing_color,
             'compliance_label': compliance_label, 'compliance_color': compliance_color,
+            'requirements': req_items,
         })
 
     # Overall standing — worst status across all scholarships
@@ -380,29 +457,8 @@ def my_scholarship():
             worst_color = sd['standing_color']
             worst_label = sd['standing_label']
 
-    # Renewal guidance (user-level, shared across scholarships)
-    from app.models.academic_period import AcademicPeriod
     current_period = get_viewing_period()
-    grades_semester = user.grades_semester
-
     gwa_val = float(user.gwa) if user.gwa is not None else None
-    if gwa_val is None:
-        gwa_hint = ('Your GWA has not been recorded yet. '
-                    'Upload your latest Copy of Grades in My Documents so the office can monitor your standing.')
-        gwa_color = 'warning'
-    elif gwa_val <= 1.75:
-        gwa_hint = 'Excellent standing — keep it up!'
-        gwa_color = 'success'
-    elif gwa_val <= 2.25:
-        gwa_hint = 'Good standing. Maintain your grades to keep the scholarship.'
-        gwa_color = 'success'
-    elif gwa_val <= 3.00:
-        gwa_hint = 'Passing, but close to the risk line. Aim to improve this semester.'
-        gwa_color = 'warning'
-    else:
-        gwa_hint = ('Your GWA is above the usual limit (3.00). '
-                    'Please coordinate with the Scholarship Office — your grant may be at risk.')
-        gwa_color = 'danger'
 
     # M&E form submission for the current period (any approved application)
     from app.models import MonitoringSubmission
@@ -416,28 +472,41 @@ def my_scholarship():
                          (MonitoringSubmission.academic_period_id.is_(None)))
         me_submission = q.order_by(MonitoringSubmission.uploaded_at.desc()).first()
 
-    # Deadline state for the banner
+    # Deadline state for the action strip
     me_deadline = current_period.me_form_deadline if current_period else None
+    me_days_left = None
     me_state = 'none'          # none | submitted | due_soon | overdue | no_deadline
     if me_submission:
         me_state = 'submitted'
     elif me_deadline:
         from datetime import date as _date
         days_left = (me_deadline - _date.today()).days
+        me_days_left = days_left
         me_state = 'overdue' if days_left < 0 else ('due_soon' if days_left <= 14 else 'pending')
     else:
         me_state = 'no_deadline'
 
+    # Summary band — what the student holds, in money terms
+    public_count = sum(1 for sd in scholarship_details
+                       if sd['program'].funding_type == 'public')
+    total_award = sum(float(sd['program'].award_amount or 0)
+                      for sd in scholarship_details)
+    total_received = sum(float(sd['app'].amount_received or 0)
+                         for sd in scholarship_details)
+    to_release = max(total_award - total_received, 0)
+
     return render_template('student/my_scholarship.html',
+                           public_count=public_count,
+                           total_award=total_award,
+                           total_received=total_received,
+                           to_release=to_release,
+                           me_days_left=me_days_left,
                            user=user,
                            scholarship_details=scholarship_details,
                            standing_label=worst_label,
                            standing_color=worst_color,
                            gwa_val=gwa_val,
-                           gwa_hint=gwa_hint,
-                           gwa_color=gwa_color,
                            current_period=current_period,
-                           grades_semester=grades_semester,
                            me_submission=me_submission,
                            me_deadline=me_deadline,
                            me_state=me_state)
