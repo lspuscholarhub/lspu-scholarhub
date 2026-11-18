@@ -163,6 +163,48 @@
   font-weight: 600;
   color: var(--gp-navy);
 }
+.gs-meta dd .dim { font-weight: 500; color: #8593a5; }
+
+/* ── student demand: applied count + room left ────────────────────────────── */
+.gs-demand { margin-top: .05rem; }
+.gs-demand-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .5rem;
+}
+.gs-demand-count {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  font-size: .78rem;
+  font-weight: 700;
+  color: #2a3646;
+}
+.gs-demand-count svg { flex: 0 0 auto; color: var(--gp-teal); }
+.gs-demand-left {
+  font-size: .72rem;
+  font-weight: 800;
+  color: var(--gp-teal);
+  white-space: nowrap;
+}
+.gs-demand-left.warn { color: #a35b00; }
+.gs-demand-left--muted { font-weight: 700; color: #8593a5; }
+.gs-demand-bar {
+  display: block;
+  height: 4px;
+  margin-top: .4rem;
+  border-radius: 999px;
+  background: #eef1f6;
+  overflow: hidden;
+}
+.gs-demand-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #0d6efd, #12b3a8);
+}
+.gs-demand-bar i.warn { background: linear-gradient(90deg, #f2a75c, #e08a1e); }
 
 .gs-card-foot {
   display: flex;
@@ -211,6 +253,106 @@
   font-weight: 700;
   color: #6b7686;
   text-align: center;
+}
+
+/* ── my applications: summary strip above the list ───────────────────────── */
+.gs-mine {
+  display: flex;
+  flex-direction: column;
+  gap: .7rem;
+  margin: 0 0 1rem;
+  padding: .85rem 1rem;
+  border: 1px solid #dfeaf9;
+  border-radius: 16px;
+  background: linear-gradient(100deg, #f2f8ff 0%, #f0fbf8 100%);
+}
+.gs-mine-head { display: flex; align-items: center; gap: .5rem; }
+.gs-mine-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  margin: 0;
+  font-size: .7rem;
+  font-weight: 800;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--gp-teal);
+}
+.gs-mine-kicker i { font-size: .9rem; }
+.gs-mine-link {
+  margin-left: auto;
+  font-size: .76rem;
+  font-weight: 700;
+  color: var(--gp-blue);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.gs-mine-link:hover { text-decoration: underline; }
+.gs-mine-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .4rem;
+  margin: 0;
+}
+.gs-mine-stats div { min-width: 0; }
+.gs-mine-stats dt {
+  margin: 0 0 .1rem;
+  font-size: .58rem;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: #7b889a;
+}
+.gs-mine-stats dd {
+  margin: 0;
+  font-size: .92rem;
+  font-weight: 800;
+  color: var(--gp-navy);
+  white-space: nowrap;
+}
+.gs-mine-stats dd.ok { color: #0f7a4f; }
+.gs-mine-stats dd.warn { color: #a35b00; }
+
+/* ── my application on a card: status chip + record line ────────────────── */
+.gs-app-note {
+  display: grid;
+  gap: .28rem;
+  justify-items: start;
+  padding-top: .1rem;
+}
+.gs-app-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  padding: .32rem .6rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: .71rem;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.gs-app-chip i { font-size: .78rem; }
+.gs-app-chip:hover { filter: brightness(.97); }
+.gs-app-chip--warn  { background: #fff4e2; border-color: #f5e0bf; color: #a35b00; }
+.gs-app-chip--ok    { background: #e6f7ef; border-color: #cdecd9; color: #0f7a4f; }
+.gs-app-chip--bad   { background: #fdecec; border-color: #f6d5d8; color: #b02a37; }
+.gs-app-chip--muted { background: #f1f3f6; border-color: #e2e7ee; color: #6b7686; }
+.gs-app-meta { font-size: .71rem; color: #8593a5; }
+
+@media (min-width: 960px) {
+  .gs-mine {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    padding: .75rem 1.1rem;
+  }
+  .gs-mine-head { flex: 0 0 auto; }
+  .gs-mine-link { margin-left: .6rem; }
+  .gs-mine-stats { display: flex; gap: 1.6rem; }
+  .gs-mine-stats dt { font-size: .6rem; }
+  .gs-mine-stats dd { font-size: .95rem; }
 }
 
 /* ── empty state ──────────────────────────────────────────────────────────── */

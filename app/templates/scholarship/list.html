@@ -2,7 +2,7 @@
 {% block title %}Scholarships — LSPU ScholarHub{% endblock %}
 
 {% block head %}
-<link href="{{ url_for('static', filename='css/guest-pages.css') }}?v=20261117b" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/guest-pages.css') }}?v=20261119c" rel="stylesheet">
 <style>main { padding: 0 !important; margin: 0 !important; }</style>
 {% endblock %}
 
@@ -22,6 +22,30 @@
         Read the requirements once — your COR and grades carry over to every application.
       </p>
     </header>
+
+    {# ── My applications: the student's own record, at a glance ────────────── #}
+    {% if session.get('user_type') == 'student' and mine and mine.total %}
+    <section class="gs-mine" aria-label="My applications summary">
+      <div class="gs-mine-head">
+        <p class="gs-mine-kicker"><i class="bi bi-person-badge" aria-hidden="true"></i>My applications</p>
+        <a class="gs-mine-link" href="{{ url_for('student.my_applications') }}">View all &rsaquo;</a>
+      </div>
+      <dl class="gs-mine-stats">
+        <div>
+          <dt>In review</dt>
+          <dd>{{ mine.review }}</dd>
+        </div>
+        <div>
+          <dt>Awarded</dt>
+          <dd class="ok">₱{{ "{:,.0f}".format(mine.awarded) }}</dd>
+        </div>
+        <div>
+          <dt>Pending</dt>
+          <dd class="warn">₱{{ "{:,.0f}".format(mine.pending) }}</dd>
+        </div>
+      </dl>
+    </section>
+    {% endif %}
 
     <form class="gs-search auto-filter" method="GET" role="search">
       <i class="bi bi-search" aria-hidden="true"></i>
@@ -76,50 +100,98 @@
               <dd>{% if s.award_amount %}₱{{ "{:,.0f}".format(s.award_amount) }}{% else %}To be announced{% endif %}</dd>
             </div>
             <div>
-              <dt>{% if s.application_deadline %}Deadline{% else %}Slots{% endif %}</dt>
+              <dt>Deadline</dt>
               <dd>
                 {% if s.application_deadline %}
                   {{ s.application_deadline.strftime('%b %d, %Y') }}
-                  {% if days_left >= 0 %}<span style="font-weight:500;color:#8593a5;">· {{ days_left }}d left</span>{% endif %}
-                {% elif s.max_applicants %}
-                  {{ s.current_applicants or 0 }}/{{ s.max_applicants }}
+                  {% if days_left >= 0 %}<span class="dim">· {{ days_left }}d left</span>{% endif %}
                 {% else %}
-                  Open until filled
+                  Rolling <span class="dim">· until filled</span>
                 {% endif %}
               </dd>
             </div>
           </dl>
 
-          <div class="gs-card-foot">
-            <a class="gs-btn gs-btn--primary"
-               href="{{ url_for('scholarship.view_scholarship', scholarship_id=s.id) }}">View details</a>
+          {# ── Student demand: how many applied, how much room is left ───────── #}
+          {% set applied = s.current_applicants or 0 %}
+          {% set cap = s.max_applicants if (s.max_applicants and s.max_applicants > 0) else none %}
+          {% set pct = (((applied / cap) * 100)|round(0, 'floor')|int) if cap else 0 %}
+          {% set left = (cap - applied) if cap else none %}
+          {% set few = cap and (left <= 2 or pct >= 90) %}
+          <div class="gs-demand">
+            <div class="gs-demand-top">
+              <span class="gs-demand-count">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M7 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 1.5c-2.7 0-5 1.4-5 3.2V14h10v-1.3c0-1.8-2.3-3.2-5-3.2Zm5.5-1.4a2.4 2.4 0 1 0 0-4.8 2.4 2.4 0 0 0 0 4.8Zm.6 1.5c-.5 0-1 .1-1.4.2.9.7 1.5 1.7 1.5 2.9V14H16v-1.2c0-1.5-1.4-2.7-2.9-2.7Z"/></svg>
+                {{ applied }} student{{ 's' if applied != 1 }} applied
+              </span>
+              {% if cap %}
+                {% if left > 0 %}
+                  <span class="gs-demand-left{% if few %} warn{% endif %}">{{ left }} slot{{ 's' if left != 1 }} left</span>
+                {% else %}
+                  <span class="gs-demand-left warn">All slots taken</span>
+                {% endif %}
+              {% else %}
+                <span class="gs-demand-left gs-demand-left--muted">no slot limit</span>
+              {% endif %}
+            </div>
+            {% if cap %}
+            <span class="gs-demand-bar"><i class="{% if few %}warn{% endif %}" style="width:{{ [pct, 100]|min }}%"></i></span>
+            {% endif %}
+          </div>
 
+          {# ── This student's own application, right on the program card ─────── #}
+          {% set st = app_status.get(s.id) if app_status else None %}
+          {% if st %}
+          <div class="gs-app-note">
+            <a class="gs-app-chip gs-app-chip--{{ st.tone }}"
+               href="{{ url_for('student.my_applications') }}"
+               title="Open this application in My applications">
+              <i class="bi {{ st.icon }}" aria-hidden="true"></i>{{ st.label }}
+            </a>
+            <span class="gs-app-meta">App #{{ st.app_id }} · submitted {{ st.submitted }}</span>
+          </div>
+          {% endif %}
+
+          <div class="gs-card-foot">
             {% if session.get('user_type') == 'student' %}
-              {% if s.id in applied_ids %}
-                <span class="gs-disabled"><i class="bi bi-check2-circle" aria-hidden="true"></i>Already applied</span>
-              {% elif s.funding_type == 'public' and holds_public %}
-                <span class="gs-disabled" title="You already have the public scholarship '{{ active_scholarship_title }}'">
-                  <i class="bi bi-lock-fill" aria-hidden="true"></i>Public limit reached
-                </span>
-              {% elif s.id in withdrawn_ids or s.id in rejected_ids %}
-                {% if s.is_application_open() %}
-                  <a class="gs-btn gs-btn--warn" href="{{ url_for('scholarship.apply_scholarship', scholarship_id=s.id) }}">
-                    <i class="bi bi-arrow-repeat" aria-hidden="true"></i>{{ 'Re-apply' if s.id in withdrawn_ids else 'Apply again' }}
-                  </a>
+              {% if st and st.group in ('review', 'approved') %}
+                <a class="gs-btn gs-btn--ghost"
+                   href="{{ url_for('scholarship.view_scholarship', scholarship_id=s.id) }}">Program details</a>
+                <a class="gs-btn gs-btn--primary"
+                   href="{{ url_for('student.my_applications') }}">View application</a>
+              {% else %}
+                <a class="gs-btn gs-btn--ghost"
+                   href="{{ url_for('scholarship.view_scholarship', scholarship_id=s.id) }}">View details</a>
+
+                {% if st and st.group == 'decided' %}
+                  {% if s.is_application_open() %}
+                    <a class="gs-btn gs-btn--warn" href="{{ url_for('scholarship.apply_scholarship', scholarship_id=s.id) }}">
+                      <i class="bi bi-arrow-repeat" aria-hidden="true"></i>{{ 'Re-apply' if st.state == 'withdrawn' else 'Apply again' }}
+                    </a>
+                  {% else %}
+                    <span class="gs-disabled">Closed</span>
+                  {% endif %}
+                {% elif s.funding_type == 'public' and holds_public %}
+                  <span class="gs-disabled" title="You already have the public scholarship '{{ active_scholarship_title }}'">
+                    <i class="bi bi-lock-fill" aria-hidden="true"></i>Public limit reached
+                  </span>
+                {% elif not session.get('is_verified') %}
+                  <span class="gs-disabled" title="Your account is not verified yet">
+                    <i class="bi bi-lock" aria-hidden="true"></i>Unverified
+                  </span>
+                {% elif s.is_application_open() %}
+                  <a class="gs-btn gs-btn--ghost" href="{{ url_for('scholarship.apply_scholarship', scholarship_id=s.id) }}">Apply now</a>
                 {% else %}
                   <span class="gs-disabled">Closed</span>
                 {% endif %}
-              {% elif not session.get('is_verified') %}
-                <span class="gs-disabled" title="Your account is not verified yet">
-                  <i class="bi bi-lock" aria-hidden="true"></i>Unverified
-                </span>
-              {% elif s.is_application_open() %}
-                <a class="gs-btn gs-btn--ghost" href="{{ url_for('scholarship.apply_scholarship', scholarship_id=s.id) }}">Apply now</a>
-              {% else %}
-                <span class="gs-disabled">Closed</span>
               {% endif %}
             {% elif not session.get('user_id') %}
+              <a class="gs-btn gs-btn--primary"
+                 href="{{ url_for('scholarship.view_scholarship', scholarship_id=s.id) }}">View details</a>
               <a class="gs-btn gs-btn--ghost" href="{{ url_for('auth.login') }}">Log in to apply</a>
+            {% else %}
+              <a class="gs-btn gs-btn--primary"
+                 href="{{ url_for('scholarship.view_scholarship', scholarship_id=s.id) }}">View details</a>
             {% endif %}
           </div>
         </li>

@@ -81,20 +81,36 @@ def list_scholarships():
     else:
         scholarships = [s for s in all_scholarships if s.is_visible_to(student_id)]
 
-    # Collect the student's application states per scholarship
-    applied_ids = set()
-    withdrawn_ids = set()
-    rejected_ids = set()
+    # Collect the student's application states per scholarship, scoped to the
+    # selected academic period — same rule as the My Applications page.
+    app_status = {}
+    mine = None
     holds_public = False
     active_scholarship_title = None
     if session.get('user_type') == 'student':
-        for a in ScholarshipApplication.query.filter_by(applicant_id=session['user_id']).all():
-            if a.status == ApplicationStatus.WITHDRAWN:
-                withdrawn_ids.add(a.scholarship_id)
-            elif a.status == ApplicationStatus.REJECTED:
-                rejected_ids.add(a.scholarship_id)
-            else:
-                applied_ids.add(a.scholarship_id)
+        my_q = ScholarshipApplication.query.filter_by(
+            applicant_id=session['user_id'])
+        if viewing_period:
+            my_q = my_q.filter(
+                ScholarshipApplication.academic_period_id == viewing_period.id)
+        my_apps = my_q.all()
+
+        for a in my_apps:
+            # One badge per program: keep the most recent application.
+            prev = app_status.get(a.scholarship_id)
+            if prev is None or (a.submitted_at and prev['submitted_at']
+                                and a.submitted_at > prev['submitted_at']):
+                app_status[a.scholarship_id] = _app_status_badge(a)
+
+        # Totals for the "My applications" strip (same shape as the page card).
+        mine = {
+            'total': len(my_apps),
+            'review': sum(1 for a in my_apps if a.status in _REVIEW_STATES),
+            'awarded': sum(_award_amount(a) for a in my_apps
+                           if a.status == ApplicationStatus.APPROVED),
+            'pending': sum(_award_amount(a) for a in my_apps
+                           if a.status in _REVIEW_STATES),
+        }
 
         # Public scholarships are exclusive — check for an active one
         # (pending, under review, or approved)
@@ -106,13 +122,46 @@ def list_scholarships():
     return render_template(
         'scholarship/list.html',
         scholarships=scholarships,
-        applied_ids=applied_ids,
-        withdrawn_ids=withdrawn_ids,
-        rejected_ids=rejected_ids,
         holds_public=holds_public,
         active_scholarship_title=active_scholarship_title,
+        app_status=app_status,
+        mine=mine,
         q=q,
     )
+
+
+# ── Application badges shown on the program cards ────────────────────────────
+
+_REVIEW_STATES = (ApplicationStatus.PENDING, ApplicationStatus.UNDER_REVIEW)
+
+_BADGE_STYLES = {
+    ApplicationStatus.PENDING: ('warn', 'bi-clock', 'Pending review', 'review'),
+    ApplicationStatus.UNDER_REVIEW: ('warn', 'bi-hourglass-split', 'Under review', 'review'),
+    ApplicationStatus.APPROVED: ('ok', 'bi-check-circle', 'Approved', 'approved'),
+    ApplicationStatus.REJECTED: ('bad', 'bi-x-circle', 'Rejected', 'decided'),
+    ApplicationStatus.WITHDRAWN: ('muted', 'bi-dash-circle', 'Withdrawn', 'decided'),
+}
+
+
+def _award_amount(app):
+    s = app.scholarship
+    return s.award_amount if (s and s.award_amount) else 0
+
+
+def _app_status_badge(app):
+    """Presentation data for one application, used on the scholarship card."""
+    tone, icon, label, group = _BADGE_STYLES.get(
+        app.status, ('muted', 'bi-dot', 'Applied', 'decided'))
+    return {
+        'tone': tone,
+        'icon': icon,
+        'label': label,
+        'group': group,
+        'state': app.status.value if app.status else '',
+        'app_id': app.id,
+        'submitted': app.submitted_at.strftime('%b %d, %Y') if app.submitted_at else '—',
+        'submitted_at': app.submitted_at,
+    }
 
 
 # ── Public/private scholarship rule ──────────────────────────────────────────
