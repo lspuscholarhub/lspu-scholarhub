@@ -495,6 +495,20 @@ def _staff_campus_form(fid):
     return form
 
 
+def _read_form_template():
+    """Return (file, bytes, error) for the blank copy in the request."""
+    file = request.files.get('template_file')
+    if not file or not file.filename:
+        return None, b'', None
+    ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+    if ext not in ('pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'):
+        return None, b'', 'The blank copy must be a PDF, Word document or image.'
+    data = file.read()
+    if len(data) > 5 * 1024 * 1024:
+        return None, b'', 'The blank copy is larger than 5MB. Please compress it.'
+    return file, data, None
+
+
 @staff_bp.route('/forms/add', methods=['POST'])
 @role_required('staff')
 def add_campus_form():
@@ -519,20 +533,10 @@ def add_campus_form():
         flash('The blank-copy link must start with http:// or https://.', 'error')
         return redirect(url_for('staff.monitoring'))
 
-    template_file = request.files.get('template_file')
-    template_bytes = b''
-    if template_file and template_file.filename:
-        ext = template_file.filename.rsplit('.', 1)[-1].lower() \
-            if '.' in template_file.filename else ''
-        if ext not in ('pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'):
-            flash('The blank copy must be a PDF, Word document or image.', 'error')
-            return redirect(url_for('staff.monitoring'))
-        template_bytes = template_file.read()
-        if len(template_bytes) > 5 * 1024 * 1024:
-            flash('The blank copy is larger than 5MB. Please compress it.', 'error')
-            return redirect(url_for('staff.monitoring'))
-    else:
-        template_file = None
+    template_file, template_bytes, template_err = _read_form_template()
+    if template_err:
+        flash(template_err, 'error')
+        return redirect(url_for('staff.monitoring'))
 
     # Every form belongs to exactly one campus: staff covering several campuses
     # must say which one, otherwise the form would leak to every campus.
@@ -631,6 +635,77 @@ def view_campus_form_submission(sub_id):
     if sub.file_url and sub.file_url.startswith('http'):
         return redirect(sub.file_url)
     flash('The file could not be found. Please ask the scholar to re-upload.', 'warning')
+    return redirect(url_for('staff.monitoring'))
+
+
+@staff_bp.route('/forms/<int:fid>/template', methods=['POST'])
+@role_required('staff')
+def update_campus_form_template(fid):
+    """Attach or replace a form's blank copy: a stored file or an office link."""
+    from app.services.storage_service import delete_file as _delete
+    from app.services.storage_service import upload_file as _upload
+
+    form = _staff_campus_form(fid)
+    if form is None:
+        return redirect(url_for('staff.monitoring'))
+
+    template_url = (request.form.get('template_url') or '').strip()
+    if template_url and not template_url.lower().startswith(('http://', 'https://')):
+        flash('The blank-copy link must start with http:// or https://.', 'error')
+        return redirect(url_for('staff.monitoring'))
+
+    template_file, template_bytes, template_err = _read_form_template()
+    if template_err:
+        flash(template_err, 'error')
+        return redirect(url_for('staff.monitoring'))
+
+    if template_file is None and not template_url:
+        flash('Choose a file or paste a link to set the blank copy.', 'error')
+        return redirect(url_for('staff.monitoring'))
+
+    stored = None
+    if template_file is not None:
+        stored = _upload(template_bytes, template_file.filename,
+                         folder=f'campus_form_templates/{form.id}')
+        if not stored.get('success'):
+            flash('The blank copy could not be stored. Please try again.', 'error')
+            return redirect(url_for('staff.monitoring'))
+
+    # Whatever was there before is replaced, including its stored file.
+    if form.template_cloudinary_public_id:
+        try:
+            _delete(public_id=form.template_cloudinary_public_id)
+        except Exception:
+            pass
+    elif form.template_local_path:
+        try:
+            _delete(file_path=form.template_local_path)
+        except Exception:
+            pass
+
+    form.template_url = None
+    form.template_filename = None
+    form.template_file_url = None
+    form.template_local_path = None
+    form.template_cloudinary_public_id = None
+
+    if template_file is not None:
+        form.template_filename = template_file.filename[:255]
+        form.template_file_url = stored.get('url')
+        form.template_cloudinary_public_id = stored.get('public_id')
+        form.template_local_path = (stored.get('url')
+                                    if stored.get('provider') == 'local' else None)
+    else:
+        form.template_url = template_url
+
+    db.session.commit()
+
+    from app.services.audit_service import log_action
+    log_action('campus_form.template',
+               f'Blank copy updated for campus form "{form.title}".',
+               category='scholarship', target_type='campus_form', target_id=form.id)
+    flash(f'Blank copy for "{form.title}" saved. Scholars now see the Download action.',
+          'success')
     return redirect(url_for('staff.monitoring'))
 
 
