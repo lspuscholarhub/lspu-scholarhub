@@ -302,6 +302,18 @@ def create_app(config_name=None):
         except Exception as e:
             _migrate_log.error(f'MIGRATION FAILED (requirements): {e}')
 
+    # Migration 6: campus-wide semester forms (like the M&E form) + uploads.
+    with app.app_context():
+        import logging
+        _migrate_log = logging.getLogger('migrate')
+        try:
+            from app.models.campus_form import CampusForm, CampusFormSubmission
+            CampusForm.__table__.create(db.engine, checkfirst=True)
+            CampusFormSubmission.__table__.create(db.engine, checkfirst=True)
+            _migrate_log.info('OK: campus form tables ready.')
+        except Exception as e:
+            _migrate_log.error(f'MIGRATION FAILED (campus forms): {e}')
+
     # ── Inactivity timeout ────────────────────────────────────────────────
     # Log out users who have been inactive for more than 30 minutes.
     # Checked on every request — if last_active is older than timeout, clear session.

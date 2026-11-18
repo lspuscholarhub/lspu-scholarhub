@@ -5,7 +5,8 @@ from flask import (Blueprint, render_template, request, flash,
                    send_from_directory)
 from app import db
 from app.models import (User, Scholarship, ScholarshipApplication, Notification,
-                        ScholarshipRequirement)
+                        ScholarshipRequirement, CampusForm,
+                        CampusFormSubmission, Campus)
 from app.models.scholarship import ScholarshipStatus, ApplicationStatus
 from app.models.notification import NotificationType, NotificationChannel
 from app.services.notification_service import notification_service
@@ -461,6 +462,138 @@ def delete_requirement(rid):
                category='scholarship', target_type='scholarship', target_id=s.id)
     flash(f'Removed "{title}" from "{s.title}".', 'success')
     return redirect(url_for('staff.manage_scholarships'))
+
+
+# ── Campus semester forms (like the M&E form, but staff-defined) ──────────
+
+def _staff_campus_scope():
+    """Campus ids this account may manage forms for (None = every campus)."""
+    me = db.session.get(User, session.get('user_id'))
+    if not me:
+        return []
+    if session.get('user_type') == 'super_admin':
+        # Super admin without a campus picked is not tied to one campus.
+        ctx = session.get('campus_context')
+        return [ctx] if ctx else None
+    if me.assigned_campuses:
+        return [c.id for c in me.assigned_campuses]
+    return [me.campus_id] if me.campus_id else []
+
+
+def _staff_can_manage(form):
+    """A form is manageable only when it belongs to a campus in scope."""
+    scope = _staff_campus_scope()
+    return scope is None or form.campus_id in scope
+
+
+def _staff_campus_form(fid):
+    """Load a campus form, refusing ones outside the staff's campuses."""
+    form = CampusForm.query.get_or_404(fid)
+    if not _staff_can_manage(form):
+        flash('That form belongs to another campus.', 'error')
+        return None
+    return form
+
+
+@staff_bp.route('/forms/add', methods=['POST'])
+@role_required('staff')
+def add_campus_form():
+    """Add a semester form that every scholar in the campus must submit."""
+    title = (request.form.get('title') or '').strip()
+    if not title:
+        flash('Give the form a name.', 'error')
+        return redirect(url_for('staff.monitoring'))
+
+    due_date = None
+    due_raw = (request.form.get('due_date') or '').strip()
+    if due_raw:
+        try:
+            due_date = datetime.strptime(due_raw, '%Y-%m-%d').date()
+        except ValueError:
+            flash('Invalid due date — form not added.', 'error')
+            return redirect(url_for('staff.monitoring'))
+
+    # Every form belongs to exactly one campus: staff covering several campuses
+    # must say which one, otherwise the form would leak to every campus.
+    scope = _staff_campus_scope()
+    allowed = (scope if scope is not None
+               else [c.id for c in Campus.query.filter_by(is_active=True).all()])
+    if not allowed:
+        flash('No campus is assigned to your account — ask the administrator '
+              'to assign one before adding forms.', 'error')
+        return redirect(url_for('staff.monitoring'))
+
+    raw = (request.form.get('campus_id') or '').strip()
+    campus_id = (int(raw) if raw.isdigit()
+                 else (allowed[0] if len(allowed) == 1 else None))
+    if campus_id not in allowed:
+        flash('Choose the campus this form is for.', 'error')
+        return redirect(url_for('staff.monitoring'))
+
+    period = get_viewing_period()
+    _max = (db.session.query(db.func.max(CampusForm.sort_order))
+            .filter_by(campus_id=campus_id).scalar() or 0)
+    form = CampusForm(
+        campus_id=campus_id,
+        academic_period_id=period.id if period else None,
+        title=title[:150],
+        instructions=(request.form.get('instructions') or '').strip()[:255] or None,
+        due_date=due_date,
+        is_required=request.form.get('is_required') == '1',
+        sort_order=_max + 1,
+        created_by=session.get('user_id'))
+    db.session.add(form)
+    db.session.commit()
+
+    from app.services.audit_service import log_action
+    log_action('campus_form.add', f'Campus form "{title}" added.',
+               category='scholarship', target_type='campus_form', target_id=form.id)
+    flash(f'Added "{title}". Scholars in that campus can now submit it.', 'success')
+    return redirect(url_for('staff.monitoring'))
+
+
+@staff_bp.route('/forms/<int:fid>/delete', methods=['POST'])
+@role_required('staff')
+def delete_campus_form(fid):
+    """Remove a semester form and the scholar uploads filed against it."""
+    form = _staff_campus_form(fid)
+    if form is None:
+        return redirect(url_for('staff.monitoring'))
+
+    title = form.title
+    db.session.delete(form)
+    db.session.commit()
+
+    from app.services.audit_service import log_action
+    log_action('campus_form.delete', f'Campus form "{title}" removed.',
+               category='scholarship', target_type='campus_form', target_id=fid)
+    flash(f'Removed "{title}" and its submissions.', 'success')
+    return redirect(url_for('staff.monitoring'))
+
+
+@staff_bp.route('/forms/submission/<int:sub_id>/view')
+@role_required('staff')
+def view_campus_form_submission(sub_id):
+    """Open a scholar's uploaded campus form inline."""
+    from app.services.storage_service import get_signed_url
+
+    sub = CampusFormSubmission.query.get_or_404(sub_id)
+    if not _staff_can_manage(sub.form):
+        flash('That submission belongs to another campus.', 'error')
+        return redirect(url_for('staff.monitoring'))
+
+    if sub.cloudinary_public_id:
+        is_image = sub.file_type in ('jpg', 'jpeg', 'png')
+        signed = get_signed_url(sub.cloudinary_public_id,
+                                resource_type='image' if is_image else 'raw')
+        if signed:
+            return redirect(signed)
+    if sub.local_path and os.path.exists(sub.local_path):
+        return send_file(os.path.abspath(sub.local_path), as_attachment=False)
+    if sub.file_url and sub.file_url.startswith('http'):
+        return redirect(sub.file_url)
+    flash('The file could not be found. Please ask the scholar to re-upload.', 'warning')
+    return redirect(url_for('staff.monitoring'))
 
 
 @staff_bp.route('/scholarships/<int:sid>/edit', methods=['POST'])
@@ -941,6 +1074,44 @@ def monitoring():
             if a.id not in me_forms and me_deadline < today:
                 me_overdue_count += 1
 
+    # Campus semester forms (staff-defined, like the M&E form) with the
+    # scholars who have submitted them this period.
+    scope = _staff_campus_scope()
+    forms_q = CampusForm.query
+    if scope is not None:
+        forms_q = forms_q.filter(CampusForm.campus_id.in_(scope))
+    if current_period:
+        forms_q = forms_q.filter(db.or_(
+            CampusForm.academic_period_id == current_period.id,
+            CampusForm.academic_period_id.is_(None)))
+    form_rows = []
+    for form in forms_q.order_by(CampusForm.sort_order, CampusForm.id).all():
+        # Scholars the form applies to: approved scholars of that one campus.
+        _q = (ScholarshipApplication.query
+              .filter_by(status=ApplicationStatus.APPROVED)
+              .join(User, ScholarshipApplication.applicant_id == User.id)
+              .filter(User.campus_id == form.campus_id))
+        if pid:
+            _q = _q.filter(ScholarshipApplication.academic_period_id == pid)
+        scholar_ids = {a.applicant_id for a in _q.all()}
+
+        subs = (CampusFormSubmission.query.filter_by(form_id=form.id)
+                .order_by(CampusFormSubmission.uploaded_at.desc()).all())
+        subs = [s for s in subs if s.user_id in scholar_ids]
+        submitted_ids = {s.user_id for s in subs}
+        form_rows.append({
+            'form': form,
+            'subs': subs,
+            'submitted': len(submitted_ids),
+            'pending': max(len(scholar_ids) - len(submitted_ids), 0),
+            'total': len(scholar_ids),
+        })
+
+    _campus_q = Campus.query.filter_by(is_active=True)
+    if scope is not None:
+        _campus_q = _campus_q.filter(Campus.id.in_(scope))
+    form_campuses = _campus_q.order_by(Campus.id).all()
+
     return render_template(
         'staff/monitoring.html',
         scholars=scholars, stats=stats,
@@ -951,6 +1122,8 @@ def monitoring():
         me_forms=me_forms,
         me_deadline=me_deadline,
         me_overdue_count=me_overdue_count,
+        form_rows=form_rows,
+        form_campuses=form_campuses,
         now_local=datetime.utcnow().date(),
     )
 

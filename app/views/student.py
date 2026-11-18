@@ -4,7 +4,8 @@ from flask import (Blueprint, render_template, request, flash,
                    redirect, url_for, session, current_app, send_from_directory)
 from app import db
 from app.models import (User, Scholarship, ScholarshipApplication, Notification,
-                        RequirementSubmission, ScholarshipRequirement)
+                        RequirementSubmission, ScholarshipRequirement, CampusForm,
+                        CampusFormSubmission)
 from app.models.scholarship import ScholarshipStatus, ApplicationStatus
 from app.models.document import Document
 from app.models.notification import NotificationType
@@ -385,6 +386,105 @@ def upload_requirement(rid):
     return redirect(url_for('student.my_scholarship'))
 
 
+# ── Campus semester forms (set by the office, like the M&E form) ────────────
+
+def _visible_campus_forms(user):
+    """Campus forms the scholar must submit this period — their campus only."""
+    if not user.campus_id:
+        return []
+    period = get_viewing_period()
+    q = CampusForm.query.filter_by(campus_id=user.campus_id)
+    if period:
+        q = q.filter(db.or_(CampusForm.academic_period_id == period.id,
+                            CampusForm.academic_period_id.is_(None)))
+    return q.order_by(CampusForm.sort_order, CampusForm.id).all()
+
+
+@student_bp.route('/campus-forms/<int:fid>/upload', methods=['POST'])
+@role_required('student')
+def upload_campus_form(fid):
+    """Upload (or replace) this scholar's file for one campus form."""
+    from app.services.storage_service import upload_file as _upload
+
+    user = User.query.get(session['user_id'])
+    form = CampusForm.query.get_or_404(fid)
+    if form.id not in [f.id for f in _visible_campus_forms(user)]:
+        flash('That form is not open for your campus.', 'error')
+        return redirect(url_for('student.my_scholarship'))
+
+    if not (ScholarshipApplication.query
+            .filter_by(applicant_id=user.id, status=ApplicationStatus.APPROVED)
+            .first()):
+        flash('You can only submit these forms as an approved scholar.', 'error')
+        return redirect(url_for('student.my_scholarship'))
+
+    file = request.files.get('campus_form_file')
+    if not file or not file.filename:
+        flash('Please choose a file to upload.', 'error')
+        return redirect(url_for('student.my_scholarship'))
+
+    ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+    if ext not in ('pdf', 'jpg', 'jpeg', 'png'):
+        flash('Invalid file type. Please upload a PDF or an image (JPG/PNG).', 'error')
+        return redirect(url_for('student.my_scholarship'))
+
+    file_bytes = file.read()
+    if len(file_bytes) > 5 * 1024 * 1024:
+        flash('That file is larger than 5MB. Please compress it and try again.', 'error')
+        return redirect(url_for('student.my_scholarship'))
+
+    stored = _upload(file_bytes, file.filename, folder=f'campus_forms/{form.id}')
+    if not stored.get('success'):
+        flash(f'Could not store the file: {stored.get("error", "unknown error")}', 'error')
+        return redirect(url_for('student.my_scholarship'))
+
+    period = get_viewing_period()
+    sub = (CampusFormSubmission.query
+           .filter_by(form_id=form.id, user_id=user.id).first())
+    if sub is None:
+        sub = CampusFormSubmission(form_id=form.id, user_id=user.id)
+        db.session.add(sub)
+
+    sub.academic_period_id   = period.id if period else None
+    sub.original_filename    = file.filename[:255]
+    sub.file_url             = stored.get('url')
+    sub.cloudinary_public_id = stored.get('public_id')
+    sub.local_path           = stored.get('url') if stored.get('provider') == 'local' else None
+    sub.file_type            = ext
+    sub.file_size            = len(file_bytes)
+    sub.uploaded_at          = datetime.utcnow()
+    db.session.commit()
+
+    flash(f'Submitted "{form.title}". The office can now review it.', 'success')
+    return redirect(url_for('student.my_scholarship'))
+
+
+@student_bp.route('/campus-forms/submission/<int:sub_id>/view')
+@role_required('student')
+def view_campus_form_submission(sub_id):
+    """View the scholar's own uploaded campus form."""
+    from app.services.storage_service import get_signed_url
+
+    sub = CampusFormSubmission.query.get_or_404(sub_id)
+    if sub.user_id != session['user_id']:
+        flash('You can only view your own submission.', 'error')
+        return redirect(url_for('student.my_scholarship'))
+
+    if sub.cloudinary_public_id:
+        is_image = sub.file_type in ('jpg', 'jpeg', 'png')
+        signed = get_signed_url(sub.cloudinary_public_id,
+                                resource_type='image' if is_image else 'raw')
+        if signed:
+            return redirect(signed)
+    if sub.local_path and os.path.exists(sub.local_path):
+        from flask import send_file
+        return send_file(os.path.abspath(sub.local_path), as_attachment=False)
+    if sub.file_url and sub.file_url.startswith('http'):
+        return redirect(sub.file_url)
+    flash('File not found. Please upload the form again.', 'warning')
+    return redirect(url_for('student.my_scholarship'))
+
+
 # ── Documents ─────────────────────────────────────────────────────────────────
 
 @student_bp.route('/my-scholarship')
@@ -486,6 +586,14 @@ def my_scholarship():
     else:
         me_state = 'no_deadline'
 
+    # Campus semester forms (set by the office, like the M&E form)
+    campus_forms = []
+    for form in _visible_campus_forms(user):
+        sub = (CampusFormSubmission.query
+               .filter_by(form_id=form.id, user_id=user.id)
+               .order_by(CampusFormSubmission.uploaded_at.desc()).first())
+        campus_forms.append({'form': form, 'sub': sub})
+
     # Summary band — what the student holds, in money terms
     public_count = sum(1 for sd in scholarship_details
                        if sd['program'].funding_type == 'public')
@@ -509,7 +617,8 @@ def my_scholarship():
                            current_period=current_period,
                            me_submission=me_submission,
                            me_deadline=me_deadline,
-                           me_state=me_state)
+                           me_state=me_state,
+                           campus_forms=campus_forms)
 
 
 @student_bp.route('/documents')

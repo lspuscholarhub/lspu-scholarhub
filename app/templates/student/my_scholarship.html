@@ -117,6 +117,38 @@
       </div>
     </article>
 
+    {% if campus_forms %}
+    <article class="st-card ss-forms">
+      <p class="ss-req-h"><i class="bi bi-clipboard2-check" aria-hidden="true"></i> Other forms this semester</p>
+      {% for item in campus_forms %}
+      {% set f = item.form %}
+      {% set sub = item.sub %}
+      <div class="ss-req">
+        <div class="ss-req-body">
+          <b>{{ f.title }}{% if not f.is_required %} <span class="ss-req-opt">optional</span>{% endif %}</b>
+          {% if f.instructions %}<p>{{ f.instructions }}</p>{% endif %}
+          <p class="ss-req-meta">
+            {% if f.due_date %}Due {{ f.due_date.strftime('%b %d, %Y') }}{% if f.is_overdue %} · overdue{% endif %}{% else %}No deadline{% endif %}
+            {% if sub %} · uploaded {{ sub.uploaded_at.strftime('%b %d, %Y') }}{% endif %}
+          </p>
+        </div>
+        <div class="ss-req-side">
+          {% if sub %}
+            <span class="st-chip st-chip--ok">Submitted</span>
+            <a class="ss-req-view" href="{{ url_for('student.view_campus_form_submission', sub_id=sub.id) }}" target="_blank" rel="noopener">View</a>
+            <button type="button" class="st-btn st-btn--ghost st-btn--sm"
+                    data-bs-toggle="modal" data-bs-target="#cfUp{{ f.id }}">Replace</button>
+          {% else %}
+            <span class="st-chip {{ 'st-chip--bad' if f.is_overdue else 'st-chip--warn' }}">{{ 'Overdue' if f.is_overdue else 'To submit' }}</span>
+            <button type="button" class="st-btn st-btn--primary st-btn--sm"
+                    data-bs-toggle="modal" data-bs-target="#cfUp{{ f.id }}">Upload</button>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </article>
+    {% endif %}
+
     <div class="ss-grid">
 
       <!-- ── programs + compliance checklist ────────────────────────────── -->
@@ -230,6 +262,34 @@
     </div>
   </div>
 </div>
+
+<!-- ── Campus semester form upload modals ────────────────────────────────── -->
+{% for item in campus_forms %}{% set f = item.form %}
+<div class="modal fade" id="cfUp{{ f.id }}" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content" style="border-radius:14px;">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold"><i class="bi bi-upload me-2 text-primary"></i>{{ f.title }}</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="POST" action="{{ url_for('student.upload_campus_form', fid=f.id) }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-body">
+          {% if f.instructions %}<p class="small text-muted">{{ f.instructions }}</p>{% endif %}
+          {% if f.due_date %}<p class="small"><strong>Due {{ f.due_date.strftime('%B %d, %Y') }}</strong></p>{% endif %}
+          <label class="form-label fw-semibold">Your file</label>
+          <input type="file" class="form-control" name="campus_form_file" accept=".pdf,.jpg,.jpeg,.png" required>
+          <div class="form-text">PDF or image (JPG/PNG), max 5MB. Uploading again replaces your previous file.</div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="bi bi-upload me-1"></i>Submit</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
 
 <!-- ── Requirement upload modals ────────────────────────────────────────── -->
 {% for sd in scholarship_details %}{% for item in sd.requirements %}{% set r = item.req %}

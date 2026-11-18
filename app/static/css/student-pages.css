@@ -1023,6 +1023,9 @@
 .ss-fact dd { margin: 0; font-size: .8rem; font-weight: 700; color: var(--st-navy); overflow-wrap: anywhere; }
 .ss-fact dd.is-muted { font-weight: 600; color: #8593a5; }
 
+/* campus semester forms set by the office */
+.ss-forms { margin-bottom: .9rem; }
+
 /* per-program requirements set by the office */
 .ss-reqs { margin-top: .9rem; padding-top: .85rem; border-top: 1px dashed #e3e8ef; }
 .ss-req-h {
