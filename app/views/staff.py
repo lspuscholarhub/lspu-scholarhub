@@ -13,6 +13,24 @@ from app.utils.period_context import get_viewing_period, is_viewing_specific_per
 
 staff_bp = Blueprint('staff', __name__)
 
+
+@staff_bp.before_request
+def _require_live_user():
+    """Send sessions whose user row is gone back to login.
+
+    A session can outlive its user (account deleted, or merged during an import).
+    The staff views assume the session's user is a real row, so such a session
+    used to raise inside the view and return a 500.
+    """
+    uid = session.get('user_id')
+    if not uid:
+        return None
+    if db.session.get(User, uid) is None:
+        session.clear()
+        flash('Your account is no longer available. Please log in again.', 'warning')
+        return redirect(url_for('auth.login'))
+    return None
+
 GWA_THRESHOLD = 3.00  # LSPU: above 3.00 = at-risk
 
 

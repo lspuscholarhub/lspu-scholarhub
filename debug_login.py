@@ -4,8 +4,21 @@ Debug login authentication issues
 """
 
 import os
+import secrets
 from app import create_app, db
 from app.models import User
+
+
+def test_credentials():
+    """Accounts to verify, supplied by the environment so no password lives in
+    the repo: DEBUG_TEST_CREDENTIALS='admin:secret,johndoe:secret2'."""
+    creds = []
+    for pair in (os.environ.get('DEBUG_TEST_CREDENTIALS') or '').split(','):
+        if ':' in pair:
+            username, password = pair.split(':', 1)
+            if username.strip() and password.strip():
+                creds.append((username.strip(), password.strip()))
+    return creds
 
 def debug_users():
     """Debug user authentication"""
@@ -30,16 +43,15 @@ def debug_users():
         # Test password verification for sample users
         print("\n=== DEBUG: Password Verification Tests ===")
         
-        test_credentials = [
-            ('admin', 'admin123'),
-            ('johndoe', 'student123'),
-            ('janesmith', 'student123')
-        ]
-        
-        for username, password in test_credentials:
+        creds = test_credentials()
+        if not creds:
+            print("\n(No accounts to test — set DEBUG_TEST_CREDENTIALS=user:password "
+                  "to run the verification pass.)")
+
+        for username, password in creds:
             user = User.query.filter_by(username=username).first()
             if user:
-                print(f"\nTesting: {username} / {password}")
+                print(f"\nTesting: {username}")
                 print(f"User found: {user.username}")
                 print(f"Password check result: {user.check_password(password)}")
                 if user.check_password(password):
@@ -58,9 +70,10 @@ def test_registration_password():
         
         from werkzeug.security import generate_password_hash, check_password_hash
         
-        test_password = "test123"
+        # A throwaway password: the point is that hashing round-trips, so it
+        # never needs to be a known value (or in the source).
+        test_password = secrets.token_urlsafe(12)
         hashed = generate_password_hash(test_password)
-        print(f"Original password: {test_password}")
         print(f"Hashed password: {hashed}")
         print(f"Verification result: {check_password_hash(hashed, test_password)}")
         

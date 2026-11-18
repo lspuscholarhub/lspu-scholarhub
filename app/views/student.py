@@ -13,6 +13,26 @@ from app.utils.period_context import get_viewing_period
 student_bp = Blueprint('student', __name__)
 
 
+@student_bp.before_request
+def _require_live_user():
+    """Send sessions whose user row is gone back to login.
+
+    A session can outlive its user (account deleted, or merged during an import).
+    The views below assume `User.query.get(session['user_id'])` is a real row, so
+    such a session used to raise inside the view and return a 500. Checking once
+    per request keeps every student route — GET and POST alike — honest, and the
+    row stays in the identity map for the view's own lookup.
+    """
+    uid = session.get('user_id')
+    if not uid:
+        return None
+    if db.session.get(User, uid) is None:
+        session.clear()
+        flash('Your account is no longer available. Please log in again.', 'warning')
+        return redirect(url_for('auth.login'))
+    return None
+
+
 # ── Period Context (students can also switch) ─────────────────────────
 
 @student_bp.route('/period-context/<int:period_id>')
