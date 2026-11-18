@@ -150,6 +150,10 @@ def create_app(config_name=None):
     # Exempt the API blueprint — it uses JWT bearer tokens, not session cookies
     csrf.exempt(api_bp)
 
+    # Operational CLI (flask portal-sync ...)
+    from app.cli import register_cli
+    register_cli(app)
+
     # Ensure required directories exist
     os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
     os.makedirs('logs', exist_ok=True)
@@ -235,6 +239,53 @@ def create_app(config_name=None):
                         _migrate_log.info(f'OK: {_col} column already exists.')
         except Exception as e:
             _migrate_log.error(f'MIGRATION FAILED (student_status): {e}')
+
+    # Migration 4: LSPU portal integration (read-only student data)
+    with app.app_context():
+        import logging
+        _migrate_log = logging.getLogger('migrate')
+        try:
+            from sqlalchemy import text
+            with db.engine.connect() as conn:
+                for _col, _ddl in (
+                    ('portal_student_id',
+                     'ALTER TABLE users ADD COLUMN portal_student_id VARCHAR(30) NULL'),
+                    ('portal_synced_at',
+                     'ALTER TABLE users ADD COLUMN portal_synced_at DATETIME NULL'),
+                    ('data_source',
+                     "ALTER TABLE users ADD COLUMN data_source VARCHAR(20) NOT NULL "
+                     "DEFAULT 'self_registered'"),
+                    ('is_archived',
+                     'ALTER TABLE users ADD COLUMN is_archived TINYINT(1) NOT NULL DEFAULT 0'),
+                ):
+                    result = conn.execute(text(
+                        "SELECT COUNT(*) FROM information_schema.columns "
+                        "WHERE table_schema = DATABASE() "
+                        "AND table_name = 'users' "
+                        f"AND column_name = '{_col}'"
+                    ))
+                    if result.scalar() == 0:
+                        conn.execute(text(_ddl))
+                        conn.commit()
+                        _migrate_log.info(f'SUCCESS: Added {_col} column to users.')
+                    else:
+                        _migrate_log.info(f'OK: {_col} column already exists.')
+
+                # Index used to match portal records to accounts.
+                result = conn.execute(text(
+                    "SELECT COUNT(*) FROM information_schema.statistics "
+                    "WHERE table_schema = DATABASE() "
+                    "AND table_name = 'users' "
+                    "AND index_name = 'ix_users_portal_student_id'"
+                ))
+                if result.scalar() == 0:
+                    conn.execute(text(
+                        'CREATE INDEX ix_users_portal_student_id '
+                        'ON users (portal_student_id)'))
+                    conn.commit()
+                    _migrate_log.info('SUCCESS: Added portal_student_id index.')
+        except Exception as e:
+            _migrate_log.error(f'MIGRATION FAILED (portal): {e}')
 
     # ── Inactivity timeout ────────────────────────────────────────────────
     # Log out users who have been inactive for more than 30 minutes.

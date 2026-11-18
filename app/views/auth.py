@@ -225,6 +225,16 @@ def login():
                 except Exception:
                     pass
 
+            # Portal refresh (no-op unless PORTAL_ENABLED): keep a student's
+            # academic data as fresh as the read-only replica allows.  It is
+            # best-effort and never blocks the login on portal downtime.
+            if user.user_type == 'student':
+                try:
+                    from app.services.portal import refresh_on_login
+                    refresh_on_login(user)
+                except Exception:
+                    pass
+
             # Regenerate session to prevent session fixation attacks
             session.clear()
             session.permanent = False
@@ -306,6 +316,94 @@ def register():
         is_existing_scholar       = request.form.get('is_existing_scholar') == '1'
         existing_scholarship_name = (request.form.get('existing_scholarship_name', '').strip()
                                      if is_existing_scholar else '') or None
+
+        # ── Portal-known students skip the form and the COR/grades OCR gate ───
+        # Once ScholarHub reads from the LSPU portal, the registrar already
+        # supplies identity and academic data.  A student the portal knows gets
+        # an OTP straight away with the portal's own values; no document upload
+        # and no OCR.  Students the portal does not know fall through to the
+        # existing self-registration + document verification below, which stays
+        # as the fallback.
+        portal_enabled = os.environ.get('PORTAL_ENABLED', '').strip().lower() in (
+            '1', 'true', 'yes', 'on')
+        if portal_enabled and student_id:
+            from app.services.portal import lookup_for_registration as _portal_lookup
+            portal_student = _portal_lookup(student_id)
+
+            if portal_student is not None:
+                from app.services.portal import resolve_campus_id as _resolve_campus
+
+                portal_email = (portal_student.email or email or '').strip().lower()
+                if not portal_email:
+                    flash('Your portal record has no email address on file. Please '
+                          'contact the scholarship office.', 'error')
+                    return render_template('auth/register.html', campuses=_campuses,
+                                           form_data=request.form, ocr_errors=None)
+
+                if (User.query.filter_by(student_id=student_id).first()
+                        or User.query.filter_by(email=portal_email).first()):
+                    flash('An account for this student already exists. Please log in instead.', 'error')
+                    return render_template('auth/register.html', campuses=_campuses,
+                                           form_data=request.form, ocr_errors=None)
+
+                portal_phone = ''.join(ch for ch in (portal_student.phone_number or phone or '')
+                                       if ch.isdigit())
+                if portal_phone and User.query.filter_by(phone_number=portal_phone).first():
+                    portal_phone = ''   # never take another account's number
+
+                p_first = (portal_student.first_name or first_name or '').strip()
+                p_last = (portal_student.last_name or last_name or '').strip()
+                p_middle = (portal_student.middle_name or middle_name or '').strip() or None
+                p_campus = (_resolve_campus(portal_student.campus, portal_student.campus_short)
+                            or (int(campus_id) if campus_id.isdigit() else None))
+                p_birthday = (portal_student.date_of_birth.isoformat()
+                              if portal_student.date_of_birth else birthday)
+
+                # Portal-known students: the portal is the source of truth for
+                # identity and academic data. Prefer portal values; only use the
+                # form for fields the portal did not supply.
+                p_course = portal_student.course or course
+                p_year_level = portal_student.year_level or year_level
+
+                otp = _generate_otp()
+                _send_otp_email(portal_email,
+                                f'{p_first.title()} {p_last.title()}', otp)
+
+                session['pending_registration'] = {
+                    'first_name':           p_first.title(),
+                    'last_name':            p_last.title(),
+                    'middle_name':          p_middle.title() if p_middle else None,
+                    'email':                portal_email,
+                    'student_id':           student_id,
+                    'phone':                portal_phone,
+                    'gender':               (portal_student.gender.title()
+                                             if str(portal_student.gender or '').title()
+                                             in ('Male', 'Female') else None),
+                    'birthday':             p_birthday,
+                    'town':                 portal_student.town,
+                    'province':             portal_student.province,
+                    'course':               p_course,
+                    'year_level':           p_year_level,
+                    'campus_id':            p_campus,
+                    'is_existing_scholar':       is_existing_scholar,
+                    'existing_scholarship_name': existing_scholarship_name,
+                    'cor_path':             None,
+                    'grades_path':          None,
+                    'cor_cloudinary_id':    None,
+                    'grades_cloudinary_id': None,
+                    'auto_gwa':             portal_student.gwa,
+                    'auto_units':           portal_student.units_enrolled,
+                    'portal_student_id':    student_id,
+                    'otp':                  otp,
+                    'otp_expires':          (datetime.utcnow()
+                                             + timedelta(minutes=OTP_EXPIRY_MINUTES)).isoformat(),
+                    'attempts':             0,
+                }
+
+                flash(f'We found your record in the LSPU portal. A verification code '
+                      f'has been sent to <strong>{portal_email}</strong> — no COR or '
+                      f'grades upload is needed.', 'info')
+                return redirect(url_for('auth.verify_otp'))
 
         # ── Required fields (middle_name, gender, town, province are optional) ─
         if not all([first_name, last_name, email, student_id, phone, course, year_level, birthday, campus_id]):
@@ -687,6 +785,11 @@ def verify_otp():
                 grades_cloudinary_id=pending.get('grades_cloudinary_id'),
                 is_existing_scholar=pending.get('is_existing_scholar', False),
                 existing_scholarship_name=pending.get('existing_scholarship_name'),
+                # Portal-known students were verified by the registrar, not by
+                # a COR/grades scan.
+                data_source='portal' if pending.get('portal_student_id') else 'self_registered',
+                portal_student_id=pending.get('portal_student_id'),
+                portal_synced_at=datetime.utcnow() if pending.get('portal_student_id') else None,
             )
             new_user.set_password(temp_password)
             new_user.must_change_password = True

@@ -55,6 +55,12 @@ class User(db.Model):
     # Student lifecycle status (data-keeping; will later sync from the LSPU portal via ICTS)
     student_status = db.Column(db.String(20), default='active', nullable=False, server_default='active')  # active | graduated | dropped_out
     status_date    = db.Column(db.Date, nullable=True)  # when graduated/dropped_out was recorded
+    # LSPU portal integration — the portal is the source of truth for student
+    # identity and academic data once the read-only link is live.
+    portal_student_id = db.Column(db.String(30), nullable=True, index=True)   # ID as printed by the portal
+    portal_synced_at  = db.Column(db.DateTime, nullable=True)                 # last successful sync
+    data_source       = db.Column(db.String(20), default='self_registered', nullable=False, server_default='self_registered')  # self_registered | portal
+    is_archived       = db.Column(db.Boolean, default=False, nullable=False, server_default='0')  # legacy account kept for audit
     campus_id  = db.Column(db.Integer, db.ForeignKey('campuses.id'), nullable=True)   # NULL for university admin
     user_type = db.Column(db.Enum('student', 'admin', 'staff', 'super_admin', 'admin'), default='student', nullable=False)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
