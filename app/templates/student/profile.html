@@ -2,201 +2,168 @@
 {% block title %}My Profile — LSPU ScholarHub{% endblock %}
 
 {% block head %}
-<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261119" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261119h" rel="stylesheet">
 <style>main { padding: 0 !important; margin: 0 !important; }</style>
 {% endblock %}
 
 {% block content %}
+{% set docs_on_file = (1 if user.cor_file_path else 0) + (1 if user.grades_file_path else 0) %}
+{% set phone_state = 'Verified' if user.phone_verified else ('Unverified' if user.phone_number else 'Not set') %}
+{% set phone_short = '…' ~ user.phone_number[-4:] if user.phone_number else '' %}
+{% set gwa_tone = 'is-ok' if user.gwa and user.gwa <= 3.00 else ('is-warn' if user.gwa and user.gwa < 4.00 else 'is-bad') %}
+{% set initials = (user.first_name or '?')[0]|upper ~ ((user.last_name or ' ')[0]|upper).strip() %}
 <div class="st">
   <div class="st-wrap">
 
-    <header class="st-head">
-      <p class="st-kicker">Student</p>
-      <h1 class="st-title">My profile</h1>
-      <p class="st-sub">Your details, documents and account security.</p>
+    <header class="sprof-head">
+      <div>
+        <p class="st-kicker">Student</p>
+        <h1 class="st-title">My profile</h1>
+        <p class="st-sub">
+          <b>{{ user.student_id or 'No student ID' }}</b>
+          {% if user.course %} · {{ user.course }}{% endif %}
+          {% if user.campus %} · {{ user.campus.name }}{% endif %}
+        </p>
+      </div>
+      <div class="sprof-head-actions">
+        {% if user.is_verified %}
+          <span class="st-chip st-chip--ok"><i class="bi bi-patch-check-fill" aria-hidden="true"></i>Verified</span>
+        {% else %}
+          <span class="st-chip st-chip--warn">Unverified</span>
+        {% endif %}
+        <a class="st-btn st-btn--ghost st-btn--sm" href="{{ url_for('student.upload_gwa') }}">
+          <i class="bi bi-folder2-open" aria-hidden="true"></i>My documents
+        </a>
+      </div>
     </header>
 
-    {# Advisory banner while still on the emailed temporary password #}
-    {% if session.get('first_login') %}
-    <div class="st-alert st-alert--warn" role="alert">
-      <i class="bi bi-key-fill" aria-hidden="true"></i>
-      <div>
-        <strong>You are still using your temporary password</strong>
-        Set a personal password below to secure your account. &nbsp;<a href="#changePasswordCard">Change now</a>
-      </div>
-    </div>
-    {% endif %}
-
-    <div class="sp-grid">
-
-      <!-- ── left: identity + documents ─────────────────────────────────── -->
-      <div>
-        <div class="st-card sp-identity" style="margin-bottom:.9rem;">
-          <div class="sp-avatar"><i class="bi bi-person-fill" aria-hidden="true"></i></div>
+    <section class="st-card sprof-hero">
+      <div class="sprof-hero-top">
+        <div class="sprof-avatar" aria-hidden="true">{{ initials }}</div>
+        <div class="sprof-hero-id">
           <h2>{{ user.get_full_name() }}</h2>
-          {% if user.student_id %}
-          <p class="sp-id">{{ user.student_id }}</p>
-          {% endif %}
-          <p class="sp-mail">{{ user.email }}</p>
-          <div class="sp-badges">
+          <p class="sprof-id">{{ user.student_id or '—' }} · {{ user.email }}</p>
+          <div class="sprof-badges">
+            {% if user.course %}<span class="st-chip">{{ user.course }}</span>{% endif %}
             {% if user.year_level %}<span class="st-chip">{{ user.year_level }}</span>{% endif %}
             {% if user.campus %}<span class="st-chip">{{ user.campus.name }}</span>{% endif %}
-            {% if user.is_verified %}
-              <span class="st-chip st-chip--ok"><i class="bi bi-check-circle" aria-hidden="true"></i>Verified</span>
-            {% else %}
-              <span class="st-chip st-chip--warn">Unverified</span>
-            {% endif %}
           </div>
         </div>
-
-        <div class="st-card" style="margin-bottom:.9rem;">
-          <div class="st-section-head" style="margin-bottom:.3rem;">
-            <h2 class="st-h2">Registration documents</h2>
-            <a class="st-link" href="{{ url_for('student.upload_gwa') }}">Update</a>
-          </div>
-
-          <div class="sp-doc">
-            <i class="bi bi-file-earmark-pdf" style="color:#dc3545;" aria-hidden="true"></i>
-            <div class="sp-doc-main">
-              <b>Certificate of Registration</b>
-              <span>{% if user.cor_file_path %}On file{% else %}Not submitted yet{% endif %}</span>
-            </div>
-            {% if user.cor_file_path %}
-              <a class="st-btn st-btn--ghost" style="min-height:36px;padding:.35rem .6rem;font-size:.76rem;"
-                 href="{{ url_for('student.view_registration_document', doc_type='cor') }}" target="_blank">View</a>
-            {% else %}
-              <span class="st-chip st-chip--warn">Missing</span>
-            {% endif %}
-          </div>
-
-          <div class="sp-doc">
-            <i class="bi bi-file-earmark-text" style="color:#0d6efd;" aria-hidden="true"></i>
-            <div class="sp-doc-main">
-              <b>Copy of Grades</b>
-              <span>
-                {% if user.grades_file_path %}{% if user.gwa %}GWA {{ user.gwa }} on file{% else %}On file — GWA pending review{% endif %}{% else %}Not submitted yet{% endif %}
-              </span>
-            </div>
-            {% if user.grades_file_path %}
-              <a class="st-btn st-btn--ghost" style="min-height:36px;padding:.35rem .6rem;font-size:.76rem;"
-                 href="{{ url_for('student.view_registration_document', doc_type='grades') }}" target="_blank">View</a>
-            {% else %}
-              <span class="st-chip st-chip--warn">Missing</span>
-            {% endif %}
-          </div>
-
-          <p class="sp-help" style="margin:.7rem 0 0;">
-            To upload or replace these files, use
-            <a href="{{ url_for('student.upload_gwa') }}">My Documents</a>.
-          </p>
-        </div>
-
-        {% if user.gwa_history %}
-        <div class="st-card">
-          <div class="st-section-head" style="margin-bottom:.4rem;">
-            <h2 class="st-h2">GWA history</h2>
-            <a class="st-link" href="{{ url_for('student.upload_gwa') }}">Upload grades</a>
-          </div>
-          <div style="overflow-x:auto;">
-            <table class="sp-table">
-              <thead>
-                <tr><th>School year</th><th>Semester</th><th>GWA</th><th>Standing</th></tr>
-              </thead>
-              <tbody>
-                {% for h in user.gwa_history %}
-                <tr>
-                  <td>{{ h.school_year }}</td>
-                  <td>{{ h.semester }}</td>
-                  <td>
-                    <strong style="color:{% if h.gwa <= 3.00 %}#198754{% elif h.gwa < 4.00 %}#b26a00{% else %}#dc3545{% endif %};">
-                      {{ h.gwa }}
-                    </strong>
-                  </td>
-                  <td>
-                    {% if h.is_at_risk %}
-                      <span class="st-chip st-chip--warn">{{ h.standing }}</span>
-                    {% else %}
-                      <span class="st-chip st-chip--ok">{{ h.standing }}</span>
-                    {% endif %}
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          <p class="sp-help" style="margin:.6rem 0 0;">
-            GWA entries are recorded by the scholarship office each semester.
-          </p>
-        </div>
-        {% endif %}
       </div>
+      <ul class="sprof-status">
+        <li class="{{ 'is-ok' if user.is_verified else 'is-warn' }}">
+          <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
+          <span>Account</span>
+          <b>{{ 'Verified' if user.is_verified else 'Unverified' }}</b>
+        </li>
+        <li class="{{ 'is-ok' if user.phone_verified else 'is-warn' }}">
+          <i class="bi bi-phone-fill" aria-hidden="true"></i>
+          <span>Phone</span>
+          <b>{{ phone_state }}</b>
+        </li>
+        <li class="{{ 'is-ok' if docs_on_file == 2 else 'is-warn' }}">
+          <i class="bi bi-files" aria-hidden="true"></i>
+          <span>Documents</span>
+          <b>{{ docs_on_file }}/2 on file</b>
+        </li>
+      </ul>
+    </section>
 
-      <!-- ── right: forms ───────────────────────────────────────────────── -->
-      <div>
+    {% if session.get('first_login') or not user.phone_number or not user.phone_verified
+          or not user.cor_file_path or not user.grades_file_path %}
+    <section class="st-card sprof-attention">
+      <h2 class="st-h2"><i class="bi bi-exclamation-circle-fill" aria-hidden="true"></i>Needs your attention</h2>
+      <ul>
+        {% if session.get('first_login') %}
+        <li>You are still using your temporary password. <a href="#changePasswordCard">Change it</a></li>
+        {% endif %}
+        {% if not user.phone_number %}
+        <li>Add a phone number so the office can reach you. <a href="#phoneField">Add</a></li>
+        {% elif not user.phone_verified %}
+        <li>Your phone number is not verified yet. <a href="#phoneCard">Verify</a></li>
+        {% endif %}
+        {% if not user.cor_file_path %}
+        <li>Your Certificate of Registration is missing. <a href="{{ url_for('student.upload_gwa') }}">Upload</a></li>
+        {% endif %}
+        {% if not user.grades_file_path %}
+        <li>Your Copy of Grades is missing. <a href="{{ url_for('student.upload_gwa') }}">Upload</a></li>
+        {% endif %}
+      </ul>
+    </section>
+    {% endif %}
 
-        <div class="st-card" style="margin-bottom:.9rem;">
+    <div class="sprof-grid">
+
+      <!-- ── main: account details ──────────────────────────────────────── -->
+      <div class="sprof-main">
+        <div class="st-card sprof-card" id="accountCard">
           <div class="st-section-head">
-            <h2 class="st-h2"><i class="bi bi-person" style="color:#0d6efd;" aria-hidden="true"></i> Profile information</h2>
+            <h2 class="st-h2"><i class="bi bi-person" aria-hidden="true"></i> Account details</h2>
+            <span class="st-chip st-chip--muted">Email &amp; phone</span>
           </div>
 
-          <form class="sp-form" method="POST" action="{{ url_for('student.update_profile') }}">
+          <form class="sprof-form" method="POST" action="{{ url_for('student.update_profile') }}">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_kind" value="profile">
 
-            <div class="sp-field">
-              <label>First name</label>
-              <input type="text" value="{{ user.first_name }}" readonly>
-              <span class="sp-help">Contact the scholarship office to update your name.</span>
+            <div class="sprof-editable">
+              <div class="sp-field">
+                <label for="spEmail">Email</label>
+                <input id="spEmail" type="email" name="email" value="{{ user.email }}" required>
+              </div>
+
+              <div class="sp-field" id="phoneField">
+                <label for="spPhone">Phone number</label>
+                <input id="spPhone" type="tel" name="phone_number"
+                       value="{{ user.phone_number or '' }}"
+                       placeholder="09XXXXXXXXX"
+                       pattern="[0-9]{11}" maxlength="11" inputmode="numeric">
+                <span class="sp-help">
+                  {% if user.phone_verified %}
+                    Verified — used for SMS notifications.
+                  {% elif user.phone_number %}
+                    Not verified yet — verify it on the right.
+                  {% else %}
+                    11 digits. Used for SMS notifications.
+                  {% endif %}
+                </span>
+              </div>
             </div>
 
-            <div class="sp-field">
-              <label>Last name</label>
-              <input type="text" value="{{ user.last_name }}" readonly>
+            <div class="sprof-subhead">
+              <h3><i class="bi bi-lock" aria-hidden="true"></i>From the registrar</h3>
+              <span>Contact the Scholarship Office to change these.</span>
             </div>
 
-            <div class="sp-field">
-              <label>Student ID</label>
-              <input type="text" value="{{ user.student_id or '—' }}" readonly>
-              <span class="sp-help">Contact admin to update your Student ID.</span>
-            </div>
+            <dl class="sprof-rows">
+              <div>
+                <dt>Full name</dt>
+                <dd>{{ user.get_full_name() }}<i class="bi bi-lock-fill" aria-hidden="true"></i></dd>
+              </div>
+              <div>
+                <dt>Student ID</dt>
+                <dd>{{ user.student_id or 'Not set' }}<i class="bi bi-lock-fill" aria-hidden="true"></i></dd>
+              </div>
+              <div>
+                <dt>Course / program</dt>
+                <dd>{{ user.course or 'Not assigned' }}<i class="bi bi-lock-fill" aria-hidden="true"></i></dd>
+              </div>
+              <div>
+                <dt>Year level</dt>
+                <dd>{{ user.year_level or 'Not set' }}<i class="bi bi-lock-fill" aria-hidden="true"></i></dd>
+              </div>
+              <div>
+                <dt>Campus</dt>
+                <dd>{{ user.campus.name if user.campus else 'Not assigned' }}<i class="bi bi-lock-fill" aria-hidden="true"></i></dd>
+              </div>
+            </dl>
 
-            <div class="sp-field">
-              <label for="spEmail">Email</label>
-              <input id="spEmail" type="email" name="email" value="{{ user.email }}" required>
-            </div>
-
-            <div class="sp-field">
-              <label for="spPhone">Phone number</label>
-              <input id="spPhone" type="tel" name="phone_number"
-                     value="{{ user.phone_number or '' }}"
-                     placeholder="09XXXXXXXXX"
-                     pattern="[0-9]{11}" maxlength="11" inputmode="numeric">
-              <span class="sp-help">11 digits. Used for SMS notifications.</span>
-            </div>
-
-            <div class="sp-field">
-              <label>Year level</label>
-              <input type="text" value="{{ user.year_level or 'Not set' }}" readonly>
-              <span class="sp-help">Contact the office to change it.</span>
-            </div>
-
-            <div class="sp-field sp-field--full">
-              <label>Course / program</label>
-              <input type="text" value="{{ user.course or 'Not assigned' }}" readonly>
-            </div>
-
-            <div class="sp-field sp-field--full">
-              <label>Campus</label>
-              <input type="text" value="{{ user.campus.name if user.campus else 'Not assigned' }}" readonly>
-              <span class="sp-help">Assigned at registration — contact the office to change it.</span>
-            </div>
-
-            <!-- Existing-scholar declaration -->
-            <div class="sp-field--full">
+            <div class="sprof-declare">
               <div class="sp-check">
                 <input class="form-check-input" type="checkbox" id="isExistingScholar"
                        name="is_existing_scholar" value="1"
                        {% if user.is_existing_scholar %}checked{% endif %}>
-                <label for="isExistingScholar" style="margin:0;">
+                <label for="isExistingScholar">
                   <b>I am already a scholar in LSPU</b>
                   <span class="sp-help">
                     If your program is not yet in the system, check this so the Scholarship Office
@@ -212,58 +179,159 @@
                        value="{{ user.existing_scholarship_name or '' }}"
                        maxlength="150" placeholder="e.g. TES, TDP, Private Scholarship"
                        {% if user.is_existing_scholar %}required{% endif %}>
-                <span class="sp-help">Required — enter your current scholarship program.</span>
               </div>
             </div>
 
-            <div class="sp-actions sp-field--full">
+            <div class="sprof-save">
               <button type="submit" class="st-btn st-btn--primary">
-                <i class="bi bi-check-lg" aria-hidden="true"></i>Save profile
+                <i class="bi bi-check-lg" aria-hidden="true"></i>Save changes
               </button>
             </div>
           </form>
+        </div>
+      </div>
 
-          <script>
-            (function () {
-              var cb = document.getElementById('isExistingScholar');
-              var wrap = document.getElementById('existingScholarNameWrap');
-              var input = document.getElementById('existingScholarName');
-              if (!cb || !input) return;
-              function sync() {
-                wrap.classList.toggle('d-none', !cb.checked);
-                if (cb.checked) {
-                  input.setAttribute('required', 'required');
-                } else {
-                  input.removeAttribute('required');
-                  input.value = '';
-                }
-              }
-              cb.addEventListener('change', sync);
-            })();
-          </script>
+      <!-- ── rail: documents, phone, record, security ──────────────────── -->
+      <aside class="sprof-rail">
+
+        <div class="st-card sprof-card">
+          <div class="st-section-head">
+            <h2 class="st-h2">Registration documents</h2>
+            <span class="st-chip {{ 'st-chip--ok' if docs_on_file == 2 else 'st-chip--warn' }}">{{ docs_on_file }}/2</span>
+          </div>
+
+          <div class="sprof-doc">
+            <span class="sprof-doc-icon" aria-hidden="true"><i class="bi bi-file-earmark-pdf"></i></span>
+            <div class="sprof-doc-main">
+              <b>Certificate of Registration</b>
+              <span class="sprof-doc-state {{ 'is-ok' if user.cor_file_path else 'is-warn' }}">
+                <i class="bi {{ 'bi-check-circle-fill' if user.cor_file_path else 'bi-exclamation-circle' }}" aria-hidden="true"></i>
+                {{ 'On file' if user.cor_file_path else 'Missing' }}
+              </span>
+            </div>
+            {% if user.cor_file_path %}
+            <a class="st-btn st-btn--ghost st-btn--sm"
+               href="{{ url_for('student.view_registration_document', doc_type='cor') }}"
+               target="_blank" rel="noopener">View</a>
+            {% else %}
+            <a class="st-btn st-btn--ghost st-btn--sm" href="{{ url_for('student.upload_gwa') }}">Upload</a>
+            {% endif %}
+          </div>
+
+          <div class="sprof-doc">
+            <span class="sprof-doc-icon" aria-hidden="true"><i class="bi bi-file-earmark-text"></i></span>
+            <div class="sprof-doc-main">
+              <b>Copy of Grades</b>
+              <span class="sprof-doc-state {{ 'is-ok' if user.grades_file_path else 'is-warn' }}">
+                <i class="bi {{ 'bi-check-circle-fill' if user.grades_file_path else 'bi-exclamation-circle' }}" aria-hidden="true"></i>
+                {% if user.grades_file_path %}
+                  {% if user.gwa %}GWA {{ user.gwa }} on file{% else %}On file — GWA pending review{% endif %}
+                {% else %}Missing{% endif %}
+              </span>
+            </div>
+            {% if user.grades_file_path %}
+            <a class="st-btn st-btn--ghost st-btn--sm"
+               href="{{ url_for('student.view_registration_document', doc_type='grades') }}"
+               target="_blank" rel="noopener">View</a>
+            {% else %}
+            <a class="st-btn st-btn--ghost st-btn--sm" href="{{ url_for('student.upload_gwa') }}">Upload</a>
+            {% endif %}
+          </div>
+
+          <a class="st-link sprof-doc-foot" href="{{ url_for('student.upload_gwa') }}">Manage in My Documents</a>
         </div>
 
-        <div class="st-card" id="changePasswordCard" style="border-left:4px solid #ffc107;">
+        <div class="st-card sprof-card" id="phoneCard">
           <div class="st-section-head">
-            <h2 class="st-h2"><i class="bi bi-key" style="color:#b26a00;" aria-hidden="true"></i> Change password</h2>
+            <h2 class="st-h2"><i class="bi bi-phone" aria-hidden="true"></i> Phone</h2>
+            {% if user.phone_verified %}
+              <span class="st-chip st-chip--ok">Verified</span>
+            {% elif user.phone_number %}
+              <span class="st-chip st-chip--warn">Unverified</span>
+            {% else %}
+              <span class="st-chip st-chip--muted">Not set</span>
+            {% endif %}
           </div>
 
-          <div class="st-alert st-alert--warn">
+          {% if not user.phone_number %}
+            <p class="sprof-note">Add a number in Account details and save, then come back to verify it.</p>
+          {% elif user.phone_verified %}
+            <p class="sprof-note">{{ phone_short }} is verified. You will get SMS updates about your scholarship.</p>
+          {% elif user.phone_otp %}
+            <p class="sprof-note">
+              Enter the 6-digit code we sent to {{ phone_short }}. It expires in 10 minutes.
+            </p>
+            <form class="sprof-otp" method="POST" action="{{ url_for('student.verify_phone') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="text" name="otp" inputmode="numeric" pattern="[0-9]{6}"
+                     maxlength="6" placeholder="000000" required aria-label="Verification code">
+              <button type="submit" class="st-btn st-btn--primary st-btn--sm">Verify</button>
+            </form>
+            <form method="POST" action="{{ url_for('student.send_phone_otp') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="sprof-resend">Send a new code</button>
+            </form>
+          {% else %}
+            <p class="sprof-note">{{ phone_short }} is not verified yet. Verify it to receive SMS updates.</p>
+            <form method="POST" action="{{ url_for('student.send_phone_otp') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="st-btn st-btn--ghost st-btn--sm">
+                <i class="bi bi-chat-dots" aria-hidden="true"></i>Send verification code
+              </button>
+            </form>
+          {% endif %}
+        </div>
+
+        <div class="st-card sprof-card">
+          <div class="st-section-head">
+            <h2 class="st-h2">Academic record</h2>
+          </div>
+          <div class="sprof-gwa">
+            <span>Current GWA</span>
+            <b class="{{ gwa_tone }}">{% if user.gwa %}{{ '%.2f'|format(user.gwa) }}{% else %}—{% endif %}</b>
+          </div>
+          {% if user.gwa_history %}
+          <ul class="sprof-hist">
+            {% for h in user.gwa_history %}
+            <li>
+              <div>
+                <b>{{ h.school_year }}</b>
+                <span>{{ h.semester }}</span>
+              </div>
+              <div class="sprof-hist-right">
+                <strong>{{ h.gwa }}</strong>
+                <span class="st-chip {{ 'st-chip--warn' if h.is_at_risk else 'st-chip--ok' }}">{{ h.standing }}</span>
+              </div>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+            <p class="sprof-note">No grades recorded yet.</p>
+          {% endif %}
+          <p class="sprof-help">GWA entries are recorded by the scholarship office each semester.</p>
+        </div>
+
+        <div class="st-card sprof-card" id="changePasswordCard">
+          <div class="st-section-head">
+            <h2 class="st-h2"><i class="bi bi-shield-lock" aria-hidden="true"></i> Security</h2>
+          </div>
+
+          {% if session.get('first_login') %}
+          <div class="st-alert st-alert--warn" style="margin-bottom:.8rem;">
             <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
-            <div>
-              If you have not changed your password yet, you are still using the
-              <strong style="display:inline;">temporary password</strong> from your registration email.
-            </div>
+            <div>You are still using the <strong style="display:inline;">temporary password</strong>
+              from your registration email.</div>
           </div>
+          {% endif %}
 
-          <form method="POST" action="{{ url_for('student.update_profile') }}" id="pwForm" class="sp-form">
+          <form method="POST" action="{{ url_for('student.update_profile') }}" id="pwForm" class="sprof-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_kind" value="password">
 
             <div class="sp-field">
               <label for="currentPw">Current password <span style="color:#dc3545;">*</span></label>
               <input type="password" name="current_password" id="currentPw"
                      placeholder="Enter your current password" autocomplete="current-password">
-              <span class="sp-help">Required to verify your identity.</span>
             </div>
 
             <div class="sp-field">
@@ -278,7 +346,7 @@
               <span id="pwMismatch" class="sp-help d-none" style="color:#dc3545;">Passwords do not match.</span>
             </div>
 
-            <div class="sp-actions sp-field--full">
+            <div class="sprof-save">
               <button type="submit" class="st-btn st-btn--warn" id="savePwBtn">
                 <i class="bi bi-shield-lock" aria-hidden="true"></i>Update password
               </button>
@@ -286,7 +354,7 @@
           </form>
         </div>
 
-      </div><!-- /right -->
+      </aside>
     </div>
   </div>
 </div>

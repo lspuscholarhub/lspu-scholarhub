@@ -871,20 +871,7 @@ def profile():
         flash('User not found.', 'error')
         return redirect(url_for('auth.login'))
 
-    apps           = user.applications or []
-    total_applications = len(apps)
-    pending_count  = sum(1 for a in apps if a.status.value == 'pending')
-    approved_count = sum(1 for a in apps if a.status.value == 'approved')
-    rejected_count = sum(1 for a in apps if a.status.value == 'rejected')
-
-    return render_template(
-        'student/profile.html',
-        user=user,
-        total_applications=total_applications,
-        pending_count=pending_count,
-        approved_count=approved_count,
-        rejected_count=rejected_count,
-    )
+    return render_template('student/profile.html', user=user)
 
 
 @student_bp.route('/profile/update', methods=['POST'])
@@ -955,34 +942,46 @@ def update_profile():
             flash('Please select a file to upload.', 'error')
         return redirect(url_for('student.upload_gwa'))
 
-    # Only update non-readonly fields (name, student_id, campus, course, year_level are locked)
-    new_email = request.form.get('email', user.email).strip().lower()
-    if new_email and new_email != user.email:
-        # Check if email is already taken by another user
-        existing = User.query.filter(User.email == new_email, User.id != user.id).first()
-        if existing:
-            flash('This email is already associated with another account.', 'error')
+    # The security card posts on its own — leave the profile fields untouched then.
+    if request.form.get('form_kind') != 'password':
+        # Only update non-readonly fields (name, student_id, campus, course,
+        # year_level are locked).
+        new_email = request.form.get('email', user.email).strip().lower()
+        if new_email and new_email != user.email:
+            existing = User.query.filter(User.email == new_email,
+                                         User.id != user.id).first()
+            if existing:
+                flash('This email is already associated with another account.', 'error')
+                return redirect(url_for('student.profile'))
+            user.email = new_email
+
+        new_phone = (request.form.get('phone_number') or '').strip() or None
+        if new_phone:
+            from app.utils.validators import validate_phone
+            phone_ok, new_phone = validate_phone(new_phone)
+            if not phone_ok:
+                flash('Phone number must be exactly 11 digits (e.g. 09123456789).', 'error')
+                return redirect(url_for('student.profile'))
+        if new_phone != user.phone_number:
+            # A changed number has to be verified again from scratch.
+            user.phone_number = new_phone
+            user.phone_verified = False
+            user.phone_otp = None
+
+        # Existing-scholar declaration (self-declared; office verifies offline)
+        user.is_existing_scholar = request.form.get('is_existing_scholar') == '1'
+        scholar_name = request.form.get('existing_scholarship_name', '').strip()
+        if user.is_existing_scholar and not scholar_name:
+            flash('Since you checked "I am already a scholar in LSPU", '
+                  'please enter your Scholarship Program Name.', 'error')
             return redirect(url_for('student.profile'))
-        user.email = new_email
-    user.phone_number = request.form.get('phone_number', user.phone_number or '').strip() or None
-    if user.phone_number:
-        from app.utils.validators import validate_phone
-        phone_ok, phone_clean = validate_phone(user.phone_number)
-        if not phone_ok:
-            flash('Phone number must be exactly 11 digits (e.g. 09123456789).', 'error')
-            return redirect(url_for('student.profile'))
-        user.phone_number = phone_clean
-    # Existing-scholar declaration (self-declared; office verifies offline)
-    user.is_existing_scholar = request.form.get('is_existing_scholar') == '1'
-    scholar_name = request.form.get('existing_scholarship_name', '').strip()
-    if user.is_existing_scholar and not scholar_name:
-        flash('Since you checked "I am already a scholar in LSPU", '
-              'please enter your Scholarship Program Name.', 'error')
-        return redirect(url_for('student.profile'))
-    user.existing_scholarship_name = scholar_name if user.is_existing_scholar else None
-    # student_id and email are read-only — not updated here
+        user.existing_scholarship_name = (scholar_name if user.is_existing_scholar
+                                          else None)
 
     new_pw = request.form.get('new_password', '').strip()
+    if not new_pw and request.form.get('form_kind') == 'password':
+        flash('Enter and confirm your new password.', 'error')
+        return redirect(url_for('student.profile'))
     if new_pw:
         # Require current password before allowing a change
         current_pw = request.form.get('current_password', '').strip()
