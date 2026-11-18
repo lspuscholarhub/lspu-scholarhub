@@ -306,9 +306,17 @@
             </div>
             <div class="col-md-6">
               <label class="form-label fw-semibold">Max Applicants</label>
-              <input type="number" class="form-control" name="max_applicants"
-                     min="0" value="{{ s.max_applicants or '' }}" placeholder="No limit">
-              <div class="form-text">Leave blank for unlimited.</div>
+              <input type="number" class="form-control" name="max_applicants" id="maxApp{{ s.id }}" min="0" value="{{ s.max_applicants or '' }}" placeholder="No limit"{% if not s.max_applicants %} disabled{% endif %}>
+              <div class="form-check mt-2">
+                <input class="form-check-input" type="checkbox" name="unlimited_slots" value="1"
+                       id="unlim{{ s.id }}"{% if not s.max_applicants %} checked{% endif %}
+                       onchange="var f=document.getElementById('maxApp{{ s.id }}');f.disabled=this.checked;if(this.checked){f.value='';}">
+                <label class="form-check-label small" for="unlim{{ s.id }}">No slot limit</label>
+              </div>
+              <div class="form-text">
+                {{ s.current_applicants or 0 }} applied so far. Raising the limit or removing it is
+                always allowed; it cannot go below the number already applied.
+              </div>
             </div>
           </div>
           <div class="mb-3">
