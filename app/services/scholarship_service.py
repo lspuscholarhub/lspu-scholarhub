@@ -168,6 +168,41 @@ class ScholarshipService:
             return {'success': False, 'message': str(e)}
 
 
+def resolve_slot_cap(scholarship, form):
+    """Validate the slot-cap fields of a scholarship edit form.
+
+    Ticking "No slot limit" clears the cap (unlimited programs). A blank number
+    field means "leave the cap as it is", so editing any other field can never
+    silently wipe it. The cap may never drop below the students who already
+    applied — that would leave existing applications stranded past the limit —
+    while raising it or removing it entirely is always allowed.
+
+    Returns (new_cap, error_message). A None cap is a valid value (unlimited),
+    so callers must test the error message before using the cap.
+    """
+    if form.get('unlimited_slots') == '1':
+        return None, None
+
+    raw = form.get('max_applicants', '').strip()
+    if not raw:
+        return scholarship.max_applicants, None
+
+    try:
+        new_cap = int(raw)
+    except ValueError:
+        return None, 'Maximum applicants must be a whole number.'
+    if new_cap < 0:
+        return None, 'Maximum applicants cannot be negative.'
+
+    applied = scholarship.current_applicants or 0
+    if new_cap < applied:
+        return None, (f'Cannot set the slot limit to {new_cap} — {applied} '
+                      f'student(s) have already applied to '
+                      f'"{scholarship.title}". Raise the limit or tick '
+                      '"No slot limit".')
+    return new_cap, None
+
+
 def add_existing_scholar_to_program(user, scholarship, staff_user_id, notes=None):
     """Add a registered student to a scholarship program directly.
 

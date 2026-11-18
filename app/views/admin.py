@@ -8,6 +8,7 @@ from app.models import User, Scholarship, ScholarshipApplication, Notification
 from app.models.scholarship import ScholarshipStatus, ApplicationStatus
 from app.models.notification import NotificationType, NotificationChannel
 from app.services.notification_service import notification_service
+from app.services.scholarship_service import resolve_slot_cap
 from app.utils.decorators import role_required
 
 admin_bp = Blueprint('admin', __name__)
@@ -486,33 +487,10 @@ def edit_scholarship(sid):
     if _err:
         return _err
 
-    # ── Slot cap ──────────────────────────────────────────────────────────
-    # Ticking "No slot limit" clears the cap (unlimited programs). A blank
-    # number field means "leave the cap as it is", so editing any other field
-    # can never silently wipe it.
-    _cap_clear = request.form.get('unlimited_slots') == '1'
-    _cap_raw = request.form.get('max_applicants', '').strip()
-    if _cap_clear:
-        _new_cap = None
-    elif _cap_raw:
-        try:
-            _new_cap = int(_cap_raw)
-        except ValueError:
-            flash('Maximum applicants must be a whole number.', 'error')
-            return redirect(url_for('admin.manage_scholarships'))
-        if _new_cap < 0:
-            flash('Maximum applicants cannot be negative.', 'error')
-            return redirect(url_for('admin.manage_scholarships'))
-    else:
-        _new_cap = s.max_applicants
-    # Never shrink the cap below the students who already applied — that would
-    # leave existing applications stranded past the limit. Raising it or
-    # removing it entirely is always safe, so both stay allowed after
-    # applications arrive.
-    if _new_cap is not None and _new_cap < (s.current_applicants or 0):
-        flash(f'Cannot set the slot limit to {_new_cap} — {s.current_applicants} '
-              f'student(s) have already applied to "{s.title}". Raise the limit '
-              'or tick "No slot limit".', 'error')
+    # Slot cap — shared with the staff edit form (see resolve_slot_cap).
+    _new_cap, _cap_err = resolve_slot_cap(s, request.form)
+    if _cap_err:
+        flash(_cap_err, 'error')
         return redirect(url_for('admin.manage_scholarships'))
 
     # Split lock: once the program has applicants (including scholars added
