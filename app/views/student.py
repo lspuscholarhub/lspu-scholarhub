@@ -6,6 +6,7 @@ from app import db
 from app.models import User, Scholarship, ScholarshipApplication, Notification
 from app.models.scholarship import ScholarshipStatus, ApplicationStatus
 from app.models.document import Document
+from app.models.notification import NotificationType
 from app.services.document_service import document_service
 from app.utils.decorators import role_required
 from app.utils.period_context import get_viewing_period
@@ -153,6 +154,37 @@ def apply_scholarship(scholarship_id):
 
 # ── Notifications ─────────────────────────────────────────────────────────────
 
+_APPLICATION_TYPES = (NotificationType.APPLICATION_SUBMITTED,
+                      NotificationType.APPLICATION_APPROVED,
+                      NotificationType.APPLICATION_REJECTED)
+_SCHOLARSHIP_TYPES = (NotificationType.NEW_SCHOLARSHIP,
+                      NotificationType.DEADLINE_REMINDER)
+
+# label, tile/tag modifier, bootstrap icon
+_NOTIF_UI = {
+    NotificationType.APPLICATION_SUBMITTED: ('Applications', 'app', 'bi-file-earmark-text'),
+    NotificationType.APPLICATION_APPROVED:  ('Applications', 'app', 'bi-patch-check'),
+    NotificationType.APPLICATION_REJECTED:  ('Applications', 'app', 'bi-file-earmark-x'),
+    NotificationType.DEADLINE_REMINDER:     ('Deadline', 'dead', 'bi-alarm'),
+    NotificationType.NEW_SCHOLARSHIP:       ('Scholarship', 'sch', 'bi-award'),
+}
+_NOTIF_UI_DEFAULT = ('Notice', 'doc', 'bi-megaphone')
+
+
+def _notif_ui(notification):
+    """Type label + css modifier + icon for one notification row."""
+    label, kind, icon = _NOTIF_UI.get(notification.notification_type, _NOTIF_UI_DEFAULT)
+    return {'label': label, 'kind': kind, 'icon': icon}
+
+
+def _masked_phone(phone):
+    """'0917 **** 567' — never show the full number on the page."""
+    phone = (phone or '').strip()
+    if len(phone) < 7:
+        return None
+    return f'{phone[:4]} **** {phone[-3:]}'
+
+
 @student_bp.route('/notifications')
 @role_required('student')
 def notifications():
@@ -173,36 +205,82 @@ def notifications():
     if filter_type == 'unread':
         query = query.filter_by(is_read=False)
     elif filter_type == 'applications':
-        from app.models.notification import NotificationType
         query = query.filter(Notification.notification_type.in_([
             NotificationType.APPLICATION_SUBMITTED,
             NotificationType.APPLICATION_APPROVED,
             NotificationType.APPLICATION_REJECTED,
         ]))
     elif filter_type == 'scholarships':
-        from app.models.notification import NotificationType
         query = query.filter(Notification.notification_type.in_([
             NotificationType.NEW_SCHOLARSHIP,
             NotificationType.DEADLINE_REMINDER,
         ]))
 
-    notifs      = query.order_by(Notification.sent_at.desc()).all()
-    # Unread count also respects period
-    unread_q = Notification.query.filter_by(recipient_id=user.id, is_read=False)
+    notifs = query.order_by(Notification.sent_at.desc()).all()
+
+    # Everything in the viewing period — drives the filter counts and the rail.
+    period_q = Notification.query.filter_by(recipient_id=user.id)
     if pid:
-        unread_q = unread_q.filter(
+        period_q = period_q.filter(
             db.or_(
                 Notification.academic_period_id == pid,
                 Notification.academic_period_id.is_(None)
             )
         )
-    unread_count = unread_q.count()
+    everything = period_q.all()
+
+    unread_count = sum(1 for n in everything if not n.is_read)
+    counts = {
+        'all': len(everything),
+        'unread': unread_count,
+        'applications': sum(1 for n in everything
+                            if n.notification_type in _APPLICATION_TYPES),
+        'scholarships': sum(1 for n in everything
+                            if n.notification_type in _SCHOLARSHIP_TYPES),
+    }
+
+    # Unread split for the rail bar (deadline/notice types land in "other").
+    _unread_app = sum(1 for n in everything
+                      if not n.is_read and n.notification_type in _APPLICATION_TYPES)
+    _unread_sch = sum(1 for n in everything
+                      if not n.is_read and n.notification_type in _SCHOLARSHIP_TYPES)
+    _unread_other = max(unread_count - _unread_app - _unread_sch, 0)
+    unread_breakdown = []
+    for _label, _mod, _n in (('Applications', 'app', _unread_app),
+                            ('Scholarships', 'sch', _unread_sch),
+                            ('Deadlines', 'other', _unread_other)):
+        unread_breakdown.append({
+            'label': _label,
+            'mod': _mod,
+            'count': _n,
+            'pct': round(_n / unread_count * 100) if unread_count else 0,
+        })
+
+    # Group by day so a long feed reads as Today / Yesterday / Earlier.
+    today = datetime.utcnow().date()
+    buckets = {'Today': [], 'Yesterday': [], 'Earlier': []}
+    for n in notifs:
+        age = (today - n.sent_at.date()).days if n.sent_at else 99
+        buckets['Today' if age <= 0 else 'Yesterday' if age == 1 else 'Earlier'].append(n)
+    groups = [(label, items) for label, items in buckets.items() if items]
+
+    # The one thing that needs the student to act: an unread deadline reminder.
+    action = next((n for n in notifs
+                   if not n.is_read
+                   and n.notification_type == NotificationType.DEADLINE_REMINDER), None)
 
     return render_template(
         'student/notifications.html',
         notifications=notifs,
         unread_count=unread_count,
         filter_type=filter_type,
+        counts=counts,
+        unread_breakdown=unread_breakdown,
+        groups=groups,
+        action=action,
+        notif_ui=_notif_ui,
+        user_email=user.email,
+        masked_phone=_masked_phone(user.phone_number),
     )
 
 
@@ -220,10 +298,22 @@ def mark_notification_read(notif_id):
 @student_bp.route('/notifications/mark-all-read', methods=['POST'])
 @role_required('student')
 def mark_all_read():
+    # Same period scope as the list, so the button can't silently clear unread
+    # announcements from other academic periods the student hasn't seen.
     from datetime import datetime
-    Notification.query.filter_by(
+    period = get_viewing_period()
+    pending = Notification.query.filter_by(
         recipient_id=session['user_id'], is_read=False
-    ).update({'is_read': True, 'read_at': datetime.utcnow()})
+    )
+    if period:
+        pending = pending.filter(
+            db.or_(
+                Notification.academic_period_id == period.id,
+                Notification.academic_period_id.is_(None)
+            )
+        )
+    pending.update({'is_read': True, 'read_at': datetime.utcnow()},
+                   synchronize_session=False)
     db.session.commit()
     flash('All notifications marked as read.', 'success')
     return redirect(url_for('student.notifications'))
