@@ -2,7 +2,7 @@
 {% block title %}My Applications — LSPU ScholarHub{% endblock %}
 
 {% block head %}
-<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261119" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261119b" rel="stylesheet">
 <style>main { padding: 0 !important; margin: 0 !important; }</style>
 {% endblock %}
 
@@ -10,101 +10,145 @@
 <div class="st">
   <div class="st-wrap">
 
-    <header class="st-head">
-      <p class="st-kicker">Student</p>
-      <h1 class="st-title">My applications</h1>
-      <p class="st-sub">Every program you have applied to, and where each one stands.</p>
-    </header>
-
-    <div class="st-section" style="margin-bottom:1.1rem;">
-      <a class="st-btn st-btn--primary" href="{{ url_for('scholarship.list_scholarships') }}">
+    <div class="sa-head">
+      <header class="st-head sa-head-main">
+        <p class="st-kicker">Student</p>
+        <h1 class="st-title">My applications</h1>
+        <p class="st-sub">Every program you have applied to, and where each one stands.</p>
+        {% if applications %}
+        <p class="sa-summary">
+          <span class="is-ok">Total awarded <b>₱{{ "{:,.0f}".format(summary.awarded) }}</b></span>
+          <span class="is-warn">Pending <b>₱{{ "{:,.0f}".format(summary.pending) }}</b></span>
+        </p>
+        {% endif %}
+      </header>
+      <a class="st-btn st-btn--primary sa-new" href="{{ url_for('scholarship.list_scholarships') }}">
         <i class="bi bi-plus-circle" aria-hidden="true"></i>Apply for a new scholarship
       </a>
     </div>
 
     {% if applications %}
+    <div class="sa-filters" role="group" aria-label="Filter applications by status">
+      <button type="button" class="sa-filter is-on" data-filter="all" aria-pressed="true">
+        All <b>{{ applications|length }}</b>
+      </button>
+      <button type="button" class="sa-filter" data-filter="review" aria-pressed="false">
+        In review <b>{{ summary.review }}</b>
+      </button>
+      <button type="button" class="sa-filter" data-filter="approved" aria-pressed="false">
+        Approved <b>{{ summary.approved }}</b>
+      </button>
+      <button type="button" class="sa-filter" data-filter="decided" aria-pressed="false">
+        Decided <b>{{ summary.decided }}</b>
+      </button>
+    </div>
+
     <div class="sa-list">
       {% for app in applications %}
       {% set sv = app.status.value %}
-      <article class="st-card sa-item{% if sv == 'approved' %} sa-item--ok{% elif sv == 'rejected' %} sa-item--bad{% elif sv == 'withdrawn' %} sa-item--muted{% endif %}">
+      {% if sv in ('pending', 'under_review') %}{% set group = 'review' %}
+      {% elif sv == 'approved' %}{% set group = 'approved' %}
+      {% else %}{% set group = 'decided' %}{% endif %}
+      <article class="st-card sa-item{% if sv == 'approved' %} sa-item--ok{% elif sv == 'rejected' %} sa-item--bad{% elif sv == 'withdrawn' %} sa-item--muted{% endif %}" data-state="{{ group }}">
 
         <div class="sa-top">
-          <div style="min-width:0;">
+          <div class="sa-main">
             <h2 class="sa-name">{{ app.scholarship.title }}</h2>
             <div class="sa-meta">
-              <span>Submitted {{ app.submitted_at.strftime('%b %d, %Y') }}</span>
               <span>App #{{ app.id }}</span>
+              <span>Submitted {{ app.submitted_at.strftime('%b %d, %Y') }}</span>
+              {% if app.scholarship.funding_type %}
+              <span>{{ app.scholarship.funding_type|capitalize }}</span>
+              {% endif %}
             </div>
           </div>
-          <div style="text-align:right;">
+          <div class="sa-side">
             {% if sv == 'approved' %}<span class="st-chip st-chip--ok"><i class="bi bi-check-circle" aria-hidden="true"></i>Approved</span>
             {% elif sv == 'rejected' %}<span class="st-chip st-chip--bad"><i class="bi bi-x-circle" aria-hidden="true"></i>Rejected</span>
             {% elif sv == 'withdrawn' %}<span class="st-chip st-chip--muted"><i class="bi bi-dash-circle" aria-hidden="true"></i>Withdrawn</span>
             {% else %}<span class="st-chip st-chip--warn"><i class="bi bi-clock" aria-hidden="true"></i>Pending</span>{% endif %}
             {% if app.scholarship.award_amount %}
-            <div class="sa-award" style="margin-top:.35rem;">₱{{ "{:,.0f}".format(app.scholarship.award_amount) }}</div>
+            <div class="sa-award">₱{{ "{:,.0f}".format(app.scholarship.award_amount) }}</div>
             {% endif %}
           </div>
         </div>
 
-        {% if sv not in ('withdrawn',) %}
-        <ol class="sa-steps">
-          <li class="sa-step is-done">
-            <span class="sa-dot"><i class="bi bi-send" aria-hidden="true"></i></span>
-            <span class="sa-step-label">Submitted</span>
-          </li>
-          <li class="sa-step {% if sv in ('pending','under_review') %}is-active{% elif sv in ('approved','rejected') %}is-done{% endif %}">
-            <span class="sa-dot"><i class="bi bi-hourglass-split" aria-hidden="true"></i></span>
-            <span class="sa-step-label">Under review</span>
-          </li>
-          <li class="sa-step {% if sv == 'approved' %}is-done{% elif sv == 'rejected' %}is-bad{% endif %}">
-            <span class="sa-dot"><i class="bi bi-check2-circle" aria-hidden="true"></i></span>
-            <span class="sa-step-label">Decision</span>
-          </li>
-        </ol>
+        {% if sv != 'withdrawn' %}
+        <div class="sa-track">
+          <div class="sa-segs" aria-hidden="true">
+            <i class="is-done"></i>
+            <i class="{% if sv in ('pending', 'under_review') %}is-now{% else %}is-done{% endif %}"></i>
+            <i class="{% if sv == 'approved' %}is-done{% elif sv == 'rejected' %}is-bad{% endif %}"></i>
+          </div>
+          <div class="sa-seglbl">
+            <span class="is-done">Submitted</span>
+            <span class="{% if sv in ('pending', 'under_review') %}is-now{% else %}is-done{% endif %}">Under review</span>
+            <span class="{% if sv == 'approved' %}is-done{% elif sv == 'rejected' %}is-bad{% endif %}">Decision</span>
+          </div>
+        </div>
         {% endif %}
 
-        {% if app.review_notes %}
-        <p class="sa-note{% if sv == 'approved' %} sa-note--ok{% elif sv == 'rejected' %} sa-note--bad{% elif sv == 'withdrawn' %} sa-note--muted{% endif %}">
-          <i class="bi bi-chat-left-text" aria-hidden="true"></i>
-          <strong>Note:</strong> {{ app.review_notes }}
-        </p>
-        {% endif %}
-
-        {% if sv in ('pending','under_review') and app.scholarship.application_deadline %}
-        {% set days_left = (app.scholarship.application_deadline - now).days %}
-        {% if days_left is not none and days_left >= 0 and days_left <= 7 %}
-        <p class="sa-note" style="background:#fff8ec;color:#7a4a00;">
-          <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
-          Deadline in <strong>{{ days_left }} day(s)</strong> ({{ app.scholarship.application_deadline.strftime('%b %d, %Y') }}).
-        </p>
-        {% endif %}
-        {% endif %}
-
-        <div class="sa-actions">
-          <button type="button" class="st-btn st-btn--ghost"
-                  data-bs-toggle="modal" data-bs-target="#detailModal{{ app.id }}">
-            <i class="bi bi-eye" aria-hidden="true"></i>View details
-          </button>
-
-          {% if sv in ('pending','under_review') and app.scholarship.is_application_open() %}
-          <a class="st-btn st-btn--warn" href="{{ url_for('scholarship.edit_application', app_id=app.id) }}">
-            <i class="bi bi-pencil" aria-hidden="true"></i>Edit
-          </a>
-          <button type="button" class="st-btn st-btn--danger"
-                  data-bs-toggle="modal" data-bs-target="#withdrawModal{{ app.id }}">
-            <i class="bi bi-x-circle" aria-hidden="true"></i>Withdraw
-          </button>
+        <div class="sa-foot">
+          {% if sv == 'approved' %}
+          <p class="sa-note sa-note--ok">
+            <i class="bi bi-check2-circle" aria-hidden="true"></i>
+            <span>{{ app.review_notes or 'Approved — claim your grant at the scholarship office with your COR.' }}</span>
+          </p>
+          {% elif sv == 'rejected' %}
+          <p class="sa-note sa-note--bad">
+            <i class="bi bi-x-circle" aria-hidden="true"></i>
+            <span>{{ app.review_notes or 'You can apply again while this program is still open.' }}</span>
+          </p>
+          {% elif sv == 'withdrawn' %}
+          <p class="sa-note">
+            <i class="bi bi-dash-circle" aria-hidden="true"></i>
+            <span>{{ app.review_notes or 'You withdrew this application.' }}</span>
+          </p>
+          {% elif app.scholarship.application_deadline and (app.scholarship.application_deadline - now).days is not none
+                   and 0 <= (app.scholarship.application_deadline - now).days <= 7 %}
+          <p class="sa-note sa-note--warn">
+            <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+            <span>Deadline in {{ (app.scholarship.application_deadline - now).days }} day(s)
+              ({{ app.scholarship.application_deadline.strftime('%b %d, %Y') }}) — you can still edit or withdraw.</span>
+          </p>
+          {% else %}
+          <p class="sa-note">
+            <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+            <span>With the scholarship office — no action needed from you.</span>
+          </p>
           {% endif %}
 
-          {% if sv in ('rejected','withdrawn') and app.scholarship.is_application_open() %}
-          <a class="st-btn st-btn--ok" href="{{ url_for('scholarship.apply_scholarship', scholarship_id=app.scholarship.id) }}">
-            <i class="bi bi-arrow-repeat" aria-hidden="true"></i>Apply again
-          </a>
-          {% endif %}
+          <div class="sa-btns">
+            <button type="button" class="st-btn st-btn--ghost"
+                    data-bs-toggle="modal" data-bs-target="#detailModal{{ app.id }}">
+              <i class="bi bi-eye" aria-hidden="true"></i>View details
+            </button>
+
+            {% if sv in ('pending','under_review') and app.scholarship.is_application_open() %}
+            <a class="st-btn st-btn--warn" href="{{ url_for('scholarship.edit_application', app_id=app.id) }}">
+              <i class="bi bi-pencil" aria-hidden="true"></i>Edit
+            </a>
+            <button type="button" class="st-btn st-btn--danger"
+                    data-bs-toggle="modal" data-bs-target="#withdrawModal{{ app.id }}">
+              <i class="bi bi-x-circle" aria-hidden="true"></i>Withdraw
+            </button>
+            {% endif %}
+
+            {% if sv in ('rejected','withdrawn') and app.scholarship.is_application_open() %}
+            <a class="st-btn st-btn--ok" href="{{ url_for('scholarship.apply_scholarship', scholarship_id=app.scholarship.id) }}">
+              <i class="bi bi-arrow-repeat" aria-hidden="true"></i>Apply again
+            </a>
+            {% endif %}
+          </div>
         </div>
       </article>
       {% endfor %}
+    </div>
+
+    <div class="st-empty" id="saNoMatch" hidden style="margin-top:.2rem;">
+      <i class="bi bi-funnel" aria-hidden="true"></i>
+      <h3>Nothing in this group</h3>
+      <p>No applications match this status yet.</p>
     </div>
 
     {% else %}
@@ -284,6 +328,32 @@
 
 {% block scripts %}
 <script>
+(function () {
+  var chips = document.querySelectorAll('.sa-filter');
+  var cards = document.querySelectorAll('.sa-list .sa-item');
+  var empty = document.getElementById('saNoMatch');
+  if (!chips.length) return;
+
+  function apply(key) {
+    var shown = 0;
+    cards.forEach(function (card) {
+      var match = key === 'all' || card.dataset.state === key;
+      card.hidden = !match;
+      if (match) shown++;
+    });
+    chips.forEach(function (c) {
+      var on = c.dataset.filter === key;
+      c.classList.toggle('is-on', on);
+      c.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    if (empty) empty.hidden = shown !== 0;
+  }
+
+  chips.forEach(function (chip) {
+    chip.addEventListener('click', function () { apply(chip.dataset.filter); });
+  });
+})();
+
 // Initialize tooltips
 document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) {
   new bootstrap.Tooltip(el);

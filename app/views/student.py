@@ -98,9 +98,27 @@ def my_applications():
         q = q.filter(ScholarshipApplication.academic_period_id == pid)
     apps = q.order_by(ScholarshipApplication.submitted_at.desc()).all()
 
+    # Header summary + filter counts: what the student has been awarded, what is
+    # still awaiting a decision, and how the list splits by status.
+    review_states = (ApplicationStatus.PENDING, ApplicationStatus.UNDER_REVIEW)
+    decided_states = (ApplicationStatus.REJECTED, ApplicationStatus.WITHDRAWN)
+
+    def _award(a):
+        return a.scholarship.award_amount if (a.scholarship and a.scholarship.award_amount) else 0
+
+    summary = {
+        'awarded': sum(_award(a) for a in apps if a.status == ApplicationStatus.APPROVED),
+        'pending': sum(_award(a) for a in apps if a.status in review_states),
+        'review': sum(1 for a in apps if a.status in review_states),
+        'approved': sum(1 for a in apps if a.status == ApplicationStatus.APPROVED),
+        'decided': sum(1 for a in apps if a.status in decided_states),
+    }
+
     return render_template(
         'student/applications.html',
         applications=apps,
+        summary=summary,
+        now=datetime.utcnow(),
     )
 
 
