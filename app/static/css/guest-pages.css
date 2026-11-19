@@ -96,6 +96,7 @@
   display: grid;
   grid-template-columns: 1fr;
   gap: .85rem;
+  align-items: start;
 }
 .gs-card {
   display: flex;
@@ -350,12 +351,29 @@
 .gs-app--review   { border-left-color: #f0a631; background: #fffcf5; }
 .gs-app--approved { border-left-color: #12a05f; background: #f6fdf9; }
 .gs-app--decided  { border-left-color: #b6c1cf; background: #fafbfd; }
-.gs-app-head {
-  display: flex;
+.gs-app-sum {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: .5rem;
+  gap: .1rem .5rem;
+  list-style: none;
+  cursor: pointer;
 }
+.gs-app-sum::-webkit-details-marker { display: none; }
+.gs-app-sum:focus-visible {
+  outline: 2px solid var(--gp-blue);
+  outline-offset: 5px;
+  border-radius: 8px;
+}
+.gs-app-body { display: grid; gap: .5rem; }
+.gs-app-chev {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  font-size: .8rem;
+  color: #8593a5;
+  transition: transform .18s;
+}
+.gs-app[open] .gs-app-chev { transform: rotate(180deg); }
 .gs-app-label {
   display: inline-flex;
   align-items: center;
@@ -370,7 +388,6 @@
 .gs-app-label--ok    { color: #0f7a4f; }
 .gs-app-label--bad   { color: #b02a37; }
 .gs-app-label--muted { color: #6b7686; }
-.gs-app-award { font-size: .92rem; font-weight: 800; color: var(--gp-navy); }
 .gs-app-ids { margin: 0; font-size: .7rem; color: #8593a5; }
 
 .gs-app-track { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; }
@@ -596,7 +613,6 @@
 }
 
 @media (min-width: 960px) {
-  .gs-list { align-items: start; }
   .gs-filters { flex-wrap: wrap; overflow: visible; margin-bottom: .55rem; }
   .gs-money { font-size: .8rem; margin-bottom: 1.15rem; }
   .gd-drawer { align-items: stretch; justify-content: flex-end; }
