@@ -2,7 +2,7 @@
 {% block title %}My Documents — LSPU ScholarHub{% endblock %}
 
 {% block head %}
-<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261119" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120" rel="stylesheet">
 <style>main { padding: 0 !important; margin: 0 !important; }</style>
 {% endblock %}
 
@@ -10,194 +10,270 @@
 <div class="st">
   <div class="st-wrap">
 
-    <header class="st-head">
-      <p class="st-kicker">Student</p>
-      <h1 class="st-title">My documents</h1>
-      <p class="st-sub">Your COR and Copy of Grades. The office reads your units and GWA from these two files.</p>
-    </header>
+    {% set cor_on_file = user.cor_file_path %}
+    {% set grades_on_file = user.grades_file_path %}
+    {% set on_file = (1 if cor_on_file else 0) + (1 if grades_on_file else 0) %}
 
-    <!-- ── status at a glance ───────────────────────────────────────────── -->
-    <div class="sdoc-status">
-      <div class="sdoc-pill {% if user.cor_file_path %}sdoc-pill--ok{% else %}sdoc-pill--warn{% endif %}">
-        <i class="bi {% if user.cor_file_path %}bi-check-circle-fill{% else %}bi-exclamation-circle-fill{% endif %}" aria-hidden="true"></i>
-        <span>
-          <b>COR</b>
-          {% if user.cor_file_path %}Submitted{% else %}Not yet submitted{% endif %}
-        </span>
-      </div>
-      <div class="sdoc-pill {% if user.grades_file_path %}sdoc-pill--ok{% else %}sdoc-pill--warn{% endif %}">
-        <i class="bi {% if user.grades_file_path %}bi-check-circle-fill{% else %}bi-exclamation-circle-fill{% endif %}" aria-hidden="true"></i>
-        <span>
-          <b>Grades</b>
-          {% if user.grades_file_path %}Submitted{% else %}Not yet submitted{% endif %}
-        </span>
-      </div>
-    </div>
+    <div class="sdoc-top">
+      <header class="st-head">
+        <p class="st-kicker">Student</p>
+        <h1 class="st-title">My documents</h1>
+        <p class="st-sub">Your COR and Copy of Grades. The office reads your units and GWA from these two files.</p>
+      </header>
 
-    <div class="sdoc-grid">
-
-      <!-- ═══════════ STEP 1: COR ═══════════ -->
-      <section class="st-card sdoc-card">
-        <div class="sdoc-head">
-          <span class="sdoc-num">1</span>
-          <div>
-            <h2 class="sdoc-title">Certificate of Registration</h2>
-            <p class="sdoc-desc">
-              Proof of your enrollment this semester. Your <strong>units enrolled</strong>
-              are read automatically from the Total Units line.
-            </p>
-          </div>
+      <!-- ── completion: one bar, two segments ─────────────────────────── -->
+      <div class="sdoc-prog" role="group" aria-label="Documents on file">
+        <div class="sdoc-prog-top">
+          <b>{{ on_file }} of 2</b>
+          <span>{% if on_file == 2 %}All set{% elif on_file %}documents on file{% else %}documents on file{% endif %}</span>
         </div>
-
-        {% if user.cor_file_path %}
-        <div class="sdoc-file">
-          <span class="sdoc-file-ico sdoc-file-ico--pdf"><i class="bi bi-file-earmark-pdf" aria-hidden="true"></i></span>
-          <div class="sdoc-file-main">
-            <b>Certificate of Registration</b>
-            <span><i class="bi bi-check-circle-fill" aria-hidden="true"></i> On file — ready for applications</span>
-          </div>
-          <div class="sdoc-file-actions">
-            <a class="st-btn st-btn--ghost st-btn--sm"
-               href="{{ url_for('student.view_registration_document', doc_type='cor') }}" target="_blank">
-              <i class="bi bi-eye" aria-hidden="true"></i>View
-            </a>
-            <a class="st-btn st-btn--ghost st-btn--sm"
-               href="{{ url_for('student.view_registration_document', doc_type='cor') }}" download
-               aria-label="Download Certificate of Registration">
-              <i class="bi bi-download" aria-hidden="true"></i>
-            </a>
-          </div>
-        </div>
-        {% endif %}
-
-        <form method="POST" action="{{ url_for('student.upload_gwa') }}" enctype="multipart/form-data"
-              class="sdoc-form">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <input type="hidden" name="doc_type" value="cor">
-          <label class="sdoc-drop{% if user.cor_file_path %} sdoc-drop--filled{% endif %}" for="corInput">
-            <input type="file" class="d-none" name="cor_file" id="corInput"
-                   accept=".pdf,application/pdf" required>
-            <i class="bi {% if user.cor_file_path %}bi-arrow-repeat{% else %}bi-cloud-arrow-up{% endif %}" aria-hidden="true"></i>
-            <b>{% if user.cor_file_path %}Replace current file{% else %}Drop your COR here{% endif %}</b>
-            <span>{% if user.cor_file_path %}or tap to choose a new PDF{% else %}or tap to browse{% endif %} · PDF only · max 5 MB</span>
-          </label>
-          <div class="sdoc-selected d-none">
-            <i class="bi bi-check-circle" aria-hidden="true"></i><span class="file-name"></span>
-          </div>
-          <button type="submit" class="st-btn st-btn--primary w-100 mt-2 sdoc-submit d-none">
-            <i class="bi bi-upload" aria-hidden="true"></i>{% if user.cor_file_path %}Replace COR{% else %}Upload COR{% endif %}
-          </button>
-        </form>
-      </section>
-
-      <!-- ═══════════ STEP 2: Grades ═══════════ -->
-      <section class="st-card sdoc-card">
-        <div class="sdoc-head">
-          <span class="sdoc-num sdoc-num--grades">2</span>
-          <div>
-            <h2 class="sdoc-title">Copy of Grades</h2>
-            <p class="sdoc-desc">
-              Your latest grades. Your <strong>GWA</strong> is read automatically from this document.
-            </p>
-          </div>
-        </div>
-
-        {% if user.grades_file_path %}
-        <div class="sdoc-file">
-          <span class="sdoc-file-ico sdoc-file-ico--doc"><i class="bi bi-file-earmark-text" aria-hidden="true"></i></span>
-          <div class="sdoc-file-main">
-            <b>Copy of Grades</b>
-            <span>
-              {% if user.grades_semester %}{{ user.grades_semester }} · {% endif %}
-              GWA <strong>{{ user.gwa if user.gwa else 'pending review' }}</strong>
-            </span>
-          </div>
-          <div class="sdoc-file-actions">
-            <a class="st-btn st-btn--ghost st-btn--sm"
-               href="{{ url_for('student.view_registration_document', doc_type='grades') }}" target="_blank">
-              <i class="bi bi-eye" aria-hidden="true"></i>View
-            </a>
-            <a class="st-btn st-btn--ghost st-btn--sm"
-               href="{{ url_for('student.view_registration_document', doc_type='grades') }}" download
-               aria-label="Download Copy of Grades">
-              <i class="bi bi-download" aria-hidden="true"></i>
-            </a>
-          </div>
-        </div>
-        {% endif %}
-
-        <form method="POST" action="{{ url_for('student.upload_gwa') }}" enctype="multipart/form-data"
-              class="sdoc-form">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <input type="hidden" name="doc_type" value="grades">
-          <label class="sdoc-drop{% if user.grades_file_path %} sdoc-drop--filled{% endif %}" for="gradesInput">
-            <input type="file" class="d-none" name="grades_file" id="gradesInput"
-                   accept=".pdf,application/pdf" required>
-            <i class="bi {% if user.grades_file_path %}bi-arrow-repeat{% else %}bi-cloud-arrow-up{% endif %}" aria-hidden="true"></i>
-            <b>{% if user.grades_file_path %}Replace current file{% else %}Drop your grades here{% endif %}</b>
-            <span>{% if user.grades_file_path %}or tap to choose a new PDF{% else %}or tap to browse{% endif %} · PDF only · max 5 MB</span>
-          </label>
-          <div class="sdoc-selected d-none">
-            <i class="bi bi-check-circle" aria-hidden="true"></i><span class="file-name"></span>
-          </div>
-          <button type="submit" class="st-btn st-btn--primary w-100 mt-2 sdoc-submit d-none">
-            <i class="bi bi-upload" aria-hidden="true"></i>{% if user.grades_file_path %}Replace Grades{% else %}Upload Grades{% endif %}
-          </button>
-        </form>
-
-        {% if user.grades_file_path and user.gwa %}
-        <div class="sdoc-note sdoc-note--ok">
-          <i class="bi bi-check-circle" aria-hidden="true"></i>
-          <span>
-            Your GWA of <strong>{{ user.gwa }}</strong> was read from this document.
-            {% if user.grades_updated_at %}({{ user.grades_updated_at.strftime('%b %d, %Y') }}){% endif %}
+        <div class="sdoc-prog-bar">
+          <span class="sdoc-seg{% if cor_on_file %} is-ok{% endif %}">
+            <i class="bi {% if cor_on_file %}bi-check-circle-fill{% else %}bi-circle{% endif %}" aria-hidden="true"></i>
+            COR
+          </span>
+          <span class="sdoc-seg{% if grades_on_file %} is-ok{% endif %}">
+            <i class="bi {% if grades_on_file %}bi-check-circle-fill{% else %}bi-circle{% endif %}" aria-hidden="true"></i>
+            Grades
           </span>
         </div>
-        {% elif user.grades_file_path and not user.gwa %}
-        <div class="sdoc-note sdoc-note--warn">
-          <i class="bi bi-hourglass-split" aria-hidden="true"></i>
-          <span>The office is still reading your GWA from this document — check back soon.</span>
-        </div>
-        {% endif %}
+      </div>
+    </div>
+
+    <div class="sdoc-layout">
+
+      <!-- ═══════════ document rows ═══════════ -->
+      <section class="st-card sdoc-docs">
+        <h2 class="st-h2 sdoc-docs-k">Your documents</h2>
+
+        <!-- ── COR ──────────────────────────────────────────────────────── -->
+        <details class="sdoc-row" {% if not cor_on_file %}open{% endif %}>
+          <summary class="sdoc-row-sum">
+            <span class="sdoc-ico sdoc-ico--cor{% if cor_on_file %} is-ok{% endif %}">
+              <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+            </span>
+            <span class="sdoc-row-main">
+              <b>Certificate of Registration</b>
+              <span class="sdoc-row-meta">
+                {% if cor_on_file %}
+                  Units enrolled <strong>{{ user.units_enrolled if user.units_enrolled else 'not read yet' }}</strong>
+                  · read from this file
+                {% else %}
+                  Not on file yet — your units are counted from this document
+                {% endif %}
+              </span>
+            </span>
+            <span class="sdoc-row-state st-chip {% if cor_on_file %}st-chip--ok{% else %}st-chip--warn{% endif %}">
+              {% if cor_on_file %}On file{% else %}Missing{% endif %}
+            </span>
+            <span class="sdoc-row-actions">
+              {% if cor_on_file %}
+              <a class="st-btn st-btn--ghost st-btn--sm"
+                 href="{{ url_for('student.view_registration_document', doc_type='cor') }}" target="_blank"
+                 rel="noopener" aria-label="View Certificate of Registration">
+                <i class="bi bi-eye" aria-hidden="true"></i><span class="sdoc-btn-txt">View</span>
+              </a>
+              <a class="st-btn st-btn--ghost st-btn--sm"
+                 href="{{ url_for('student.view_registration_document', doc_type='cor') }}" download
+                 aria-label="Download Certificate of Registration">
+                <i class="bi bi-download" aria-hidden="true"></i>
+              </a>
+              {% endif %}
+            </span>
+            <span class="sdoc-chev" aria-hidden="true"><i class="bi bi-chevron-down"></i></span>
+          </summary>
+
+          <div class="sdoc-row-body">
+            {% if cor_on_file %}
+            <p class="sdoc-row-hint">
+              <i class="bi bi-info-circle" aria-hidden="true"></i>
+              Uploading a new COR replaces the current one and refreshes your units.
+            </p>
+            {% endif %}
+            <form method="POST" action="{{ url_for('student.upload_gwa') }}" enctype="multipart/form-data"
+                  class="sdoc-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="doc_type" value="cor">
+              <label class="sdoc-drop{% if cor_on_file %} sdoc-drop--filled{% endif %}" for="corInput">
+                <input type="file" class="d-none" name="cor_file" id="corInput"
+                       accept=".pdf,application/pdf" required>
+                <i class="bi {% if cor_on_file %}bi-arrow-repeat{% else %}bi-cloud-arrow-up{% endif %}" aria-hidden="true"></i>
+                <b>{% if cor_on_file %}Replace current file{% else %}Drop your COR here{% endif %}</b>
+                <span>{% if cor_on_file %}or tap to choose a new PDF{% else %}or tap to browse{% endif %} · PDF only · max 5 MB</span>
+              </label>
+              <div class="sdoc-selected d-none">
+                <i class="bi bi-check-circle" aria-hidden="true"></i><span class="file-name"></span>
+              </div>
+              <button type="submit" class="st-btn st-btn--primary w-100 mt-2 sdoc-submit d-none">
+                <i class="bi bi-upload" aria-hidden="true"></i>{% if cor_on_file %}Replace COR{% else %}Upload COR{% endif %}
+              </button>
+            </form>
+          </div>
+        </details>
+
+        <!-- ── Copy of Grades ──────────────────────────────────────────── -->
+        <details class="sdoc-row" {% if not grades_on_file and cor_on_file %}open{% endif %}>
+          <summary class="sdoc-row-sum">
+            <span class="sdoc-ico{% if grades_on_file %} is-ok{% endif %}">
+              <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+            </span>
+            <span class="sdoc-row-main">
+              <b>Copy of Grades</b>
+              <span class="sdoc-row-meta">
+                {% if grades_on_file %}
+                  GWA <strong>{{ user.gwa if user.gwa else 'still being read' }}</strong>
+                  {% if user.grades_semester %} · {{ user.grades_semester }}{% endif %}
+                {% else %}
+                  Not on file yet — your GWA is read from this document
+                {% endif %}
+              </span>
+            </span>
+            <span class="sdoc-row-state st-chip {% if grades_on_file %}st-chip--ok{% else %}st-chip--warn{% endif %}">
+              {% if grades_on_file %}On file{% else %}Missing{% endif %}
+            </span>
+            <span class="sdoc-row-actions">
+              {% if grades_on_file %}
+              <a class="st-btn st-btn--ghost st-btn--sm"
+                 href="{{ url_for('student.view_registration_document', doc_type='grades') }}" target="_blank"
+                 rel="noopener" aria-label="View Copy of Grades">
+                <i class="bi bi-eye" aria-hidden="true"></i><span class="sdoc-btn-txt">View</span>
+              </a>
+              <a class="st-btn st-btn--ghost st-btn--sm"
+                 href="{{ url_for('student.view_registration_document', doc_type='grades') }}" download
+                 aria-label="Download Copy of Grades">
+                <i class="bi bi-download" aria-hidden="true"></i>
+              </a>
+              {% endif %}
+            </span>
+            <span class="sdoc-chev" aria-hidden="true"><i class="bi bi-chevron-down"></i></span>
+          </summary>
+
+          <div class="sdoc-row-body">
+            {% if grades_on_file and user.gwa %}
+            <p class="sdoc-row-hint sdoc-row-hint--ok">
+              <i class="bi bi-check-circle" aria-hidden="true"></i>
+              GWA <strong>{{ user.gwa }}</strong> was read from this document{% if user.grades_updated_at %} on {{ user.grades_updated_at.strftime('%b %d, %Y') }}{% endif %}.
+            </p>
+            {% elif grades_on_file %}
+            <p class="sdoc-row-hint sdoc-row-hint--warn">
+              <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+              The office is still reading your GWA from this document — check back soon.
+            </p>
+            {% endif %}
+            <form method="POST" action="{{ url_for('student.upload_gwa') }}" enctype="multipart/form-data"
+                  class="sdoc-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="doc_type" value="grades">
+              <label class="sdoc-drop{% if grades_on_file %} sdoc-drop--filled{% endif %}" for="gradesInput">
+                <input type="file" class="d-none" name="grades_file" id="gradesInput"
+                       accept=".pdf,application/pdf" required>
+                <i class="bi {% if grades_on_file %}bi-arrow-repeat{% else %}bi-cloud-arrow-up{% endif %}" aria-hidden="true"></i>
+                <b>{% if grades_on_file %}Replace current file{% else %}Drop your grades here{% endif %}</b>
+                <span>{% if grades_on_file %}or tap to choose a new PDF{% else %}or tap to browse{% endif %} · PDF only · max 5 MB</span>
+              </label>
+              <div class="sdoc-selected d-none">
+                <i class="bi bi-check-circle" aria-hidden="true"></i><span class="file-name"></span>
+              </div>
+              <button type="submit" class="st-btn st-btn--primary w-100 mt-2 sdoc-submit d-none">
+                <i class="bi bi-upload" aria-hidden="true"></i>{% if grades_on_file %}Replace Grades{% else %}Upload Grades{% endif %}
+              </button>
+            </form>
+          </div>
+        </details>
       </section>
 
-    </div>
+      <!-- ═══════════ lower band: what we read + tips ═══════════ -->
+      <div class="sdoc-lower">
 
-    <!-- ── help ─────────────────────────────────────────────────────────── -->
-    <div class="st-card sdoc-help">
-      <div class="sdoc-help-item">
-        <div class="sdoc-help-k"><i class="bi bi-lightbulb" aria-hidden="true"></i>Tips for a clear upload</div>
-        <ul>
-          <li>Upload the official <strong>PDF</strong> from the LSPU student portal.</li>
-          <li>The document must show <strong>your name and Student ID</strong> — random or borrowed files are rejected.</li>
-        </ul>
-      </div>
-      <div class="sdoc-help-item">
-        <div class="sdoc-help-k"><i class="bi bi-shield-check" aria-hidden="true"></i>Who sees your files</div>
-        <p>Only you and the scholarship office staff reviewing applications.</p>
-      </div>
-      <div class="sdoc-help-item">
-        <div class="sdoc-help-k"><i class="bi bi-patch-question" aria-hidden="true"></i>Need help?</div>
-        <p>Contact the office at lspu.scholarhub@gmail.com or call 0968-365-2615.</p>
-      </div>
-    </div>
+        <section class="st-card sdoc-read">
+          <h2 class="st-h2 sdoc-read-k">Read from your files</h2>
+          <div class="sdoc-read-grid">
+            <div class="sdoc-read-item">
+              <span class="sdoc-read-l">Units enrolled</span>
+              <b class="sdoc-read-v {% if not user.units_enrolled %}is-empty{% endif %}">
+                {{ user.units_enrolled if user.units_enrolled else 'Not read yet' }}
+              </b>
+              <span class="sdoc-read-src">from your COR</span>
+            </div>
+            <div class="sdoc-read-item">
+              <span class="sdoc-read-l">GWA</span>
+              <b class="sdoc-read-v {% if not user.gwa %}is-empty{% endif %}">
+                {{ user.gwa if user.gwa else 'Not read yet' }}
+              </b>
+              <span class="sdoc-read-src">from your grades</span>
+            </div>
+            <div class="sdoc-read-item">
+              <span class="sdoc-read-l">Semester</span>
+              <b class="sdoc-read-v {% if not user.grades_semester %}is-empty{% endif %}">
+                {{ user.grades_semester if user.grades_semester else 'Not read yet' }}
+              </b>
+              <span class="sdoc-read-src">from your grades</span>
+            </div>
+            <div class="sdoc-read-item">
+              <span class="sdoc-read-l">Year level</span>
+              <b class="sdoc-read-v {% if not user.year_level %}is-empty{% endif %}">
+                {{ user.year_level if user.year_level else 'Not read yet' }}
+              </b>
+              <span class="sdoc-read-src">from your COR</span>
+            </div>
+          </div>
+        </section>
 
+        <details class="st-card sdoc-tips" id="sdocTips" open>
+          <summary class="sdoc-tips-sum">
+            <span class="st-h2">Before you upload</span>
+            <span class="sdoc-chev" aria-hidden="true"><i class="bi bi-chevron-down"></i></span>
+          </summary>
+          <ul class="sdoc-tips-list">
+            <li>Use the official <strong>PDF</strong> from the LSPU student portal.</li>
+            <li>The document must show <strong>your name and Student ID</strong> — random or borrowed files are rejected.</li>
+            <li>Each file must be <strong>5 MB or smaller</strong>.</li>
+          </ul>
+          <p class="sdoc-tips-foot">
+            <i class="bi bi-shield-check" aria-hidden="true"></i>
+            Only you and the scholarship office can see these files.
+          </p>
+        </details>
+
+      </div>
+
+      <p class="sdoc-help-line">
+        Need help? <a href="tel:+639683652615">0968-365-2615</a> ·
+        <a href="mailto:lspu.scholarhub@gmail.com">lspu.scholarhub@gmail.com</a>
+      </p>
+
+    </div>
   </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
+  // One open at a time — opening a row closes the other.
+  var rows = Array.prototype.slice.call(document.querySelectorAll('.sdoc-row'));
+  rows.forEach(function (row) {
+    row.addEventListener('toggle', function () {
+      if (!row.open) return;
+      rows.forEach(function (other) {
+        if (other !== row) other.open = false;
+      });
+    });
+  });
+
+  // View / download inside the summary must not toggle the row.
+  document.querySelectorAll('.sdoc-row-actions').forEach(function (acts) {
+    acts.addEventListener('click', function (e) { e.stopPropagation(); });
+  });
+
+  // Uploaders: click the drop area, validate type + size, reveal submit.
   document.querySelectorAll('.sdoc-form').forEach(function (form) {
     var input    = form.querySelector('input[type="file"]');
     var area     = form.querySelector('.sdoc-drop');
     var selected = form.querySelector('.sdoc-selected');
     var submit   = form.querySelector('.sdoc-submit');
 
-    // Clicking the drop area opens the picker
     area.addEventListener('click', function () { input.click(); });
 
-    // Show selected file + reveal submit button (validate type + size first)
     input.addEventListener('change', function () {
       if (input.files.length) {
         var f = input.files[0];
@@ -227,7 +303,6 @@
       }
     });
 
-    // Drag & drop
     ['dragenter', 'dragover'].forEach(function (evt) {
       area.addEventListener(evt, function (e) {
         e.preventDefault();
@@ -247,5 +322,9 @@
       }
     });
   });
+
+  // Phones: the tips block starts folded so the documents come first.
+  var tips = document.getElementById('sdocTips');
+  if (tips && window.matchMedia('(max-width: 639px)').matches) tips.open = false;
 </script>
 {% endblock %}
