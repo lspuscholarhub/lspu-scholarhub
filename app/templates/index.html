@@ -35,7 +35,7 @@
               <i class="bi bi-person-plus" aria-hidden="true"></i>Create Account
             </a>
             {% elif role == 'student' %}
-            <a class="gh-btn gh-btn-ghost" href="{{ url_for('student.my_applications') }}">
+            <a class="gh-btn gh-btn-ghost" href="{{ url_for('scholarship.list_scholarships', view='mine') }}">
               <i class="bi bi-file-earmark-text" aria-hidden="true"></i>My Applications
             </a>
             {% else %}

@@ -56,13 +56,13 @@
     {% endif %}
 
     <section class="sd-stats">
-      <a class="sd-stat sd-stat--apps" href="{{ url_for('student.my_applications') }}">
+      <a class="sd-stat sd-stat--apps" href="{{ url_for('scholarship.list_scholarships', view='mine') }}">
         <b>{{ total_apps }}</b><span>Applications</span>
       </a>
-      <a class="sd-stat sd-stat--ok" href="{{ url_for('student.my_applications') }}">
+      <a class="sd-stat sd-stat--ok" href="{{ url_for('scholarship.list_scholarships', view='approved') }}">
         <b>{{ approved_count }}</b><span>Approved</span>
       </a>
-      <a class="sd-stat sd-stat--warn" href="{{ url_for('student.my_applications') }}">
+      <a class="sd-stat sd-stat--warn" href="{{ url_for('scholarship.list_scholarships', view='review') }}">
         <b>{{ pending_count }}</b><span>Pending</span>
       </a>
       <a class="sd-stat sd-stat--open" href="{{ url_for('scholarship.list_scholarships') }}">
@@ -109,7 +109,7 @@
           <div class="st-section-head">
             <h2 class="st-h2">Recent applications</h2>
             {% if recent_apps %}
-            <a class="st-link" href="{{ url_for('student.my_applications') }}">View all</a>
+            <a class="st-link" href="{{ url_for('scholarship.list_scholarships', view='mine') }}">View all</a>
             {% endif %}
           </div>
 
@@ -117,7 +117,7 @@
           <div class="sd-list">
             {% for app in recent_apps %}
             {% set sv = app.status.value %}
-            <a class="sd-row" href="{{ url_for('student.my_applications') }}">
+            <a class="sd-row" href="{{ url_for('scholarship.list_scholarships', view='mine') }}">
               <div class="sd-row-main">
                 <b>{{ app.scholarship.title }}</b>
                 <span>

@@ -28,7 +28,7 @@ ROUTES = [
     ('/scholarship/<S1>', None),
     ('/scholarship/<S1>/apply', 'student'),
     ('/student/dashboard', 'student'),
-    ('/student/applications', 'student'),
+    ('/scholarship/?view=mine', 'student'),
     ('/student/my-scholarship', 'student'),
     ('/student/profile', 'student'),
     ('/student/upload-gwa', 'student'),

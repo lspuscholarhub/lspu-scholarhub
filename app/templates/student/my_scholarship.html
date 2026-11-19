@@ -26,7 +26,7 @@
         <span class="st-chip {{ chipmap.get(standing_color, 'st-chip--muted') }}">
           <i class="bi bi-patch-check-fill" aria-hidden="true"></i>{{ standing_label }}
         </span>
-        <a class="st-btn st-btn--ghost st-btn--sm" href="{{ url_for('student.my_applications') }}">My applications</a>
+        <a class="st-btn st-btn--ghost st-btn--sm" href="{{ url_for('scholarship.list_scholarships', view='mine') }}">My applications</a>
       </div>
     </header>
 

@@ -165,8 +165,8 @@
 
         <!-- Submit -->
         <div class="d-flex justify-content-between align-items-center mb-5">
-          <a href="{{ url_for('student.my_applications') if editing else url_for('scholarship.view_scholarship', scholarship_id=scholarship.id) }}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i>{{ 'Back to My Applications' if editing else 'Back' }}
+          <a href="{{ url_for('scholarship.list_scholarships', view='mine') if editing else url_for('scholarship.view_scholarship', scholarship_id=scholarship.id) }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>{{ 'Back to scholarships' if editing else 'Back' }}
           </a>
           {% if editing %}
           <button type="submit" class="btn btn-primary btn-lg px-5 fw-semibold" id="submitBtn">

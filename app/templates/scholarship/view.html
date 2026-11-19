@@ -92,8 +92,8 @@
           {% if session.get('user_type') == 'student' %}
             {% if already_applied %}
               <span class="gv-state gv-state--ok"><i class="bi bi-check2-circle" aria-hidden="true"></i>Already applied</span>
-              <p class="gv-note">Your application is in. Follow it from your applications page.</p>
-              <a class="gv-btn gv-btn--ghost" href="{{ url_for('student.my_applications') }}">
+              <p class="gv-note">Your application is in. Follow it on the program's card.</p>
+              <a class="gv-btn gv-btn--ghost" href="{{ url_for('scholarship.list_scholarships', view='mine') }}">
                 <i class="bi bi-file-earmark-text" aria-hidden="true"></i>My applications
               </a>
 

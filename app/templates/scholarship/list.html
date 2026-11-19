@@ -2,7 +2,7 @@
 {% block title %}Scholarships — LSPU ScholarHub{% endblock %}
 
 {% block head %}
-<link href="{{ url_for('static', filename='css/guest-pages.css') }}?v=20261119c" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/guest-pages.css') }}?v=20261119a" rel="stylesheet">
 <style>main { padding: 0 !important; margin: 0 !important; }</style>
 {% endblock %}
 
@@ -14,8 +14,8 @@
       <p class="gs-kicker">Scholarship programs</p>
       <h1>Available scholarships</h1>
       <p class="gs-sub">
-        {% if scholarships %}
-          {{ scholarships|length }} program{{ 's' if scholarships|length != 1 }} you can review and apply for.
+        {% if counts.all %}
+          {{ counts.all }} program{{ 's' if counts.all != 1 }} you can review and apply for{% if counts.mine %} · {{ counts.mine }} application{{ 's' if counts.mine != 1 }} on file{% endif %}.
         {% else %}
           Programs appear here as soon as the scholarship office opens them.
         {% endif %}
@@ -23,51 +23,58 @@
       </p>
     </header>
 
-    {# ── My applications: the student's own record, at a glance ────────────── #}
-    {% if session.get('user_type') == 'student' and mine and mine.total %}
-    <section class="gs-mine" aria-label="My applications summary">
-      <div class="gs-mine-head">
-        <p class="gs-mine-kicker"><i class="bi bi-person-badge" aria-hidden="true"></i>My applications</p>
-        <a class="gs-mine-link" href="{{ url_for('student.my_applications') }}">View all &rsaquo;</a>
-      </div>
-      <dl class="gs-mine-stats">
-        <div>
-          <dt>In review</dt>
-          <dd>{{ mine.review }}</dd>
-        </div>
-        <div>
-          <dt>Awarded</dt>
-          <dd class="ok">₱{{ "{:,.0f}".format(mine.awarded) }}</dd>
-        </div>
-        <div>
-          <dt>Pending</dt>
-          <dd class="warn">₱{{ "{:,.0f}".format(mine.pending) }}</dd>
-        </div>
-      </dl>
-    </section>
-    {% endif %}
-
     <form class="gs-search auto-filter" method="GET" role="search">
       <i class="bi bi-search" aria-hidden="true"></i>
       <input type="search" name="q" value="{{ q }}" class="gs-search-input"
              placeholder="Search scholarships…" aria-label="Search scholarships">
+      {% if view != 'all' %}<input type="hidden" name="view" value="{{ view }}">{% endif %}
       {% if q %}
-      <a class="gs-search-clear" href="{{ url_for('scholarship.list_scholarships') }}" aria-label="Clear search">
+      <a class="gs-search-clear" href="{{ url_for('scholarship.list_scholarships', view=view) }}" aria-label="Clear search">
         <i class="bi bi-x-lg" aria-hidden="true"></i>
       </a>
       {% endif %}
     </form>
 
+    {# ── Filters: the old applications tiles, now over the grid ────────────── #}
+    {% if session.get('user_type') == 'student' and counts.mine %}
+    <nav class="gs-filters" aria-label="Filter programs">
+      <a class="gs-filter{{ ' is-on' if view == 'all' }}" href="{{ url_for('scholarship.list_scholarships', view='all', q=q) }}">
+        All programs <b>{{ counts.all }}</b>
+      </a>
+      <a class="gs-filter{{ ' is-on' if view == 'mine' }}" href="{{ url_for('scholarship.list_scholarships', view='mine', q=q) }}">
+        My applications <b>{{ counts.mine }}</b>
+      </a>
+      <a class="gs-filter gs-filter--warn{{ ' is-on' if view == 'review' }}" href="{{ url_for('scholarship.list_scholarships', view='review', q=q) }}">
+        In review <b>{{ counts.review }}</b>
+      </a>
+      <a class="gs-filter gs-filter--ok{{ ' is-on' if view == 'approved' }}" href="{{ url_for('scholarship.list_scholarships', view='approved', q=q) }}">
+        Approved <b>{{ counts.approved }}</b>
+      </a>
+      <a class="gs-filter gs-filter--muted{{ ' is-on' if view == 'decided' }}" href="{{ url_for('scholarship.list_scholarships', view='decided', q=q) }}">
+        Decided <b>{{ counts.decided }}</b>
+      </a>
+    </nav>
+    <p class="gs-money">
+      <span><b>₱{{ "{:,.0f}".format(mine.awarded) }}</b> awarded</span>
+      <span class="sep" aria-hidden="true">·</span>
+      <span><b>₱{{ "{:,.0f}".format(mine.pending) }}</b> pending decision</span>
+      {% if counts.approved %}
+      <a class="gs-money-link" href="{{ url_for('student.my_scholarship') }}">Open My Scholarship &rsaquo;</a>
+      {% endif %}
+    </p>
+    {% endif %}
+
     {% if scholarships %}
     <ul class="gs-list">
       {% for s in scholarships %}
+        {% set app = app_by_sch.get(s.id) if app_by_sch else none %}
         {% if s.application_deadline %}
-          {% set days_left = (s.application_deadline - now).days %}
+          {% set days_left = (s.application_deadline.date() - now.date()).days %}
         {% else %}
           {% set days_left = None %}
         {% endif %}
         {% set is_open = s.status and s.status.value == 'active' and (days_left is none or days_left >= 0) %}
-        <li class="gs-card">
+        <li class="gs-card{% if app %} gs-card--mine{% endif %}">
           <div class="gs-chips">
             {% if is_open and days_left is not none and days_left <= 7 %}
               <span class="gs-chip gs-chip--closing">Closing soon</span>
@@ -139,39 +146,101 @@
             {% endif %}
           </div>
 
-          {# ── This student's own application, right on the program card ─────── #}
-          {% set st = app_status.get(s.id) if app_status else None %}
-          {% if st %}
-          <div class="gs-app-note">
-            <a class="gs-app-chip gs-app-chip--{{ st.tone }}"
-               href="{{ url_for('student.my_applications') }}"
-               title="Open this application in My applications">
-              <i class="bi {{ st.icon }}" aria-hidden="true"></i>{{ st.label }}
-            </a>
-            <span class="gs-app-meta">App #{{ st.app_id }} · submitted {{ st.submitted }}</span>
+          {# ── This student's application, right on the program card ─────────── #}
+          {% if app %}
+          {% set st = app_status.get(s.id) %}
+          {% set sv = app.status.value %}
+          <div class="gs-app gs-app--{{ app.card_group }}">
+            <div class="gs-app-head">
+              <span class="gs-app-label gs-app-label--{{ st.tone }}">
+                <i class="bi {{ st.icon }}" aria-hidden="true"></i>{{ st.label }}
+              </span>
+              {% if s.award_amount %}
+              <span class="gs-app-award">₱{{ "{:,.0f}".format(s.award_amount) }}</span>
+              {% endif %}
+            </div>
+
+            <p class="gs-app-ids">
+              Application #{{ app.id }} · submitted {{ app.submitted_at.strftime('%b %d, %Y') if app.submitted_at else '—' }}
+            </p>
+
+            {% if sv != 'withdrawn' %}
+            <div class="gs-app-track" aria-hidden="true">
+              <i class="is-done"></i>
+              <i class="{% if sv in ('pending', 'under_review') %}is-now{% else %}is-done{% endif %}"></i>
+              <i class="{% if sv == 'approved' %}is-done{% elif sv == 'rejected' %}is-bad{% endif %}"></i>
+            </div>
+            <div class="gs-app-steps">
+              <span class="is-done">Submitted</span>
+              <span class="{% if sv in ('pending', 'under_review') %}is-now{% else %}is-done{% endif %}">Under review</span>
+              <span class="{% if sv == 'approved' %}is-done{% elif sv == 'rejected' %}is-bad{% endif %}">Decision</span>
+            </div>
+            {% endif %}
+
+            {% if sv == 'approved' %}
+            <p class="gs-app-note gs-app-note--ok">
+              <i class="bi bi-check2-circle" aria-hidden="true"></i>
+              <span>{{ app.review_notes or 'Approved — claim your grant at the scholarship office with your COR.' }}</span>
+            </p>
+            {% elif sv == 'rejected' %}
+            <p class="gs-app-note gs-app-note--bad">
+              <i class="bi bi-x-circle" aria-hidden="true"></i>
+              <span>{{ app.review_notes or 'You can apply again while this program is still open.' }}</span>
+            </p>
+            {% elif sv == 'withdrawn' %}
+            <p class="gs-app-note">
+              <i class="bi bi-dash-circle" aria-hidden="true"></i>
+              <span>{{ app.review_notes or 'You withdrew this application.' }}</span>
+            </p>
+            {% elif app.deadline_in is not none and 0 <= app.deadline_in <= 7 %}
+            <p class="gs-app-note gs-app-note--warn">
+              <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+              <span>Deadline in {{ app.deadline_in }} day{{ 's' if app.deadline_in != 1 }}
+                ({{ s.application_deadline.strftime('%b %d, %Y') }}) — you can still edit or withdraw.</span>
+            </p>
+            {% else %}
+            <p class="gs-app-note">
+              <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+              <span>With the scholarship office{% if app.awaiting_days is not none %} · {{ app.awaiting_days }} day{{ 's' if app.awaiting_days != 1 }} so far{% endif %} — no action needed from you.</span>
+            </p>
+            {% endif %}
+
+            <div class="gs-app-btns">
+              <button type="button" class="gs-app-btn" data-drawer="appDrawer{{ app.id }}">
+                <i class="bi bi-eye" aria-hidden="true"></i>Details
+              </button>
+
+              {% if sv in ('pending', 'under_review') and s.is_application_open() %}
+              <a class="gs-app-btn gs-app-btn--primary" href="{{ url_for('scholarship.edit_application', app_id=app.id) }}">
+                <i class="bi bi-pencil" aria-hidden="true"></i>Edit
+              </a>
+              <button type="button" class="gs-app-btn gs-app-btn--danger"
+                      data-bs-toggle="modal" data-bs-target="#withdrawModal{{ app.id }}">
+                <i class="bi bi-x-circle" aria-hidden="true"></i>Withdraw
+              </button>
+              {% elif sv == 'approved' %}
+              <a class="gs-app-btn gs-app-btn--ok" href="{{ url_for('student.my_scholarship') }}">
+                <i class="bi bi-award" aria-hidden="true"></i>View award
+              </a>
+              {% elif sv in ('rejected', 'withdrawn') and s.is_application_open() %}
+              <a class="gs-app-btn gs-app-btn--ok" href="{{ url_for('scholarship.apply_scholarship', scholarship_id=s.id) }}">
+                <i class="bi bi-arrow-repeat" aria-hidden="true"></i>Apply again
+              </a>
+              {% endif %}
+            </div>
           </div>
           {% endif %}
 
           <div class="gs-card-foot">
             {% if session.get('user_type') == 'student' %}
-              {% if st and st.group in ('review', 'approved') %}
+              {% if app %}
                 <a class="gs-btn gs-btn--ghost"
                    href="{{ url_for('scholarship.view_scholarship', scholarship_id=s.id) }}">Program details</a>
-                <a class="gs-btn gs-btn--primary"
-                   href="{{ url_for('student.my_applications') }}">View application</a>
               {% else %}
                 <a class="gs-btn gs-btn--ghost"
                    href="{{ url_for('scholarship.view_scholarship', scholarship_id=s.id) }}">View details</a>
 
-                {% if st and st.group == 'decided' %}
-                  {% if s.is_application_open() %}
-                    <a class="gs-btn gs-btn--warn" href="{{ url_for('scholarship.apply_scholarship', scholarship_id=s.id) }}">
-                      <i class="bi bi-arrow-repeat" aria-hidden="true"></i>{{ 'Re-apply' if st.state == 'withdrawn' else 'Apply again' }}
-                    </a>
-                  {% else %}
-                    <span class="gs-disabled">Closed</span>
-                  {% endif %}
-                {% elif s.funding_type == 'public' and holds_public %}
+                {% if s.funding_type == 'public' and holds_public %}
                   <span class="gs-disabled" title="You already have the public scholarship '{{ active_scholarship_title }}'">
                     <i class="bi bi-lock-fill" aria-hidden="true"></i>Public limit reached
                   </span>
@@ -200,6 +269,12 @@
     {% else %}
     <div class="gs-empty">
       <i class="bi bi-search" aria-hidden="true"></i>
+      {% if view != 'all' and not q %}
+      <h2>Nothing in this group</h2>
+      <p>No program matches this filter yet.</p>
+      <a class="gs-btn gs-btn--ghost" style="max-width:220px;margin:0 auto;"
+         href="{{ url_for('scholarship.list_scholarships') }}">Show all programs</a>
+      {% else %}
       <h2>No scholarships found{% if q %} for “{{ q }}”{% endif %}</h2>
       <p>
         {% if q %}Try a different keyword, or clear the search to see every program.
@@ -209,9 +284,175 @@
       <a class="gs-btn gs-btn--ghost" style="max-width:220px;margin:0 auto;"
          href="{{ url_for('scholarship.list_scholarships') }}">Clear search</a>
       {% endif %}
+      {% endif %}
     </div>
     {% endif %}
 
   </div>
 </div>
+
+<!-- ══ Application detail drawers ═══════════════════════════════════════════ -->
+{% for s in scholarships %}
+{% set app = app_by_sch.get(s.id) if app_by_sch else none %}
+{% if app %}
+{% set sv = app.status.value %}
+<div class="gd-drawer" id="appDrawer{{ app.id }}" hidden>
+  <div class="gd-backdrop" data-drawer-close></div>
+  <aside class="gd-sheet" role="dialog" aria-modal="true" aria-labelledby="appDrawerTitle{{ app.id }}">
+
+    <header class="gd-head">
+      <div>
+        <span class="gs-app-label gs-app-label--{{ app_status.get(s.id).tone }}">
+          <i class="bi {{ app_status.get(s.id).icon }}" aria-hidden="true"></i>{{ app_status.get(s.id).label }}
+        </span>
+        <h2 id="appDrawerTitle{{ app.id }}">{{ s.title }}</h2>
+        <p>Application #{{ app.id }}</p>
+      </div>
+      <button type="button" class="gd-close" data-drawer-close aria-label="Close details">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+      </button>
+    </header>
+
+    <div class="gd-body">
+      <div class="gd-dates">
+        <div><span>Submitted</span><b>{{ app.submitted_at.strftime('%b %d, %Y · %I:%M %p') if app.submitted_at else '—' }}</b></div>
+        <div><span>Reviewed</span><b>{% if app.reviewed_at %}{{ app.reviewed_at.strftime('%b %d, %Y') }}{% else %}—{% endif %}</b></div>
+        <div><span>Award</span><b>{% if s.award_amount %}₱{{ "{:,.0f}".format(s.award_amount) }}{% else %}Varies{% endif %}</b></div>
+      </div>
+
+      {% if app.review_notes %}
+      <div class="gd-alert gd-alert--{{ 'ok' if sv == 'approved' else ('bad' if sv == 'rejected' else 'info') }}">
+        <i class="bi bi-chat-left-text" aria-hidden="true"></i>
+        <span><strong>Note from the office</strong>{{ app.review_notes }}</span>
+      </div>
+      {% endif %}
+
+      <h3 class="gd-h3">Personal information</h3>
+      {% if app.application_data %}
+      <dl class="gd-fields">
+        <div><dt>Name</dt><dd>{{ app.application_data.get('first_name', '—') }} {{ app.application_data.get('last_name', '') }}</dd></div>
+        <div><dt>Student ID</dt><dd>{{ app.application_data.get('student_id', '—') }}</dd></div>
+        <div><dt>Email</dt><dd>{{ app.application_data.get('email', '—') }}</dd></div>
+        <div><dt>Phone</dt><dd>{{ app.application_data.get('phone', '—') }}</dd></div>
+        <div><dt>Birthday</dt><dd>{{ app.application_data.get('birthday') or '—' }}</dd></div>
+        <div><dt>Gender</dt><dd>{{ app.application_data.get('gender') or '—' }}</dd></div>
+      </dl>
+      {% else %}
+      <p class="gd-hint">No application data on record.</p>
+      {% endif %}
+
+      <h3 class="gd-h3">Academic information</h3>
+      {% if app.application_data %}
+      <dl class="gd-fields">
+        <div><dt>Course</dt><dd>{{ app.application_data.get('course', '—') }}</dd></div>
+        <div><dt>Year level</dt><dd>{{ app.application_data.get('year_level', '—') }}</dd></div>
+        <div><dt>GWA</dt><dd>{{ app.application_data.get('gwa', '—') }}</dd></div>
+        <div><dt>Units enrolled</dt><dd>{{ app.application_data.get('units_enrolled', '—') }}</dd></div>
+      </dl>
+      {% else %}
+      <p class="gd-hint">No academic data on record.</p>
+      {% endif %}
+
+      {% if app.application_data and app.application_data.get('custom_fields') %}
+      <h3 class="gd-h3">Additional information</h3>
+      <dl class="gd-fields">
+        {% for cf in app.application_data.custom_fields %}
+        <div><dt>{{ cf.label }}</dt><dd>{{ cf.value or '—' }}</dd></div>
+        {% endfor %}
+      </dl>
+      {% endif %}
+    </div>
+
+    <footer class="gd-foot">
+      {% if sv in ('pending', 'under_review') and s.is_application_open() %}
+      <a class="gs-app-btn gs-app-btn--primary" href="{{ url_for('scholarship.edit_application', app_id=app.id) }}">
+        <i class="bi bi-pencil" aria-hidden="true"></i>Edit application
+      </a>
+      {% elif sv in ('rejected', 'withdrawn') and s.is_application_open() %}
+      <a class="gs-app-btn gs-app-btn--primary" href="{{ url_for('scholarship.apply_scholarship', scholarship_id=s.id) }}">
+        <i class="bi bi-arrow-repeat" aria-hidden="true"></i>Apply again
+      </a>
+      {% endif %}
+      <button type="button" class="gs-app-btn" data-drawer-close>Close</button>
+    </footer>
+  </aside>
+</div>
+{% endif %}
+{% endfor %}
+
+<!-- ══ Withdraw modals ══════════════════════════════════════════════════════ -->
+{% for s in scholarships %}
+{% set app = app_by_sch.get(s.id) if app_by_sch else none %}
+{% if app and app.status.value in ('pending', 'under_review') and s.is_application_open() %}
+<div class="modal fade" id="withdrawModal{{ app.id }}" tabindex="-1" aria-labelledby="withdrawLabel{{ app.id }}">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content gwm">
+      <div class="modal-header gwm-head">
+        <h5 class="modal-title" id="withdrawLabel{{ app.id }}">
+          <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>Withdraw application
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST" action="{{ url_for('scholarship.withdraw_application', app_id=app.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-body gwm-body">
+          <p>You are about to withdraw your application for <strong>{{ s.title }}</strong>.</p>
+          <p class="gwm-note">
+            <i class="bi bi-info-circle" aria-hidden="true"></i>
+            You can re-apply later as long as the program is still open.
+          </p>
+          <label class="gwm-label" for="withdrawReason{{ app.id }}">
+            Reason for withdrawal <span>(optional, shown to the scholarship office)</span>
+          </label>
+          <textarea class="gwm-input" name="withdraw_reason" id="withdrawReason{{ app.id }}" rows="3"
+                    placeholder="e.g. I found another scholarship, personal reasons, etc."></textarea>
+        </div>
+        <div class="modal-footer gwm-foot">
+          <button type="button" class="gs-app-btn" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="gs-app-btn gs-app-btn--danger"
+                  onclick="return confirm('Are you sure you want to withdraw this application?')">
+            <i class="bi bi-x-circle" aria-hidden="true"></i>Confirm withdrawal
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endfor %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var opener = null;
+
+  function closeDrawers() {
+    document.querySelectorAll('.gd-drawer').forEach(function (d) { d.hidden = true; });
+    document.body.classList.remove('gd-locked');
+    if (opener) { opener.focus(); opener = null; }
+  }
+
+  function openDrawer(id, trigger) {
+    var drawer = document.getElementById(id);
+    if (!drawer) return;
+    opener = trigger || null;
+    drawer.hidden = false;
+    document.body.classList.add('gd-locked');
+    var focusTarget = drawer.querySelector('[data-drawer-close]');
+    if (focusTarget) focusTarget.focus();
+  }
+
+  document.querySelectorAll('[data-drawer]').forEach(function (btn) {
+    btn.addEventListener('click', function () { openDrawer(btn.dataset.drawer, btn); });
+  });
+  document.querySelectorAll('[data-drawer-close]').forEach(function (btn) {
+    btn.addEventListener('click', closeDrawers);
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closeDrawers();
+  });
+})();
+</script>
 {% endblock %}

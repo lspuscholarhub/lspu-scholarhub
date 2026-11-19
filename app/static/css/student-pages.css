@@ -1,7 +1,7 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    Student pages — Dashboard, My Applications, Profile
    Mobile-first; the 960px block refines desktop (same breakpoint as the shell).
-   Namespaced: .st- shared, .sd- dashboard, .sa- applications, .sp- profile.
+   Namespaced: .st- shared, .sd- dashboard, .sp- profile.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .st, .st-page {
@@ -300,160 +300,6 @@
 .sd-programs a span { font-size: .72rem; color: var(--st-muted); }
 .sd-rail-foot { display: inline-block; margin-top: .6rem; }
 
-/* ═══ APPLICATIONS (Option A: compact cards + segmented tracker) ═══════════
-   Header carries the awarded/pending summary, a filter row splits the list by
-   status, each card shows a 3-segment progress bar and a plain-language
-   "next step" line above its actions.                                          */
-.sa-head {
-  display: flex;
-  flex-direction: column;
-  gap: .9rem;
-  padding: 1.5rem 0 1rem;
-}
-.sa-head .sa-head-main { padding: 0; }
-.sa-new { align-self: flex-start; }
-
-.sa-summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .15rem .9rem;
-  margin: .55rem 0 0;
-  font-size: .8rem;
-  color: var(--st-muted);
-}
-.sa-summary b { font-weight: 800; color: var(--st-navy); }
-.sa-summary .is-ok b { color: #0f7a4f; }
-.sa-summary .is-warn b { color: var(--st-warn); }
-
-/* filter pills */
-.sa-filters {
-  display: flex;
-  gap: .4rem;
-  margin: 0 0 .9rem;
-  padding-bottom: .15rem;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.sa-filters::-webkit-scrollbar { display: none; }
-.sa-filter {
-  flex: 0 0 auto;
-  display: inline-flex;
-  align-items: center;
-  gap: .3rem;
-  min-height: 34px;
-  padding: .3rem .75rem;
-  border-radius: 999px;
-  border: 1px solid var(--st-line);
-  background: #fff;
-  font: inherit;
-  font-size: .78rem;
-  font-weight: 700;
-  color: #41556f;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.sa-filter b { font-weight: 800; opacity: .7; }
-.sa-filter:hover { background: #f3f7fd; }
-.sa-filter.is-on {
-  background: var(--st-navy);
-  border-color: var(--st-navy);
-  color: #fff;
-}
-.sa-filter.is-on b { opacity: .85; }
-
-/* card */
-.sa-list { display: grid; gap: .75rem; }
-.sa-item { border-left: 4px solid #ffc107; padding: .95rem 1rem; }
-.sa-item--ok  { border-left-color: var(--st-ok); }
-.sa-item--bad { border-left-color: var(--st-bad); }
-.sa-item--muted { border-left-color: #b6c1cf; }
-.sa-item[hidden] { display: none; }
-
-.sa-top {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: .6rem;
-}
-.sa-main { min-width: 0; }
-.sa-side {
-  flex: 0 0 auto;
-  display: grid;
-  gap: .25rem;
-  justify-items: end;
-  text-align: right;
-}
-.sa-name {
-  margin: 0 0 .2rem;
-  font-size: .96rem;
-  font-weight: 700;
-  line-height: 1.3;
-  color: var(--st-navy);
-}
-.sa-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .15rem .7rem;
-  font-size: .72rem;
-  color: var(--st-muted);
-}
-.sa-award { font-size: .88rem; font-weight: 800; color: #0f7a4f; white-space: nowrap; }
-
-/* segmented tracker */
-.sa-track { margin: .85rem 0 0; }
-.sa-segs { display: flex; gap: 4px; }
-.sa-segs i {
-  display: block;
-  flex: 1 1 0;
-  height: 5px;
-  border-radius: 99px;
-  background: #e6ebf3;
-}
-.sa-segs i.is-done { background: var(--st-ok); }
-.sa-segs i.is-now  { background: #ffc107; }
-.sa-segs i.is-bad  { background: var(--st-bad); }
-.sa-seglbl { display: flex; gap: 4px; margin-top: .3rem; }
-.sa-seglbl span {
-  flex: 1 1 0;
-  font-size: .58rem;
-  font-weight: 700;
-  letter-spacing: .05em;
-  text-transform: uppercase;
-  color: #8593a5;
-}
-.sa-seglbl span.is-done { color: #0f7a4f; }
-.sa-seglbl span.is-now  { color: var(--st-warn); }
-.sa-seglbl span.is-bad  { color: #b02a37; }
-
-/* next step + actions */
-.sa-foot {
-  display: flex;
-  flex-direction: column;
-  gap: .65rem;
-  margin-top: .8rem;
-}
-.sa-note {
-  display: flex;
-  align-items: flex-start;
-  gap: .35rem;
-  margin: 0;
-  font-size: .77rem;
-  line-height: 1.4;
-  color: var(--st-muted);
-}
-.sa-note i { flex-shrink: 0; margin-top: .1rem; }
-.sa-note--warn { color: #8a5200; font-weight: 600; }
-.sa-note--ok   { color: #0f5c3d; }
-.sa-note--bad  { color: #8f1f2b; }
-
-.sa-btns { display: flex; flex-wrap: wrap; gap: .4rem; }
-.sa-btns .st-btn {
-  min-height: 38px;
-  padding: .4rem .72rem;
-  font-size: .78rem;
-  border-radius: 9px;
-}
-
 /* ═══ PROFILE ══════════════════════════════════════════════════════════════ */
 .sprof-head { display: flex; flex-direction: column; gap: .55rem; padding: 1.5rem 0 1rem; }
 .sprof-head-actions { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
@@ -686,7 +532,6 @@
 
   .st-head { padding: 1.9rem 0 1.1rem; }
   .st-title { font-size: 1.85rem; }
-  .sa-actions .st-btn { flex: 0 0 auto; }
 }
 
 /* ── desktop ──────────────────────────────────────────────────────────────── */
@@ -708,26 +553,6 @@
   .sd-grid { grid-template-columns: minmax(0, 1fr) 320px; gap: 1.1rem; align-items: start; }
 
   .st-card { padding: 1.2rem; border-radius: 18px; }
-  .sa-head {
-    flex-direction: row;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 1.5rem;
-    padding: 2.4rem 0 1.3rem;
-  }
-  .sa-new { flex: 0 0 auto; }
-  .sa-list { gap: .9rem; }
-  .sa-item { padding: 1.1rem 1.25rem; }
-  .sa-name { font-size: 1rem; }
-  .sa-foot {
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    margin-top: .85rem;
-  }
-  .sa-btns { flex: 0 0 auto; }
-  .sa-filters { margin-bottom: 1.1rem; }
 }
 
 /* ═══ NOTIFICATIONS ════════════════════════════════════════════════════════ */

@@ -41,8 +41,7 @@
 {% elif role == 'student' %}
   {% set nav.items = [
     {'label':'Dashboard',       'short':'Home',   'icon':'bi-speedometer2',     'url':url_for('student.dashboard'),        'eps':['student.dashboard'],                 'bottom':True},
-    {'label':'Scholarships',    'short':'Browse', 'icon':'bi-search',           'url':url_for('scholarship.list_scholarships'), 'eps':['scholarship.list_scholarships','scholarship.view_scholarship','scholarship.apply_scholarship'], 'bottom':True},
-    {'label':'My Applications', 'short':'Apps',   'icon':'bi-file-earmark-text','url':url_for('student.my_applications'),   'eps':['student.my_applications','scholarship.edit_application'], 'bottom':True},
+    {'label':'Scholarships',    'short':'Browse', 'icon':'bi-search',           'url':url_for('scholarship.list_scholarships'), 'eps':['scholarship.list_scholarships','scholarship.view_scholarship','scholarship.apply_scholarship','scholarship.edit_application'], 'bottom':True},
     {'label':'Notifications',   'short':'Alerts', 'icon':'bi-bell',             'url':url_for('student.notifications'),     'eps':['student.notifications'],             'badge':unread_count, 'bottom':True}
   ] %}
   {% if has_approved_scholarship %}

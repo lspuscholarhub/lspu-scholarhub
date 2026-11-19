@@ -74,15 +74,27 @@ def dashboard():
     # Filter by selected period if viewing a specific one
     apps = [a for a in all_apps if pid is None or a.academic_period_id == pid]
 
-    total_apps = len(apps)
-    approved_apps = [a for a in apps if a.status == ApplicationStatus.APPROVED]
+    # The tiles below link to the scholarship page, which shows one card per
+    # program with the most recent application on it. Count programs here too,
+    # so a re-application never makes the dashboard out-number the cards.
+    per_program = {}
+    for a in apps:
+        prev = per_program.get(a.scholarship_id)
+        if prev is None or (a.submitted_at and prev.submitted_at
+                            and a.submitted_at > prev.submitted_at):
+            per_program[a.scholarship_id] = a
+    program_apps = list(per_program.values())
+
+    total_apps = len(program_apps)
+    approved_apps = [a for a in program_apps
+                     if a.status == ApplicationStatus.APPROVED]
     approved_count = len(approved_apps)
-    pending_count = sum(1 for a in apps
+    pending_count = sum(1 for a in program_apps
                         if a.status in (ApplicationStatus.PENDING,
                                         ApplicationStatus.UNDER_REVIEW))
 
     # Available scholarships the student hasn't applied to yet — respect visibility
-    applied_ids = {a.scholarship_id for a in apps}
+    applied_ids = set(per_program)
     all_active = Scholarship.query.filter(
         Scholarship.status == ScholarshipStatus.ACTIVE,
         ~Scholarship.id.in_(applied_ids) if applied_ids else True,
@@ -210,36 +222,12 @@ def dashboard():
 @student_bp.route('/applications')
 @role_required('student')
 def my_applications():
-    user = User.query.get(session['user_id'])
-    current_period = get_viewing_period()
-    pid = current_period.id if current_period else None
-    q = ScholarshipApplication.query.filter_by(applicant_id=user.id)
-    if pid:
-        q = q.filter(ScholarshipApplication.academic_period_id == pid)
-    apps = q.order_by(ScholarshipApplication.submitted_at.desc()).all()
+    """Kept as a redirect: applications now live on the scholarship cards.
 
-    # Header summary + filter counts: what the student has been awarded, what is
-    # still awaiting a decision, and how the list splits by status.
-    review_states = (ApplicationStatus.PENDING, ApplicationStatus.UNDER_REVIEW)
-    decided_states = (ApplicationStatus.REJECTED, ApplicationStatus.WITHDRAWN)
-
-    def _award(a):
-        return a.scholarship.award_amount if (a.scholarship and a.scholarship.award_amount) else 0
-
-    summary = {
-        'awarded': sum(_award(a) for a in apps if a.status == ApplicationStatus.APPROVED),
-        'pending': sum(_award(a) for a in apps if a.status in review_states),
-        'review': sum(1 for a in apps if a.status in review_states),
-        'approved': sum(1 for a in apps if a.status == ApplicationStatus.APPROVED),
-        'decided': sum(1 for a in apps if a.status in decided_states),
-    }
-
-    return render_template(
-        'student/applications.html',
-        applications=apps,
-        summary=summary,
-        now=datetime.utcnow(),
-    )
+    Every apply/edit/withdraw flow, notification and dashboard tile still
+    points here, so the route has to resolve rather than 404.
+    """
+    return redirect(url_for('scholarship.list_scholarships', view='mine'))
 
 
 # ── Apply for scholarship (redirect to scholarship blueprint) ─────────────────
@@ -633,7 +621,7 @@ def my_scholarship():
     if not approved_apps:
         flash('You do not have an approved scholarship yet. '
               'Approved programs will appear here.', 'info')
-        return redirect(url_for('student.my_applications'))
+        return redirect(url_for('scholarship.list_scholarships', view='mine'))
 
     # Per-application details
     status_labels = {

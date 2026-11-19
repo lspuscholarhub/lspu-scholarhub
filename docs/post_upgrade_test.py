@@ -38,7 +38,7 @@ with app.app_context():
             s['campus_name'] = 'Santa Cruz Campus'
 
         test("Student dashboard", lambda: c.get('/student/dashboard').status_code == 200 or (_ for _ in ()).throw(AssertionError()))
-        test("Student applications", lambda: c.get('/student/applications').status_code == 200 or (_ for _ in ()).throw(AssertionError()))
+        test("Student applications (on the scholarship page)", lambda: c.get('/scholarship/?view=mine').status_code == 200 or (_ for _ in ()).throw(AssertionError()))
         test("Student profile", lambda: c.get('/student/profile').status_code == 200 or (_ for _ in ()).throw(AssertionError()))
         test("Student notifications", lambda: c.get('/student/notifications').status_code == 200 or (_ for _ in ()).throw(AssertionError()))
         test("Student M&E download", lambda: None if c.get('/student/monitoring-form/download').status_code == 200 else (_ for _ in ()).throw(AssertionError()))

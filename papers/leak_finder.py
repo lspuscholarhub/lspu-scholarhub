@@ -371,7 +371,7 @@ def live_test_unauthenticated_access(app):
         '/staff/notifications',
         '/staff/reports',
         '/student/',
-        '/student/applications',
+        '/student/my-scholarship',
         '/student/profile',
         '/student/notifications',
     ]

@@ -495,7 +495,7 @@ class NotificationService:
             "Application Received", 
             f"Your application for {scholarship_name} has been received and is now under review.",
             "application",
-            "/student/applications"
+            "/scholarship/?view=mine"
         )
         
         return {
@@ -540,7 +540,7 @@ class NotificationService:
             "Application Status Updated", 
             in_app_message,
             "application",
-            "/student/applications"
+            "/scholarship/?view=mine"
         )
         
         return {

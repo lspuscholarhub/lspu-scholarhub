@@ -81,9 +81,11 @@ def list_scholarships():
     else:
         scholarships = [s for s in all_scholarships if s.is_visible_to(student_id)]
 
-    # Collect the student's application states per scholarship, scoped to the
-    # selected academic period — same rule as the My Applications page.
+    # Collect the student's own applications, scoped to the selected academic
+    # period. Each program card carries its application; there is no separate
+    # applications page any more.
     app_status = {}
+    app_by_sch = {}
     mine = None
     holds_public = False
     active_scholarship_title = None
@@ -95,22 +97,49 @@ def list_scholarships():
                 ScholarshipApplication.academic_period_id == viewing_period.id)
         my_apps = my_q.all()
 
+        now = datetime.utcnow()
         for a in my_apps:
-            # One badge per program: keep the most recent application.
-            prev = app_status.get(a.scholarship_id)
-            if prev is None or (a.submitted_at and prev['submitted_at']
-                                and a.submitted_at > prev['submitted_at']):
-                app_status[a.scholarship_id] = _app_status_badge(a)
+            # One record per program: keep the most recent application.
+            prev = app_by_sch.get(a.scholarship_id)
+            if prev is None or (a.submitted_at and prev.submitted_at
+                                and a.submitted_at > prev.submitted_at):
+                app_by_sch[a.scholarship_id] = a
 
-        # Totals for the "My applications" strip (same shape as the page card).
+        for a in app_by_sch.values():
+            app_status[a.scholarship_id] = _app_status_badge(a)
+            # Facts the card shows: how long the office has had it, and how many
+            # days the program has left.
+            a.awaiting_days = None
+            if a.status in _REVIEW_STATES and a.submitted_at:
+                a.awaiting_days = max(0, (now - a.submitted_at).days)
+            deadline = a.scholarship.application_deadline if a.scholarship else None
+            if deadline and not isinstance(deadline, datetime):
+                deadline = datetime.combine(deadline, datetime.min.time())
+            # Calendar days: the deadline is midnight of a day, so subtracting
+            # the current time reported one day fewer after noon.
+            a.deadline_in = ((deadline.date() - now.date()).days
+                             if deadline else None)
+            a.card_group = _BADGE_STYLES.get(
+                a.status, (None, None, None, 'decided'))[3]
+
+        # Totals for the money line under the filters. Application counts come
+        # from `counts` below (one per program), so they are not repeated here.
         mine = {
-            'total': len(my_apps),
-            'review': sum(1 for a in my_apps if a.status in _REVIEW_STATES),
             'awarded': sum(_award_amount(a) for a in my_apps
                            if a.status == ApplicationStatus.APPROVED),
             'pending': sum(_award_amount(a) for a in my_apps
                            if a.status in _REVIEW_STATES),
         }
+
+        # Programs you applied to stay on the page even when the office later
+        # hides the program or it belongs to another period — otherwise the only
+        # record of your award could disappear from the site.
+        if not q:
+            listed = {s.id for s in scholarships}
+            extra = [a.scholarship for a in app_by_sch.values()
+                     if a.scholarship and a.scholarship.id not in listed]
+            extra.sort(key=lambda s: s.application_deadline or datetime.max)
+            scholarships = scholarships + extra
 
         # Public scholarships are exclusive — check for an active one
         # (pending, under review, or approved)
@@ -119,12 +148,36 @@ def list_scholarships():
             holds_public = True
             active_scholarship_title = approved_app.scholarship.title
 
+    # Status filters: the old applications page's tiles, now above the grid.
+    view = (request.args.get('view') or 'all').strip().lower()
+
+    def _group(s):
+        a = app_by_sch.get(s.id)
+        return a.card_group if a is not None else None
+
+    counts = {
+        'all': len(scholarships),
+        'mine': len([s for s in scholarships if s.id in app_by_sch]),
+        'review': len([s for s in scholarships if _group(s) == 'review']),
+        'approved': len([s for s in scholarships if _group(s) == 'approved']),
+        'decided': len([s for s in scholarships if _group(s) == 'decided']),
+    }
+    if view not in counts:
+        view = 'all'
+    if view != 'all':
+        scholarships = [s for s in scholarships
+                        if s.id in app_by_sch
+                        and (view == 'mine' or _group(s) == view)]
+
     return render_template(
         'scholarship/list.html',
         scholarships=scholarships,
         holds_public=holds_public,
         active_scholarship_title=active_scholarship_title,
         app_status=app_status,
+        app_by_sch=app_by_sch,
+        view=view,
+        counts=counts,
         mine=mine,
         q=q,
     )
@@ -296,7 +349,7 @@ def apply_scholarship(scholarship_id):
                   f'("{active_public.scholarship.title}" — {st}). Only one public '
                   'scholarship is allowed at a time — you may still apply to '
                   'private scholarship programs.', 'warning')
-            return redirect(url_for('student.my_applications'))
+            return redirect(url_for('scholarship.list_scholarships', view='mine'))
 
     # Guard: no duplicate ACTIVE application for this scholarship.
     # Withdrawn or rejected applications free the student to apply again.
@@ -310,7 +363,7 @@ def apply_scholarship(scholarship_id):
     ).first()
     if existing:
         flash('You have an active application for this scholarship.', 'warning')
-        return redirect(url_for('student.my_applications'))
+        return redirect(url_for('scholarship.list_scholarships', view='mine'))
 
     # Guard: visibility — student must be in the allowed list if scholarship is hidden
     if not scholarship.is_visible_to(user.student_id):
@@ -419,7 +472,7 @@ def apply_scholarship(scholarship_id):
                 _log.getLogger(__name__).warning(f'Audit log failed (non-fatal): {e}')
 
             flash(f'Your application for "{scholarship.title}" has been submitted!', 'success')
-            return redirect(url_for('student.my_applications'))
+            return redirect(url_for('scholarship.list_scholarships', view='mine'))
 
         except Exception as e:
             import logging as _log
@@ -451,15 +504,15 @@ def edit_application(app_id):
 
     if application.applicant_id != session['user_id']:
         flash('Access denied.', 'error')
-        return redirect(url_for('student.my_applications'))
+        return redirect(url_for('scholarship.list_scholarships', view='mine'))
 
     if application.status not in (ApplicationStatus.PENDING, ApplicationStatus.UNDER_REVIEW):
         flash('Only pending or under-review applications can be edited.', 'warning')
-        return redirect(url_for('student.my_applications'))
+        return redirect(url_for('scholarship.list_scholarships', view='mine'))
 
     if not application.scholarship.is_application_open():
         flash('The deadline for this scholarship has passed. No further edits are allowed.', 'warning')
-        return redirect(url_for('student.my_applications'))
+        return redirect(url_for('scholarship.list_scholarships', view='mine'))
 
     if request.method == 'POST':
         form_data = application.application_data or {}
@@ -495,7 +548,7 @@ def edit_application(app_id):
 
         db.session.commit()
         flash('Application updated successfully.', 'success')
-        return redirect(url_for('student.my_applications'))
+        return redirect(url_for('scholarship.list_scholarships', view='mine'))
 
     return render_template('scholarship/apply.html',
                            scholarship=application.scholarship,
@@ -512,10 +565,10 @@ def withdraw_application(app_id):
     application = ScholarshipApplication.query.get_or_404(app_id)
     if application.applicant_id != session['user_id']:
         flash('Access denied.', 'error')
-        return redirect(url_for('student.my_applications'))
+        return redirect(url_for('scholarship.list_scholarships', view='mine'))
     if application.status not in (ApplicationStatus.PENDING, ApplicationStatus.UNDER_REVIEW):
         flash('This application cannot be withdrawn.', 'warning')
-        return redirect(url_for('student.my_applications'))
+        return redirect(url_for('scholarship.list_scholarships', view='mine'))
 
     reason = request.form.get('withdraw_reason', '').strip()
 
@@ -540,7 +593,7 @@ def withdraw_application(app_id):
                category='application', target_type='application', target_id=app_id)
 
     flash('Your application has been withdrawn.', 'info')
-    return redirect(url_for('student.my_applications'))
+    return redirect(url_for('scholarship.list_scholarships', view='mine'))
 
 
 # ── Document download ─────────────────────────────────────────────────────────

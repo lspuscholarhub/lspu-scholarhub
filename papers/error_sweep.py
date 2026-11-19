@@ -36,7 +36,7 @@ GUEST_ROUTES = [
 
 STUDENT_ROUTES = [
     '/student/dashboard',
-    '/student/applications',
+    '/scholarship/?view=mine',
     '/student/profile',
     '/student/notifications',
     '/student/documents',
