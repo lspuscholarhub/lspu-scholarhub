@@ -251,7 +251,6 @@ def add_existing_scholar_to_program(user, scholarship, staff_user_id, notes=None
             'added_by': staff_user_id,
         },
         status=ApplicationStatus.APPROVED,
-        scholar_tag='active',
         scholar_status='active',
         submitted_at=datetime.utcnow(),
         reviewed_at=datetime.utcnow(),

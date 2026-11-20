@@ -106,7 +106,6 @@ class ScholarshipApplication(db.Model):
     application_data = db.Column(db.JSON)
     documents = db.Column(db.JSON)
     status = db.Column(db.Enum(ApplicationStatus), default=ApplicationStatus.PENDING, nullable=False)
-    scholar_tag = db.Column(db.Enum('active', 'at_risk', 'probation', 'inactive'), default='active')
     submitted_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     reviewed_at = db.Column(db.DateTime)
     reviewed_by = db.Column(db.Integer, db.ForeignKey('users.id'))
@@ -137,7 +136,6 @@ class ScholarshipApplication(db.Model):
             'application_data': self.application_data,
             'documents': self.documents,
             'status': self.status.value if self.status else None,
-            'scholar_tag': self.scholar_tag,
             'scholar_status': self.scholar_status,
             'compliance_status': self.compliance_status,
             'submitted_at': self.submitted_at.isoformat() if self.submitted_at else None,
