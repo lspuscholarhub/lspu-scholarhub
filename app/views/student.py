@@ -147,10 +147,17 @@ def dashboard():
             return f'Due {date_value.strftime("%b %d")}', 'warn', days, False
         return f'Due {date_value.strftime("%b %d, %Y")}', 'muted', days, False
 
-    def _add(title, label, date_value, href, icon):
+    def _add(title, label, date_value, href, icon, rank=1):
+        """rank 0 = an account detail the student fixes in their profile.
+
+        Undated items all report 9999 days, so rank only ever breaks that tie.
+        Without it, whichever item happened to be added first led the list.
+        """
         state, tone, days, overdue = _due(date_value)
         actions.append({'title': title, 'label': label, 'state': state,
                         'tone': tone, 'days': days, 'overdue': overdue,
+                        'timed': date_value is not None, 'rank': rank,
+                        'blocking': False,
                         'href': href, 'icon': icon})
 
     for form in _visible_campus_forms(user):
@@ -183,18 +190,51 @@ def dashboard():
                  url_for('student.my_scholarship'), 'bi-clipboard-data')
 
     if not user.phone_number:
-        _add('Add a phone number', 'Profile', None,
-             url_for('student.profile'), 'bi-phone')
+        _add('Add a phone number', 'Profile · the office needs this to reach you', None,
+             url_for('student.profile'), 'bi-phone', rank=0)
     elif not user.phone_verified:
-        _add('Verify your phone number', 'Profile', None,
-             url_for('student.profile'), 'bi-phone')
+        _add('Verify your phone number', 'Profile · the office can’t reach you until this is confirmed', None,
+             url_for('student.profile'), 'bi-phone', rank=0)
     if gwa is None:
         _add('Upload your Copy of Grades', 'Documents', None,
              url_for('student.upload_gwa'), 'bi-file-earmark-text')
 
-    actions.sort(key=lambda a: (0 if a['overdue'] else 1, a['days']))
+    # An unverified account blocks applying altogether, so it outranks anything
+    # with days left on it. The dashboard used to list this in a separate amber
+    # banner alongside the phone / GWA items this list already produces.
+    if not session.get('is_verified'):
+        actions.append({
+            'title': 'Verify your account',
+            'label': 'Contact the office to confirm your enrolment',
+            'state': 'Blocking', 'tone': 'bad',
+            'days': -1, 'overdue': True, 'timed': True,
+            'rank': 0, 'blocking': True,
+            'href': url_for('main.contact'),
+            'icon': 'bi-shield-exclamation',
+        })
+
+    def _order(a):
+        """Blocking first, then overdue, then by deadline, then by rank."""
+        return (0 if a['blocking'] else 1,
+                0 if a['overdue'] else 1,
+                a['days'], a['rank'])
+
+    def _pinned(a):
+        """Rows that must stay visible: a blocked account, or an undated
+        account detail such as the phone number.
+
+        Undated rows sort at 9999 days, so four dated deadlines used to push the
+        phone row past the four-row cap and off the card entirely.
+        """
+        return a['blocking'] or (not a['timed'] and a['rank'] == 0)
+
+    actions.sort(key=_order)
+    shown = [a for a in actions if _pinned(a)][:4]
+    shown += [a for a in actions if not _pinned(a)][:4 - len(shown)]
+    shown.sort(key=_order)
+
     actions_total = len(actions)
-    actions = actions[:4]
+    actions = shown
 
     return render_template(
         'student/dashboard.html',
