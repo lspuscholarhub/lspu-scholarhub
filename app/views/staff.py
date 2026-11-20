@@ -11,6 +11,7 @@ from app.models.scholarship import ScholarshipStatus, ApplicationStatus
 from app.models.notification import NotificationType, NotificationChannel
 from app.services.notification_service import notification_service
 from app.services.scholarship_service import resolve_slot_cap
+from app.utils.custom_fields import parse_custom_fields
 from app.utils.decorators import role_required
 from app.utils.period_context import get_viewing_period, is_viewing_specific_period
 
@@ -198,6 +199,27 @@ def dashboard():
                       .order_by(User.gwa.asc())
                       .limit(5).all())
 
+    # Batches worth surfacing on the dashboard — same filters as the counts above.
+    open_batch_rows = []
+    for _b in _batches_q.order_by(ScholarshipBatch.created_at.desc()).limit(3).all():
+        _prog = db.session.get(Scholarship, _b.scholarship_id)
+        _per = db.session.get(AcademicPeriod, _b.academic_period_id) if _b.academic_period_id else None
+        open_batch_rows.append({
+            'id': _b.id,
+            'name': _b.batch_name,
+            'program': _prog.title if _prog else 'Program removed',
+            'scholars': _b.total_scholars or 0,
+            'amount': float(_b.total_amount or 0),
+            'period': _per.display_name if _per else None,
+        })
+
+    _campus_row = db.session.get(Campus, campus_ctx) if campus_ctx else None
+    campus_name = (session.get('campus_context_name')
+                   or (getattr(_campus_row, 'name', None) if _campus_row else None)
+                   or 'All campuses')
+    now = datetime.utcnow()
+    local_now = now + timedelta(hours=8)   # campus clock (PHT)
+
     return render_template(
         'staff/dashboard.html',
         to_review=to_review, reviewed_today=reviewed_today,
@@ -208,6 +230,9 @@ def dashboard():
         current_period=current_period,
         pending_apps=pending_apps, recent_activity=recent_activity,
         top_performers=top_performers,
+        open_batches=open_batch_rows, campus_name=campus_name,
+        staff_first_name=(_me.first_name if _me else 'there'),
+        now=now, local_now=local_now,
     )
 
 
@@ -270,25 +295,7 @@ def create_scholarship():
                 flash('Invalid application deadline date.', 'error')
                 return redirect(url_for('staff.manage_scholarships'))
 
-        # Build custom form fields from submitted data
-        field_labels = request.form.getlist('field_label[]')
-        field_types = request.form.getlist('field_type[]')
-        field_options_raw = request.form.getlist('field_options[]')
-        field_required_list = request.form.getlist('field_required[]')
-        custom_fields = []
-        for i, label in enumerate(field_labels):
-            if not label.strip():
-                continue
-            ftype = field_types[i] if i < len(field_types) else 'text'
-            options = None
-            if ftype == 'dropdown' and i < len(field_options_raw):
-                options = [o.strip() for o in field_options_raw[i].split(',') if o.strip()]
-            custom_fields.append({
-                'label': label.strip(),
-                'type': ftype,
-                'required': str(i) in field_required_list if i < len(field_required_list) else True,
-                'options': options,
-            })
+        custom_fields = parse_custom_fields(request.form)
 
         # Campus assignment
         user_type = session.get('user_type', '')
@@ -827,25 +834,7 @@ def edit_scholarship(sid):
         cleaned = ','.join(i.strip() for i in raw_ids.replace('\n', ',').split(',') if i.strip())
         s.allowed_student_ids = cleaned or None
 
-        # Build custom form fields from submitted data
-        field_labels = request.form.getlist('field_label[]')
-        field_types = request.form.getlist('field_type[]')
-        field_options_raw = request.form.getlist('field_options[]')
-        field_required_list = request.form.getlist('field_required[]')
-        custom_fields = []
-        for i, label in enumerate(field_labels):
-            if not label.strip():
-                continue
-            ftype = field_types[i] if i < len(field_types) else 'text'
-            options = None
-            if ftype == 'dropdown' and i < len(field_options_raw):
-                options = [o.strip() for o in field_options_raw[i].split(',') if o.strip()]
-            custom_fields.append({
-                'label': label.strip(),
-                'type': ftype,
-                'required': str(i) in field_required_list if i < len(field_required_list) else True,
-                'options': options,
-            })
+        custom_fields = parse_custom_fields(request.form)
         s.custom_form_fields = custom_fields if custom_fields else None
         # Academic period
         period_val = request.form.get('academic_period_id', '').strip()

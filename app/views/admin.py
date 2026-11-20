@@ -9,6 +9,7 @@ from app.models.scholarship import ScholarshipStatus, ApplicationStatus
 from app.models.notification import NotificationType, NotificationChannel
 from app.services.notification_service import notification_service
 from app.services.scholarship_service import resolve_slot_cap
+from app.utils.custom_fields import parse_custom_fields
 from app.utils.decorators import role_required
 
 admin_bp = Blueprint('admin', __name__)
@@ -344,25 +345,7 @@ def manage_scholarships():
 @role_required('admin')
 def create_scholarship():
     try:
-        # Build custom form fields from submitted data
-        field_labels = request.form.getlist('field_label[]')
-        field_types = request.form.getlist('field_type[]')
-        field_options_raw = request.form.getlist('field_options[]')
-        field_required_list = request.form.getlist('field_required[]')
-        custom_fields = []
-        for i, label in enumerate(field_labels):
-            if not label.strip():
-                continue
-            ftype = field_types[i] if i < len(field_types) else 'text'
-            options = None
-            if ftype == 'dropdown' and i < len(field_options_raw):
-                options = [o.strip() for o in field_options_raw[i].split(',') if o.strip()]
-            custom_fields.append({
-                'label': label.strip(),
-                'type': ftype,
-                'required': str(i) in field_required_list if i < len(field_required_list) else True,
-                'options': options,
-            })
+        custom_fields = parse_custom_fields(request.form)
 
         # Campus assignment — same rules as staff route:
         # super admin chooses scope; campus admins always create for their own campus.
@@ -593,25 +576,7 @@ def edit_scholarship(sid):
         )
         s.allowed_student_ids = cleaned or None
 
-        # Build custom form fields from submitted data
-        field_labels = request.form.getlist('field_label[]')
-        field_types = request.form.getlist('field_type[]')
-        field_options_raw = request.form.getlist('field_options[]')
-        field_required_list = request.form.getlist('field_required[]')
-        custom_fields = []
-        for i, label in enumerate(field_labels):
-            if not label.strip():
-                continue
-            ftype = field_types[i] if i < len(field_types) else 'text'
-            options = None
-            if ftype == 'dropdown' and i < len(field_options_raw):
-                options = [o.strip() for o in field_options_raw[i].split(',') if o.strip()]
-            custom_fields.append({
-                'label': label.strip(),
-                'type': ftype,
-                'required': str(i) in field_required_list if i < len(field_required_list) else True,
-                'options': options,
-            })
+        custom_fields = parse_custom_fields(request.form)
         s.custom_form_fields = custom_fields if custom_fields else None
         # Academic period
         period_val = request.form.get('academic_period_id', '').strip()

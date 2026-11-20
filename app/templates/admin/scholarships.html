@@ -376,7 +376,7 @@
                     </div>
                     <div class="col-md-1">
                       <div class="form-check">
-                        <input class="form-check-input" type="checkbox" name="field_required[]" value="1" {% if field.required %}checked{% endif %} title="Required">
+                        <input class="form-check-input" type="checkbox" name="field_required[]" value="{{ loop.index0 }}" {% if field.required %}checked{% endif %} title="Required">
                       </div>
                     </div>
                     <div class="col-md-1 text-end">
@@ -443,6 +443,15 @@
 
 let fieldCount = 0;
 
+/* A ticked "Required" box posts its row position, not a fixed value: unticked
+   boxes are never submitted, so the server receives one value per ticked row and
+   each value has to be that row's index. Rows can be added or removed, so the
+   positions are recomputed on submit. */
+document.addEventListener('submit', function (event) {
+  event.target.querySelectorAll('input[name="field_required[]"]').forEach(
+    function (box, index) { box.value = index; });
+}, true);
+
 function addFormField(prefix) {
   fieldCount++;
   const id = prefix + '_' + fieldCount;
@@ -468,7 +477,7 @@ function addFormField(prefix) {
           </div>
           <div class="col-md-1">
             <div class="form-check" title="Required">
-              <input class="form-check-input" type="checkbox" name="field_required[]" value="1" checked>
+              <input class="form-check-input" type="checkbox" name="field_required[]" value="" checked>
               <label class="form-label small text-muted mb-0">Req</label>
             </div>
           </div>
