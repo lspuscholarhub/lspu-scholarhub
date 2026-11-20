@@ -343,18 +343,24 @@ def notifications():
             'pct': round(_n / unread_count * 100) if unread_count else 0,
         })
 
-    # Group by day so a long feed reads as Today / Yesterday / Earlier.
-    today = datetime.utcnow().date()
-    buckets = {'Today': [], 'Yesterday': [], 'Earlier': []}
-    for n in notifs:
-        age = (today - n.sent_at.date()).days if n.sent_at else 99
-        buckets['Today' if age <= 0 else 'Yesterday' if age == 1 else 'Earlier'].append(n)
-    groups = [(label, items) for label, items in buckets.items() if items]
-
     # The one thing that needs the student to act: an unread deadline reminder.
     action = next((n for n in notifs
                    if not n.is_read
                    and n.notification_type == NotificationType.DEADLINE_REMINDER), None)
+    action_id = action.id if action else None
+
+    # Group by day so a long feed reads as Today / Yesterday / Earlier. The
+    # promoted reminder already leads the page, so it is skipped here instead
+    # of being filtered out of every bucket again in the template.
+    today = datetime.utcnow().date()
+    buckets = {'Today': [], 'Yesterday': [], 'Earlier': []}
+    for n in notifs:
+        if n.id == action_id:
+            continue
+        age = (today - n.sent_at.date()).days if n.sent_at else 99
+        buckets['Today' if age <= 0 else 'Yesterday' if age == 1 else 'Earlier'].append(n)
+    groups = [(label, items) for label, items in buckets.items() if items]
+    feed_total = sum(len(items) for _, items in groups)
 
     return render_template(
         'student/notifications.html',
@@ -364,6 +370,7 @@ def notifications():
         counts=counts,
         unread_breakdown=unread_breakdown,
         groups=groups,
+        feed_total=feed_total,
         action=action,
         notif_ui=_notif_ui,
         user_email=user.email,

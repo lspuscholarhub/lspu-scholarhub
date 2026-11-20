@@ -2,7 +2,7 @@
 {% block title %}Announcements — LSPU ScholarHub{% endblock %}
 
 {% block head %}
-<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261119d" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120c" rel="stylesheet">
 <style>main { padding: 0 !important; margin: 0 !important; }</style>
 {% endblock %}
 
@@ -19,74 +19,113 @@
 
       <div class="sn-head-actions">
         {% if unread_count > 0 %}
-        <span class="sn-badge"><b>{{ unread_count }}</b> unread</span>
-        <form method="POST" action="{{ url_for('student.mark_all_read') }}">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <button class="sn-pill sn-pill--ghost" type="submit">
-            <i class="bi bi-check2-all" aria-hidden="true"></i>Mark all as read
-          </button>
-        </form>
+        <span class="sn-badge"><i class="bi bi-dot" aria-hidden="true"></i><b>{{ unread_count }}</b> unread</span>
         {% else %}
-        <span class="st-chip st-chip--ok"><i class="bi bi-check2-all" aria-hidden="true"></i>All read</span>
+        <span class="sn-caught"><i class="bi bi-check2-circle" aria-hidden="true"></i>All caught up</span>
         {% endif %}
       </div>
     </header>
 
-    <nav class="sn-filters" aria-label="Filter announcements">
-      {% for f, label in [('all','All'),('unread','Unread'),('applications','Applications'),('scholarships','Scholarships')] %}
-      <a class="sn-filter{% if filter_type == f %} is-active{% endif %}"
-         href="{{ url_for('student.notifications', filter=f) }}">
-        {{ label }} <small>{{ counts[f] }}</small>
+    <div class="sn-filterbar">
+      <nav class="sn-filters" aria-label="Filter announcements">
+        {% for f, label in [('all','All'),('unread','Unread'),('applications','Applications'),('scholarships','Scholarships')] %}
+        <a class="sn-filter{% if filter_type == f %} is-active{% endif %}"
+           href="{{ url_for('student.notifications', filter=f) }}">
+          {{ label }} <small>{{ counts[f] }}</small>
+        </a>
+        {% endfor %}
+      </nav>
+      {% if unread_count > 0 %}
+      <form method="POST" action="{{ url_for('student.mark_all_read') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="sn-markall" type="submit">
+          <i class="bi bi-check2-all" aria-hidden="true"></i>Mark all read
+        </button>
+      </form>
+      {% endif %}
+    </div>
+
+    {% if unread_count > 0 %}
+    <div class="sn-mini">
+      <span><b>{{ unread_count }}</b> unread</span>
+      {% for seg in unread_breakdown %}{% if seg.count %}
+      {% set _f = 'applications' if seg.mod == 'app' else ('scholarships' if seg.mod == 'sch' else 'unread') %}
+      <a class="sn-mini-seg sn-mini-seg--{{ seg.mod }}" href="{{ url_for('student.notifications', filter=_f) }}">
+        {{ seg.label }} {{ seg.count }}
       </a>
-      {% endfor %}
-    </nav>
+      {% endif %}{% endfor %}
+    </div>
+    {% endif %}
 
     {% if action %}
     <article class="sn-action">
       <span class="sn-action-icon"><i class="bi bi-exclamation-lg" aria-hidden="true"></i></span>
       <div class="sn-action-body">
-        <p class="sn-action-tag">Action needed</p>
+        <p class="sn-action-tag">Needs you</p>
         <h2 class="sn-action-title">{{ action.title }}</h2>
         <p class="sn-action-text">{{ action.message }}</p>
       </div>
       {% if action.related_entity_type == 'scholarship' and action.related_entity_id %}
-      <a class="sn-pill sn-pill--primary" href="{{ url_for('scholarship.view_scholarship', scholarship_id=action.related_entity_id) }}">Open program</a>
+      <a class="sn-btn sn-btn--primary" href="{{ url_for('scholarship.view_scholarship', scholarship_id=action.related_entity_id) }}">Open program</a>
       {% endif %}
     </article>
     {% endif %}
 
     <div class="sn-body-grid">
       <div class="sn-feed">
-        {% if groups %}
+        {% if feed_total > 0 %}
+        <section class="st-card sn-list">
           {% for label, items in groups %}
-          <section class="sn-group">
-            <div class="sn-group-label"><span>{{ label }}</span><i></i></div>
-
+            <p class="sn-day"><span>{{ label }}</span><i></i></p>
             {% for n in items %}
             {% set ui = notif_ui(n) %}
-            <article class="sn-item{% if not n.is_read %} is-unread{% endif %}">
-              <span class="sn-ic sn-ic--{{ ui.kind }}"><i class="bi {{ ui.icon }}" aria-hidden="true"></i></span>
-              <div class="sn-body">
-                <div class="sn-top">
-                  <h2 class="sn-title">{{ n.title }}</h2>
-                  <span class="sn-tag sn-tag--{{ ui.kind }}">{{ ui.label }}</span>
-                </div>
-                <p class="sn-msg">{{ n.message }}</p>
-                <div class="sn-meta">
-                  {% if not n.is_read %}<span class="sn-dot" aria-hidden="true"></span>{% endif %}
-                  <span class="sn-time">{{ n.sent_at.strftime('%b %d, %Y · %I:%M %p') }}</span>
-                  {% if not n.is_read %}
-                  <form class="sn-mark" method="POST" action="{{ url_for('student.mark_notification_read', notif_id=n.id) }}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button class="sn-mark-btn" type="submit">Mark read</button>
-                  </form>
-                  {% endif %}
+            <details class="sn-row{% if not n.is_read %} is-unread{% endif %}">
+              <summary class="sn-row-sum">
+                <span class="sn-ic sn-ic--{{ ui.kind }}"><i class="bi {{ ui.icon }}" aria-hidden="true"></i></span>
+                <span class="sn-row-main">
+                  <span class="sn-row-top">
+                    <span class="sn-title">{{ n.title }}</span>
+                    <span class="sn-tag sn-tag--{{ ui.kind }}">{{ ui.label }}</span>
+                  </span>
+                  <span class="sn-preview">{{ n.message }}</span>
+                  <span class="sn-meta">
+                    {% if not n.is_read %}<span class="sn-dot" aria-hidden="true"></span>{% endif %}
+                    <span class="sn-time">{{ n.sent_at.strftime('%b %d, %Y') }}</span>
+                    <span class="sn-more">Open</span>
+                  </span>
+                </span>
+                <span class="sn-chev" aria-hidden="true"><i class="bi bi-chevron-down"></i></span>
+              </summary>
+
+              <div class="sn-row-body">
+                <p class="sn-full">{{ n.message }}</p>
+                <div class="sn-row-foot">
+                  <span class="sn-stamp">
+                    <i class="bi bi-clock" aria-hidden="true"></i>
+                    {{ n.sent_at.strftime('%b %d, %Y · %I:%M %p') }}
+                  </span>
+                  <div class="sn-row-btns">
+                    {% if n.related_entity_type == 'scholarship' and n.related_entity_id %}
+                    <a class="sn-btn sn-btn--primary"
+                       href="{{ url_for('scholarship.view_scholarship', scholarship_id=n.related_entity_id) }}">Open program</a>
+                    {% endif %}
+                    {% if not n.is_read %}
+                    <form method="POST" action="{{ url_for('student.mark_notification_read', notif_id=n.id) }}">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button class="sn-btn" type="submit">
+                        <i class="bi bi-check2" aria-hidden="true"></i>Mark read
+                      </button>
+                    </form>
+                    {% else %}
+                    <span class="sn-read"><i class="bi bi-check2-all" aria-hidden="true"></i>Read</span>
+                    {% endif %}
+                  </div>
                 </div>
               </div>
-            </article>
+            </details>
             {% endfor %}
-          </section>
           {% endfor %}
+        </section>
         {% else %}
         <div class="st-empty">
           <i class="bi bi-megaphone" aria-hidden="true"></i>
@@ -116,28 +155,31 @@
           </div>
           <div class="sn-legend">
             {% for seg in unread_breakdown %}
-            <div><span>{{ seg.label }}</span><em class="sn-sw sn-sw--{{ seg.mod }}"></em></div>
+            {% set _f = 'applications' if seg.mod == 'app' else ('scholarships' if seg.mod == 'sch' else 'unread') %}
+            <a class="sn-leg{% if not seg.count %} is-zero{% endif %}"
+               href="{{ url_for('student.notifications', filter=_f) }}">
+              <em class="sn-sw sn-sw--{{ seg.mod }}"></em>{{ seg.label }}<b>{{ seg.count }}</b>
+            </a>
             {% endfor %}
-          </div>
-        </div>
-
-        <div class="sn-rail-card">
-          <p class="sn-rail-h">Where alerts go</p>
-          <div class="sn-channels">
-            <div>
-              <span class="sn-ch-icon"><i class="bi bi-envelope" aria-hidden="true"></i></span>
-              <p><b>{{ user_email }}</b><br>Email notices are always on.</p>
-            </div>
-            {% if masked_phone %}
-            <div>
-              <span class="sn-ch-icon"><i class="bi bi-phone" aria-hidden="true"></i></span>
-              <p><b>{{ masked_phone }}</b><br>Deadline reminders only.</p>
-            </div>
-            {% endif %}
           </div>
         </div>
       </aside>
     </div>
+
+    <p class="sn-foot">
+      <span class="sn-foot-item">
+        <i class="bi bi-envelope" aria-hidden="true"></i>
+        <span><b>{{ user_email }}</b> — email notices are always on</span>
+      </span>
+      {% if masked_phone %}
+      <span class="sn-foot-sep" aria-hidden="true">·</span>
+      <span class="sn-foot-item">
+        <i class="bi bi-phone" aria-hidden="true"></i>
+        <span><b>{{ masked_phone }}</b> — SMS for deadline reminders only</span>
+      </span>
+      {% endif %}
+      <a href="{{ url_for('student.profile') }}">Update contact details</a>
+    </p>
 
   </div>
 </div>
