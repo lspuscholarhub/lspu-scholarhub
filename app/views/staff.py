@@ -1026,8 +1026,12 @@ def review_application(app_id):
     application.review_notes = notes
     application.final_decision_date = datetime.utcnow() if action in ('approve', 'reject') else None
 
+    # The sheet's Tag select decides the scholar standing; approve defaults to active
+    # because that is what the select starts on.
+    if tag in ('active', 'at_risk', 'probation', 'inactive'):
+        application.scholar_status = tag
+
     if action == 'approve':
-        application.scholar_status = 'active'
         application.approved_at   = datetime.utcnow()
         application.is_active     = True
 

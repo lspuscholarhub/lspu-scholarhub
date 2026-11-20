@@ -282,15 +282,30 @@
 .sf-ctc-btn.is-no { border-color: #f0c6ca; color: #b02a37; }
 .sf-doc-acts { display: flex; gap: .6rem; margin-left: auto; }
 .sf-note { margin: 0; padding: .55rem .7rem; background: #f8fafd; border-radius: 8px; font-size: .8rem; color: #41556f; }
-.sf-modal-foot { display: block; border-top: 1px solid #eef2f7; padding: .85rem 1.1rem; }
-.sf-modal-form { display: grid; grid-template-columns: minmax(0, 1fr); gap: .5rem; }
-.sf-modal-form textarea, .sf-modal-form select {
-  width: 100%; min-height: 38px; padding: .4rem .55rem;
+.sf-modal-foot {
+  display: flex; flex-wrap: wrap; align-items: flex-start; gap: .6rem;
+  border-top: 1px solid #eef2f7; padding: .85rem 1.1rem;
+}
+.sf-sheet-actions { flex: 1 1 22rem; display: grid; grid-template-columns: minmax(0, 1fr); gap: .55rem; }
+.sf-action-form {
+  display: grid; gap: .35rem; padding: .6rem .65rem .65rem;
+  border: 1px solid #e3e8ef; border-radius: 10px; background: #fbfcfe;
+}
+.sf-action-form--reject { border-color: #f3d3d7; background: #fffafa; }
+.sf-action-form--approve { border-color: #cfe9e0; background: #f8fdfb; }
+.sf-action-label {
+  font-size: .58rem; font-weight: 800; letter-spacing: .1em;
+  text-transform: uppercase; color: #8494a8;
+}
+.sf-action-form textarea, .sf-action-form select {
+  width: 100%; min-height: 36px; padding: .4rem .55rem;
   font: inherit; font-size: .8rem; color: #0f2a4d;
   background: #fff; border: 1px solid #dbe3ee; border-radius: 8px;
 }
-.sf-modal-form select { max-width: 14rem; }
-.sf-modal-buttons { display: flex; flex-wrap: wrap; gap: .45rem; justify-content: flex-end; }
+.sf-action-row { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
+.sf-action-row select { flex: 1 1 8rem; max-width: 14rem; }
+.sf-action-row .st-btn { margin-left: auto; }
+.sf-sheet-close { justify-self: end; }
 
 @media (max-width: 959px) {
   /* four figures read as an even 2x2: the fourth must not span the row */
@@ -318,8 +333,4 @@
   .sf-perf-flag { display: inline-block; }
   .sf-kpis--four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .sf-sheet-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); }
-  .sf-modal-form { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
-  .sf-modal-form textarea { grid-column: 1; }
-  .sf-modal-form select { grid-column: 2; }
-  .sf-modal-buttons { grid-column: 1 / -1; }
 }

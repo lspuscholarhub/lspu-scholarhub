@@ -277,24 +277,35 @@
       </div>
 
       <div class="modal-footer sf-modal-foot">
-        <form method="POST" action="{{ url_for('staff.review_application', app_id=app.id) }}" class="sf-modal-form">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          {# Chromium drops the clicked button's name/value inside this modal, so the
-             action travels in a hidden field set on click. #}
-          <input type="hidden" name="action" value="">
-          <textarea name="review_notes" rows="2" placeholder="Review notes…" aria-label="Review notes"></textarea>
-          <select name="tag" aria-label="Scholar tag">
-            <option value="active">Tag: Active</option>
-            <option value="at_risk">Tag: At Risk</option>
-            <option value="probation">Tag: Probation</option>
-            <option value="inactive">Tag: Inactive</option>
-          </select>
-          <div class="sf-modal-buttons">
-            <button type="button" class="st-btn st-btn--ghost st-btn--sm" data-bs-dismiss="modal">Close</button>
-            <button type="submit" data-action="reject" class="st-btn st-btn--danger st-btn--sm">Reject</button>
-            <button type="submit" data-action="approve" class="st-btn st-btn--navy st-btn--sm">Approve</button>
-          </div>
-        </form>
+        {# One plain form per decision: the action is fixed in the form itself, so
+           approve and reject submit correctly with JavaScript unavailable. #}
+        <div class="sf-sheet-actions">
+          {% for decision in [
+              {'key': 'reject', 'label': 'Reject', 'btn': 'st-btn--danger',
+               'ph': 'Reason for rejection (optional)'},
+              {'key': 'approve', 'label': 'Approve', 'btn': 'st-btn--navy',
+               'ph': 'Approval note (optional)'},
+          ] %}
+          <form method="POST" action="{{ url_for('staff.review_application', app_id=app.id) }}"
+                class="sf-action-form sf-action-form--{{ decision.key }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="action" value="{{ decision.key }}">
+            <span class="sf-action-label">{{ decision.label }}</span>
+            <textarea name="review_notes" rows="2" placeholder="{{ decision.ph }}"
+                      aria-label="{{ decision.label }} notes"></textarea>
+            <div class="sf-action-row">
+              <select name="tag" aria-label="Scholar tag">
+                <option value="active">Tag: Active</option>
+                <option value="at_risk">Tag: At Risk</option>
+                <option value="probation">Tag: Probation</option>
+                <option value="inactive">Tag: Inactive</option>
+              </select>
+              <button type="submit" class="st-btn {{ decision.btn }} st-btn--sm">{{ decision.label }} application</button>
+            </div>
+          </form>
+          {% endfor %}
+          <button type="button" class="st-btn st-btn--ghost st-btn--sm sf-sheet-close" data-bs-dismiss="modal">Close</button>
+        </div>
       </div>
     </div>
   </div>
@@ -330,16 +341,6 @@
     sync();
   });
   sync();
-
-  // The review sheet posts its decision through a hidden field: a submit button's
-  // own name/value is not sent from inside this modal.
-  document.querySelectorAll('.sf-modal-form').forEach(form => {
-    const field = form.querySelector('input[name="action"]');
-    form.addEventListener('click', e => {
-      const btn = e.target.closest('button[data-action]');
-      if (btn && field) field.value = btn.dataset.action;
-    });
-  });
 })();
 </script>
 {% endblock %}
