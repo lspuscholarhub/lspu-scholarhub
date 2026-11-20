@@ -910,6 +910,11 @@ def review_applications():
     if pid:
         query = query.filter(ScholarshipApplication.academic_period_id == pid)
 
+    # Board figures come from the campus + period scope only: computing them from
+    # the filtered query made "Approved" and "Rejected" read 0 while a status
+    # filter was applied.
+    scoped_query = query
+
     if status_filter and status_filter != 'all':
         try:
             if status_filter == 'pending':
@@ -950,13 +955,24 @@ def review_applications():
     })
 
     stats = {
-        'total':        query.count(),
-        'pending':      query.filter(ScholarshipApplication.status.in_(
+        'total':        scoped_query.count(),
+        'pending':      scoped_query.filter(ScholarshipApplication.status.in_(
                             [ApplicationStatus.PENDING, ApplicationStatus.UNDER_REVIEW])).count(),
         'under_review': 0,  # merged into pending
-        'approved':     query.filter(ScholarshipApplication.status == ApplicationStatus.APPROVED).count(),
-        'rejected':     query.filter(ScholarshipApplication.status == ApplicationStatus.REJECTED).count(),
+        'approved':     scoped_query.filter(ScholarshipApplication.status == ApplicationStatus.APPROVED).count(),
+        'rejected':     scoped_query.filter(ScholarshipApplication.status == ApplicationStatus.REJECTED).count(),
     }
+    _oldest = (scoped_query
+               .filter(ScholarshipApplication.status.in_([ApplicationStatus.PENDING,
+                                                          ApplicationStatus.UNDER_REVIEW]))
+               .order_by(ScholarshipApplication.submitted_at.asc()).first())
+    stats['oldest_days'] = ((datetime.utcnow() - _oldest.submitted_at).days
+                            if _oldest and _oldest.submitted_at else None)
+
+    _campus_row = db.session.get(Campus, campus_ctx) if campus_ctx else None
+    campus_name = (session.get('campus_context_name')
+                   or (getattr(_campus_row, 'name', None) if _campus_row else None)
+                   or 'All campuses')
 
     return render_template(
         'staff/review_applications.html',
@@ -970,6 +986,9 @@ def review_applications():
         course_filter=course_filter,
         year_filter=year_filter,
         q=q,
+        campus_name=campus_name,
+        current_period=current_period,
+        now=datetime.utcnow(),
     )
 
 

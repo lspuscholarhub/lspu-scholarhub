@@ -1,294 +1,317 @@
 {% extends "base.html" %}
-{% block title %}Review Applications - Staff{% endblock %}
+{% block title %}Review Applications — LSPU ScholarHub{% endblock %}
+
+{% block head %}
+<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/staff-pages.css') }}?v=20261123a" rel="stylesheet">
+<style>main { padding: 0 !important; margin: 0 !important; }</style>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid py-4">
-  <!-- Breadcrumb -->
-  <nav aria-label="breadcrumb">
-    <ol class="breadcrumb mb-3">
-      <li class="breadcrumb-item"><a href="{{ url_for('staff.dashboard') }}">Dashboard</a></li>
-      <li class="breadcrumb-item active" aria-current="page">Review Applications</li>
-    </ol>
-  </nav>
+<div class="st sf-page">
 
-  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <div>
-      <h1 class="h3 fw-bold mb-0">Review Applications</h1>
-      <p class="text-muted small mb-0">Applications awaiting your decision — approved and rejected records are under their own filter</p>
-    </div>
-  </div>
-
-  <!-- Stats -->
-  <div class="row g-3 mb-4">
-    {% for label, val, color in [('Total',stats.total,'primary'),('Pending',stats.pending,'warning'),('Approved',stats.approved,'success'),('Rejected',stats.rejected,'danger')] %}
-    <div class="col"><div class="card border-0 shadow-sm text-center py-2" style="border-radius:10px;">
-      <div class="h5 mb-0 text-{{ color }}">{{ val }}</div><small class="text-muted">{{ label }}</small>
-    </div></div>
-    {% endfor %}
-  </div>
-
-  <!-- Filters -->
-  <div class="card border-0 shadow-sm mb-4" style="border-radius:12px;">
-    <div class="card-body">
-      <form method="GET" class="auto-filter row g-2 align-items-end">
-        <div class="col-md-3">
-          <label class="form-label small fw-semibold">Search</label>
-          <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Name or Student ID…">
+  <!-- ══ board: scope, the four figures that do not move with the filter ══════ -->
+  <header class="sf-board">
+    <div class="sf-board-inner">
+      <p class="st-kicker sf-kicker">Application review</p>
+      <div class="sf-board-head">
+        <div>
+          <h1 class="sf-title">Review applications</h1>
+          <p class="sf-board-sub">
+            <b>{{ campus_name }}</b>{% if current_period %} · {{ current_period.display_name }}{% endif %}
+            <span class="sf-board-stamp">· oldest first</span>
+          </p>
         </div>
-        <div class="col-md-2">
-          <label class="form-label small fw-semibold">Status</label>
-          <select name="status" class="form-select">
-            <option value="all" {% if status_filter=='all' %}selected{% endif %}>All Status</option>
-            {% for val, label in [('pending','Pending'),('approved','Approved'),('rejected','Rejected'),('withdrawn','Withdrawn')] %}
-            <option value="{{ val }}" {% if status_filter==val %}selected{% endif %}>{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label small fw-semibold">Scholarship</label>
-          <select name="scholarship_id" class="form-select">
-            <option value="">All Scholarships</option>
-            {% for s in scholarships %}
-            <option value="{{ s.id }}" {% if scholarship_filter==s.id|string %}selected{% endif %}>{{ s.title[:30] }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-2">
-          <label class="form-label small fw-semibold">Course / Program</label>
-          <select name="course" class="form-select">
-            <option value="">All Courses</option>
-            {% for c in courses %}
-            <option value="{{ c }}" {% if course_filter==c %}selected{% endif %}>{{ c[:35] }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-1">
-          <label class="form-label small fw-semibold">Year</label>
-          <select name="year" class="form-select">
-            <option value="">All</option>
-            {% for y in ['1st Year','2nd Year','3rd Year','4th Year','5th Year'] %}
-            <option value="{{ y }}" {% if year_filter==y %}selected{% endif %}>{{ y[:3] }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="col-md-2 d-flex justify-content-end">
-          <a href="{{ url_for('staff.review_applications') }}" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-x-circle me-1"></i>Reset
+        <div class="sf-board-actions">
+          <a class="st-btn st-btn--ghost" href="{{ url_for('staff.review_applications') }}">
+            <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>Reset filters
           </a>
         </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Batch form -->
-  <form method="POST" action="{{ url_for('staff.batch_review') }}" id="batchForm">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div class="card shadow-sm border-0" style="border-radius:12px;">
-      <div class="card-header bg-white d-flex justify-content-between align-items-center py-2" style="border-radius:12px 12px 0 0;">
-        <div class="d-flex gap-2 align-items-center">
-          <input type="checkbox" id="selectAll" class="form-check-input">
-          <label for="selectAll" class="mb-0 small">Select All</label>
-        </div>
-        <div class="d-flex gap-2 flex-wrap">
-          <input type="text" name="review_notes" class="form-control form-control-sm" placeholder="Batch notes…" style="flex:1 1 140px;min-width:0;">
-          <button type="submit" name="action" value="approve" class="btn btn-sm btn-success"><i class="bi bi-check me-1"></i>Batch Approve</button>
-          <button type="submit" name="action" value="reject" class="btn btn-sm btn-danger"><i class="bi bi-x me-1"></i>Batch Reject</button>
-        </div>
       </div>
-      <div class="card-body p-0">
-        {% if applications %}
-        <div class="table-responsive">
-          <table class="table table-hover align-middle mb-0">
-            <thead class="table-light">
-              <tr><th style="width:40px;"></th><th>#</th><th>Applicant</th><th>Scholarship</th><th>Submitted</th><th>Status</th><th>Scholar Tag</th><th>Actions</th></tr>
+
+      <dl class="sf-kpis sf-kpis--four">
+        <div class="sf-kpi is-warn">
+          <dt>Waiting</dt>
+          <dd>{{ stats.pending }}</dd>
+          {% if stats.oldest_days is not none %}
+          <span>oldest {{ stats.oldest_days }} day{{ 's' if stats.oldest_days != 1 }}</span>
+          {% else %}<span>nothing waiting</span>{% endif %}
+        </div>
+        <div class="sf-kpi is-ok">
+          <dt>Approved</dt>
+          <dd>{{ stats.approved }}</dd>
+        </div>
+        <div class="sf-kpi is-bad">
+          <dt>Rejected</dt>
+          <dd>{{ stats.rejected }}</dd>
+        </div>
+        <div class="sf-kpi">
+          <dt>In scope</dt>
+          <dd>{{ stats.total }}</dd>
+          <span>page {{ pagination.page }} of {{ pagination.pages or 1 }}</span>
+        </div>
+      </dl>
+    </div>
+  </header>
+
+  <div class="sf-body sf-body--wide">
+    <div class="sf-main">
+
+      <!-- ── one filter row ────────────────────────────────────────────────── -->
+      <form method="GET" class="sf-toolbar" role="search">
+        <input type="hidden" name="status" value="{{ status_filter }}">
+        <label class="sf-search">
+          <i class="bi bi-search" aria-hidden="true"></i>
+          <input type="search" name="q" value="{{ q }}" placeholder="Name or student ID">
+        </label>
+
+        <div class="sf-seg" role="group" aria-label="Status">
+          {% for val, label in [('pending','Waiting'),('approved','Approved'),('rejected','Rejected'),('withdrawn','Withdrawn'),('all','All')] %}
+          <a class="sf-seg-item{{ ' is-on' if status_filter == val }}"
+             href="{{ url_for('staff.review_applications', status=val, scholarship_id=scholarship_filter, course=course_filter, year=year_filter, q=q) }}">{{ label }}</a>
+          {% endfor %}
+        </div>
+
+        <div class="sf-selects">
+          <select name="scholarship_id" aria-label="Scholarship" onchange="this.form.submit()">
+            <option value="">All scholarships</option>
+            {% for s in scholarships %}
+            <option value="{{ s.id }}" {% if scholarship_filter == s.id|string %}selected{% endif %}>{{ s.title[:30] }}</option>
+            {% endfor %}
+          </select>
+          <select name="course" aria-label="Course" onchange="this.form.submit()">
+            <option value="">All courses</option>
+            {% for c in courses %}
+            <option value="{{ c }}" {% if course_filter == c %}selected{% endif %}>{{ c[:35] }}</option>
+            {% endfor %}
+          </select>
+          <select name="year" aria-label="Year" onchange="this.form.submit()">
+            <option value="">All years</option>
+            {% for y in ['1st Year','2nd Year','3rd Year','4th Year','5th Year'] %}
+            <option value="{{ y }}" {% if year_filter == y %}selected{% endif %}>{{ y[:3] }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <button class="st-btn st-btn--navy st-btn--sm" type="submit">Search</button>
+      </form>
+
+      <!-- ── the queue, with batch actions for whatever is ticked ──────────── -->
+      <form method="POST" action="{{ url_for('staff.batch_review') }}" id="batchForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="sf-bulk" id="bulkBar" hidden>
+          <span class="sf-bulk-count"><b id="bulkCount">0</b> selected</span>
+          <input type="text" name="review_notes" class="sf-bulk-notes" placeholder="Batch notes (optional)">
+          <div class="sf-bulk-actions">
+            <button type="submit" name="action" value="reject" class="st-btn st-btn--danger st-btn--sm">Reject</button>
+            <button type="submit" name="action" value="approve" class="st-btn st-btn--navy st-btn--sm">Approve</button>
+          </div>
+        </div>
+
+        <section class="sf-panel" aria-labelledby="sf-queue-title">
+          <div class="sf-panel-head">
+            <h2 id="sf-queue-title">Queue · {{ applications|length }} shown</h2>
+            {% if applications %}
+            <label class="sf-check-all">
+              <input type="checkbox" id="selectAll">Select all
+            </label>
+            {% endif %}
+          </div>
+
+          {% if applications %}
+          <table class="sf-table sf-table--apps">
+            <thead>
+              <tr>
+                <th scope="col" class="pick"></th>
+                <th scope="col">Applicant</th>
+                <th scope="col">Program</th>
+                <th scope="col">Submitted</th>
+                <th scope="col">Status</th>
+                <th scope="col">Tag</th>
+                <th scope="col"></th>
+              </tr>
             </thead>
             <tbody>
               {% for app in applications %}
+              {% set sv = app.status.value %}
+              {% set waited = (now - app.submitted_at).days if app.submitted_at else 0 %}
               <tr>
-                <td data-label=" "><input type="checkbox" name="app_ids" value="{{ app.id }}" class="form-check-input row-check"></td>
-                <td class="small text-muted" data-label="App #">#{{ app.id }}</td>
-                <td data-label="Applicant">
-                  <strong>{{ app.applicant.get_full_name() }}</strong><br>
-                  <small class="text-muted">{{ app.applicant.student_id or app.applicant.email }}</small>
-                  {% if app.applicant.course %}<br><small class="text-muted">{{ app.applicant.course }}</small>{% endif %}
+                <td class="pick">
+                  <input type="checkbox" name="app_ids" value="{{ app.id }}" class="row-check"
+                         aria-label="Select {{ app.applicant.get_full_name() }}">
                 </td>
-                <td class="small" data-label="Scholarship">{{ app.scholarship.title }}</td>
-                <td class="small" data-label="Submitted">{{ app.submitted_at.strftime('%b %d, %Y') }}</td>
-                <td data-label="Status">
-                  {% set sv = app.status.value %}
-                  {% if sv=='approved' %}<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Approved</span>
-                  {% elif sv=='rejected' %}<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Rejected</span>
-                  {% elif sv=='withdrawn' %}<span class="badge bg-secondary"><i class="bi bi-dash-circle me-1"></i>Withdrawn</span>
-                  {% else %}<span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Pending</span>{% endif %}
+                <td class="who">
+                  {{ app.applicant.get_full_name() }}
+                  <span>{{ app.applicant.student_id or app.applicant.email }}{% if app.applicant.course %} · {{ app.applicant.course }}{% endif %}</span>
                 </td>
-                <td data-label="Scholar Tag">
-                  {% if app.scholar_status %}
-                    {% if app.scholar_status=='active' %}<span class="badge bg-success">Good Standing</span>
-                    {% elif app.scholar_status=='at_risk' %}<span class="badge bg-warning text-dark">At Risk</span>
-                    {% elif app.scholar_status=='probation' %}<span class="badge bg-warning text-dark">Probation</span>
-                    {% elif app.scholar_status=='termination_warning' %}<span class="badge bg-danger">Termination Warning</span>
-                    {% else %}<span class="badge bg-secondary">Inactive</span>{% endif %}
-                  {% else %}—{% endif %}
+                <td class="prog">{{ app.scholarship.title }}</td>
+                <td class="date">
+                  {{ app.submitted_at.strftime('%b %d, %Y') if app.submitted_at else '—' }}
+                  {% if sv in ('pending', 'under_review') %}
+                  <span class="sf-flag {{ 'is-bad' if waited >= 7 else ('is-warn' if waited >= 3 else '') }}">
+                    {{- 'today' if waited <= 0 else waited ~ 'd' -}}
+                  </span>
+                  {% endif %}
                 </td>
-                <td data-label="Actions">
-                  <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#reviewModal{{ app.id }}">Review</button>
+                <td class="status">
+                  {% if sv == 'approved' %}<span class="sf-flag is-ok">Approved</span>
+                  {% elif sv == 'rejected' %}<span class="sf-flag is-bad">Rejected</span>
+                  {% elif sv == 'withdrawn' %}<span class="sf-flag is-mute">Withdrawn</span>
+                  {% else %}<span class="sf-flag is-warn">Waiting</span>{% endif %}
+                </td>
+                <td class="tag">
+                  {% if app.scholar_status == 'active' %}<span class="sf-flag">Good standing</span>
+                  {% elif app.scholar_status == 'at_risk' %}<span class="sf-flag is-warn">At risk</span>
+                  {% elif app.scholar_status == 'probation' %}<span class="sf-flag is-warn">Probation</span>
+                  {% elif app.scholar_status == 'termination_warning' %}<span class="sf-flag is-bad">Warning</span>
+                  {% elif app.scholar_status %}<span class="sf-flag is-mute">Inactive</span>
+                  {% else %}<span class="sf-soft">—</span>{% endif %}
+                </td>
+                <td class="go">
+                  <button type="button" class="st-btn st-btn--ghost st-btn--sm"
+                          data-bs-toggle="modal" data-bs-target="#reviewModal{{ app.id }}">Review</button>
                 </td>
               </tr>
               {% endfor %}
             </tbody>
           </table>
-        </div>
-        {% else %}
-        <div class="empty-state">
-          <i class="bi bi-inbox"></i>
-          <h5>No applications found</h5>
-          <p>Applications will appear here once students submit them.</p>
-        </div>
-        {% endif %}
+          {% else %}
+          <p class="sf-clear">
+            <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+            Nothing waiting — every application{% if campus_name == 'All campuses' %} across all of your campuses{% else %} for {{ campus_name }}{% endif %} has been reviewed.
+            {% if status_filter != 'all' %}
+            <a class="sf-link" href="{{ url_for('staff.review_applications', status='all', scholarship_id=scholarship_filter, course=course_filter, year=year_filter, q=q) }}">Show all applications</a>
+            {% endif %}
+          </p>
+          {% endif %}
+        </section>
+      </form>
 
-        {% if pagination.pages > 1 %}
-        <nav class="mt-4 d-flex justify-content-center" aria-label="Applications pagination">
-          <ul class="pagination">
-            <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
-              <a class="page-link" href="{{ url_for('staff.review_applications', page=pagination.prev_num, status=status_filter, scholarship_id=scholarship_filter, course=course_filter, year=year_filter, q=q) }}">&laquo;</a>
-            </li>
-            {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
-              {% if p %}
-                <li class="page-item {% if p == pagination.page %}active{% endif %}">
-                  <a class="page-link" href="{{ url_for('staff.review_applications', page=p, status=status_filter, scholarship_id=scholarship_filter, course=course_filter, year=year_filter, q=q) }}">{{ p }}</a>
-                </li>
-              {% else %}
-                <li class="page-item disabled"><span class="page-link">…</span></li>
-              {% endif %}
-            {% endfor %}
-            <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
-              <a class="page-link" href="{{ url_for('staff.review_applications', page=pagination.next_num, status=status_filter, scholarship_id=scholarship_filter, course=course_filter, year=year_filter, q=q) }}">&raquo;</a>
-            </li>
-          </ul>
-        </nav>
-        {% endif %}
-      </div>
+      {% if pagination.pages > 1 %}
+      <nav class="sf-pager" aria-label="Applications pagination">
+        <a class="st-btn st-btn--ghost st-btn--sm{{ ' is-off' if not pagination.has_prev }}"
+           href="{{ url_for('staff.review_applications', page=pagination.prev_num, status=status_filter, scholarship_id=scholarship_filter, course=course_filter, year=year_filter, q=q) }}">Previous</a>
+        <span class="sf-pager-count">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+        <a class="st-btn st-btn--ghost st-btn--sm{{ ' is-off' if not pagination.has_next }}"
+           href="{{ url_for('staff.review_applications', page=pagination.next_num, status=status_filter, scholarship_id=scholarship_filter, course=course_filter, year=year_filter, q=q) }}">Next</a>
+      </nav>
+      {% endif %}
+
     </div>
-  </form>
+  </div>
 </div>
 
+<!-- ══ review sheet per application ═══════════════════════════════════════════ -->
 {% for app in applications %}
-<div class="modal fade" id="reviewModal{{ app.id }}" tabindex="-1">
-  <div class="modal-dialog modal-xl">
+{% set sv = app.status.value %}
+<div class="modal fade sf-modal" id="reviewModal{{ app.id }}" tabindex="-1" aria-labelledby="reviewTitle{{ app.id }}">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
     <div class="modal-content">
-      <div class="modal-header"><h5 class="modal-title">Review #{{ app.id }} — {{ app.scholarship.title }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title" id="reviewTitle{{ app.id }}">{{ app.applicant.get_full_name() }}</h5>
+          <span class="sf-modal-sub">{{ app.scholarship.title }} · #{{ app.id }}
+            {% if sv == 'approved' %}<span class="sf-flag is-ok">Approved</span>
+            {% elif sv == 'rejected' %}<span class="sf-flag is-bad">Rejected</span>
+            {% elif sv == 'withdrawn' %}<span class="sf-flag is-mute">Withdrawn</span>
+            {% else %}<span class="sf-flag is-warn">Waiting</span>{% endif %}
+          </span>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
       <div class="modal-body">
-        <div class="row">
-          <div class="col-md-6">
-            <h6>Applicant</h6>
-            <p><strong>Name:</strong> {{ app.applicant.get_full_name() }}</p>
-            <p><strong>Email:</strong> {{ app.applicant.email }}</p>
-            <p><strong>Phone:</strong> {{ app.applicant.phone_number or '—' }}</p>
-            {% if app.application_data %}
-            <p><strong>Student ID:</strong> {{ app.application_data.student_id or '—' }}</p>
-            <p><strong>Course:</strong> {{ app.application_data.course or '—' }}</p>
-            <p><strong>Year:</strong> {{ app.application_data.year_level or '—' }}</p>
-            <p><strong>GWA:</strong> {{ app.application_data.gwa or app.applicant.gwa or '—' }}</p>
-            {% endif %}
-          </div>
-          <div class="col-md-6">
-            <h6>Application</h6>
-            <p><strong>Scholarship:</strong> {{ app.scholarship.title }}</p>
-            <p><strong>Submitted:</strong> {{ app.submitted_at.strftime('%B %d, %Y %I:%M %p') }}</p>
-            <p><strong>Status:</strong>
-              {% set sv2 = app.status.value %}
-              {% if sv2=='approved' %}<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Approved</span>
-              {% elif sv2=='rejected' %}<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Rejected</span>
-              {% elif sv2=='withdrawn' %}<span class="badge bg-secondary"><i class="bi bi-dash-circle me-1"></i>Withdrawn</span>
-              {% else %}<span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Pending</span>{% endif %}
-            </p>
+        <div class="sf-sheet-grid">
+          <section>
+            <h6 class="sf-side-title">Applicant</h6>
+            <dl class="sf-ledger">
+              <div><dt>Student ID</dt><dd>{{ app.application_data.student_id if app.application_data and app.application_data.student_id else (app.applicant.student_id or '—') }}</dd></div>
+              <div><dt>Course</dt><dd>{{ app.application_data.course if app.application_data and app.application_data.course else (app.applicant.course or '—') }}</dd></div>
+              <div><dt>Year</dt><dd>{{ app.application_data.year_level if app.application_data and app.application_data.year_level else (app.applicant.year_level or '—') }}</dd></div>
+              <div><dt>GWA</dt><dd>{{ app.application_data.gwa if app.application_data and app.application_data.gwa else (app.applicant.gwa or '—') }}</dd></div>
+              <div><dt>Email</dt><dd>{{ app.applicant.email }}</dd></div>
+              <div><dt>Phone</dt><dd>{{ app.applicant.phone_number or '—' }}</dd></div>
+            </dl>
+
+            <h6 class="sf-side-title">Application</h6>
+            <dl class="sf-ledger">
+              <div><dt>Program</dt><dd>{{ app.scholarship.title }}</dd></div>
+              <div><dt>Submitted</dt><dd>{{ app.submitted_at.strftime('%b %d, %Y · %I:%M %p') if app.submitted_at else '—' }}</dd></div>
+              <div><dt>Scholar tag</dt><dd>
+                {% if app.scholar_status == 'active' %}Good standing
+                {% elif app.scholar_status == 'at_risk' %}At risk
+                {% elif app.scholar_status == 'probation' %}Probation
+                {% elif app.scholar_status == 'termination_warning' %}Termination warning
+                {% elif app.scholar_status %}Inactive
+                {% else %}—{% endif %}
+              </dd></div>
+            </dl>
+          </section>
+
+          <section>
+            <h6 class="sf-side-title">Documents</h6>
             {% if app.uploaded_documents %}
-            <h6 class="mt-3">Documents</h6>
-            <ul class="list-unstyled">
+            <ul class="sf-docs">
               {% for doc in app.uploaded_documents %}
-              <li class="mb-2 p-2 rounded border" style="background:#f9fafb;">
-                <div class="d-flex align-items-center gap-2 flex-wrap">
-                  <i class="{{ doc.icon_class }}"></i>
-                  <span class="small fw-semibold">{{ doc.original_filename }}</span>
-                  <!-- CTC badge for transcript -->
-                  {% if doc.category == 'transcript' %}
-                    {% if doc.ctc_detected == true %}
-                      <span class="badge bg-success" title="AI detected a Certified True Copy stamp">
-                        <i class="bi bi-patch-check-fill me-1"></i>CTC Detected
-                      </span>
-                    {% elif doc.ctc_detected == false %}
-                      <span class="badge bg-danger" title="AI did not detect a CTC stamp — verify manually">
-                        <i class="bi bi-exclamation-triangle-fill me-1"></i>No CTC Found
-                      </span>
-                    {% else %}
-                      <span class="badge bg-secondary" title="CTC check not available — verify manually">
-                        <i class="bi bi-question-circle me-1"></i>CTC Unverified
-                      </span>
-                    {% endif %}
-                    <!-- Staff CTC override buttons -->
-                    <div class="ms-1 d-flex gap-1">
-                      <form method="POST" action="{{ url_for('staff.override_ctc', doc_id=doc.id, value=1) }}" class="d-inline">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-xs btn-outline-success py-0 px-1"
-                                style="font-size:.7rem;" title="Mark CTC as present">
-                          <i class="bi bi-check-lg"></i> CTC ✓
-                        </button>
-                      </form>
-                      <form method="POST" action="{{ url_for('staff.override_ctc', doc_id=doc.id, value=0) }}" class="d-inline">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-xs btn-outline-danger py-0 px-1"
-                                style="font-size:.7rem;" title="Mark CTC as absent">
-                          <i class="bi bi-x-lg"></i> No CTC
-                        </button>
-                      </form>
-                    </div>
-                  {% endif %}
-                  <div class="ms-auto d-flex gap-1">
-                    <a href="{{ url_for('staff.view_document', doc_id=doc.id) }}"
-                       class="btn btn-sm btn-outline-primary" target="_blank">
-                      <i class="bi bi-eye me-1"></i>View
-                    </a>
-                    <a href="{{ url_for('staff.download_document', doc_id=doc.id) }}"
-                       class="btn btn-sm btn-outline-secondary">
-                      <i class="bi bi-download"></i>
-                    </a>
-                  </div>
-                </div>
+              <li>
+                <i class="{{ doc.icon_class }}" aria-hidden="true"></i>
+                <span class="sf-doc-name">{{ doc.original_filename }}</span>
+                {% if doc.category == 'transcript' %}
+                  {% if doc.ctc_detected == true %}<span class="sf-flag is-ok">CTC</span>
+                  {% elif doc.ctc_detected == false %}<span class="sf-flag is-bad">No CTC</span>
+                  {% else %}<span class="sf-flag is-mute">CTC?</span>{% endif %}
+                  <form method="POST" action="{{ url_for('staff.override_ctc', doc_id=doc.id, value=1) }}" class="sf-doc-ctc">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="sf-ctc-btn" title="Mark CTC as present">✓</button>
+                  </form>
+                  <form method="POST" action="{{ url_for('staff.override_ctc', doc_id=doc.id, value=0) }}" class="sf-doc-ctc">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="sf-ctc-btn is-no" title="Mark CTC as absent">✕</button>
+                  </form>
+                {% endif %}
+                <span class="sf-doc-acts">
+                  <a class="sf-link" href="{{ url_for('staff.view_document', doc_id=doc.id) }}" target="_blank" rel="noopener">View</a>
+                  <a class="sf-link" href="{{ url_for('staff.download_document', doc_id=doc.id) }}">Download</a>
+                </span>
               </li>
               {% endfor %}
             </ul>
+            {% else %}
+            <p class="sf-soft">No documents uploaded.</p>
             {% endif %}
-          </div>
+
+            {% if app.application_data and app.application_data.custom_fields %}
+            <h6 class="sf-side-title">Campus answers</h6>
+            <dl class="sf-ledger">
+              {% for cf in app.application_data.custom_fields %}
+              <div><dt>{{ cf.label }}</dt><dd>{{ cf.value or '—' }}</dd></div>
+              {% endfor %}
+            </dl>
+            {% endif %}
+
+            {% if app.review_notes %}
+            <h6 class="sf-side-title">Previous notes</h6>
+            <p class="sf-note">{{ app.review_notes }}</p>
+            {% endif %}
+          </section>
         </div>
-        {% if app.application_data and app.application_data.custom_fields %}
-        <hr>
-        <h6><i class="bi bi-ui-checks me-2 text-primary"></i>Custom Form Responses</h6>
-        <div class="bg-light p-3 rounded">
-          {% for cf in app.application_data.custom_fields %}
-          <div class="mb-2">
-            <strong class="small">{{ cf.label }}:</strong>
-            <span class="small">{{ cf.value or '—' }}</span>
-          </div>
-          {% endfor %}
-        </div>
-        {% endif %}
-        {% if app.review_notes %}<hr><h6>Previous Notes</h6><p class="small text-muted">{{ app.review_notes }}</p>{% endif %}
       </div>
-      <div class="modal-footer flex-column align-items-stretch gap-2">
-        <form method="POST" action="{{ url_for('staff.review_application', app_id=app.id) }}">
+
+      <div class="modal-footer sf-modal-foot">
+        <form method="POST" action="{{ url_for('staff.review_application', app_id=app.id) }}" class="sf-modal-form">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <div class="mb-2"><textarea class="form-control form-control-sm" name="review_notes" rows="2" placeholder="Review notes…"></textarea></div>
-          <div class="mb-2">
-            <select class="form-select form-select-sm" name="tag" style="width:auto;display:inline-block;">
-              <option value="active">Tag: Active</option>
-              <option value="at_risk">Tag: At Risk</option>
-              <option value="probation">Tag: Probation</option>
-              <option value="inactive">Tag: Inactive</option>
-            </select>
-          </div>
-          <div class="d-flex gap-2 justify-content-end">
-            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
-            <button type="submit" name="action" value="reject" class="btn btn-danger btn-sm">Reject</button>
-            <button type="submit" name="action" value="approve" class="btn btn-success btn-sm">Approve</button>
+          <textarea name="review_notes" rows="2" placeholder="Review notes…" aria-label="Review notes"></textarea>
+          <select name="tag" aria-label="Scholar tag">
+            <option value="active">Tag: Active</option>
+            <option value="at_risk">Tag: At Risk</option>
+            <option value="probation">Tag: Probation</option>
+            <option value="inactive">Tag: Inactive</option>
+          </select>
+          <div class="sf-modal-buttons">
+            <button type="button" class="st-btn st-btn--ghost st-btn--sm" data-bs-dismiss="modal">Close</button>
+            <button type="submit" name="action" value="reject" class="st-btn st-btn--danger st-btn--sm">Reject</button>
+            <button type="submit" name="action" value="approve" class="st-btn st-btn--navy st-btn--sm">Approve</button>
           </div>
         </form>
       </div>
@@ -297,10 +320,35 @@
 </div>
 {% endfor %}
 {% endblock %}
+
 {% block scripts %}
 <script>
-document.getElementById('selectAll').addEventListener('change', function() {
-  document.querySelectorAll('.row-check').forEach(cb => cb.checked = this.checked);
-});
+(function () {
+  const form = document.getElementById('batchForm');
+  if (!form) return;
+  const all = document.getElementById('selectAll');
+  const bar = document.getElementById('bulkBar');
+  const label = document.getElementById('bulkCount');
+  const boxes = () => Array.from(form.querySelectorAll('.row-check'));
+
+  function sync() {
+    const checked = boxes().filter(b => b.checked).length;
+    if (label) label.textContent = checked;
+    if (bar) bar.hidden = checked === 0;
+    if (all) {
+      all.checked = checked > 0 && checked === boxes().length;
+      all.indeterminate = checked > 0 && checked < boxes().length;
+    }
+  }
+
+  form.addEventListener('change', e => {
+    if (e.target.classList.contains('row-check')) sync();
+  });
+  if (all) all.addEventListener('change', () => {
+    boxes().forEach(b => { b.checked = all.checked; });
+    sync();
+  });
+  sync();
+})();
 </script>
 {% endblock %}

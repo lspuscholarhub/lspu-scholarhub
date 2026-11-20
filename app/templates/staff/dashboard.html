@@ -27,11 +27,11 @@
           </p>
         </div>
         <div class="sf-board-actions">
-          <a class="sf-btn sf-btn--solid" href="{{ url_for('staff.review_applications', status='pending') }}">
+          <a class="st-btn st-btn--navy" href="{{ url_for('staff.review_applications', status='pending') }}">
             <i class="bi bi-inbox" aria-hidden="true"></i>Review queue
             {% if to_review %}<span class="sf-btn-count">{{ to_review }}</span>{% endif %}
           </a>
-          <a class="sf-btn sf-btn--outline" href="{{ url_for('staff.reports') }}">
+          <a class="st-btn st-btn--ghost" href="{{ url_for('staff.reports') }}">
             <i class="bi bi-graph-up" aria-hidden="true"></i>Reports
           </a>
         </div>
@@ -96,7 +96,7 @@
               </td>
               <td class="prog">{{ app.scholarship.title }}</td>
               <td class="num">
-                <span class="sf-wait {{ 'is-bad' if waited >= 7 else ('is-warn' if waited >= 3 else '') }}">
+                <span class="sf-flag {{ 'is-bad' if waited >= 7 else ('is-warn' if waited >= 3 else '') }}">
                   {{- 'today' if waited <= 0 else waited ~ ' day' ~ ('s' if waited != 1) -}}
                 </span>
               </td>
@@ -173,12 +173,12 @@
               <td class="course">{{ s.course or '—' }}</td>
               <td class="num col-gwa"><b class="sf-gwa">{{ '%.2f'|format(g) }}</b></td>
               <td class="num col-standing">
-                {% if g <= 1.25 %}<span class="sf-standing is-top">Excellent</span>
-                {% elif g <= 1.75 %}<span class="sf-standing is-ok">Very good</span>
-                {% elif g <= 2.25 %}<span class="sf-standing is-ok">Satisfactory</span>
-                {% elif g <= 2.75 %}<span class="sf-standing">Fair</span>
-                {% elif g <= 3.00 %}<span class="sf-standing is-warn">Passed</span>
-                {% else %}<span class="sf-standing is-bad">At risk</span>{% endif %}
+                {% if g <= 1.25 %}<span class="sf-flag is-ok sf-perf-flag">Excellent</span>
+                {% elif g <= 1.75 %}<span class="sf-flag is-ok sf-perf-flag">Very good</span>
+                {% elif g <= 2.25 %}<span class="sf-flag is-ok sf-perf-flag">Satisfactory</span>
+                {% elif g <= 2.75 %}<span class="sf-flag is-mute sf-perf-flag">Fair</span>
+                {% elif g <= 3.00 %}<span class="sf-flag is-warn sf-perf-flag">Passed</span>
+                {% else %}<span class="sf-flag is-bad sf-perf-flag">At risk</span>{% endif %}
               </td>
             </tr>
             {% endfor %}
