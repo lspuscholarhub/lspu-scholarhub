@@ -326,41 +326,15 @@ def notifications():
                             if n.notification_type in _SCHOLARSHIP_TYPES),
     }
 
-    # Unread split for the rail bar (deadline/notice types land in "other").
-    _unread_app = sum(1 for n in everything
-                      if not n.is_read and n.notification_type in _APPLICATION_TYPES)
-    _unread_sch = sum(1 for n in everything
-                      if not n.is_read and n.notification_type in _SCHOLARSHIP_TYPES)
-    _unread_other = max(unread_count - _unread_app - _unread_sch, 0)
-    unread_breakdown = []
-    for _label, _mod, _n in (('Applications', 'app', _unread_app),
-                            ('Scholarships', 'sch', _unread_sch),
-                            ('Deadlines', 'other', _unread_other)):
-        unread_breakdown.append({
-            'label': _label,
-            'mod': _mod,
-            'count': _n,
-            'pct': round(_n / unread_count * 100) if unread_count else 0,
-        })
-
     # The one thing that needs the student to act: an unread deadline reminder.
+    # The reading pane opens on it when no message was picked.
     action = next((n for n in notifs
                    if not n.is_read
                    and n.notification_type == NotificationType.DEADLINE_REMINDER), None)
-    action_id = action.id if action else None
 
-    # Group by day so a long feed reads as Today / Yesterday / Earlier. The
-    # promoted reminder already leads the page, so it is skipped here instead
-    # of being filtered out of every bucket again in the template.
-    today = datetime.utcnow().date()
-    buckets = {'Today': [], 'Yesterday': [], 'Earlier': []}
-    for n in notifs:
-        if n.id == action_id:
-            continue
-        age = (today - n.sent_at.date()).days if n.sent_at else 99
-        buckets['Today' if age <= 0 else 'Yesterday' if age == 1 else 'Earlier'].append(n)
-    groups = [(label, items) for label, items in buckets.items() if items]
-    feed_total = sum(len(items) for _, items in groups)
+    # The message shown in the reading pane: ?open=<id> when a row was clicked.
+    open_id = request.args.get('open', type=int)
+    open_notif = next((n for n in notifs if n.id == open_id), None) if open_id else None
 
     return render_template(
         'student/notifications.html',
@@ -368,10 +342,8 @@ def notifications():
         unread_count=unread_count,
         filter_type=filter_type,
         counts=counts,
-        unread_breakdown=unread_breakdown,
-        groups=groups,
-        feed_total=feed_total,
         action=action,
+        open_notif=open_notif,
         notif_ui=_notif_ui,
         user_email=user.email,
         masked_phone=_masked_phone(user.phone_number),

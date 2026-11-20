@@ -2,13 +2,14 @@
 {% block title %}Announcements — LSPU ScholarHub{% endblock %}
 
 {% block head %}
-<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120c" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120e" rel="stylesheet">
 <style>main { padding: 0 !important; margin: 0 !important; }</style>
 {% endblock %}
 
 {% block content %}
+{% set shown = open_notif or action or (notifications | first) %}
 <div class="st">
-  <div class="st-wrap">
+  <div class="st-wrap st-wrap--gm">
 
     <header class="sn-head">
       <div class="sn-head-main">
@@ -16,7 +17,6 @@
         <h1 class="st-title">Announcements</h1>
         <p class="st-sub">Deadlines, decisions and office notices for your account.</p>
       </div>
-
       <div class="sn-head-actions">
         {% if unread_count > 0 %}
         <span class="sn-badge"><i class="bi bi-dot" aria-hidden="true"></i><b>{{ unread_count }}</b> unread</span>
@@ -26,161 +26,137 @@
       </div>
     </header>
 
-    <div class="sn-filterbar">
-      <nav class="sn-filters" aria-label="Filter announcements">
-        {% for f, label in [('all','All'),('unread','Unread'),('applications','Applications'),('scholarships','Scholarships')] %}
-        <a class="sn-filter{% if filter_type == f %} is-active{% endif %}"
+    <div class="gm{% if open_notif %} is-reading{% endif %}">
+
+      <aside class="gm-labels" aria-label="Filter announcements">
+        {% for f, label, icon in [('all','All','bi-inbox'),('unread','Unread','bi-envelope'),('applications','Applications','bi-file-earmark-text'),('scholarships','Scholarships','bi-award')] %}
+        <a class="gm-label{% if filter_type == f %} is-active{% endif %}"
            href="{{ url_for('student.notifications', filter=f) }}">
-          {{ label }} <small>{{ counts[f] }}</small>
+          <i class="bi {{ icon }}" aria-hidden="true"></i>{{ label }}<b>{{ counts[f] }}</b>
         </a>
         {% endfor %}
-      </nav>
-      {% if unread_count > 0 %}
-      <form method="POST" action="{{ url_for('student.mark_all_read') }}">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button class="sn-markall" type="submit">
-          <i class="bi bi-check2-all" aria-hidden="true"></i>Mark all read
-        </button>
-      </form>
-      {% endif %}
-    </div>
+      </aside>
 
-    {% if unread_count > 0 %}
-    <div class="sn-mini">
-      <span><b>{{ unread_count }}</b> unread</span>
-      {% for seg in unread_breakdown %}{% if seg.count %}
-      {% set _f = 'applications' if seg.mod == 'app' else ('scholarships' if seg.mod == 'sch' else 'unread') %}
-      <a class="sn-mini-seg sn-mini-seg--{{ seg.mod }}" href="{{ url_for('student.notifications', filter=_f) }}">
-        {{ seg.label }} {{ seg.count }}
-      </a>
-      {% endif %}{% endfor %}
-    </div>
-    {% endif %}
-
-    {% if action %}
-    <article class="sn-action">
-      <span class="sn-action-icon"><i class="bi bi-exclamation-lg" aria-hidden="true"></i></span>
-      <div class="sn-action-body">
-        <p class="sn-action-tag">Needs you</p>
-        <h2 class="sn-action-title">{{ action.title }}</h2>
-        <p class="sn-action-text">{{ action.message }}</p>
-      </div>
-      {% if action.related_entity_type == 'scholarship' and action.related_entity_id %}
-      <a class="sn-btn sn-btn--primary" href="{{ url_for('scholarship.view_scholarship', scholarship_id=action.related_entity_id) }}">Open program</a>
-      {% endif %}
-    </article>
-    {% endif %}
-
-    <div class="sn-body-grid">
-      <div class="sn-feed">
-        {% if feed_total > 0 %}
-        <section class="st-card sn-list">
-          {% for label, items in groups %}
-            <p class="sn-day"><span>{{ label }}</span><i></i></p>
-            {% for n in items %}
-            {% set ui = notif_ui(n) %}
-            <details class="sn-row{% if not n.is_read %} is-unread{% endif %}">
-              <summary class="sn-row-sum">
-                <span class="sn-ic sn-ic--{{ ui.kind }}"><i class="bi {{ ui.icon }}" aria-hidden="true"></i></span>
-                <span class="sn-row-main">
-                  <span class="sn-row-top">
-                    <span class="sn-title">{{ n.title }}</span>
-                    <span class="sn-tag sn-tag--{{ ui.kind }}">{{ ui.label }}</span>
-                  </span>
-                  <span class="sn-preview">{{ n.message }}</span>
-                  <span class="sn-meta">
-                    {% if not n.is_read %}<span class="sn-dot" aria-hidden="true"></span>{% endif %}
-                    <span class="sn-time">{{ n.sent_at.strftime('%b %d, %Y') }}</span>
-                    <span class="sn-more">Open</span>
-                  </span>
-                </span>
-                <span class="sn-chev" aria-hidden="true"><i class="bi bi-chevron-down"></i></span>
-              </summary>
-
-              <div class="sn-row-body">
-                <p class="sn-full">{{ n.message }}</p>
-                <div class="sn-row-foot">
-                  <span class="sn-stamp">
-                    <i class="bi bi-clock" aria-hidden="true"></i>
-                    {{ n.sent_at.strftime('%b %d, %Y · %I:%M %p') }}
-                  </span>
-                  <div class="sn-row-btns">
-                    {% if n.related_entity_type == 'scholarship' and n.related_entity_id %}
-                    <a class="sn-btn sn-btn--primary"
-                       href="{{ url_for('scholarship.view_scholarship', scholarship_id=n.related_entity_id) }}">Open program</a>
-                    {% endif %}
-                    {% if not n.is_read %}
-                    <form method="POST" action="{{ url_for('student.mark_notification_read', notif_id=n.id) }}">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                      <button class="sn-btn" type="submit">
-                        <i class="bi bi-check2" aria-hidden="true"></i>Mark read
-                      </button>
-                    </form>
-                    {% else %}
-                    <span class="sn-read"><i class="bi bi-check2-all" aria-hidden="true"></i>Read</span>
-                    {% endif %}
-                  </div>
-                </div>
-              </div>
-            </details>
-            {% endfor %}
-          {% endfor %}
-        </section>
-        {% else %}
-        <div class="st-empty">
-          <i class="bi bi-megaphone" aria-hidden="true"></i>
-          <h3>No announcements{% if filter_type != 'all' %} in this filter{% endif %}</h3>
-          <p>
-            {% if filter_type != 'all' %}
-              Nothing here yet — try All to see every announcement.
+      <section class="gm-list" aria-label="Announcement list">
+        <div class="gm-listbar">
+          <span class="gm-listcount">
+            {% if filter_type == 'all' %}
+              <b>{{ notifications | length }}</b> message{{ '' if notifications | length == 1 else 's' }}
             {% else %}
-              Office announcements and deadline reminders will appear here.
+              {{ filter_type | title }} · <b>{{ notifications | length }}</b>
             {% endif %}
-          </p>
-          {% if filter_type != 'all' %}
-          <a class="st-btn st-btn--ghost" href="{{ url_for('student.notifications') }}">Show all</a>
+            {% if unread_count %} · {{ unread_count }} unread{% endif %}
+          </span>
+          {% if unread_count > 0 %}
+          <form method="POST" action="{{ url_for('student.mark_all_read') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="gm-tool" type="submit">
+              <i class="bi bi-check2-all" aria-hidden="true"></i>Mark all read
+            </button>
+          </form>
           {% endif %}
         </div>
-        {% endif %}
-      </div>
 
-      <aside class="sn-rail">
-        <div class="sn-rail-card">
-          <p class="sn-rail-h">Unread by type</p>
-          <div class="sn-tally"><b>{{ unread_count }}</b><span>of {{ counts['all'] }} this period</span></div>
-          <div class="sn-bar">
-            {% for seg in unread_breakdown %}{% if seg.count %}
-            <i class="sn-bar-seg sn-sw--{{ seg.mod }}" style="width: {{ seg.pct }}%"></i>
-            {% endif %}{% endfor %}
-          </div>
-          <div class="sn-legend">
-            {% for seg in unread_breakdown %}
-            {% set _f = 'applications' if seg.mod == 'app' else ('scholarships' if seg.mod == 'sch' else 'unread') %}
-            <a class="sn-leg{% if not seg.count %} is-zero{% endif %}"
-               href="{{ url_for('student.notifications', filter=_f) }}">
-              <em class="sn-sw sn-sw--{{ seg.mod }}"></em>{{ seg.label }}<b>{{ seg.count }}</b>
+        <div class="gm-rows">
+          {% for n in notifications %}
+          {% set ui = notif_ui(n) %}
+          {% set is_open = shown and n.id == shown.id %}
+          <div class="gm-item">
+            <a class="gm-row{% if not n.is_read %} is-unread{% endif %}{% if is_open %} is-open{% endif %}"
+               href="{{ url_for('student.notifications', filter=filter_type, open=n.id) }}"
+               {% if is_open %}aria-current="true"{% endif %}>
+              <span class="gm-dot" aria-hidden="true"></span>
+              <span class="gm-row-main">
+                <span class="gm-row-top">
+                  <span class="gm-from">Scholarship Office</span>
+                  <span class="sn-tag sn-tag--{{ ui.kind }}">{{ ui.label }}</span>
+                  <span class="gm-date">{{ n.sent_at.strftime('%b %d') }}</span>
+                </span>
+                <span class="gm-subj">{{ n.title }}</span>
+                <span class="gm-snip">{{ n.message }}</span>
+              </span>
             </a>
-            {% endfor %}
+            {% if not n.is_read %}
+            <form class="gm-item-act" method="POST"
+                  action="{{ url_for('student.mark_notification_read', notif_id=n.id) }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="gm-act-btn" type="submit"
+                      title="Mark as read" aria-label="Mark &quot;{{ n.title }}&quot; as read">
+                <i class="bi bi-check2" aria-hidden="true"></i>
+              </button>
+            </form>
+            {% endif %}
           </div>
+          {% else %}
+          <p class="gm-none">
+            {% if filter_type != 'all' %}
+              No announcements in {{ filter_type }}. <a href="{{ url_for('student.notifications') }}">Show all</a>
+            {% else %}
+              Nothing here yet — office notices will appear in this list.
+            {% endif %}
+          </p>
+          {% endfor %}
         </div>
-      </aside>
+      </section>
+
+      <article class="gm-reader">
+        {% if shown %}
+        {% set ui = notif_ui(shown) %}
+        <header class="gm-read-head">
+          <div class="gm-read-top">
+            <a class="gm-back" href="{{ url_for('student.notifications', filter=filter_type) }}">
+              <i class="bi bi-arrow-left" aria-hidden="true"></i>Back
+            </a>
+            <span class="sn-tag sn-tag--{{ ui.kind }}">{{ ui.label }}</span>
+            {% if not shown.is_read %}
+            <span class="gm-unreadflag">Unread</span>
+            {% endif %}
+          </div>
+
+          <h2 class="gm-read-subj">{{ shown.title }}</h2>
+
+          <div class="gm-read-meta">
+            <span class="gm-avatar" aria-hidden="true">SO</span>
+            <div>
+              <p class="gm-read-from">Scholarship Office <span>&lt;scholarship.office@lspu.edu.ph&gt;</span></p>
+              <p class="gm-read-to">to {{ user_email }}</p>
+            </div>
+            <span class="gm-read-date">{{ shown.sent_at.strftime('%b %d, %Y · %I:%M %p') }}</span>
+          </div>
+        </header>
+
+        <div class="gm-read-body">
+          <p>{{ shown.message }}</p>
+        </div>
+
+        <div class="gm-read-actions">
+          {% if shown.related_entity_type == 'scholarship' and shown.related_entity_id %}
+          <a class="sn-btn sn-btn--primary"
+             href="{{ url_for('scholarship.view_scholarship', scholarship_id=shown.related_entity_id) }}">Open program</a>
+          {% endif %}
+          {% if not shown.is_read %}
+          <form method="POST" action="{{ url_for('student.mark_notification_read', notif_id=shown.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="sn-btn" type="submit"><i class="bi bi-check2" aria-hidden="true"></i>Mark read</button>
+          </form>
+          {% else %}
+          <span class="sn-read"><i class="bi bi-check2-all" aria-hidden="true"></i>Read</span>
+          {% endif %}
+        </div>
+
+        <p class="gm-read-foot">
+          Sent to {{ user_email }}{% if masked_phone %} · SMS reminders to {{ masked_phone }}{% endif %}
+          · <a href="{{ url_for('student.profile') }}">Contact details</a>
+        </p>
+        {% else %}
+        <div class="gm-reader-empty">
+          <i class="bi bi-envelope-open" aria-hidden="true"></i>
+          <p>{% if filter_type != 'all' %}Nothing to read in this filter yet.{% else %}Nothing here yet — office announcements will show up as they're sent.{% endif %}</p>
+        </div>
+        {% endif %}
+      </article>
+
     </div>
-
-    <p class="sn-foot">
-      <span class="sn-foot-item">
-        <i class="bi bi-envelope" aria-hidden="true"></i>
-        <span><b>{{ user_email }}</b> — email notices are always on</span>
-      </span>
-      {% if masked_phone %}
-      <span class="sn-foot-sep" aria-hidden="true">·</span>
-      <span class="sn-foot-item">
-        <i class="bi bi-phone" aria-hidden="true"></i>
-        <span><b>{{ masked_phone }}</b> — SMS for deadline reminders only</span>
-      </span>
-      {% endif %}
-      <a href="{{ url_for('student.profile') }}">Update contact details</a>
-    </p>
-
   </div>
 </div>
 {% endblock %}
