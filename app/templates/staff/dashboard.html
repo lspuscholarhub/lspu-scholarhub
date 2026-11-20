@@ -5,63 +5,33 @@
 {# student-pages.css owns the .st base layer and tokens; staff-pages.css adds .sf-* #}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
 <link href="{{ url_for('static', filename='css/staff-pages.css') }}?v=20261122a" rel="stylesheet">
-<style>main { padding: 0 !important; margin: 0 !important; }</style>
+<style>main { padding: 0 !important; margin: 0 !important; background: #fff; }</style>
 {% endblock %}
 
 {% block content %}
 <div class="st sf-page">
 
   <!-- ══ command board: who you are, what needs doing, the five numbers ══════ -->
-  <header class="sf-board">
-    <div class="sf-board-inner">
-      <p class="st-kicker sf-kicker">Staff dashboard</p>
-      <div class="sf-board-head">
-        <div>
-          <h1 class="sf-title">
-            {%- if local_now.hour < 12 %}Good morning{% elif local_now.hour < 18 %}Good afternoon{% else %}Good evening{% endif %},
-            {{ staff_first_name }}
-          </h1>
-          <p class="sf-board-sub">
-            <b>{{ campus_name }}</b>{% if current_period %} · {{ current_period.display_name }}{% endif %}
-            <span class="sf-board-stamp">· figures {{ local_now.strftime('%b %d, %I:%M %p') }}</span>
-          </p>
-        </div>
-        <div class="sf-board-actions">
-          <a class="st-btn st-btn--navy" href="{{ url_for('staff.review_applications', status='pending') }}">
-            <i class="bi bi-inbox" aria-hidden="true"></i>Review queue
-            {% if to_review %}<span class="sf-btn-count">{{ to_review }}</span>{% endif %}
-          </a>
-          <a class="st-btn st-btn--ghost" href="{{ url_for('staff.reports') }}">
-            <i class="bi bi-graph-up" aria-hidden="true"></i>Reports
-          </a>
-        </div>
-      </div>
-
-      <dl class="sf-kpis">
-        <div class="sf-kpi is-warn">
-          <dt>Waiting on you</dt>
-          <dd>{{ to_review }}</dd>
-        </div>
-        <div class="sf-kpi">
-          <dt>Reviewed today</dt>
-          <dd>{{ reviewed_today }}</dd>
-        </div>
-        <div class="sf-kpi is-ok">
-          <dt>Approved</dt>
-          <dd>{{ approved_count }}</dd>
-        </div>
-        <div class="sf-kpi is-bad">
-          <dt>At risk</dt>
-          <dd>{{ at_risk_count }}</dd>
-        </div>
-        <div class="sf-kpi is-money">
-          <dt>Disbursed</dt>
-          <dd>₱{{ '{:,.0f}'.format(total_funds) }}</dd>
-          <span>{{ active_batches }} open batch{{ 'es' if active_batches != 1 }}</span>
-        </div>
-      </dl>
-    </div>
-  </header>
+  {% set board_kicker = 'Staff dashboard' %}
+  {% set board_title %}{% if local_now.hour < 12 %}Good morning{% elif local_now.hour < 18 %}Good afternoon{% else %}Good evening{% endif %}, {{ staff_first_name }}{% endset %}
+  {% set board_campus = campus_name %}
+  {% set board_period = current_period.display_name if current_period else None %}
+  {% set board_stamp = 'figures ' ~ local_now.strftime('%b %d, %I:%M %p') %}
+  {% set board_label = 'Campus figures' %}
+  {% set board_actions = [
+    {'label': 'Review queue', 'href': url_for('staff.review_applications', status='pending'),
+     'icon': 'bi-inbox', 'style': 'navy', 'count': to_review or None},
+    {'label': 'Reports', 'href': url_for('staff.reports'), 'icon': 'bi-graph-up', 'style': 'ghost'},
+  ] %}
+  {% set board_cells = [
+    {'label': 'Waiting on you', 'value': to_review, 'tone': 'warn'},
+    {'label': 'Reviewed today', 'value': reviewed_today},
+    {'label': 'Approved', 'value': approved_count, 'tone': 'ok'},
+    {'label': 'At risk', 'value': at_risk_count, 'tone': 'bad'},
+    {'label': 'Disbursed', 'value': '₱' ~ '{:,.0f}'.format(total_funds), 'tone': 'money',
+     'sub': active_batches ~ ' open batch' ~ ('es' if active_batches != 1 else '')},
+  ] %}
+  {% include 'staff/_board.html' %}
 
   <div class="sf-body">
 

@@ -34,16 +34,17 @@
 .sf-kpi { padding: .8rem 0 .95rem; border-bottom: 1px solid #edf1f7; }
 .sf-kpi:nth-child(even) { padding-left: .9rem; border-left: 1px solid #edf1f7; }
 .sf-kpi:last-child { grid-column: 1 / -1; border-bottom: 0; }
-.sf-kpi dt {
-  font-size: .58rem; font-weight: 700; letter-spacing: .11em;
+.sf-kpi { display: block; color: inherit; text-decoration: none; }
+.sf-kpi-label {
+  display: block; font-size: .58rem; font-weight: 700; letter-spacing: .11em;
   text-transform: uppercase; color: #7b8797;
 }
-.sf-kpi dd { margin: .25rem 0 0; font-size: 1.5rem; line-height: 1; font-weight: 800; color: #0f2a4d; }
-.sf-kpi span { display: block; margin-top: .3rem; font-size: .66rem; color: #8494a8; }
-.sf-kpi.is-warn dd { color: #b26a00; }
-.sf-kpi.is-ok dd { color: #0f7a4f; }
-.sf-kpi.is-bad dd { color: #b02a37; }
-.sf-kpi.is-money dd { font-size: 1.32rem; letter-spacing: -.02em; }
+.sf-kpi-value { display: block; margin-top: .25rem; font-size: 1.5rem; line-height: 1; font-weight: 800; color: #0f2a4d; }
+.sf-kpi-sub { display: block; margin-top: .3rem; font-size: .66rem; color: #8494a8; }
+.sf-kpi.is-warn .sf-kpi-value { color: #b26a00; }
+.sf-kpi.is-ok .sf-kpi-value { color: #0f7a4f; }
+.sf-kpi.is-bad .sf-kpi-value { color: #b02a37; }
+.sf-kpi.is-money .sf-kpi-value { font-size: 1.32rem; letter-spacing: -.02em; }
 
 /* ── body ─────────────────────────────────────────────────────────────────── */
 .sf-body {
@@ -174,7 +175,7 @@
   /* GWA and the standing chip must not share the same grid cell */
   .sf-table--perf .col-gwa { grid-column: 2; grid-row: 1; }
   .sf-table--perf .col-standing { grid-column: 2; grid-row: 2; }
-  .sf-kpi dd { font-size: 1.38rem; }
+  .sf-kpi-value { font-size: 1.38rem; }
 }
 
 /* ── desktop ──────────────────────────────────────────────────────────────── */
@@ -296,7 +297,7 @@
   .sf-kpis--four .sf-kpi { padding: .62rem 0 .7rem; }
   .sf-kpis--four .sf-kpi:last-child { grid-column: auto; }
   .sf-kpis--four .sf-kpi:nth-child(n+3) { border-bottom: 0; }
-  .sf-kpis--four .sf-kpi dd { font-size: 1.3rem; }
+  .sf-kpis--four .sf-kpi-value { font-size: 1.3rem; }
   .sf-selects { width: 100%; }
   .sf-selects select { flex: 1 1 45%; max-width: none; }
   .sf-table--apps tbody tr { grid-template-columns: 20px minmax(0, 1fr) auto; }

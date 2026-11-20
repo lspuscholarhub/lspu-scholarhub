@@ -1,0 +1,55 @@
+{#
+  Light command board, shared by every staff page.
+
+  Set these before including:
+    board_kicker   small uppercase label          e.g. 'Staff dashboard'
+    board_title    page heading
+    board_campus   campus name shown under it
+    board_period   academic period display name (optional)
+    board_stamp    small trailing note            (optional) e.g. 'oldest first'
+    board_label    aria-label for the figures     (optional)
+    board_actions  list of {label, href, icon, style, count}
+                   style: 'navy' (solid) or 'ghost' (white)
+    board_cells    list of {label, value, sub, tone, href}
+                   tone: warn | ok | bad | money
+                   href makes the whole figure a link
+#}
+<header class="sf-board">
+  <div class="sf-board-inner">
+    <p class="st-kicker sf-kicker">{{ board_kicker }}</p>
+    <div class="sf-board-head">
+      <div>
+        <h1 class="sf-title">{{ board_title }}</h1>
+        <p class="sf-board-sub">
+          <b>{{ board_campus }}</b>{% if board_period %} · {{ board_period }}{% endif %}
+          {%- if board_stamp %} <span class="sf-board-stamp">· {{ board_stamp }}</span>{% endif %}
+        </p>
+      </div>
+      {% if board_actions %}
+      <div class="sf-board-actions">
+        {% for a in board_actions %}
+        <a class="st-btn {{ 'st-btn--ghost' if a.style == 'ghost' else 'st-btn--navy' }}" href="{{ a.href }}">
+          <i class="bi {{ a.icon }}" aria-hidden="true"></i>{{ a.label }}
+          {% if a.count %}<span class="sf-btn-count">{{ a.count }}</span>{% endif %}
+        </a>
+        {% endfor %}
+      </div>
+      {% endif %}
+    </div>
+
+    <nav class="sf-kpis{{ ' sf-kpis--four' if board_cells|length == 4 }}"
+         aria-label="{{ board_label|default('Campus figures') }}">
+      {% for c in board_cells %}
+      {% if c.href %}
+      <a class="sf-kpi{{ ' is-' ~ c.tone if c.tone }}" href="{{ c.href }}">
+      {% else %}
+      <div class="sf-kpi{{ ' is-' ~ c.tone if c.tone }}">
+      {% endif %}
+        <span class="sf-kpi-label">{{ c.label }}</span>
+        <span class="sf-kpi-value">{{ c.value }}</span>
+        {% if c.sub %}<span class="sf-kpi-sub">{{ c.sub }}</span>{% endif %}
+      {% if c.href %}</a>{% else %}</div>{% endif %}
+      {% endfor %}
+    </nav>
+  </div>
+</header>
