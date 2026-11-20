@@ -8,6 +8,7 @@ from app.models import User, Scholarship, ScholarshipApplication, Notification
 from app.models.scholarship import ScholarshipStatus, ApplicationStatus
 from app.models.notification import NotificationType, NotificationChannel
 from app.services.notification_service import notification_service
+from app.services.review_service import scholar_status_after_decision
 from app.services.scholarship_service import resolve_slot_cap
 from app.utils.custom_fields import parse_custom_fields
 from app.utils.decorators import role_required
@@ -767,8 +768,11 @@ def review_application(app_id):
     application.review_notes        = notes
     application.final_decision_date = datetime.utcnow() if action in ('approve', 'reject') else None
 
+    decision_tag = scholar_status_after_decision(action)
+    if decision_tag:
+        application.scholar_status = decision_tag
+
     if action == 'approve':
-        application.scholar_status = 'active'
         application.approved_at    = datetime.utcnow()
         application.is_active      = True
 
@@ -817,6 +821,7 @@ def batch_review():
         flash('Invalid batch action or no applications selected.', 'error')
         return redirect(url_for('admin.manage_applications'))
 
+    decision_tag = scholar_status_after_decision(action)
     processed = 0
     approved_apps = []
     skipped_public = 0
@@ -841,8 +846,9 @@ def batch_review():
             app.reviewed_at         = datetime.utcnow()
             app.review_notes        = notes
             app.final_decision_date = datetime.utcnow()
+            if decision_tag:
+                app.scholar_status = decision_tag
             if action == 'approve':
-                app.scholar_status = 'active'
                 app.approved_at    = datetime.utcnow()
                 app.is_active      = True
                 approved_apps.append(app)

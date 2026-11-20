@@ -10,6 +10,7 @@ from app.models import (User, Scholarship, ScholarshipApplication, Notification,
 from app.models.scholarship import ScholarshipStatus, ApplicationStatus
 from app.models.notification import NotificationType, NotificationChannel
 from app.services.notification_service import notification_service
+from app.services.review_service import scholar_status_after_decision
 from app.services.scholarship_service import resolve_slot_cap
 from app.utils.custom_fields import parse_custom_fields
 from app.utils.decorators import role_required
@@ -1026,14 +1027,11 @@ def review_application(app_id):
     application.review_notes = notes
     application.final_decision_date = datetime.utcnow() if action in ('approve', 'reject') else None
 
-    # The sheet's Tag select decides the scholar standing: approving starts the
-    # scholar on Active, while a rejection only re-tags when staff actually pick a
-    # tag — the reject card starts on "leave unchanged".
-    _valid_tags = ('active', 'at_risk', 'probation', 'inactive')
-    if action == 'approve' and tag not in _valid_tags:
-        application.scholar_status = 'active'
-    elif tag in _valid_tags:
-        application.scholar_status = tag
+    # One shared rule for every review path: approve leaves the scholar Active (or
+    # on the tag staff picked), reject only re-tags when a tag was picked.
+    decision_tag = scholar_status_after_decision(action, tag)
+    if decision_tag:
+        application.scholar_status = decision_tag
 
     if action == 'approve':
         application.approved_at   = datetime.utcnow()
@@ -1076,6 +1074,7 @@ def batch_review():
     if not new_status or not app_ids:
         flash('Invalid batch action or no applications selected.', 'error')
         return redirect(url_for('staff.review_applications'))
+    decision_tag = scholar_status_after_decision(action)
     processed = 0
     approved_apps = []
     skipped_public = 0
@@ -1094,8 +1093,9 @@ def batch_review():
             app.reviewed_at = datetime.utcnow()
             app.review_notes = notes
             app.final_decision_date = datetime.utcnow()
+            if decision_tag:
+                app.scholar_status = decision_tag
             if action == 'approve':
-                app.scholar_status = 'active'
                 app.approved_at    = datetime.utcnow()
                 app.is_active      = True
                 approved_apps.append(app)
