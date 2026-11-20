@@ -998,7 +998,7 @@ def review_application(app_id):
     application = ScholarshipApplication.query.get_or_404(app_id)
     action = request.form.get('action')
     notes  = request.form.get('review_notes', '')
-    tag    = request.form.get('tag', 'active')
+    tag    = request.form.get('tag', '')
 
     status_map = {
         'approve':      ApplicationStatus.APPROVED,
@@ -1026,9 +1026,13 @@ def review_application(app_id):
     application.review_notes = notes
     application.final_decision_date = datetime.utcnow() if action in ('approve', 'reject') else None
 
-    # The sheet's Tag select decides the scholar standing; approve defaults to active
-    # because that is what the select starts on.
-    if tag in ('active', 'at_risk', 'probation', 'inactive'):
+    # The sheet's Tag select decides the scholar standing: approving starts the
+    # scholar on Active, while a rejection only re-tags when staff actually pick a
+    # tag — the reject card starts on "leave unchanged".
+    _valid_tags = ('active', 'at_risk', 'probation', 'inactive')
+    if action == 'approve' and tag not in _valid_tags:
+        application.scholar_status = 'active'
+    elif tag in _valid_tags:
         application.scholar_status = tag
 
     if action == 'approve':

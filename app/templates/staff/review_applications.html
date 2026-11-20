@@ -295,6 +295,9 @@
                       aria-label="{{ decision.label }} notes"></textarea>
             <div class="sf-action-row">
               <select name="tag" aria-label="Scholar tag">
+                {% if decision.key == 'reject' %}
+                <option value="" selected>Tag: leave unchanged</option>
+                {% endif %}
                 <option value="active">Tag: Active</option>
                 <option value="at_risk">Tag: At Risk</option>
                 <option value="probation">Tag: Probation</option>
