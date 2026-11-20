@@ -299,31 +299,37 @@
         {% endif %}
       </div>
       <div class="modal-footer flex-column align-items-stretch gap-2">
+        {# One plain form per decision: the action is fixed in the form itself, so
+           Chromium cannot drop the clicked button's name and value, and both
+           buttons still submit with JavaScript unavailable. #}
+        {% for decision in [
+            {'key': 'reject', 'label': 'Reject', 'btn': 'btn-danger',
+             'ph': 'Reason for rejection (optional)'},
+            {'key': 'approve', 'label': 'Approve', 'btn': 'btn-success',
+             'ph': 'Approval note (optional)'},
+        ] %}
         <form method="POST" action="{{ url_for('admin.review_application', app_id=app.id) }}">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-          <div class="mb-2">
-            <textarea class="form-control form-control-sm" name="review_notes"
-                      rows="2" placeholder="Review notes (optional)…"></textarea>
-          </div>
-          <!-- Scholar tag: approving with none picked means Good Standing; rejecting
-               with none picked leaves the scholar's current standing alone. -->
-          <div class="mb-2">
-            <select class="form-select form-select-sm" name="tag" style="width:auto;display:inline-block;">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="hidden" name="action" value="{{ decision.key }}">
+          <div class="d-flex gap-2 align-items-center">
+            <input type="text" class="form-control form-control-sm" name="review_notes"
+                   placeholder="{{ decision.ph }}" aria-label="{{ decision.label }} notes">
+            <!-- Leaving the tag alone approves as Good Standing and leaves a
+                 rejected scholar's standing untouched. -->
+            <select class="form-select form-select-sm" name="tag" style="width:auto;"
+                    aria-label="Scholar tag">
               <option value="" selected>Tag: leave unchanged</option>
               {% for option in scholar_tags %}
               <option value="{{ option }}">Tag: {{ option|replace('_', ' ')|title }}</option>
               {% endfor %}
             </select>
-          </div>
-          <div class="d-flex gap-2 justify-content-end">
-            <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
-            <button type="submit" name="action" value="reject"
-                    class="btn btn-danger btn-sm">Reject</button>
-            <button type="submit" name="action" value="approve"
-                    class="btn btn-success btn-sm">Approve</button>
+            <button type="submit" class="btn btn-sm {{ decision.btn }}">{{ decision.label }}</button>
           </div>
         </form>
+        {% endfor %}
+        <div class="d-flex justify-content-end">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
+        </div>
       </div>
     </div>
   </div>
