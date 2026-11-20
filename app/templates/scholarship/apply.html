@@ -153,7 +153,8 @@
                 <select id="custom{{ loop.index0 }}" name="custom_{{ loop.index0 }}"
                         {% if field.required %}required{% endif %}>
                   <option value="">Select…</option>
-                  {% for opt in field.options %}
+                  {# a campus can save a dropdown before filling the options in #}
+                  {% for opt in field.options or [] %}
                   <option value="{{ opt }}"{% if answer == opt %} selected{% endif %}>{{ opt }}</option>
                   {% endfor %}
                 </select>
