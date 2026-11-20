@@ -57,8 +57,10 @@
 .sf-panel h2 { margin: 0; font-size: .95rem; font-weight: 800; color: #0f2a4d; letter-spacing: -.01em; }
 .sf-link { font-size: .75rem; font-weight: 700; color: #0b7d72; text-decoration: none; white-space: nowrap; }
 .sf-link:hover { color: #095e56; }
-.sf-clear { display: flex; align-items: center; gap: .5rem; margin: 0; padding: .7rem 0; font-size: .84rem; color: #0f5c3d; }
-.sf-clear i { color: #198754; }
+.sf-clear { display: flex; flex-wrap: wrap; align-items: flex-start; gap: .3rem .5rem; margin: 0; padding: .7rem 0; font-size: .84rem; color: #0f5c3d; }
+.sf-clear i { flex: 0 0 auto; margin-top: .12rem; color: #198754; }
+.sf-clear-text { flex: 1 1 12rem; min-width: 0; }
+.sf-clear-link { flex: 1 1 100%; }
 .sf-empty { margin: 0; padding: .6rem 0; font-size: .82rem; color: #6b7686; }
 .sf-more { margin: .5rem 0 0; }
 

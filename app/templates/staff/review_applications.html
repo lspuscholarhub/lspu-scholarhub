@@ -179,9 +179,9 @@
           {% else %}
           <p class="sf-clear">
             <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
-            Nothing waiting — every application{% if campus_name == 'All campuses' %} across all of your campuses{% else %} for {{ campus_name }}{% endif %} has been reviewed.
+            <span class="sf-clear-text">Nothing waiting — every application{% if campus_name == 'All campuses' %} across all of your campuses{% else %} for {{ campus_name }}{% endif %} has been reviewed.</span>
             {% if status_filter != 'all' %}
-            <a class="sf-link" href="{{ url_for('staff.review_applications', status='all', scholarship_id=scholarship_filter, course=course_filter, year=year_filter, q=q) }}">Show all applications</a>
+            <a class="sf-link sf-clear-link" href="{{ url_for('staff.review_applications', status='all', scholarship_id=scholarship_filter, course=course_filter, year=year_filter, q=q) }}">Show all applications</a>
             {% endif %}
           </p>
           {% endif %}
