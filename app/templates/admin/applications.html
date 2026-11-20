@@ -306,12 +306,14 @@
             <textarea class="form-control form-control-sm" name="review_notes"
                       rows="2" placeholder="Review notes (optional)…"></textarea>
           </div>
-          <!-- Scholar tag (for approved) -->
+          <!-- Scholar tag: approving with none picked means Good Standing; rejecting
+               with none picked leaves the scholar's current standing alone. -->
           <div class="mb-2">
             <select class="form-select form-select-sm" name="tag" style="width:auto;display:inline-block;">
-              <option value="active">Tag: Active</option>
-              <option value="probation">Tag: Probation</option>
-              <option value="inactive">Tag: Inactive</option>
+              <option value="" selected>Tag: leave unchanged</option>
+              {% for option in scholar_tags %}
+              <option value="{{ option }}">Tag: {{ option|replace('_', ' ')|title }}</option>
+              {% endfor %}
             </select>
           </div>
           <div class="d-flex gap-2 justify-content-end">

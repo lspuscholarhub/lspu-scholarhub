@@ -10,7 +10,7 @@ from app.models import (User, Scholarship, ScholarshipApplication, Notification,
 from app.models.scholarship import ScholarshipStatus, ApplicationStatus
 from app.models.notification import NotificationType, NotificationChannel
 from app.services.notification_service import notification_service
-from app.services.review_service import scholar_status_after_decision
+from app.services.review_service import SCHOLAR_TAGS, scholar_status_after_decision
 from app.services.scholarship_service import resolve_slot_cap
 from app.utils.custom_fields import parse_custom_fields
 from app.utils.decorators import role_required
@@ -989,6 +989,7 @@ def review_applications():
         q=q,
         campus_name=campus_name,
         current_period=current_period,
+        scholar_tags=SCHOLAR_TAGS,
         now=datetime.utcnow(),
     )
 

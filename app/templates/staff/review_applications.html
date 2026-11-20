@@ -298,10 +298,9 @@
                 {% if decision.key == 'reject' %}
                 <option value="" selected>Tag: leave unchanged</option>
                 {% endif %}
-                <option value="active">Tag: Active</option>
-                <option value="at_risk">Tag: At Risk</option>
-                <option value="probation">Tag: Probation</option>
-                <option value="inactive">Tag: Inactive</option>
+                {% for option in scholar_tags %}
+                <option value="{{ option }}">Tag: {{ option|replace('_', ' ')|title }}</option>
+                {% endfor %}
               </select>
               <button type="submit" class="st-btn {{ decision.btn }} st-btn--sm">{{ decision.label }} application</button>
             </div>

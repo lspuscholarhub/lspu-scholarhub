@@ -8,7 +8,7 @@ from app.models import User, Scholarship, ScholarshipApplication, Notification
 from app.models.scholarship import ScholarshipStatus, ApplicationStatus
 from app.models.notification import NotificationType, NotificationChannel
 from app.services.notification_service import notification_service
-from app.services.review_service import scholar_status_after_decision
+from app.services.review_service import SCHOLAR_TAGS, scholar_status_after_decision
 from app.services.scholarship_service import resolve_slot_cap
 from app.utils.custom_fields import parse_custom_fields
 from app.utils.decorators import role_required
@@ -726,6 +726,7 @@ def manage_applications():
         course_filter=course_filter,
         year_filter=year_filter,
         q=q,
+        scholar_tags=SCHOLAR_TAGS,
     )
 
 
@@ -736,6 +737,7 @@ def review_application(app_id):
     application = ScholarshipApplication.query.get_or_404(app_id)
     action      = request.form.get('action')   # 'approve' | 'reject' | 'under_review'
     notes       = request.form.get('review_notes', '')
+    tag         = request.form.get('tag', '')
 
     status_map = {
         'approve':      ApplicationStatus.APPROVED,
@@ -768,7 +770,7 @@ def review_application(app_id):
     application.review_notes        = notes
     application.final_decision_date = datetime.utcnow() if action in ('approve', 'reject') else None
 
-    decision_tag = scholar_status_after_decision(action)
+    decision_tag = scholar_status_after_decision(action, tag)
     if decision_tag:
         application.scholar_status = decision_tag
 
@@ -899,7 +901,7 @@ def batch_review():
 def tag_scholar(app_id):
     application = ScholarshipApplication.query.get_or_404(app_id)
     tag = request.form.get('tag')
-    if tag not in ('active', 'at_risk', 'probation', 'inactive'):
+    if tag not in SCHOLAR_TAGS:
         flash('Invalid tag.', 'error')
         return redirect(url_for('admin.manage_applications'))
     application.scholar_status = tag
