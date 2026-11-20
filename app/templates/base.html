@@ -614,9 +614,20 @@
 // Loading spinner on form submissions
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('form').forEach(function(form) {
-    form.addEventListener('submit', function() {
+    form.addEventListener('submit', function(event) {
       var btn = form.querySelector('button[type="submit"]');
       if (btn && !btn.classList.contains('no-spinner')) {
+        // Disabling the button that submitted the form drops its name/value
+        // from the request in Chromium, and the review and batch forms say
+        // which action was picked with exactly that pair. Echo it into a
+        // hidden field first so the action still arrives.
+        if (event.submitter && event.submitter === btn && btn.name) {
+          var echo = document.createElement('input');
+          echo.type = 'hidden';
+          echo.name = btn.name;
+          echo.value = btn.value;
+          form.appendChild(echo);
+        }
         btn.disabled = true;
         var originalText = btn.innerHTML;
         btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Processing...';
