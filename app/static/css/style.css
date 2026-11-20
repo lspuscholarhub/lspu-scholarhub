@@ -519,6 +519,10 @@ footer .container { max-width: 1140px; }
 .back-to-top-btn:not(.d-none) {
   display: flex;
 }
+/* The button floats above the modal layer, so it used to cover the action
+   buttons in a modal footer on phone widths. Keep it out of the way while a
+   modal is open. */
+body:has(.modal.show) .back-to-top-btn { display: none !important; }
 .back-to-top-btn i {
   margin: 0;
   line-height: 1;

@@ -311,19 +311,20 @@
         <form method="POST" action="{{ url_for('admin.review_application', app_id=app.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <input type="hidden" name="action" value="{{ decision.key }}">
+          <input type="text" class="form-control form-control-sm mb-2" name="review_notes"
+                 placeholder="{{ decision.ph }}" aria-label="{{ decision.label }} notes">
           <div class="d-flex gap-2 align-items-center">
-            <input type="text" class="form-control form-control-sm" name="review_notes"
-                   placeholder="{{ decision.ph }}" aria-label="{{ decision.label }} notes">
             <!-- Leaving the tag alone approves as Good Standing and leaves a
                  rejected scholar's standing untouched. -->
-            <select class="form-select form-select-sm" name="tag" style="width:auto;"
-                    aria-label="Scholar tag">
+            <select class="form-select form-select-sm" name="tag"
+                    style="flex:1 1 auto;min-width:0;" aria-label="Scholar tag">
               <option value="" selected>Tag: leave unchanged</option>
               {% for option in scholar_tags %}
               <option value="{{ option }}">Tag: {{ option|replace('_', ' ')|title }}</option>
               {% endfor %}
             </select>
-            <button type="submit" class="btn btn-sm {{ decision.btn }}">{{ decision.label }}</button>
+            <button type="submit" class="btn btn-sm {{ decision.btn }}"
+                    style="flex:0 0 auto;">{{ decision.label }}</button>
           </div>
         </form>
         {% endfor %}
