@@ -131,32 +131,34 @@ def dashboard():
     else:
         gwa_label, gwa_tone = 'Probation', 'bad'
 
-    # ── "Do this next": outstanding obligations, most urgent first ───────
+    # ── "Needs you": outstanding obligations, most urgent first ────────────
     today = date.today()
     actions = []
 
     def _due(date_value):
+        """Chip label, tone and sort position; undated work sorts at 9999 days."""
         if not date_value:
-            return 'No deadline', 'muted', 9999, False
+            return 'No deadline', 'muted', 9999
         days = (date_value - today).days
         if days < 0:
-            return f'Overdue by {abs(days)}d', 'bad', days, True
+            return f'Overdue by {abs(days)}d', 'bad', days
         if days == 0:
-            return 'Due today', 'warn', 0, False
+            return 'Due today', 'warn', 0
         if days <= 14:
-            return f'Due {date_value.strftime("%b %d")}', 'warn', days, False
-        return f'Due {date_value.strftime("%b %d, %Y")}', 'muted', days, False
+            return f'Due {date_value.strftime("%b %d")}', 'warn', days
+        return f'Due {date_value.strftime("%b %d, %Y")}', 'muted', days
 
-    def _add(title, label, date_value, href, icon, rank=1):
-        """rank 0 = an account detail the student fixes in their profile.
+    def _add(title, label, date_value, href, icon, pin=False):
+        """pin=True for an account detail the student fixes in their profile.
 
-        Undated items all report 9999 days, so rank only ever breaks that tie.
-        Without it, whichever item happened to be added first led the list.
+        Such a row carries no deadline, so `days` alone would let four dated
+        items push it past the four-row cap and off the card; pin also keeps it
+        ahead of other undated paperwork.
         """
-        state, tone, days, overdue = _due(date_value)
+        state, tone, days = _due(date_value)
         actions.append({'title': title, 'label': label, 'state': state,
-                        'tone': tone, 'days': days, 'overdue': overdue,
-                        'timed': date_value is not None, 'rank': rank,
+                        'tone': tone, 'days': days, 'pin': pin,
+                        'timed': date_value is not None,
                         'blocking': False,
                         'href': href, 'icon': icon})
 
@@ -191,10 +193,10 @@ def dashboard():
 
     if not user.phone_number:
         _add('Add a phone number', 'Profile · the office needs this to reach you', None,
-             url_for('student.profile'), 'bi-phone', rank=0)
+             url_for('student.profile'), 'bi-phone', pin=True)
     elif not user.phone_verified:
         _add('Verify your phone number', 'Profile · the office can’t reach you until this is confirmed', None,
-             url_for('student.profile'), 'bi-phone', rank=0)
+             url_for('student.profile'), 'bi-phone', pin=True)
     if gwa is None:
         _add('Upload your Copy of Grades', 'Documents', None,
              url_for('student.upload_gwa'), 'bi-file-earmark-text')
@@ -207,34 +209,24 @@ def dashboard():
             'title': 'Verify your account',
             'label': 'Contact the office to confirm your enrolment',
             'state': 'Blocking', 'tone': 'bad',
-            'days': -1, 'overdue': True, 'timed': True,
-            'rank': 0, 'blocking': True,
+            'days': -1, 'timed': True, 'pin': True, 'blocking': True,
             'href': url_for('main.contact'),
             'icon': 'bi-shield-exclamation',
         })
 
     def _order(a):
-        """Blocking first, then overdue, then by deadline, then by rank."""
-        return (0 if a['blocking'] else 1,
-                0 if a['overdue'] else 1,
-                a['days'], a['rank'])
+        """Blocked account first, then by deadline, then the student's own
+        profile rows ahead of other undated paperwork (both sit at 9999 days)."""
+        return (0 if a['blocking'] else 1, a['days'], 0 if a['pin'] else 1)
 
-    def _pinned(a):
-        """Rows that must stay visible: a blocked account, or an undated
-        account detail such as the phone number.
-
-        Undated rows sort at 9999 days, so four dated deadlines used to push the
-        phone row past the four-row cap and off the card entirely.
-        """
-        return a['blocking'] or (not a['timed'] and a['rank'] == 0)
-
+    # Four rows, every pinned row included: the cap is filled with deadlines
+    # only after the pinned rows have taken their slots.
     actions.sort(key=_order)
-    shown = [a for a in actions if _pinned(a)][:4]
-    shown += [a for a in actions if not _pinned(a)][:4 - len(shown)]
-    shown.sort(key=_order)
+    pinned = [a for a in actions if a['pin']]
+    pinned += [a for a in actions if not a['pin']][:max(0, 4 - len(pinned))]
 
     actions_total = len(actions)
-    actions = shown
+    actions = sorted(pinned, key=_order)
 
     return render_template(
         'student/dashboard.html',
