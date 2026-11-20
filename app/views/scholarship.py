@@ -321,6 +321,25 @@ def view_scholarship(scholarship_id):
 
 # ── Application submission ────────────────────────────────────────────────────
 
+def _render_apply(scholarship, user, editing=False, application=None, form_data=None):
+    """Render the application form with its countdown and document flags.
+
+    Five call sites share this page - the GET, the editing view and three error
+    re-renders - so the extra context is built here instead of at each one.
+
+    form_data carries the failed submission back to the page so a student who
+    missed one required answer (often one of the campus's own questions) does not
+    lose the others.
+    """
+    days_left = None
+    if scholarship.application_deadline:
+        days_left = (scholarship.application_deadline.date()
+                     - datetime.utcnow().date()).days
+    return render_template('scholarship/apply.html', scholarship=scholarship,
+                           user=user, editing=editing, application=application,
+                           form_data=form_data or {}, days_left=days_left)
+
+
 @scholarship_bp.route('/apply/<int:scholarship_id>', methods=['GET', 'POST'])
 @role_required('student')
 def apply_scholarship(scholarship_id):
@@ -376,9 +395,7 @@ def apply_scholarship(scholarship_id):
         try:
             if not form.get('terms') or not form.get('privacy'):
                 flash('You must agree to the terms and privacy policy.', 'error')
-                return render_template('scholarship/apply.html',
-                                       scholarship=scholarship, user=user,
-                                       editing=False, application=None)
+                return _render_apply(scholarship, user, form_data=request.form)
 
             # ── Build application data from user profile ───────────────────────
             gpa = user.gwa or 0
@@ -419,9 +436,7 @@ def apply_scholarship(scholarship_id):
                         value = form.get(f'custom_{i}', '').strip()
                         if field.get('required') and not value:
                             flash(f'Please fill in: {field["label"]}', 'error')
-                            return render_template('scholarship/apply.html',
-                                                   scholarship=scholarship, user=user,
-                                                   editing=False, application=None)
+                            return _render_apply(scholarship, user, form_data=request.form)
                         custom_responses.append({
                             'label': field['label'],
                             'value': value,
@@ -479,9 +494,7 @@ def apply_scholarship(scholarship_id):
             _log.getLogger(__name__).error(f'Application submit error: {e}', exc_info=True)
             db.session.rollback()
             flash(f'An error occurred while submitting your application. Please try again.', 'error')
-            return render_template('scholarship/apply.html',
-                                   scholarship=scholarship, user=user,
-                                   editing=False, application=None)
+            return _render_apply(scholarship, user, form_data=request.form)
 
     # Ensure custom_form_fields is accessible even if column doesn't exist yet
     try:
@@ -489,8 +502,7 @@ def apply_scholarship(scholarship_id):
     except Exception:
         scholarship.custom_form_fields = None
 
-    return render_template('scholarship/apply.html', scholarship=scholarship, user=user,
-                           editing=False, application=None)
+    return _render_apply(scholarship, user)
 
 
 # ── Edit application (before deadline) ───────────────────────────────────────
@@ -550,11 +562,8 @@ def edit_application(app_id):
         flash('Application updated successfully.', 'success')
         return redirect(url_for('scholarship.list_scholarships', view='mine'))
 
-    return render_template('scholarship/apply.html',
-                           scholarship=application.scholarship,
-                           user=user,
-                           application=application,
-                           editing=True)
+    return _render_apply(application.scholarship, user,
+                         editing=True, application=application)
 
 
 # ── Withdraw application ──────────────────────────────────────────────────────

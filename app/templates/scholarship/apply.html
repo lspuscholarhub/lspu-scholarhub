@@ -1,203 +1,276 @@
 {% extends "base.html" %}
-{% block title %}Apply – {{ scholarship.title }} - LSPU ScholarHub{% endblock %}
+{% block title %}Apply — {{ scholarship.title }} · LSPU ScholarHub{% endblock %}
+
+{% block head %}
+<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261121a" rel="stylesheet">
+<style>main { padding: 0 !important; margin: 0 !important; }</style>
+{% endblock %}
 
 {% block content %}
-<div class="container py-4 px-3">
-  <div class="row justify-content-center">
-    <div class="col-lg-8">
+{% set cor_on_file = user.cor_file_path %}
+{% set grades_on_file = user.grades_file_path %}
+{% set docs_on_file = (1 if cor_on_file else 0) + (1 if grades_on_file else 0) %}
+{% set req_count = scholarship.requirements|length if scholarship.requirements else 0 %}
+{% set cancel_href = url_for('scholarship.list_scholarships', view='mine') if editing
+                     else url_for('scholarship.view_scholarship', scholarship_id=scholarship.id) %}
+{% set address = (user.town or '') + (', ' + user.province if user.province else '') %}
+{% set fd = form_data or {} %}
 
-      <!-- Breadcrumb -->
-      <nav aria-label="breadcrumb" class="mb-3">
-        <ol class="breadcrumb small">
-          <li class="breadcrumb-item"><a href="{{ url_for('scholarship.list_scholarships') }}">Scholarships</a></li>
-          <li class="breadcrumb-item"><a href="{{ url_for('scholarship.view_scholarship', scholarship_id=scholarship.id) }}">{{ scholarship.title }}</a></li>
-          <li class="breadcrumb-item active">Apply</li>
-        </ol>
-      </nav>
+<div class="st">
+  <div class="st-wrap">
 
-      <!-- Scholarship banner -->
-      <div class="card border-0 mb-4" style="background:linear-gradient(135deg,#1a3a6b,#0d6efd);border-radius:12px;">
-        <div class="card-body p-4 text-white">
-          <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
-            <div>
-              <h4 class="fw-bold mb-1">{{ scholarship.title }}{% if editing %} <span class="badge bg-warning text-dark ms-1" style="font-size:.7rem;vertical-align:middle;">Editing</span>{% endif %}</h4>
-              {% if scholarship.description %}
-              <p class="mb-0 opacity-75 small">{{ scholarship.description[:120] }}{% if scholarship.description|length > 120 %}…{% endif %}</p>
-              {% endif %}
-            </div>
-            <div class="text-end">
-              {% if scholarship.award_amount %}
-              <div class="fs-4 fw-bold text-warning">₱{{ "{:,.0f}".format(scholarship.award_amount) }}</div>
-              {% endif %}
-            </div>
-          </div>
+    <header class="sa-head">
+      <div class="sa-head-main">
+        <p class="st-kicker">Application</p>
+        <h1 class="sa-title">{{ scholarship.title }}</h1>
+        <div class="sa-badges">
+          {% if editing %}<span class="st-chip st-chip--warn">Editing</span>{% endif %}
+          {% if scholarship.funding_type %}<span class="st-chip st-chip--muted">{{ scholarship.funding_type|capitalize }}</span>{% endif %}
+          {% if scholarship.award_amount %}<span class="st-chip st-chip--ok">₱{{ '{:,.0f}'.format(scholarship.award_amount) }}</span>{% endif %}
+          {% if days_left is not none %}
+          <span class="st-chip {{ 'st-chip--bad' if days_left < 0 else ('st-chip--warn' if days_left <= 7 else 'st-chip--muted') }}">
+            {% if days_left < 0 %}Closed{% elif days_left == 0 %}Closes today{% else %}Closes in {{ days_left }}d{% endif %}
+          </span>
+          {% endif %}
         </div>
       </div>
+      <div class="sa-head-actions">
+        <a class="st-btn st-btn--ghost st-btn--sm" href="{{ cancel_href }}">
+          <i class="bi bi-arrow-left" aria-hidden="true"></i>Cancel
+        </a>
+      </div>
+    </header>
 
-      <form method="POST" id="applyForm" novalidate>
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <form method="POST" id="applyForm" class="sa-form" novalidate>
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-        <!-- ══ SECTION 1: Your Information (pre-filled, read-only) ═══ -->
-        <div class="card shadow-sm border-0 mb-4" style="border-radius:12px;">
-          <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
-            <h5 class="fw-bold mb-1">
-              <i class="bi bi-person-fill me-2 text-primary"></i>Your Information
-            </h5>
-            <p class="text-muted small mb-3">Auto-filled from your account. Contact the scholarship office to update.</p>
-          </div>
-          <div class="card-body px-4 pb-4">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label fw-semibold small">First Name</label>
-                <input type="text" class="form-control" name="first_name" value="{{ user.first_name }}" readonly style="background:#f8f9fa;">
+      {# The record is shown, not edited, but the server still receives the same
+         fields it always has, so nothing downstream changes. #}
+      <input type="hidden" name="first_name" value="{{ user.first_name or '' }}">
+      <input type="hidden" name="last_name" value="{{ user.last_name or '' }}">
+      <input type="hidden" name="student_id" value="{{ user.student_id or '' }}">
+      <input type="hidden" name="email" value="{{ user.email or '' }}">
+      <input type="hidden" name="phone" value="{{ user.phone_number or '' }}">
+      <input type="hidden" name="course" value="{{ user.course or '' }}">
+      <input type="hidden" name="year_level" value="{{ user.year_level or '' }}">
+      <input type="hidden" name="gender" value="{{ user.gender or '' }}">
+      <input type="hidden" name="address" value="{{ address }}">
+      <input type="hidden" name="gpa" value="{{ user.gwa or '' }}">
+
+      <div class="sa-grid">
+        <div class="sa-main">
+
+          {% if editing %}
+          <section class="st-card sa-note">
+            <i class="bi bi-pencil-square" aria-hidden="true"></i>
+            <div>
+              <b>Editing your application</b>
+              <p>Your birthday and units are the only fields you can change here. Resubmitting replaces what the office sees.</p>
+            </div>
+          </section>
+          {% endif %}
+
+          <section class="st-card" aria-labelledby="saRecordTitle">
+            <div class="st-section-head">
+              <h2 class="st-h2" id="saRecordTitle">Your record</h2>
+              <span class="st-chip st-chip--muted">Locked</span>
+              <a class="st-link" href="{{ url_for('student.profile') }}">Update in profile</a>
+            </div>
+            <p class="sa-lead">Taken from your account, so you don't have to retype it.</p>
+
+            <dl class="sa-rows">
+              <div class="sa-row"><dt>Name</dt><dd>{{ user.first_name }} {{ user.last_name }}</dd></div>
+              <div class="sa-row"><dt>Student ID</dt><dd>{{ user.student_id or '—' }}</dd></div>
+              <div class="sa-row"><dt>Course</dt><dd>{{ user.course or 'Not on file' }}</dd></div>
+              <div class="sa-row"><dt>Year level</dt><dd>{{ user.year_level or 'Not on file' }}</dd></div>
+              <div class="sa-row"><dt>Email</dt><dd>{{ user.email }}</dd></div>
+              <div class="sa-row">
+                <dt>Phone</dt>
+                <dd>
+                  {% if user.phone_number %}
+                    {{ user.phone_number }}{% if not user.phone_verified %}
+                    <span class="st-chip st-chip--warn">Unverified</span>{% endif %}
+                  {% else %}
+                    <span class="sa-missing">Not on file</span>
+                  {% endif %}
+                </dd>
               </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold small">Last Name</label>
-                <input type="text" class="form-control" name="last_name" value="{{ user.last_name }}" readonly style="background:#f8f9fa;">
+              <div class="sa-row">
+                <dt>GWA</dt>
+                <dd>{% if user.gwa %}{{ '%.2f'|format(user.gwa) }}{% else %}<span class="sa-missing">Not on file</span>{% endif %}</dd>
               </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold small">Student ID</label>
-                <input type="text" class="form-control" name="student_id" value="{{ user.student_id }}" readonly style="background:#f8f9fa;">
+              <div class="sa-row">
+                <dt>Gender</dt>
+                <dd>{% if user.gender %}{{ user.gender }}{% else %}<a href="{{ url_for('student.profile') }}">Add in profile</a>{% endif %}</dd>
               </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold small">Email</label>
-                <input type="email" class="form-control" name="email" value="{{ user.email }}" readonly style="background:#f8f9fa;">
+              <div class="sa-row">
+                <dt>Address</dt>
+                <dd>{% if address %}{{ address }}{% else %}<a href="{{ url_for('student.profile') }}">Add in profile</a>{% endif %}</dd>
               </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold small">Phone</label>
-                <input type="text" class="form-control" name="phone" value="{{ user.phone_number or '' }}" readonly style="background:#f8f9fa;">
+            </dl>
+          </section>
+
+          <section class="st-card" aria-labelledby="saNeededTitle">
+            <div class="st-section-head">
+              <h2 class="st-h2" id="saNeededTitle">Two things we still need</h2>
+            </div>
+            <div class="sa-fields">
+              <div class="sa-field">
+                <label for="birthday">Birthday</label>
+                <input type="date" id="birthday" name="birthday"
+                       value="{{ fd.get('birthday') or (user.date_of_birth.strftime('%Y-%m-%d') if user.date_of_birth else '') }}">
+                <p class="sa-hint">Used to check age eligibility. Saved to your profile when you submit.</p>
               </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold small">Course</label>
-                <input type="text" class="form-control" name="course" value="{{ user.course or '' }}" readonly style="background:#f8f9fa;">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold small">Year Level</label>
-                <input type="text" class="form-control" name="year_level" value="{{ user.year_level or '' }}" readonly style="background:#f8f9fa;">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold small">Gender</label>
-                <input type="text" class="form-control" name="gender" value="{{ user.gender or '' }}" readonly style="background:#f8f9fa;">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold small">Birthday</label>
-                <input type="date" class="form-control" name="birthday"
-                       value="{{ user.date_of_birth.strftime('%Y-%m-%d') if user.date_of_birth else '' }}"
-                       style="background:#f8f9fa;">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold small">Town / Province</label>
-                <input type="text" class="form-control" name="address" value="{{ (user.town or '') + (', ' + user.province if user.province else '') }}" readonly style="background:#f8f9fa;">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold small">Current GWA</label>
-                <input type="text" class="form-control" name="gpa" value="{{ user.gwa or '' }}" readonly style="background:#f8f9fa;">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold small">Units Enrolled</label>
-                <input type="number" class="form-control" name="units_enrolled" min="0"
-                       placeholder="e.g. 21" value="{{ user.units_enrolled or '' }}">
-                <div class="form-text">Enter your current enrolled units.</div>
+              <div class="sa-field">
+                <label for="units_enrolled">Units enrolled this semester</label>
+                <input type="number" id="units_enrolled" name="units_enrolled" min="0" inputmode="numeric"
+                       placeholder="e.g. 21" value="{{ fd.get('units_enrolled') or (user.units_enrolled or '') }}">
+                <p class="sa-hint">
+                  {% if cor_on_file %}Read from your COR — change it if it's wrong.
+                  {% else %}Enter your current units; they are also read from your COR once uploaded.{% endif %}
+                </p>
               </div>
             </div>
-          </div>
-        </div>
+          </section>
 
-        <!-- ══ SECTION 2: Custom Form Fields (if any) ═══════════════ -->
-        {% if scholarship.custom_form_fields is not none and scholarship.custom_form_fields | length > 0 %}
-        <div class="card shadow-sm border-0 mb-4" style="border-radius:12px;">
-          <div class="card-header bg-white border-0 pt-4 pb-0 px-4">
-            <h5 class="fw-bold mb-1">
-              <i class="bi bi-ui-checks me-2 text-primary"></i>Additional Information
-            </h5>
-            <p class="text-muted small mb-3">Please answer the following questions for this scholarship.</p>
-          </div>
-          <div class="card-body px-4 pb-4">
-            <div class="row g-3">
+          {% if scholarship.custom_form_fields %}
+          <section class="st-card" aria-labelledby="saQuestionsTitle">
+            <div class="st-section-head">
+              <h2 class="st-h2" id="saQuestionsTitle">Questions for this scholarship</h2>
+            </div>
+            <div class="sa-fields">
               {% for field in scholarship.custom_form_fields %}
-              <div class="{% if field.type == 'dropdown' or field.type == 'number' %}col-md-6{% else %}col-12{% endif %}">
-                <label class="form-label fw-semibold small">
-                  {{ field.label }}
-                  {% if field.required %}<span class="text-danger">*</span>{% endif %}
+              {% set answer = fd.get('custom_' ~ loop.index0, '') %}
+              <div class="sa-field{{ '' if field.type in ('dropdown', 'number') else ' is-wide' }}">
+                <label for="custom{{ loop.index0 }}">
+                  {{ field.label }}{% if field.required %} <span class="sa-req" aria-hidden="true">*</span>{% endif %}
                 </label>
-                {% if field.type == 'text' %}
-                <input type="text" class="form-control" name="custom_{{ loop.index0 }}"
-                       {% if field.required %}required{% endif %}
-                       placeholder="Enter {{ field.label|lower }}">
-                {% elif field.type == 'number' %}
-                <input type="number" class="form-control" name="custom_{{ loop.index0 }}"
-                       {% if field.required %}required{% endif %}
-                       placeholder="Enter {{ field.label|lower }}">
+                {% if field.type == 'number' %}
+                <input type="number" id="custom{{ loop.index0 }}" name="custom_{{ loop.index0 }}"
+                       {% if field.required %}required{% endif %} placeholder="Enter {{ field.label|lower }}"
+                       value="{{ answer }}">
                 {% elif field.type == 'dropdown' %}
-                <select class="form-select" name="custom_{{ loop.index0 }}" {% if field.required %}required{% endif %}>
-                  <option value="">Select...</option>
+                <select id="custom{{ loop.index0 }}" name="custom_{{ loop.index0 }}"
+                        {% if field.required %}required{% endif %}>
+                  <option value="">Select…</option>
                   {% for opt in field.options %}
-                  <option value="{{ opt }}">{{ opt }}</option>
+                  <option value="{{ opt }}"{% if answer == opt %} selected{% endif %}>{{ opt }}</option>
                   {% endfor %}
                 </select>
+                {% else %}
+                <input type="text" id="custom{{ loop.index0 }}" name="custom_{{ loop.index0 }}"
+                       {% if field.required %}required{% endif %} placeholder="Enter {{ field.label|lower }}"
+                       value="{{ answer }}">
                 {% endif %}
               </div>
               {% endfor %}
             </div>
-          </div>
-        </div>
-        {% endif %}
-
-        <!-- ══ SECTION 3: Certification ═══════════════════════════════ -->
-        <div class="card shadow-sm border-0 mb-4" style="border-radius:12px;">
-          <div class="card-body px-4 py-3">
-            <div class="form-check mb-2">
-              <input class="form-check-input" type="checkbox" name="terms" id="terms" required>
-              <label class="form-check-label small" for="terms">
-                <strong>I certify</strong> that all information provided is true and accurate.
-              </label>
-              <div class="invalid-feedback">You must certify the accuracy of your information.</div>
-            </div>
-            <div class="form-check">
-              <input class="form-check-input" type="checkbox" name="privacy" id="privacy" required>
-              <label class="form-check-label small" for="privacy">
-                <strong>I consent</strong> to the processing of my personal information for scholarship evaluation (Data Privacy Act, RA 10173).
-              </label>
-              <div class="invalid-feedback">You must consent to the privacy policy.</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Submit -->
-        <div class="d-flex justify-content-between align-items-center mb-5">
-          <a href="{{ url_for('scholarship.list_scholarships', view='mine') if editing else url_for('scholarship.view_scholarship', scholarship_id=scholarship.id) }}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i>{{ 'Back to scholarships' if editing else 'Back' }}
-          </a>
-          {% if editing %}
-          <button type="submit" class="btn btn-primary btn-lg px-5 fw-semibold" id="submitBtn">
-            <i class="bi bi-arrow-repeat me-2"></i>Resubmit Application
-          </button>
-          {% else %}
-          <button type="submit" class="btn btn-primary btn-lg px-5 fw-semibold" id="submitBtn">
-            <i class="bi bi-send me-2"></i>Submit Application
-          </button>
+          </section>
           {% endif %}
+
+          <section class="st-card" aria-labelledby="saCertTitle">
+            <div class="st-section-head">
+              <h2 class="st-h2" id="saCertTitle">Before you submit</h2>
+            </div>
+            <div class="sa-cert">
+              <div class="sa-check">
+                <input type="checkbox" id="terms" name="terms" required>
+                <label for="terms"><b>I certify</b> that all information provided is true and accurate.</label>
+                <p class="sa-err">Tick this to confirm your information is accurate.</p>
+              </div>
+              <div class="sa-check">
+                <input type="checkbox" id="privacy" name="privacy" required>
+                <label for="privacy"><b>I consent</b> to the processing of my personal information for scholarship evaluation (Data Privacy Act, RA 10173).</label>
+                <p class="sa-err">Tick this to consent to data processing.</p>
+              </div>
+            </div>
+          </section>
+
         </div>
 
-      </form>
-    </div>
+        <aside class="sa-rail">
+
+          <div class="st-card">
+            <div class="st-section-head">
+              <h2 class="st-h2">Program</h2>
+              <a class="st-link" href="{{ url_for('scholarship.view_scholarship', scholarship_id=scholarship.id) }}">View</a>
+            </div>
+            <dl class="sa-rows">
+              <div class="sa-row">
+                <dt>Award</dt>
+                <dd>{% if scholarship.award_amount %}₱{{ '{:,.0f}'.format(scholarship.award_amount) }}{% else %}Varies{% endif %}</dd>
+              </div>
+              <div class="sa-row">
+                <dt>Deadline</dt>
+                <dd>
+                  {% if scholarship.application_deadline %}
+                    {{ scholarship.application_deadline.strftime('%b %d, %Y') }}
+                  {% else %}<span class="sa-missing">None</span>{% endif %}
+                </dd>
+              </div>
+              <div class="sa-row">
+                <dt>Requirements</dt>
+                <dd>{% if req_count %}{{ req_count }} to submit{% else %}<span class="sa-missing">None listed</span>{% endif %}</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div class="st-card">
+            <div class="st-section-head">
+              <h2 class="st-h2">On file</h2>
+              <span class="st-chip {{ 'st-chip--ok' if docs_on_file == 2 else 'st-chip--warn' }}">{{ docs_on_file }}/2</span>
+            </div>
+            <ul class="sa-files">
+              <li class="{{ 'is-ok' if cor_on_file }}">
+                <i class="bi {{ 'bi-check-circle-fill' if cor_on_file else 'bi-circle' }}" aria-hidden="true"></i>
+                <span>Certificate of Registration</span>
+              </li>
+              <li class="{{ 'is-ok' if grades_on_file }}">
+                <i class="bi {{ 'bi-check-circle-fill' if grades_on_file else 'bi-circle' }}" aria-hidden="true"></i>
+                <span>Copy of Grades</span>
+              </li>
+            </ul>
+            <a class="st-link sa-rail-foot" href="{{ url_for('student.upload_gwa') }}">Manage documents</a>
+          </div>
+
+          <div class="st-card">
+            <div class="st-section-head">
+              <h2 class="st-h2">What happens next</h2>
+            </div>
+            <ol class="sa-steps">
+              <li><b>Submitted</b><span>A confirmation lands in your notifications.</span></li>
+              <li><b>Office review</b><span>The scholarship office checks your record and documents.</span></li>
+              <li><b>Decision</b><span>Approved, or returned with a note on My Scholarship.</span></li>
+            </ol>
+          </div>
+
+        </aside>
+      </div>
+
+      <div class="sa-actions">
+        <a class="st-btn st-btn--ghost" href="{{ cancel_href }}">Cancel</a>
+        <button type="submit" class="st-btn st-btn--primary" id="submitBtn">
+          <i class="bi bi-send" aria-hidden="true"></i>{{ 'Resubmit application' if editing else 'Submit application' }}
+        </button>
+      </div>
+    </form>
+
   </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-document.getElementById('applyForm').addEventListener('submit', function(e) {
+document.getElementById('applyForm').addEventListener('submit', function (e) {
+  this.classList.add('was-validated');
   if (!this.checkValidity()) {
     e.preventDefault();
     e.stopPropagation();
+    return;
   }
-  this.classList.add('was-validated');
-  if (!this.checkValidity()) return;
-
   const btn = document.getElementById('submitBtn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Submitting…';
+  btn.textContent = 'Submitting…';
 });
 </script>
 {% endblock %}

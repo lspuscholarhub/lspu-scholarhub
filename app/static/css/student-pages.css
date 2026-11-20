@@ -307,6 +307,148 @@
 .sd-programs a span { font-size: .72rem; color: var(--st-muted); }
 .sd-rail-foot { display: inline-block; margin-top: .6rem; }
 
+/* ═══ APPLICATION FORM ══════════════════════════════════════════════════════
+   The page is a review sheet: a locked record ledger, the two fields the
+   student still has to supply, the program's own questions, certification.
+   ═════════════════════════════════════════════════════════════════════════ */
+.sa-head { display: flex; flex-direction: column; gap: .7rem; padding: 1.5rem 0 1rem; }
+.sa-head-main { min-width: 0; }
+.sa-title {
+  margin: 0; font-size: 1.45rem; line-height: 1.2; font-weight: 800;
+  color: var(--st-navy); overflow-wrap: anywhere;
+}
+.sa-badges { display: flex; flex-wrap: wrap; gap: .3rem; margin-top: .5rem; }
+.sa-head-actions { display: flex; gap: .5rem; }
+
+.sa-form { display: grid; gap: .9rem; }
+.sa-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: .9rem; }
+.sa-main, .sa-rail { display: grid; gap: .9rem; min-width: 0; align-content: start; }
+.sa-lead { margin: 0 0 .5rem; font-size: .8rem; color: var(--st-muted); }
+
+/* locked record */
+.sa-rows { margin: 0; padding: 0; display: grid; }
+.sa-row {
+  display: flex; align-items: baseline; justify-content: space-between;
+  gap: .8rem; padding: .52rem 0; border-top: 1px solid #f2f5f9;
+}
+.sa-row:first-child { border-top: 0; }
+.sa-row dt {
+  flex: 0 0 auto; font-size: .66rem; font-weight: 700; letter-spacing: .05em;
+  text-transform: uppercase; color: #7b8797;
+}
+.sa-row dd {
+  margin: 0; font-size: .85rem; font-weight: 600; color: var(--st-navy);
+  text-align: right; overflow-wrap: anywhere;
+}
+.sa-row dd a { color: var(--st-blue); font-weight: 700; text-decoration: none; }
+.sa-missing { color: #8593a5; font-weight: 500; }
+
+/* the two inputs */
+.sa-fields { display: grid; grid-template-columns: minmax(0, 1fr); gap: .85rem; }
+.sa-field { display: grid; gap: .3rem; min-width: 0; }
+.sa-field label { font-size: .8rem; font-weight: 700; color: var(--st-navy); }
+.sa-field input, .sa-field select {
+  width: 100%; min-height: 44px; padding: .5rem .75rem;
+  font: inherit; font-size: 16px; color: var(--st-navy); background: #fbfcfe;
+  border: 1px solid var(--st-line); border-radius: 11px;
+}
+.sa-field input:focus, .sa-field select:focus {
+  outline: none; border-color: var(--st-blue); background: #fff;
+  box-shadow: 0 0 0 3px rgba(13, 110, 253, .18);
+}
+.sa-hint { margin: 0; font-size: .72rem; color: #8593a5; }
+.sa-req { color: #b02a37; font-weight: 800; }
+.was-validated .sa-field input:invalid,
+.was-validated .sa-field select:invalid { border-color: #eeb9bf; background: #fdf6f7; }
+
+/* certification */
+.sa-cert { display: grid; gap: .55rem; }
+.sa-check {
+  display: flex; flex-wrap: wrap; align-items: flex-start; gap: .6rem;
+  padding: .7rem .8rem; background: #fbfcfe;
+  border: 1px solid #eef2f8; border-radius: 12px;
+}
+.sa-check input {
+  width: 18px; height: 18px; flex: 0 0 18px; margin-top: .1rem;
+  accent-color: var(--st-blue);
+}
+.sa-check label { flex: 1 1 240px; font-size: .8rem; color: #41556f; }
+.sa-check label b { color: var(--st-navy); }
+.sa-check:has(input:checked) { background: #f4fbf7; border-color: #cdecd9; }
+.sa-err {
+  display: none; flex: 1 0 100%; margin: 0 0 0 1.6rem;
+  font-size: .72rem; font-weight: 600; color: #b02a37;
+}
+.was-validated .sa-check:has(input:invalid) { border-color: #f3c9cd; background: #fdf3f4; }
+.was-validated .sa-check:has(input:invalid) .sa-err { display: block; }
+
+/* editing note */
+.sa-note { display: flex; gap: .6rem; border-left: 4px solid var(--st-blue); }
+.sa-note > i { color: var(--st-blue); font-size: 1rem; margin-top: .1rem; }
+.sa-note b { display: block; font-size: .86rem; color: var(--st-navy); }
+.sa-note p { margin: .15rem 0 0; font-size: .78rem; color: var(--st-muted); }
+
+/* rail */
+.sa-files { list-style: none; margin: 0; padding: 0; }
+.sa-files li {
+  display: flex; align-items: center; gap: .5rem; padding: .5rem 0;
+  font-size: .8rem; color: #41556f; border-top: 1px solid #f2f5f9;
+}
+.sa-files li:first-child { border-top: 0; }
+.sa-files li i { color: #b6c1cf; }
+.sa-files li.is-ok i { color: #0f7a4f; }
+.sa-files li span { flex: 1 1 auto; min-width: 0; }
+.sa-rail-foot { display: inline-block; margin-top: .6rem; }
+
+.sa-steps { margin: 0; padding: 0; list-style: none; counter-reset: sa; display: grid; gap: .5rem; }
+.sa-steps li { counter-increment: sa; position: relative; padding-left: 1.6rem; }
+.sa-steps li::before {
+  content: counter(sa); position: absolute; left: 0; top: .05rem;
+  width: 1.15rem; height: 1.15rem; border-radius: 50%;
+  display: grid; place-items: center;
+  background: #eef4ff; color: #0b5ed7; font-size: .64rem; font-weight: 800;
+}
+.sa-steps b { display: block; font-size: .8rem; color: var(--st-navy); }
+.sa-steps span { font-size: .72rem; color: #8593a5; }
+
+/* action bar: static on desktop, pinned above the phone bottom nav */
+.sa-actions {
+  position: sticky; z-index: 3;
+  bottom: calc(var(--sh-bottomnav-h, 60px) + env(safe-area-inset-bottom, 0px));
+  display: flex; align-items: center; justify-content: space-between; gap: .6rem;
+  padding: .6rem; background: #fff;
+  border: 1px solid #e8eef7; border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(15, 42, 77, .05);
+}
+.sa-actions .st-btn { flex: 1 1 0; }
+
+@media (max-width: 959px) {
+  /* the pinned bar already carries Cancel on narrow screens */
+  .sa-head-actions { display: none; }
+}
+
+@media (min-width: 560px) {
+  .sa-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sa-field.is-wide { grid-column: 1 / -1; }
+}
+
+@media (min-width: 960px) {
+  .sa-head {
+    flex-direction: row; align-items: flex-end; justify-content: space-between;
+    gap: 1.5rem; padding: 2.2rem 0 1.2rem;
+  }
+  .sa-title { font-size: 1.9rem; }
+  .sa-head-actions { flex: 0 0 auto; }
+  .sa-grid { grid-template-columns: minmax(0, 1fr) 300px; gap: 1.1rem; align-items: start; }
+  /* no longer a pinned bar: just the form's last row */
+  .sa-actions {
+    position: static; justify-content: flex-end;
+    padding: .4rem 0 0; background: transparent;
+    border: 0; box-shadow: none;
+  }
+  .sa-actions .st-btn { flex: 0 0 auto; }
+}
+
 /* ═══ PROFILE ══════════════════════════════════════════════════════════════ */
 .sprof-head { display: flex; flex-direction: column; gap: .55rem; padding: 1.5rem 0 1rem; }
 .sprof-head-actions { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
