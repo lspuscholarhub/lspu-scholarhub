@@ -305,8 +305,9 @@
            carry it with JavaScript unavailable. #}
         <form method="POST" action="{{ url_for('admin.review_application', app_id=app.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <input type="text" class="form-control form-control-sm mb-2" name="review_notes"
-                 placeholder="Review notes (optional)" aria-label="Review notes">
+          <textarea class="form-control form-control-sm mb-2" name="review_notes" rows="1"
+                    placeholder="Review notes (optional)" aria-label="Review notes"
+                    style="resize:vertical;"></textarea>
           <div class="d-flex flex-wrap gap-2 align-items-center">
             <!-- Leaving the tag alone approves as Good Standing and leaves a
                  rejected scholar's standing untouched. -->
@@ -337,6 +338,17 @@
 <script>
 document.getElementById('selectAll').addEventListener('change', function() {
   document.querySelectorAll('.row-check').forEach(cb => cb.checked = this.checked);
+});
+
+// Enter in a notes field must not decide anything. An implicit submission
+// has no clicked button, so the browser would pick the form's first submit
+// button — Reject in the review sheet. The decision comes from a click.
+document.querySelectorAll('#batchForm input[name="review_notes"], .modal-footer textarea[name="review_notes"]').forEach(function (field) {
+  field.addEventListener('keydown', function (event) {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+    }
+  });
 });
 </script>
 {% endblock %}
