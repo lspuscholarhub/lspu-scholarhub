@@ -313,8 +313,6 @@
   .sf-kpis--four .sf-kpi:last-child { grid-column: auto; }
   .sf-kpis--four .sf-kpi:nth-child(n+3) { border-bottom: 0; }
   .sf-kpis--four .sf-kpi-value { font-size: 1.3rem; }
-  .sf-selects { width: 100%; }
-  .sf-selects select { flex: 1 1 45%; max-width: none; }
   .sf-table--apps tbody tr { grid-template-columns: 20px minmax(0, 1fr) auto; }
   .sf-table--apps .pick { grid-column: 1; grid-row: 1; padding-top: .2rem; }
   .sf-table--apps .who { grid-column: 2; grid-row: 1; }

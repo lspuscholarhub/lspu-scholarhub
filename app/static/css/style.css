@@ -563,16 +563,6 @@ body { overflow-x: hidden; }
 .modal-dialog { margin: .5rem; }
 .modal-footer .btn { flex: 1 1 auto; }
 
-/* Review sheet decision row: on phones the tag select takes its own line so
-   Reject and Approve share the next one instead of wrapping unevenly. */
-@media (max-width: 575.98px) {
-  .modal-footer select[name="tag"] { flex: 1 1 100% !important; }
-  /* Batch bar: the notes box takes its own line so Batch Approve and
-     Batch Reject sit side by side instead of one per row. */
-  #batchForm .card-header textarea[name="review_notes"] { flex: 1 1 100% !important; }
-  #batchForm .card-header .btn { flex: 1 1 auto; }
-}
-
 .container-fluid { padding-left: .75rem; padding-right: .75rem; }
 .period-badge { font-size: var(--sh-text-xs); padding: .4rem .75rem; }
 .navbar .nav-link { font-size: var(--sh-text-sm); padding: .45rem .6rem; }

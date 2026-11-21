@@ -76,6 +76,7 @@
 /* batch bar controls */
 .ad-panel .card-header input[type="checkbox"] { width: 16px; height: 16px; accent-color: #0b7d72; }
 .ad-panel .card-header textarea {
+  flex: 1 1 150px; min-width: 0;
   min-height: 34px; padding: .35rem .5rem; font: inherit; font-size: .78rem;
   color: #0f2a4d; background: #fff; border: 1px solid #dbe3ee; border-radius: 8px;
   resize: vertical;
@@ -171,9 +172,8 @@
   display: grid; grid-template-columns: minmax(0, 1fr); justify-content: stretch;
   gap: .55rem; border-top: 1px solid #eef2f7; padding: .85rem 1.1rem;
 }
-.ad-sheet-form { width: 100%; }
 .ad-sheet-form {
-  display: grid; gap: .45rem; padding: .65rem .7rem .7rem;
+  width: 100%; display: grid; gap: .45rem; padding: .65rem .7rem .7rem;
   border: 1px solid #e3e8ef; border-radius: 10px; background: #fbfcfe;
 }
 .ad-sheet-form textarea, .ad-sheet-form select {
@@ -181,6 +181,7 @@
   font: inherit; font-size: .8rem; color: #0f2a4d;
   background: #fff; border: 1px solid #dbe3ee; border-radius: 8px;
 }
+.ad-sheet-form textarea { resize: vertical; }
 .ad-sheet-row { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; }
 .ad-sheet-row select { flex: 1 1 8rem; max-width: 15rem; }
 .ad-sheet-row .btn { margin-left: auto; font-size: .8rem; font-weight: 800; border-radius: 8px; padding: .45rem .9rem; }
@@ -227,7 +228,10 @@
   .table-responsive .table.ad-table td:nth-child(6) { grid-column: 3; grid-row: 1; justify-self: end; }
   .table-responsive .table.ad-table td:nth-child(7) { grid-column: 3; grid-row: 2; justify-self: end; }
   .table-responsive .table.ad-table td:nth-child(8) { grid-column: 3; grid-row: 3; justify-self: end; }
-  .ad-table .ad-app-id { display: none; }
+
+  /* batch bar: the notes box takes its own line so both decisions share the next */
+  .ad-panel > .card-header textarea[name="review_notes"] { flex: 1 1 100%; }
+  .ad-panel > .card-header .btn { flex: 1 1 auto; }
 
   /* sheet takes the screen, like the staff review sheet */
   .ad-modal .modal-dialog { margin: .5rem; max-width: none; height: auto; }

@@ -109,8 +109,7 @@
           </div>
           <div class="d-flex gap-2 flex-wrap align-items-center">
             <textarea name="review_notes" rows="1" class="form-control form-control-sm"
-                      placeholder="Batch notes…" aria-label="Batch notes"
-                      style="flex:1 1 150px;min-width:0;"></textarea>
+                      placeholder="Batch notes…" aria-label="Batch notes"></textarea>
             <button type="submit" name="action" value="approve" class="btn btn-sm btn-success">
               Batch Approve
             </button>
@@ -291,7 +290,7 @@
               action="{{ url_for('admin.review_application', app_id=app.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <textarea name="review_notes" rows="1" placeholder="Review notes (optional)"
-                    aria-label="Review notes" style="resize:vertical;"></textarea>
+                    aria-label="Review notes"></textarea>
           <div class="ad-sheet-row">
             <!-- Leaving the tag alone approves as Good Standing and leaves a
                  rejected scholar's standing untouched. -->
