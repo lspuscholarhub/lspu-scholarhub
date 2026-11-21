@@ -567,6 +567,10 @@ body { overflow-x: hidden; }
    Reject and Approve share the next one instead of wrapping unevenly. */
 @media (max-width: 575.98px) {
   .modal-footer select[name="tag"] { flex: 1 1 100% !important; }
+  /* Batch bar: the notes box takes its own line so Batch Approve and
+     Batch Reject sit side by side instead of one per row. */
+  #batchForm .card-header textarea[name="review_notes"] { flex: 1 1 100% !important; }
+  #batchForm .card-header .btn { flex: 1 1 auto; }
 }
 
 .container-fluid { padding-left: .75rem; padding-right: .75rem; }
