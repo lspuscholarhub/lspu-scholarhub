@@ -1120,17 +1120,6 @@ def manage_users():
     role      = request.args.get('role', '')
     campus_filter = request.args.get('campus', '')
     query     = User.query
-    if q:
-        query = query.filter(
-            db.or_(
-                User.username.ilike(f'%{q}%'),
-                User.first_name.ilike(f'%{q}%'),
-                User.last_name.ilike(f'%{q}%'),
-                User.email.ilike(f'%{q}%'),
-            )
-        )
-    if role:
-        query = query.filter_by(user_type=role)
 
     # Campus filtering: super admin honors campus selector, admin/staff see own campus
     user_type = session.get('user_type', '')
@@ -1150,10 +1139,32 @@ def manage_users():
             elif user.campus_id:
                 query = query.filter(User.campus_id == user.campus_id)
 
+    # board figures describe the campus scope, not the current search
+    stats = {
+        'total':    query.count(),
+        'students': query.filter(User.user_type == 'student').count(),
+        'staff':    query.filter(User.user_type == 'staff').count(),
+        'admins':   query.filter(User.user_type.in_(('admin', 'super_admin'))).count(),
+        'disabled': query.filter(User.is_active.is_(False)).count(),
+    }
+
+    if q:
+        query = query.filter(
+            db.or_(
+                User.username.ilike(f'%{q}%'),
+                User.first_name.ilike(f'%{q}%'),
+                User.last_name.ilike(f'%{q}%'),
+                User.email.ilike(f'%{q}%'),
+            )
+        )
+    if role:
+        query = query.filter_by(user_type=role)
+
     users = query.order_by(User.created_at.desc()).all()
     from app.models import Campus
     all_campuses = Campus.query.filter_by(is_active=True).order_by(Campus.id).all()
-    return render_template('admin/users.html', users=users, q=q, role=role,
+    return render_template('admin/users.html', users=users, q=q, role_filter=role,
+                           stats=stats,
                            current_user_id=session.get('user_id'),
                            all_campuses=all_campuses,
                            campus_filter=campus_filter)

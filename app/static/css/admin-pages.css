@@ -222,14 +222,14 @@
 
   /* applications card only: the programs ledger lays itself out by cell class,
      so index rules here would leak onto it */
-  .table-responsive .table.ad-table:not(.ad-table--programs) td:nth-child(1) { grid-column: 1; grid-row: 1; padding-top: .15rem; }
-  .table-responsive .table.ad-table:not(.ad-table--programs) td:nth-child(2) { display: none; }
-  .table-responsive .table.ad-table:not(.ad-table--programs) td:nth-child(3) { grid-column: 2; grid-row: 1; min-width: 0; }
-  .table-responsive .table.ad-table:not(.ad-table--programs) td:nth-child(4) { grid-column: 2; grid-row: 2; min-width: 0; overflow-wrap: anywhere; font-size: .74rem; }
-  .table-responsive .table.ad-table:not(.ad-table--programs) td:nth-child(5) { grid-column: 2; grid-row: 3; font-size: .72rem; color: #8494a8; }
-  .table-responsive .table.ad-table:not(.ad-table--programs) td:nth-child(6) { grid-column: 3; grid-row: 1; justify-self: end; }
-  .table-responsive .table.ad-table:not(.ad-table--programs) td:nth-child(7) { grid-column: 3; grid-row: 2; justify-self: end; }
-  .table-responsive .table.ad-table:not(.ad-table--programs) td:nth-child(8) { grid-column: 3; grid-row: 3; justify-self: end; }
+  .table-responsive .table.ad-table:not(.ad-table--programs):not(.ad-table--users) td:nth-child(1) { grid-column: 1; grid-row: 1; padding-top: .15rem; }
+  .table-responsive .table.ad-table:not(.ad-table--programs):not(.ad-table--users) td:nth-child(2) { display: none; }
+  .table-responsive .table.ad-table:not(.ad-table--programs):not(.ad-table--users) td:nth-child(3) { grid-column: 2; grid-row: 1; min-width: 0; }
+  .table-responsive .table.ad-table:not(.ad-table--programs):not(.ad-table--users) td:nth-child(4) { grid-column: 2; grid-row: 2; min-width: 0; overflow-wrap: anywhere; font-size: .74rem; }
+  .table-responsive .table.ad-table:not(.ad-table--programs):not(.ad-table--users) td:nth-child(5) { grid-column: 2; grid-row: 3; font-size: .72rem; color: #8494a8; }
+  .table-responsive .table.ad-table:not(.ad-table--programs):not(.ad-table--users) td:nth-child(6) { grid-column: 3; grid-row: 1; justify-self: end; }
+  .table-responsive .table.ad-table:not(.ad-table--programs):not(.ad-table--users) td:nth-child(7) { grid-column: 3; grid-row: 2; justify-self: end; }
+  .table-responsive .table.ad-table:not(.ad-table--programs):not(.ad-table--users) td:nth-child(8) { grid-column: 3; grid-row: 3; justify-self: end; }
 
   /* batch bar: the notes box takes its own line so both decisions share the next */
   .ad-panel > .card-header textarea[name="review_notes"] { flex: 1 1 100%; }
@@ -364,4 +364,78 @@
   .table-responsive .table.ad-table--programs tbody td.ad-c-acts { grid-area: 4 / 1 / 5 / 3; justify-self: stretch; margin-top: .3rem; }
   .ad-acts { justify-content: flex-start; }
   .ad-panel-toolbar .ad-primary-btn { flex: 1 1 100%; margin-left: 0; justify-content: center; }
+}
+
+/* ── accounts ledger ──────────────────────────────────────────────────────── */
+.ad-ghost-btn {
+  display: inline-flex; align-items: center; gap: .35rem;
+  min-height: 34px; padding: .35rem .75rem; border-radius: 8px;
+  background: #fff; border: 1px solid #dbe3ee; color: #41556f;
+  font-size: .76rem; font-weight: 700;
+}
+.ad-ghost-btn:hover { border-color: #c6d5e6; background: #fbfdff; color: #0f2a4d; }
+.ad-toolbar-acts { display: flex; flex-wrap: wrap; gap: .45rem; margin-left: auto; }
+.ad-toolbar-acts .ad-primary-btn { margin-left: 0; }
+
+.ad-pill.is-super   { background: #fdecec; color: #a01f2b; }
+.ad-pill.is-admin   { background: #eaf1fb; color: #1d4e89; }
+.ad-pill.is-staff   { background: #e6f7ef; color: #0f6b47; }
+.ad-pill.is-student { background: #f1f3f6; color: #5b6878; }
+.ad-pill.is-verified { background: #f0f7f4; color: #0f6b47; }
+
+.ad-table--users .ad-u-user .ad-who span { max-width: 30rem; overflow-wrap: anywhere; }
+.ad-table--users tbody td.ad-u-campus { color: #41556f; }
+.ad-table--users tbody td.ad-u-since { font-size: .76rem; color: #8494a8; white-space: nowrap; }
+.ad-table--users tbody td.ad-u-state { white-space: nowrap; }
+.ad-role-set {
+  display: inline-flex; align-items: center; gap: .3rem;
+  margin: 0 0 0 .4rem; vertical-align: middle;
+}
+.ad-role-set .form-select {
+  width: auto; min-height: 30px; padding: .12rem 1.6rem .12rem .45rem;
+  font-size: .74rem; color: #0f2a4d; border-color: #dbe3ee; border-radius: 7px;
+}
+.ad-role-set .btn {
+  width: 30px; height: 30px; padding: 0; border-radius: 7px;
+  display: inline-flex; align-items: center; justify-content: center; font-size: .78rem;
+}
+
+@media (min-width: 768px) {
+  .ad-filter-row--accounts { grid-template-columns: minmax(0, 1.7fr) minmax(0, .9fr) minmax(0, 1fr) auto; }
+}
+
+@media (max-width: 767.98px) {
+  .table-responsive .table.ad-table--users thead { display: none; }
+  .table-responsive .table.ad-table--users,
+  .table-responsive .table.ad-table--users tbody { display: block; }
+  .table-responsive .table.ad-table--users tbody tr {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto;
+    gap: .3rem .6rem; padding: .8rem;
+    border: 0; border-bottom: 1px solid #eef2f7; border-radius: 0; margin: 0; background: #fff;
+  }
+  .table-responsive .table.ad-table--users tbody tr:last-child { border-bottom: 0; }
+  .table-responsive .table.ad-table--users tbody td {
+    display: block; padding: 0; border: 0; font-size: .8rem; white-space: normal;
+  }
+  .table-responsive .table.ad-table--users tbody td[data-label]::before { content: none; }
+  .table-responsive .table.ad-table--users tbody td.ad-u-user { grid-area: 1 / 1 / 2 / 2; }
+  .table-responsive .table.ad-table--users tbody td.ad-u-state {
+    grid-area: 1 / 2 / 2 / 3; display: flex; flex-wrap: wrap; gap: .25rem;
+    justify-content: flex-end; justify-self: end; align-self: start;
+  }
+  .table-responsive .table.ad-table--users tbody td.ad-u-campus { grid-area: 2 / 1 / 3 / 2; font-size: .74rem; color: #8494a8; }
+  .table-responsive .table.ad-table--users tbody td.ad-u-since { grid-area: 2 / 2 / 3 / 3; justify-self: end; font-size: .74rem; }
+  .table-responsive .table.ad-table--users tbody td.ad-u-role { grid-area: 3 / 1 / 4 / 3; }
+  .table-responsive .table.ad-table--users tbody td.ad-u-acts { grid-area: 4 / 1 / 5 / 3; }
+
+  .ad-role-set { margin-left: auto; }
+  .ad-role-set .form-select { width: 8.5rem; }
+
+  .ad-toolbar-acts { width: 100%; margin-left: 0; }
+  .ad-toolbar-acts .btn { flex: 1 1 0; justify-content: center; }
+
+  .ad-filter-row--accounts { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .ad-filter-row--accounts .ad-field:nth-child(1) { grid-column: 1 / -1; }
+  .ad-filter-row--accounts .ad-field.is-reset { grid-column: 1 / -1; justify-self: stretch; }
+  .ad-filter-row--accounts .ad-field.is-reset .btn { width: 100%; text-align: center; }
 }
