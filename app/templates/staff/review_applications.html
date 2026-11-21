@@ -342,6 +342,17 @@
     boxes().forEach(b => { b.checked = all.checked; });
     sync();
   });
+  // Enter in the batch notes must not submit: an implicit submission has no
+  // clicked button, so the browser would pick the bar's first button — Reject
+  // — and decide the whole batch from a keypress. Approve and Reject are
+  // chosen by clicking them, which is the path base.html echoes.
+  const notes = form.querySelector('input[name="review_notes"]');
+  if (notes) {
+    notes.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) e.preventDefault();
+    });
+  }
+
   sync();
 })();
 </script>
