@@ -12,6 +12,7 @@ from app.services.review_service import SCHOLAR_TAGS, scholar_status_after_decis
 from app.services.scholarship_service import resolve_slot_cap
 from app.utils.custom_fields import parse_custom_fields
 from app.utils.decorators import role_required
+from app.utils.timefmt import PHT, to_campus
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -695,10 +696,9 @@ def manage_applications():
     pagination = (query.order_by(ScholarshipApplication.submitted_at.asc())
                       .paginate(page=page, per_page=20, error_out=False))
     applications = pagination.items
-    # rows store UTC; the queue reads on the campus clock (PHT, UTC+8)
-    pht = timedelta(hours=8)
+    # rows store UTC; the queue reads on the campus clock
     for app in applications:
-        app.submitted_pht = (app.submitted_at + pht) if app.submitted_at else None
+        app.submitted_pht = to_campus(app.submitted_at)
     _sch_q = Scholarship.query.order_by(Scholarship.title)
     if campus_ctx:
         _sch_q = _sch_q.filter(db.or_(Scholarship.campus_id == campus_ctx,
@@ -3369,20 +3369,19 @@ def audit_log():
     roles      = ['super_admin', 'admin', 'staff', 'student']
 
     # board figures — the same campus + filter scope as the table below.
-    # Rows store UTC; this page reads on the campus clock (PHT, UTC+8), so the
-    # day boundary and the "latest" figure are shifted to match the rows.
-    pht          = timedelta(hours=8)
-    midnight_utc = (datetime.utcnow() + pht).replace(hour=0, minute=0, second=0, microsecond=0) - pht
+    # Rows store UTC; this page reads on the campus clock, so the day boundary
+    # and the "latest" figure are shifted to match what the rows show.
+    midnight_utc = (datetime.utcnow() + PHT).replace(hour=0, minute=0, second=0, microsecond=0) - PHT
     latest       = query.order_by(AuditLog.timestamp.desc()).first()
     stats        = {
         'total':     logs.total,
         'today':     query.filter(AuditLog.timestamp >= midnight_utc).count(),
         'admins':    query.filter(AuditLog.user_role.in_(("admin", "super_admin"))).count(),
-        'latest_at': (latest.timestamp + pht) if latest else None,
+        'latest_at': to_campus(latest.timestamp) if latest else None,
     }
 
     for log in logs.items:
-        log.timestamp_pht = log.timestamp + pht
+        log.timestamp_pht = to_campus(log.timestamp)
 
     return render_template(
         'admin/audit_log.html',
@@ -3460,7 +3459,7 @@ def export_audit_log():
         # Data rows
         for ri, log in enumerate(logs, start=3):
             # exported on the campus clock (PHT, UTC+8), same as the page
-            ws.cell(row=ri, column=1, value=(log.timestamp + timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S') if log.timestamp else '')
+            ws.cell(row=ri, column=1, value=to_campus(log.timestamp).strftime('%Y-%m-%d %H:%M:%S') if log.timestamp else '')
             ws.cell(row=ri, column=2, value=log.user_name or '')
             ws.cell(row=ri, column=3, value=(log.user_role or '').title())
             ws.cell(row=ri, column=4, value=(log.category or '').title())
@@ -3516,7 +3515,7 @@ def export_audit_log():
 
     for log in logs:
         table_data.append([
-            Paragraph((log.timestamp + timedelta(hours=8)).strftime('%Y-%m-%d\n%H:%M:%S') if log.timestamp else '', cell_style),
+            Paragraph(to_campus(log.timestamp).strftime('%Y-%m-%d\n%H:%M:%S') if log.timestamp else '', cell_style),
             Paragraph(log.user_name or '', cell_style),
             Paragraph((log.user_role or '').title(), cell_style),
             Paragraph((log.category or '').title(), cell_style),

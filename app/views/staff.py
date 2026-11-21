@@ -15,6 +15,7 @@ from app.services.scholarship_service import resolve_slot_cap
 from app.utils.custom_fields import parse_custom_fields
 from app.utils.decorators import role_required
 from app.utils.period_context import get_viewing_period, is_viewing_specific_period
+from app.utils.timefmt import PHT
 
 staff_bp = Blueprint('staff', __name__)
 
@@ -219,7 +220,7 @@ def dashboard():
                    or (getattr(_campus_row, 'name', None) if _campus_row else None)
                    or 'All campuses')
     now = datetime.utcnow()
-    local_now = now + timedelta(hours=8)   # campus clock (PHT)
+    local_now = now + PHT   # campus clock
 
     return render_template(
         'staff/dashboard.html',

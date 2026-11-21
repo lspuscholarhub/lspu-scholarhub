@@ -220,15 +220,18 @@
 
   /* applications card only: the programs ledger lays itself out by cell class,
      so index rules here would leak onto it */
-  .table-responsive .table.ad-table--apps td:nth-child(1) { grid-column: 1; grid-row: 1; padding-top: .15rem; }
-  .table-responsive .table.ad-table--apps td:nth-child(2) { grid-column: 2; grid-row: 1; min-width: 0; }
-  .table-responsive .table.ad-table--apps td:nth-child(3) { grid-column: 2 / 4; grid-row: 2; min-width: 0; overflow-wrap: anywhere; font-size: .74rem; }
-  .table-responsive .table.ad-table--apps td:nth-child(4) { grid-column: 2; grid-row: 3; font-size: .72rem; color: #8494a8; }
-  .table-responsive .table.ad-table--apps td:nth-child(5) {
+  .table-responsive .table.ad-table--apps tbody td.ad-q-check { grid-column: 1; grid-row: 1; padding-top: .15rem; }
+  .table-responsive .table.ad-table--apps tbody td.ad-q-applicant { grid-column: 2; grid-row: 1; min-width: 0; }
+  .table-responsive .table.ad-table--apps tbody td.ad-q-scholarship {
+    grid-column: 2 / 4; grid-row: 2; min-width: 0;
+    overflow-wrap: anywhere; font-size: .74rem;
+  }
+  .table-responsive .table.ad-table--apps tbody td.ad-q-when { grid-column: 2; grid-row: 3; font-size: .72rem; color: #8494a8; }
+  .table-responsive .table.ad-table--apps tbody td.ad-q-status {
     grid-column: 3; grid-row: 1; justify-self: end; display: flex; flex-wrap: wrap;
     justify-content: flex-end; gap: .2rem;
   }
-  .table-responsive .table.ad-table--apps td:nth-child(6) { grid-column: 3; grid-row: 3; justify-self: end; }
+  .table-responsive .table.ad-table--apps tbody td.ad-q-acts { grid-column: 3; grid-row: 3; justify-self: end; }
 
   /* batch bar: the notes box takes its own line so both decisions share the next */
   .ad-panel-toolbar textarea { flex: 1 1 100%; }
