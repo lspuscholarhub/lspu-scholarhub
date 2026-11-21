@@ -503,12 +503,8 @@
 }
 
 /* ── batches ledger ───────────────────────────────────────────────────────── */
-.ad-batch-name { font-weight: 700; color: #0f2a4d; line-height: 1.25; }
-.ad-batch-meta { margin-top: .15rem; font-size: .72rem; color: #8494a8; }
-.ad-batch-amount { font-size: .86rem; font-weight: 800; color: #0f2a4d; white-space: nowrap; }
-.ad-table--batches tbody td.ad-b-scholars,
-.ad-table--batches tbody td.ad-b-total { white-space: nowrap; }
-
+/* the batch cell reuses .ad-who and the figures reuse .ad-gwa: name, meta and
+   the money column already have a shape on the dashboard and Monitoring */
 @media (max-width: 767.98px) {
   .table-responsive .table.ad-table--batches tbody td.ad-b-batch { grid-area: 1 / 1 / 2 / 2; }
   .table-responsive .table.ad-table--batches tbody td.ad-b-status { grid-area: 1 / 2 / 2 / 3; justify-self: end; align-self: start; }

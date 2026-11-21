@@ -3,7 +3,7 @@
 
 {% block head %}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261128b" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261128c" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -115,11 +115,11 @@
             {% set sp = status_pill.get(batch.status, ('is-mute', batch.status|title)) %}
             <tr>
               <td class="ad-b-batch" data-label="Batch">
-                <div class="ad-batch-name">{{ batch.batch_name }}</div>
-                <div class="ad-batch-meta">{{ batch.scholarship.title }}</div>
-                {% if batch.amount_per_scholar %}
-                <div class="ad-batch-meta">&#8369;{{ "{:,.0f}".format(batch.amount_per_scholar) }} per scholar</div>
-                {% endif %}
+                <div class="ad-who">
+                  {{ batch.batch_name }}
+                  <span>{{ batch.scholarship.title }}</span>
+                  {% if batch.amount_per_scholar %}<span>&#8369;{{ "{:,.0f}".format(batch.amount_per_scholar) }} per scholar</span>{% endif %}
+                </div>
               </td>
               <td class="ad-b-scholars" data-label="Scholars">
                 <span class="ad-gwa">{{ batch.total_scholars or 0 }}</span>
@@ -132,7 +132,7 @@
                 </span>
               </td>
               <td class="ad-b-total" data-label="Total">
-                <span class="ad-batch-amount">&#8369;{{ "{:,.0f}".format(batch.total_amount or 0) }}</span>
+                <span class="ad-gwa">&#8369;{{ "{:,.0f}".format(batch.total_amount or 0) }}</span>
               </td>
               <td class="ad-b-status" data-label="Status">
                 <span class="ad-pill {{ sp[0] }}">{{ sp[1] }}</span>
