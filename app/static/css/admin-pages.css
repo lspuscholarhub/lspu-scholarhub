@@ -350,7 +350,8 @@
   .table-responsive .table.ad-table--programs thead,
   .table-responsive .table.ad-table--users thead,
   .table-responsive .table.ad-table--scholars thead,
-  .table-responsive .table.ad-table--performers thead { display: none; }
+  .table-responsive .table.ad-table--performers thead,
+  .table-responsive .table.ad-table--batches thead { display: none; }
   .table-responsive .table.ad-table--programs,
   .table-responsive .table.ad-table--programs tbody,
   .table-responsive .table.ad-table--users,
@@ -358,11 +359,14 @@
   .table-responsive .table.ad-table--scholars,
   .table-responsive .table.ad-table--scholars tbody,
   .table-responsive .table.ad-table--performers,
-  .table-responsive .table.ad-table--performers tbody { display: block; }
+  .table-responsive .table.ad-table--performers tbody,
+  .table-responsive .table.ad-table--batches,
+  .table-responsive .table.ad-table--batches tbody { display: block; }
   .table-responsive .table.ad-table--programs tbody tr,
   .table-responsive .table.ad-table--users tbody tr,
   .table-responsive .table.ad-table--scholars tbody tr,
-  .table-responsive .table.ad-table--performers tbody tr {
+  .table-responsive .table.ad-table--performers tbody tr,
+  .table-responsive .table.ad-table--batches tbody tr {
     display: grid; grid-template-columns: minmax(0, 1fr) auto;
     gap: .3rem .6rem; padding: .8rem;
     border: 0; border-bottom: 1px solid #eef2f7; border-radius: 0; margin: 0; background: #fff;
@@ -370,17 +374,20 @@
   .table-responsive .table.ad-table--programs tbody tr:last-child,
   .table-responsive .table.ad-table--users tbody tr:last-child,
   .table-responsive .table.ad-table--scholars tbody tr:last-child,
-  .table-responsive .table.ad-table--performers tbody tr:last-child { border-bottom: 0; }
+  .table-responsive .table.ad-table--performers tbody tr:last-child,
+  .table-responsive .table.ad-table--batches tbody tr:last-child { border-bottom: 0; }
   .table-responsive .table.ad-table--programs tbody td,
   .table-responsive .table.ad-table--users tbody td,
   .table-responsive .table.ad-table--scholars tbody td,
-  .table-responsive .table.ad-table--performers tbody td {
+  .table-responsive .table.ad-table--performers tbody td,
+  .table-responsive .table.ad-table--batches tbody td {
     display: block; padding: 0; border: 0; font-size: .8rem; white-space: normal;
   }
   .table-responsive .table.ad-table--programs tbody td[data-label]::before,
   .table-responsive .table.ad-table--users tbody td[data-label]::before,
   .table-responsive .table.ad-table--scholars tbody td[data-label]::before,
-  .table-responsive .table.ad-table--performers tbody td[data-label]::before { content: none; }
+  .table-responsive .table.ad-table--performers tbody td[data-label]::before,
+  .table-responsive .table.ad-table--batches tbody td[data-label]::before { content: none; }
 
   /* dashboard top performers: name + GWA, student ID as the meta line */
   .table-responsive .table.ad-table--performers tbody td:nth-child(1),
@@ -409,8 +416,8 @@
 .ad-toolbar-acts { display: flex; flex-wrap: wrap; gap: .45rem; margin-left: auto; }
 .ad-toolbar-acts .ad-primary-btn { margin-left: 0; }
 
-/* roles reuse the status tones; only Admin needs its own */
-.ad-pill.is-admin { background: #eaf1fb; color: #1d4e89; }
+/* roles reuse the status tones; only the blue one is its own */
+.ad-pill.is-info { background: #eaf1fb; color: #1d4e89; }
 
 .ad-table--users .ad-u-user .ad-who span { max-width: 30rem; overflow-wrap: anywhere; }
 .ad-table--users tbody td.ad-u-since { font-size: .76rem; color: #8494a8; white-space: nowrap; }
@@ -476,6 +483,7 @@
 
 @media (min-width: 768px) {
   .ad-filter-row--scholars { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto; }
+  .ad-filter-row--batches { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto; }
 }
 
 @media (max-width: 767.98px) {
@@ -492,4 +500,24 @@
 
   .ad-alert-when { width: 100%; }
   .ad-alert-act { margin-left: auto; }
+}
+
+/* ── batches ledger ───────────────────────────────────────────────────────── */
+.ad-batch-name { font-weight: 700; color: #0f2a4d; line-height: 1.25; }
+.ad-batch-meta { margin-top: .15rem; font-size: .72rem; color: #8494a8; }
+.ad-batch-amount { font-size: .86rem; font-weight: 800; color: #0f2a4d; white-space: nowrap; }
+.ad-table--batches tbody td.ad-b-scholars,
+.ad-table--batches tbody td.ad-b-total { white-space: nowrap; }
+
+@media (max-width: 767.98px) {
+  .table-responsive .table.ad-table--batches tbody td.ad-b-batch { grid-area: 1 / 1 / 2 / 2; }
+  .table-responsive .table.ad-table--batches tbody td.ad-b-status { grid-area: 1 / 2 / 2 / 3; justify-self: end; align-self: start; }
+  .table-responsive .table.ad-table--batches tbody td.ad-b-scholars { grid-area: 2 / 1 / 3 / 2; }
+  .table-responsive .table.ad-table--batches tbody td.ad-b-total { grid-area: 2 / 2 / 3 / 3; justify-self: end; text-align: right; }
+  .table-responsive .table.ad-table--batches tbody td.ad-b-acts { grid-area: 3 / 1 / 4 / 3; }
+
+  /* one field per line: the period name is too long for a half-width column */
+  .ad-filter-row--batches { grid-template-columns: minmax(0, 1fr); }
+  .ad-filter-row--batches .ad-field.is-reset { justify-self: stretch; }
+  .ad-filter-row--batches .ad-field.is-reset .btn { width: 100%; text-align: center; }
 }

@@ -3,13 +3,13 @@
 
 {% block head %}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261127d" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261128a" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
 {% set campus_name = session.get('campus_context_name') or session.get('campus_name') %}
 {% set role_pill = {'super_admin': ('is-rejected', 'Super Admin'),
-                    'admin': ('is-admin', 'Admin'),
+                    'admin': ('is-info', 'Admin'),
                     'staff': ('is-approved', 'Staff'),
                     'student': ('is-mute', 'Student')} %}
 
