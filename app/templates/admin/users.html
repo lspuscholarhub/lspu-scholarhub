@@ -3,15 +3,15 @@
 
 {% block head %}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261126b" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261126d" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
 {% set campus_name = session.get('campus_context_name') or session.get('campus_name') %}
-{% set role_pill = {'super_admin': ('is-super', 'Super Admin'),
+{% set role_pill = {'super_admin': ('is-rejected', 'Super Admin'),
                     'admin': ('is-admin', 'Admin'),
-                    'staff': ('is-staff', 'Staff'),
-                    'student': ('is-student', 'Student')} %}
+                    'staff': ('is-approved', 'Staff'),
+                    'student': ('is-mute', 'Student')} %}
 
 <div class="ad-page">
   <header class="ad-board">
@@ -150,7 +150,7 @@
                 {% if u.is_active %}<span class="ad-pill is-approved">Active</span>
                 {% else %}<span class="ad-pill is-mute">Disabled</span>{% endif %}
                 {% if u.is_verified %}
-                <span class="ad-pill is-verified"><i class="bi bi-patch-check" aria-hidden="true"></i>Verified</span>
+                <span class="ad-pill is-approved"><i class="bi bi-patch-check" aria-hidden="true"></i>Verified</span>
                 {% else %}<span class="ad-pill is-pending">Unverified</span>{% endif %}
               </td>
               <td class="ad-u-since" data-label="Registered">{{ u.created_at.strftime('%b %d, %Y') }}</td>
