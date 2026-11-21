@@ -1102,3 +1102,10 @@ html {
   .navbar .dropdown-menu { max-width: none; }
   .modal-footer .btn { flex: 0 1 auto; }
 }
+
+/* Campus badge in the navbar — keep the brand readable on phones */
+.sh-campus-chip { font-size: .68rem; }
+@media (max-width: 575.98px) {
+  .sh-campus-chip { font-size: .56rem; padding: .22rem .4rem !important; }
+  .navbar-brand { font-size: 1rem; }
+}
