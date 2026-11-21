@@ -1,106 +1,157 @@
 {% extends "base.html" %}
 {% block title %}Manage Scholarships - Admin{% endblock %}
 
-{% block content %}
-<div class="container-fluid py-4">
-  <nav aria-label="breadcrumb">
-    <ol class="breadcrumb mb-3">
-      <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
-      <li class="breadcrumb-item active" aria-current="page">Scholarship Programs</li>
-    </ol>
-  </nav>
-  <div class="d-flex justify-content-between align-items-center mb-4">
-    <div>
-      <h1 class="h3 fw-bold mb-0">Scholarship Programs</h1>
-      <p class="text-muted small mb-0">Manage scholarship programs and control applications</p>
-    </div>
-    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addModal">
-      <i class="bi bi-plus-circle me-1"></i>Add Program
-    </button>
-  </div>
+{% block head %}
+<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261125b" rel="stylesheet">
+{% endblock %}
 
-  <div class="card shadow-sm border-0" style="border-radius:var(--sh-radius-lg);">
-    <div class="card-body p-0">
+{% block content %}
+{% set ns = namespace(open=0, closed=0, hidden=0, applicants=0) %}
+{% for s in scholarships %}
+  {% if s.status and s.status.value == 'active' %}{% set ns.open = ns.open + 1 %}
+  {% elif s.status %}{% set ns.closed = ns.closed + 1 %}{% endif %}
+  {% if s.is_hidden %}{% set ns.hidden = ns.hidden + 1 %}{% endif %}
+  {% set ns.applicants = ns.applicants + (s.current_applicants or 0) %}
+{% endfor %}
+{% set campus_name = session.get('campus_context_name') or session.get('campus_name') %}
+
+<div class="ad-page">
+  <header class="ad-board">
+    <div class="ad-board-inner">
+      <p class="ad-kicker">Programs</p>
+      <h1 class="ad-title">Scholarship programs</h1>
+      <p class="ad-sub">
+        <b>{{ campus_name or 'All Campuses' }}</b>
+        {%- if current_period %} &middot; {{ current_period.display_name }}{% endif %}
+      </p>
+      <div class="ad-kpis">
+        <div class="ad-kpi">
+          <span class="ad-kpi-label">Programs</span>
+          <span class="ad-kpi-value">{{ scholarships|length }}</span>
+        </div>
+        <div class="ad-kpi is-ok">
+          <span class="ad-kpi-label">Open</span>
+          <span class="ad-kpi-value">{{ ns.open }}</span>
+        </div>
+        <div class="ad-kpi">
+          <span class="ad-kpi-label">Closed</span>
+          <span class="ad-kpi-value">{{ ns.closed }}</span>
+        </div>
+        <div class="ad-kpi">
+          <span class="ad-kpi-label">Applicants</span>
+          <span class="ad-kpi-value">{{ ns.applicants }}</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="ad-body">
+    <p class="ad-crumbs">
+      <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
+      <span aria-hidden="true">&middot;</span> <span class="is-here">Scholarship programs</span>
+    </p>
+
+    <section class="ad-panel" aria-labelledby="ad-programs-title">
+      <div class="ad-panel-toolbar">
+        <h2 id="ad-programs-title" class="ad-panel-title">All programs</h2>
+        <span class="ad-panel-count">{{ scholarships|length }} total{% if ns.hidden %} &middot; {{ ns.hidden }} hidden{% endif %}</span>
+        <button class="btn ad-primary-btn" data-bs-toggle="modal" data-bs-target="#addModal">
+          <i class="bi bi-plus-lg" aria-hidden="true"></i> Add program
+        </button>
+      </div>
+
       {% if scholarships %}
       <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
+        <table class="table ad-table ad-table--programs align-middle mb-0">
           <thead>
             <tr>
-              <th class="ps-4">Program Name</th>
-              <th>Campus</th>
+              <th>Program</th>
+              <th>Scope</th>
               <th>Award</th>
               <th>Applicants</th>
               <th>Deadline</th>
               <th>Status</th>
-              <th class="pe-4 text-end">Actions</th>
+              <th class="text-end">Actions</th>
             </tr>
           </thead>
           <tbody>
             {% for s in scholarships %}
             <tr>
-              <td class="ps-4" data-label="Program">
-                <strong>{{ s.title }}</strong>
-                {% if s.is_hidden %}
-                <span class="badge bg-warning text-dark ms-1" style="font-size:.65rem;">Hidden</span>
-                {% endif %}
-                {% if s.academic_period %}
-                <span class="badge bg-info text-dark ms-1" style="font-size:.65rem;"><i class="bi bi-calendar3 me-1"></i>{{ s.academic_period.display_name }}</span>
-                {% else %}
-                <span class="badge bg-success ms-1" style="font-size:.65rem;"><i class="bi bi-infinity me-1"></i>Permanent</span>
-                {% endif %}
+              <td class="ad-c-name" data-label="Program">
+                <div class="ad-prog-name">{{ s.title }}</div>
+                <div class="ad-prog-meta">
+                  {% if s.is_hidden %}<span class="ad-pill is-mute">Hidden</span>{% endif %}
+                  {% if s.academic_period %}
+                  <span class="ad-pill is-mute"><i class="bi bi-calendar3" aria-hidden="true"></i>{{ s.academic_period.display_name }}</span>
+                  {% else %}
+                  <span class="ad-pill is-approved"><i class="bi bi-infinity" aria-hidden="true"></i>Permanent</span>
+                  {% endif %}
+                </div>
               </td>
-              <td data-label="Campus">
+              <td class="ad-c-scope" data-label="Scope">
                 {% if s.scope == 'university' %}
-                  <span class="badge bg-primary"><i class="bi bi-globe me-1"></i>All</span>
+                <span class="ad-pill is-mute"><i class="bi bi-globe" aria-hidden="true"></i>All campuses</span>
                 {% elif s.campus %}
-                  <span class="badge bg-info text-dark">{{ s.campus.short_name or s.campus.name }}</span>
-                {% else %}
-                  <span class="text-muted small">—</span>
-                {% endif %}
+                {{ s.campus.name }}
+                {% else %}&mdash;{% endif %}
               </td>
-              <td data-label="Award">{% if s.award_amount %}<strong>₱{{ "{:,.0f}".format(s.award_amount) }}</strong>{% else %}<span class="text-muted">—</span>{% endif %}</td>
-              <td data-label="Applicants">
-                {{ s.current_applicants or 0 }}{% if s.max_applicants %}<span class="text-muted">/{{ s.max_applicants }}</span>{% endif %}
+              <td class="ad-c-award" data-label="Award">
+                {% if s.award_amount %}<span class="ad-prog-award">&#8369;{{ "{:,.0f}".format(s.award_amount) }}</span>
+                {% else %}&mdash;{% endif %}
               </td>
-              <td data-label="Deadline">{% if s.application_deadline %}{{ s.application_deadline.strftime('%b %d, %Y') }}{% if s.application_deadline < now %} <span class="badge bg-danger" style="font-size:.6rem;">Passed</span>{% endif %}{% else %}<span class="text-muted">—</span>{% endif %}</td>
-              <td data-label="Status">
+              <td class="ad-c-slots" data-label="Applicants">
+                <span class="ad-slots">
+                  {% if s.max_applicants %}
+                  <span class="ad-slots-bar" aria-hidden="true"><i style="width: {{ [((s.current_applicants or 0) * 100 / s.max_applicants), 100]|min|round(0, 'floor')|int }}%"></i></span>
+                  <span>{{ s.current_applicants or 0 }}/{{ s.max_applicants }}</span>
+                  {% else %}
+                  <span>{{ s.current_applicants or 0 }}</span>
+                  {% endif %}
+                </span>
+              </td>
+              <td class="ad-c-deadline" data-label="Deadline">
+                {% if s.application_deadline %}
+                {{ s.application_deadline.strftime('%b %d, %Y') }}
+                {% if s.application_deadline < now %}<span class="ad-pill is-rejected">Passed</span>{% endif %}
+                {% else %}&mdash;{% endif %}
+              </td>
+              <td class="ad-c-status" data-label="Status">
                 {% if s.status and s.status.value == 'active' %}
-                  <span class="badge bg-success"><i class="bi bi-circle-fill me-1" style="font-size:.5rem;"></i>Open</span>
+                <span class="ad-pill is-approved">Open</span>
                 {% elif s.status and s.status.value == 'closed' %}
-                  <span class="badge bg-secondary"><i class="bi bi-circle-fill me-1" style="font-size:.5rem;"></i>Closed</span>
+                <span class="ad-pill is-mute">Closed</span>
                 {% elif s.status %}
-                  <span class="badge bg-warning text-dark">{{ s.status.value|title }}</span>
+                <span class="ad-pill is-pending">{{ s.status.value|title }}</span>
                 {% else %}
-                  <span class="badge bg-secondary">Unknown</span>
+                <span class="ad-pill is-mute">Unknown</span>
                 {% endif %}
               </td>
-              <td class="pe-4 text-end" data-label="Actions">
-                <div class="d-flex gap-1 justify-content-end">
-                  <!-- Open/Close toggle -->
-                  <form method="POST" action="{{ url_for('admin.edit_scholarship', sid=s.id) }}" class="d-inline">
+              <td class="ad-c-acts" data-label="Actions">
+                <div class="ad-acts">
+                  <form method="POST" action="{{ url_for('admin.edit_scholarship', sid=s.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="status" value="{% if s.status and s.status.value == 'active' %}closed{% else %}active{% endif %}">
                     <button class="btn btn-sm {% if s.status and s.status.value == 'active' %}btn-outline-secondary{% else %}btn-outline-success{% endif %}"
-                            title="{% if s.status and s.status.value == 'active' %}Close Applications{% else %}Reopen Applications{% endif %}">
-                      {% if s.status and s.status.value == 'active' %}
-                        <i class="bi bi-lock"></i>
-                      {% else %}
-                        <i class="bi bi-unlock"></i>
-                      {% endif %}
+                            aria-label="{% if s.status and s.status.value == 'active' %}Close applications{% else %}Reopen applications{% endif %}"
+                            title="{% if s.status and s.status.value == 'active' %}Close applications{% else %}Reopen applications{% endif %}">
+                      <i class="bi {% if s.status and s.status.value == 'active' %}bi-lock{% else %}bi-unlock{% endif %}" aria-hidden="true"></i>
                     </button>
                   </form>
-                  <!-- Add student -->
                   <a href="{{ url_for('admin.add_student_to_program', sid=s.id) }}"
-                     class="btn btn-sm btn-outline-success" title="Add student to program"><i class="bi bi-person-plus"></i></a>
-                  <!-- Edit -->
-                  <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editModal{{ s.id }}">
-                    <i class="bi bi-pencil"></i>
+                     class="btn btn-sm btn-outline-success" aria-label="Add student to program" title="Add student to program">
+                    <i class="bi bi-person-plus" aria-hidden="true"></i>
+                  </a>
+                  <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editModal{{ s.id }}"
+                          aria-label="Edit {{ s.title }}" title="Edit program">
+                    <i class="bi bi-pencil" aria-hidden="true"></i>
                   </button>
-                  <!-- Delete -->
-                  <form method="POST" action="{{ url_for('admin.delete_scholarship', sid=s.id) }}" class="d-inline"
+                  <form method="POST" action="{{ url_for('admin.delete_scholarship', sid=s.id) }}"
                         onsubmit="return confirm('Delete this program permanently?')">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" aria-label="Delete {{ s.title }}" title="Delete program">
+                      <i class="bi bi-trash" aria-hidden="true"></i>
+                    </button>
                   </form>
                 </div>
               </td>
@@ -110,16 +161,16 @@
         </table>
       </div>
       {% else %}
-      <div class="empty-state">
-        <i class="bi bi-mortarboard"></i>
-        <h5>No scholarship programs yet</h5>
-        <p>Create your first scholarship program to start accepting applications.</p>
-        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#addModal">
-          <i class="bi bi-plus-circle me-1"></i>Add Scholarship
+      <div class="ad-empty">
+        <i class="bi bi-mortarboard" aria-hidden="true"></i>
+        <h2>No scholarship programs yet</h2>
+        <p>Create your first program to start accepting applications.</p>
+        <button class="btn ad-primary-btn" data-bs-toggle="modal" data-bs-target="#addModal">
+          <i class="bi bi-plus-lg" aria-hidden="true"></i> Add program
         </button>
       </div>
       {% endif %}
-    </div>
+    </section>
   </div>
 </div>
 
