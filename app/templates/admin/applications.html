@@ -93,8 +93,9 @@
           <label for="selectAll" class="mb-0 small">Select All</label>
         </div>
         <div class="d-flex gap-2 flex-wrap">
-          <input type="text" name="review_notes" class="form-control form-control-sm"
-                 placeholder="Batch notes…" style="flex:1 1 150px;min-width:0;">
+          <textarea name="review_notes" class="form-control form-control-sm" rows="1"
+                    placeholder="Batch notes…"
+                    style="flex:1 1 150px;min-width:0;resize:vertical;"></textarea>
           <button type="submit" name="action" value="approve" class="btn btn-sm btn-success">
             Batch Approve
           </button>
@@ -343,7 +344,7 @@ document.getElementById('selectAll').addEventListener('change', function() {
 // Enter in a notes field must not decide anything. An implicit submission
 // has no clicked button, so the browser would pick the form's first submit
 // button — Reject in the review sheet. The decision comes from a click.
-document.querySelectorAll('#batchForm input[name="review_notes"], .modal-footer textarea[name="review_notes"]').forEach(function (field) {
+document.querySelectorAll('#batchForm textarea[name="review_notes"], .modal-footer textarea[name="review_notes"]').forEach(function (field) {
   field.addEventListener('keydown', function (event) {
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();

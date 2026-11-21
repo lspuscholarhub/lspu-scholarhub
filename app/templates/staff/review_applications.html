@@ -80,7 +80,8 @@
 
         <div class="sf-bulk" id="bulkBar" hidden>
           <span class="sf-bulk-count"><b id="bulkCount">0</b> selected</span>
-          <input type="text" name="review_notes" class="sf-bulk-notes" placeholder="Batch notes (optional)">
+          <textarea name="review_notes" class="sf-bulk-notes" rows="1"
+                    placeholder="Batch notes (optional)"></textarea>
           <div class="sf-bulk-actions">
             <button type="submit" name="action" value="reject" class="st-btn st-btn--danger st-btn--sm">Reject</button>
             <button type="submit" name="action" value="approve" class="st-btn st-btn--navy st-btn--sm">Approve</button>
@@ -346,7 +347,7 @@
   // clicked button, so the browser would pick the bar's first button — Reject
   // — and decide the whole batch from a keypress. Approve and Reject are
   // chosen by clicking them, which is the path base.html echoes.
-  const notes = form.querySelector('input[name="review_notes"]');
+  const notes = form.querySelector('textarea[name="review_notes"]');
   if (notes) {
     notes.addEventListener('keydown', e => {
       if (e.key === 'Enter' && !e.shiftKey) e.preventDefault();

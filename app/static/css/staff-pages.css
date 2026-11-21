@@ -233,7 +233,7 @@
 .sf-bulk-notes {
   flex: 1 1 12rem; min-width: 0; min-height: 34px; padding: .35rem .5rem;
   font: inherit; font-size: .78rem; background: #fff;
-  border: 1px solid #cbe7dd; border-radius: 8px;
+  border: 1px solid #cbe7dd; border-radius: 8px; resize: vertical;
 }
 .sf-bulk-actions { display: flex; gap: .4rem; margin-left: auto; }
 
