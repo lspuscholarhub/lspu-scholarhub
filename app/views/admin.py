@@ -695,6 +695,10 @@ def manage_applications():
     pagination = (query.order_by(ScholarshipApplication.submitted_at.asc())
                       .paginate(page=page, per_page=20, error_out=False))
     applications = pagination.items
+    # rows store UTC; the queue reads on the campus clock (PHT, UTC+8)
+    pht = timedelta(hours=8)
+    for app in applications:
+        app.submitted_pht = (app.submitted_at + pht) if app.submitted_at else None
     _sch_q = Scholarship.query.order_by(Scholarship.title)
     if campus_ctx:
         _sch_q = _sch_q.filter(db.or_(Scholarship.campus_id == campus_ctx,
@@ -722,6 +726,7 @@ def manage_applications():
         courses=courses,
         stats=stats,
         pagination=pagination,
+        current_period=current_period,
         status_filter=status_filter,
         scholarship_filter=scholarship_filter,
         course_filter=course_filter,

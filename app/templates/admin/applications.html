@@ -3,10 +3,11 @@
 
 {% block head %}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261127d" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261130a" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
+{% set campus_name = session.get('campus_context_name') or session.get('campus_name') %}
 {% set status_pill = {'pending': 'is-pending', 'approved': 'is-approved',
                       'rejected': 'is-rejected', 'withdrawn': 'is-withdrawn'} %}
 {% set status_label = {'pending': 'Pending', 'approved': 'Approved',
@@ -15,15 +16,18 @@
                    'at_risk': ('is-pending', 'At Risk'),
                    'probation': ('is-pending', 'Probation'),
                    'termination_warning': ('is-rejected', 'Termination Warning')} %}
+{% set is_filtered = q or scholarship_filter or course_filter or year_filter
+                     or status_filter not in ('pending', 'all') %}
 
 <div class="ad-page">
   <header class="ad-board">
     <div class="ad-board-inner">
-      <p class="ad-kicker">Application review</p>
-      <h1 class="ad-title">Manage Applications</h1>
+      <p class="ad-kicker">Applications</p>
+      <h1 class="ad-title">Application review</h1>
       <p class="ad-sub">
-        {{ stats.total }} application{{ '' if stats.total == 1 else 's' }} in scope ·
-        <b>{{ stats.pending }}</b> waiting on a decision
+        <b>{{ campus_name or 'All Campuses' }}</b>
+        {%- if current_period %} &middot; {{ current_period.display_name }}{% endif %}
+        &middot; {{ stats.total }} in scope &middot; {{ stats.pending }} waiting on a decision
       </p>
       <div class="ad-kpis">
         {% for label, val, tone in [('Total', stats.total, ''),
@@ -40,18 +44,17 @@
   </header>
 
   <div class="ad-body">
-    <nav aria-label="breadcrumb" class="ad-crumbs">
-      <a href="{{ url_for('admin.dashboard') }}">Dashboard</a> /
-      <span class="is-here">Manage Applications</span>
-    </nav>
+    <p class="ad-crumbs">
+      <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
+      <span aria-hidden="true">&middot;</span> <span class="is-here">Applications</span>
+    </p>
 
-    <!-- Filters -->
-    <form method="GET" class="ad-filter auto-filter">
+    <form method="GET" class="ad-filter auto-filter" role="search">
       <div class="ad-filter-row">
         <div class="ad-field">
           <label for="f-q">Search</label>
           <input id="f-q" type="text" name="q" value="{{ q }}" class="form-control"
-                 placeholder="Name or Student ID…">
+                 placeholder="Name or Student ID">
         </div>
         <div class="ad-field">
           <label for="f-status">Status</label>
@@ -91,7 +94,7 @@
         </div>
         <div class="ad-field is-reset">
           <a href="{{ url_for('admin.manage_applications') }}" class="btn btn-sm btn-outline-secondary">
-            <i class="bi bi-x-circle me-1"></i>Reset
+            <i class="bi bi-x-circle me-1" aria-hidden="true"></i>Reset
           </a>
         </div>
       </div>
@@ -101,22 +104,25 @@
     <form method="POST" action="{{ url_for('admin.batch_review') }}" id="batchForm">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-      <div class="card ad-panel">
-        <div class="card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
-          <div class="d-flex gap-2 align-items-center">
-            <input type="checkbox" id="selectAll" class="form-check-input">
-            <label for="selectAll" class="mb-0 text-nowrap">Select All</label>
-          </div>
-          <div class="d-flex gap-2 flex-wrap align-items-center">
-            <textarea name="review_notes" rows="1" class="form-control form-control-sm"
-                      placeholder="Batch notes…" aria-label="Batch notes"></textarea>
-            <button type="submit" name="action" value="approve" class="btn btn-sm btn-success">
-              Batch Approve
+      <section class="ad-panel" aria-labelledby="ad-queue-title">
+        <div class="ad-panel-toolbar">
+          <h2 id="ad-queue-title" class="ad-panel-title">Review queue</h2>
+          <span class="ad-panel-count">{{ applications|length }} on this page &middot; oldest first</span>
+          {% if applications %}
+          <div class="ad-toolbar-acts">
+            <label class="ad-bulk-check" for="selectAll">
+              <input type="checkbox" id="selectAll" class="form-check-input"> Select all
+            </label>
+            <textarea name="review_notes" rows="1" placeholder="Batch notes"
+                      aria-label="Batch notes"></textarea>
+            <button type="submit" name="action" value="approve" class="btn ad-primary-btn">
+              <i class="bi bi-check2-all" aria-hidden="true"></i> Batch approve
             </button>
-            <button type="submit" name="action" value="reject" class="btn btn-sm btn-danger">
-              Batch Reject
+            <button type="submit" name="action" value="reject" class="btn btn-sm btn-outline-danger">
+              <i class="bi bi-x-circle" aria-hidden="true"></i> Batch reject
             </button>
           </div>
+          {% endif %}
         </div>
 
         <div class="card-body p-0">
@@ -125,38 +131,44 @@
             <table class="table ad-table ad-table--apps align-middle mb-0">
               <thead>
                 <tr>
-                  <th style="width:40px;"></th>
-                  <th>#</th><th>Applicant</th><th>Scholarship</th>
-                  <th>Submitted</th><th>Status</th><th>Tag</th><th>Actions</th>
+                  <th style="width:2.6rem;" aria-label="Select"></th>
+                  <th>Applicant</th>
+                  <th>Scholarship</th>
+                  <th>Submitted</th>
+                  <th>Status</th>
+                  <th class="text-end">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {% for app in applications %}
                 {% set sv = app.status.value %}
                 <tr>
-                  <td>
+                  <td class="ad-q-check">
                     <input type="checkbox" name="app_ids" value="{{ app.id }}"
-                           class="form-check-input row-check">
+                           class="form-check-input row-check"
+                           aria-label="Select application #{{ app.id }}">
                   </td>
-                  <td class="ad-app-id">#{{ app.id }}</td>
-                  <td>
+                  <td class="ad-q-applicant">
                     <div class="ad-who">
                       {{ app.applicant.get_full_name() }}
-                      <span>{{ app.applicant.email }}</span>
+                      <span>#{{ app.id }} &middot; {{ app.applicant.email }}</span>
                     </div>
                   </td>
-                  <td class="ad-prog">{{ app.scholarship.title }}</td>
-                  <td>{{ app.submitted_at.strftime('%b %d, %Y') }}</td>
-                  <td>
+                  <td class="ad-q-scholarship ad-prog">{{ app.scholarship.title }}</td>
+                  <td class="ad-q-when">
+                    <div class="ad-who">
+                      {{ app.submitted_pht.strftime('%b %d, %Y') }}
+                      <span>{{ app.submitted_pht.strftime('%I:%M %p').lstrip('0') }}</span>
+                    </div>
+                  </td>
+                  <td class="ad-q-status">
                     <span class="ad-pill {{ status_pill.get(sv, 'is-mute') }}">{{ status_label.get(sv, sv|title) }}</span>
-                  </td>
-                  <td>
                     {% if app.scholar_status %}
-                      {% set look = tag_look.get(app.scholar_status) %}
-                      <span class="ad-pill {{ look[0] if look else 'is-mute' }}">{{ look[1] if look else 'Inactive' }}</span>
-                    {% else %}—{% endif %}
+                    {% set look = tag_look.get(app.scholar_status) %}
+                    <span class="ad-pill {{ look[0] if look else 'is-mute' }}">{{ look[1] if look else 'Inactive' }}</span>
+                    {% endif %}
                   </td>
-                  <td>
+                  <td class="ad-q-acts">
                     <button type="button" class="ad-go"
                             data-bs-toggle="modal"
                             data-bs-target="#reviewModal{{ app.id }}">Review</button>
@@ -166,37 +178,58 @@
               </tbody>
             </table>
           </div>
-          {% else %}
-          <div class="empty-state">
-            <i class="bi bi-inbox"></i>
-            <h5>No applications found</h5>
-            <p>Applications will appear here once students submit them.</p>
+
+          {% if pagination.pages > 1 %}
+          <div class="ad-pager">
+            <span class="ad-pager-count">
+              Showing {{ ((pagination.page-1)*pagination.per_page)+1 }}–{{ [pagination.page*pagination.per_page, pagination.total]|min }}
+              of {{ pagination.total }} applications
+            </span>
+            <nav aria-label="Applications pagination">
+              <ul class="pagination pagination-sm mb-0">
+                <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
+                  <a class="page-link"
+                     href="{{ url_for('admin.manage_applications', page=pagination.prev_num, status=status_filter, scholarship_id=scholarship_filter, course=course_filter, year=year_filter, q=q) }}"
+                     aria-label="Previous page">&laquo; Prev</a>
+                </li>
+                {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+                  {% if p %}
+                  <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                    <a class="page-link"
+                       href="{{ url_for('admin.manage_applications', page=p, status=status_filter, scholarship_id=scholarship_filter, course=course_filter, year=year_filter, q=q) }}"
+                       {% if p == pagination.page %}aria-current="page"{% endif %}>{{ p }}</a>
+                  </li>
+                  {% else %}
+                  <li class="page-item disabled"><span class="page-link">…</span></li>
+                  {% endif %}
+                {% endfor %}
+                <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
+                  <a class="page-link"
+                     href="{{ url_for('admin.manage_applications', page=pagination.next_num, status=status_filter, scholarship_id=scholarship_filter, course=course_filter, year=year_filter, q=q) }}"
+                     aria-label="Next page">Next &raquo;</a>
+                </li>
+              </ul>
+            </nav>
           </div>
           {% endif %}
 
-          {% if pagination.pages > 1 %}
-          <nav class="mt-4 d-flex justify-content-center" aria-label="Applications pagination">
-            <ul class="pagination">
-              <li class="page-item {% if not pagination.has_prev %}disabled{% endif %}">
-                <a class="page-link" href="{{ url_for('admin.manage_applications', page=pagination.prev_num, status=status_filter, scholarship_id=scholarship_filter, course=course_filter, year=year_filter, q=q) }}">&laquo;</a>
-              </li>
-              {% for p in pagination.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
-                {% if p %}
-                  <li class="page-item {% if p == pagination.page %}active{% endif %}">
-                    <a class="page-link" href="{{ url_for('admin.manage_applications', page=p, status=status_filter, scholarship_id=scholarship_filter, course=course_filter, year=year_filter, q=q) }}">{{ p }}</a>
-                  </li>
-                {% else %}
-                  <li class="page-item disabled"><span class="page-link">…</span></li>
-                {% endif %}
-              {% endfor %}
-              <li class="page-item {% if not pagination.has_next %}disabled{% endif %}">
-                <a class="page-link" href="{{ url_for('admin.manage_applications', page=pagination.next_num, status=status_filter, scholarship_id=scholarship_filter, course=course_filter, year=year_filter, q=q) }}">&raquo;</a>
-              </li>
-            </ul>
-          </nav>
+          {% else %}
+          <div class="ad-empty">
+            <i class="bi bi-inbox" aria-hidden="true"></i>
+            <h2>{% if is_filtered %}No applications match{% else %}Nothing in the queue{% endif %}</h2>
+            <p>
+              {% if is_filtered %}Nothing here matches these filters.
+              {% else %}Applications appear here as soon as students submit them.{% endif %}
+            </p>
+            {% if is_filtered %}
+            <a href="{{ url_for('admin.manage_applications') }}" class="btn ad-ghost-btn">
+              <i class="bi bi-x-circle" aria-hidden="true"></i> Clear filters
+            </a>
+            {% endif %}
+          </div>
           {% endif %}
         </div>
-      </div>
+      </section>
     </form>
   </div>
 </div>
@@ -228,7 +261,7 @@
           <div><dt>Year</dt><dd>{{ app.application_data.year_level or '—' }}</dd></div>
           {% endif %}
           <div><dt>GWA</dt><dd>{{ (app.application_data.gwa if app.application_data else None) or app.applicant.gwa or '—' }}</dd></div>
-          <div><dt>Submitted</dt><dd>{{ app.submitted_at.strftime('%b %d, %Y %I:%M %p') }}</dd></div>
+          <div><dt>Submitted</dt><dd>{{ app.submitted_pht.strftime('%b %d, %Y %I:%M %p') }}</dd></div>
         </dl>
 
         {% if app.uploaded_documents %}
@@ -316,9 +349,13 @@
 
 {% block scripts %}
 <script>
-document.getElementById('selectAll').addEventListener('change', function() {
-  document.querySelectorAll('.row-check').forEach(cb => cb.checked = this.checked);
-});
+// select-all only exists while the queue has rows
+const selectAll = document.getElementById('selectAll');
+if (selectAll) {
+  selectAll.addEventListener('change', function() {
+    document.querySelectorAll('.row-check').forEach(cb => cb.checked = this.checked);
+  });
+}
 
 // Enter in a notes field must not decide anything. An implicit submission
 // has no clicked button, so the browser would pick the form's first submit

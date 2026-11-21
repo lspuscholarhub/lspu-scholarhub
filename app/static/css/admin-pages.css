@@ -67,23 +67,20 @@
   background: #fff !important; border: 1px solid #e3e8ef; border-radius: 12px;
   box-shadow: none !important; overflow: hidden;
 }
-.ad-panel > .card-header {
-  background: #fbfcfe; border-bottom: 1px solid #eef2f7; padding: .6rem .8rem;
-}
-.ad-panel > .card-header label { font-size: .74rem; font-weight: 700; color: #41556f; }
 .ad-panel > .card-body { padding: 0; }
 
-/* batch bar controls */
-.ad-panel .card-header input[type="checkbox"] { width: 16px; height: 16px; accent-color: #0b7d72; }
-.ad-panel .card-header textarea {
-  flex: 1 1 150px; min-width: 0;
-  min-height: 34px; padding: .35rem .5rem; font: inherit; font-size: .78rem;
+/* bulk controls that sit beside a panel title */
+.ad-bulk-check {
+  display: inline-flex; align-items: center; gap: .4rem;
+  font-size: .74rem; font-weight: 700; color: #41556f; white-space: nowrap;
+}
+.ad-bulk-check input[type="checkbox"] { width: 16px; height: 16px; accent-color: #0b7d72; }
+.ad-panel-toolbar textarea {
+  flex: 1 1 10rem; min-width: 0;
+  min-height: 34px; padding: .35rem .5rem; font: inherit; font-size: .76rem;
   color: #0f2a4d; background: #fff; border: 1px solid #dbe3ee; border-radius: 8px;
   resize: vertical;
 }
-.ad-panel .card-header .btn { font-size: .76rem; font-weight: 700; border-radius: 8px; padding: .35rem .7rem; }
-.ad-panel .card-header .btn-success { background: #0f7a4f; border-color: #0f7a4f; }
-.ad-panel .card-header .btn-danger { background: #b02a37; border-color: #b02a37; }
 
 /* ── table ────────────────────────────────────────────────────────────────── */
 .ad-table { margin: 0; border-top: 0; --bs-table-bg: transparent; }
@@ -224,17 +221,17 @@
   /* applications card only: the programs ledger lays itself out by cell class,
      so index rules here would leak onto it */
   .table-responsive .table.ad-table--apps td:nth-child(1) { grid-column: 1; grid-row: 1; padding-top: .15rem; }
-  .table-responsive .table.ad-table--apps td:nth-child(2) { display: none; }
-  .table-responsive .table.ad-table--apps td:nth-child(3) { grid-column: 2; grid-row: 1; min-width: 0; }
-  .table-responsive .table.ad-table--apps td:nth-child(4) { grid-column: 2; grid-row: 2; min-width: 0; overflow-wrap: anywhere; font-size: .74rem; }
-  .table-responsive .table.ad-table--apps td:nth-child(5) { grid-column: 2; grid-row: 3; font-size: .72rem; color: #8494a8; }
-  .table-responsive .table.ad-table--apps td:nth-child(6) { grid-column: 3; grid-row: 1; justify-self: end; }
-  .table-responsive .table.ad-table--apps td:nth-child(7) { grid-column: 3; grid-row: 2; justify-self: end; }
-  .table-responsive .table.ad-table--apps td:nth-child(8) { grid-column: 3; grid-row: 3; justify-self: end; }
+  .table-responsive .table.ad-table--apps td:nth-child(2) { grid-column: 2; grid-row: 1; min-width: 0; }
+  .table-responsive .table.ad-table--apps td:nth-child(3) { grid-column: 2 / 4; grid-row: 2; min-width: 0; overflow-wrap: anywhere; font-size: .74rem; }
+  .table-responsive .table.ad-table--apps td:nth-child(4) { grid-column: 2; grid-row: 3; font-size: .72rem; color: #8494a8; }
+  .table-responsive .table.ad-table--apps td:nth-child(5) {
+    grid-column: 3; grid-row: 1; justify-self: end; display: flex; flex-wrap: wrap;
+    justify-content: flex-end; gap: .2rem;
+  }
+  .table-responsive .table.ad-table--apps td:nth-child(6) { grid-column: 3; grid-row: 3; justify-self: end; }
 
   /* batch bar: the notes box takes its own line so both decisions share the next */
-  .ad-panel > .card-header textarea[name="review_notes"] { flex: 1 1 100%; }
-  .ad-panel > .card-header .btn { flex: 1 1 auto; }
+  .ad-panel-toolbar textarea { flex: 1 1 100%; }
 
   /* sheet takes the screen, like the staff review sheet */
   .ad-modal .modal-dialog { margin: .5rem; max-width: none; height: auto; }
