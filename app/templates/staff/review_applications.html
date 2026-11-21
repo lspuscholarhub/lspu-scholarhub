@@ -17,10 +17,7 @@
   {% set board_period = current_period.display_name if current_period else None %}
   {% set board_stamp = 'oldest first' %}
   {% set board_label = 'Review figures' %}
-  {% set board_actions = [
-    {'label': 'Reset filters', 'href': url_for('staff.review_applications'),
-     'icon': 'bi-arrow-counterclockwise', 'style': 'ghost'},
-  ] %}
+  {% set board_actions = [] %}
   {% set board_cells = [
     {'label': 'Waiting', 'value': stats.pending, 'tone': 'warn',
      'sub': ('oldest ' ~ stats.oldest_days ~ ' day' ~ ('s' if stats.oldest_days != 1))
@@ -72,6 +69,9 @@
         </div>
 
         <button class="st-btn st-btn--navy st-btn--sm" type="submit">Search</button>
+        <a class="st-btn st-btn--ghost st-btn--sm" href="{{ url_for('staff.review_applications') }}">
+          <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>Reset
+        </a>
       </form>
 
       <!-- ── the queue, with batch actions for whatever is ticked ──────────── -->

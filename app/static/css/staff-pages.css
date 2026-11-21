@@ -324,12 +324,39 @@
   .sf-table--apps .tag { display: none; }
   .sf-table--apps .go { grid-column: 3; grid-row: 3; }
   .sf-bulk { position: sticky; bottom: 0; z-index: 3; }
-  .sf-modal .modal-dialog { margin: 0; max-width: none; height: 100%; }
-  .sf-modal .modal-content { border-radius: 0; min-height: 100%; }
+  /* the sheet hugs its content instead of stretching to an empty bottom */
+  .sf-modal .modal-dialog { margin: .5rem; max-width: none; height: auto; }
+  .sf-modal .modal-content { border-radius: 14px; min-height: 0; max-height: calc(100dvh - 1rem); overflow-y: auto; }
+  /* the body must not be squeezed by the tall decision cards: the sheet
+     scrolls as one piece so the application details stay readable */
+  .sf-modal .modal-body { flex: 0 0 auto; overflow: visible; }
+
+  /* filter bar: full-width search and chips, two selects per row, and the
+     two actions share the last row instead of one sitting alone */
+  .sf-toolbar { gap: .4rem; padding: .55rem; }
+  .sf-search { flex: 1 1 100%; max-width: none; }
+  /* one scrollable row of chips instead of two wrapped lines */
+  .sf-seg { flex: 1 1 100%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .sf-seg::-webkit-scrollbar { display: none; }
+  .sf-seg-item { white-space: nowrap; }
+  .sf-selects { width: 100%; gap: .4rem; }
+  /* min-width: 0 or the longest option forces one select per row */
+  .sf-selects select { flex: 1 1 calc(50% - .6rem); max-width: none; min-width: 0; }
+  .sf-toolbar > .st-btn { flex: 1 1 0; margin-left: 0; }
+
+  /* decision card: select and its button each get a full row */
+  .sf-action-row select { flex: 1 1 100%; max-width: none; }
+  .sf-action-row .st-btn { flex: 1 1 100%; margin-left: 0; }
 }
 
 @media (min-width: 960px) {
-  .sf-toolbar > .st-btn { margin-left: auto; }
+  /* one clean row: search, chips, the three selects sharing a line, actions right */
+  .sf-toolbar { gap: .4rem; }
+  .sf-search { max-width: 190px; }
+  .sf-selects { flex: 1 1 16rem; }
+  .sf-selects select { flex: 1 1 0; min-width: 0; max-width: none; }
+  .sf-toolbar > .st-btn { margin-left: 0; }
+  .sf-toolbar > .st-btn:first-of-type { margin-left: auto; }
   .sf-perf-flag { display: inline-block; }
   .sf-kpis--four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .sf-sheet-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); }
