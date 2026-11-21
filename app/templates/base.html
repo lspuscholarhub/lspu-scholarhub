@@ -193,13 +193,18 @@
             {% endfor %}
           </ul>
         </li>
-      {% elif session.get('campus_name') %}
+      {% elif role == 'admin' %}
+        {# Campus admin: every campus this account is assigned to #}
+        {% set admin_ids = session.get('assigned_campus_ids') or [] %}
+        {% set admin_names = all_campuses | selectattr('id', 'in', admin_ids) | map(attribute='name') | list %}
         <li class="nav-item d-lg-flex align-items-center me-1">
-          <span class="badge bg-info text-dark px-2 py-1" style="font-size:.68rem;">{{ session.campus_name }}</span>
+          <span class="badge bg-info text-dark px-2 py-1" style="font-size:.68rem;"
+                title="{{ admin_names | join(', ') if admin_names else 'Every campus (no campus assigned)' }}">
+            {{ admin_names | join(' · ') if admin_names else 'All Campuses' }}
+          </span>
         </li>
       {% elif session.get('campus_name') %}
-        {# Other roles: show campus badge #}
-        <li class="nav-item d-none d-lg-flex align-items-center me-1">
+        <li class="nav-item d-lg-flex align-items-center me-1">
           <span class="badge bg-info text-dark px-2 py-1" style="font-size:.68rem;">{{ session.campus_name }}</span>
         </li>
       {% endif %}
