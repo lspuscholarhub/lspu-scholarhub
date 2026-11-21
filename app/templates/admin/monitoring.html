@@ -1,93 +1,99 @@
 {% extends "base.html" %}
 {% block title %}Monitoring & Tracking - Admin{% endblock %}
+
+{% block head %}
+<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261127c" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid py-4">
-  <nav aria-label="breadcrumb">
-    <ol class="breadcrumb mb-3">
-      <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
-      <li class="breadcrumb-item active" aria-current="page">Monitoring & Tracking</li>
-    </ol>
-  </nav>
-  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <div>
-      <h1 class="h3 fw-bold mb-0">Monitoring & Tracking</h1>
-      <p class="text-muted small mb-0">Scholar performance and renewal management</p>
-    </div>
-  </div>
+{% set campus_name = session.get('campus_context_name') or session.get('campus_name') %}
+{% set standing = {'active': ('is-approved', 'Good Standing'),
+                   'at_risk': ('is-pending', 'At Risk'),
+                   'probation': ('is-pending', 'Probation'),
+                   'termination_warning': ('is-rejected', 'Termination Warning')} %}
+{% set tally = namespace(me=0) %}
+{% for app in scholars %}
+  {% if app.id in me_forms %}{% set tally.me = tally.me + 1 %}{% endif %}
+{% endfor %}
 
-  <!-- Summary stats -->
-  <div class="row g-3 mb-4">
-    {% for label, val, color, icon in [
-      ('Total Scholars',      stats.total,        'primary',   'bi-people-fill'),
-      ('Good Standing',       stats.active,       'success',   'bi-check-circle-fill'),
-      ('At Risk',             stats.at_risk,      'warning',   'bi-exclamation-triangle-fill'),
-      ('M&E Overdue',         me_overdue_count or 0, 'danger', 'bi-exclamation-octagon-fill'),
-    ] %}
-    <div class="col-xl-2 col-md-4 col-6">
-      <div class="card border-0 shadow-sm text-center py-3" style="border-radius:12px;">
-        <i class="bi {{ icon }} fs-3 {% if color=='orange' %}text-warning{% else %}text-{{ color }}{% endif %} mb-1"></i>
-        <div class="fs-4 fw-bold {% if color=='orange' %}text-warning{% else %}text-{{ color }}{% endif %}">{{ val }}</div>
-        <div class="small text-muted">{{ label }}</div>
+<div class="ad-page">
+  <header class="ad-board">
+    <div class="ad-board-inner">
+      <p class="ad-kicker">Monitoring</p>
+      <h1 class="ad-title">Scholar monitoring</h1>
+      <p class="ad-sub">
+        <b>{{ campus_name or 'All Campuses' }}</b>
+        {%- if current_period %} &middot; {{ current_period.display_name }}{% endif %}
+        &middot; {{ stats.total }} approved scholar{{ '' if stats.total == 1 else 's' }}
+      </p>
+      <div class="ad-kpis">
+        <div class="ad-kpi">
+          <span class="ad-kpi-label">Scholars</span>
+          <span class="ad-kpi-value">{{ stats.total }}</span>
+        </div>
+        <div class="ad-kpi is-ok">
+          <span class="ad-kpi-label">Good standing</span>
+          <span class="ad-kpi-value">{{ stats.active }}</span>
+        </div>
+        <div class="ad-kpi is-warn">
+          <span class="ad-kpi-label">At risk</span>
+          <span class="ad-kpi-value">{{ stats.at_risk }}</span>
+        </div>
+        <div class="ad-kpi {% if me_overdue_count %}is-bad{% endif %}">
+          <span class="ad-kpi-label">M&amp;E overdue</span>
+          <span class="ad-kpi-value">{{ me_overdue_count or 0 }}</span>
+        </div>
       </div>
     </div>
-    {% endfor %}
-  </div>
+  </header>
 
-  <!-- Renewal Alerts -->
-  {% if renewal_alerts %}
-  <div class="card border-0 shadow-sm mb-4" style="border-radius:12px;border-left:4px solid #ffc107!important;">
-    <div class="card-header bg-warning bg-opacity-10 border-0 pt-3 pb-2 px-4">
-      <h6 class="fw-bold mb-0 text-warning">
-        <i class="bi bi-bell-fill me-2"></i>Renewal Alerts ({{ renewal_alerts|length }})
-      </h6>
-    </div>
-    <div class="card-body p-0">
-      <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
-            <tr>
-              <th class="ps-4">Scholar</th><th>Scholarship</th><th>Approved</th>
-              <th>Renewal Due</th><th>Days Left</th><th class="pe-4">Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for alert in renewal_alerts %}
-            <tr>
-              <td class="ps-4" data-label="Scholar">
-                <strong>{{ alert.app.applicant.get_full_name() }}</strong><br>
-                <small class="text-muted">{{ alert.app.applicant.student_id }}</small>
-              </td>
-              <td class="small" data-label="Scholarship">{{ alert.app.scholarship.title }}</td>
-              <td class="small" data-label="Approved">{{ alert.app.approved_at.strftime('%b %d, %Y') if alert.app.approved_at else '—' }}</td>
-              <td class="small" data-label="Renewal Due">{{ alert.due.strftime('%b %d, %Y') }}</td>
-              <td data-label="Days Left">
-                <span class="badge {% if alert.days_left <= 7 %}bg-danger{% elif alert.days_left <= 14 %}bg-warning text-dark{% else %}bg-info text-dark{% endif %}">
-                  {{ alert.days_left }}d
-                </span>
-              </td>
-              <td class="pe-4" data-label="Action">
-                <form method="POST" action="{{ url_for('admin.send_renewal_reminder', app_id=alert.app.id) }}" class="d-inline">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button class="btn btn-sm btn-outline-warning">
-                    <i class="bi bi-envelope me-1"></i>Send Reminder
-                  </button>
-                </form>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
+  <div class="ad-body">
+    <p class="ad-crumbs">
+      <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
+      <span aria-hidden="true">&middot;</span> <span class="is-here">Monitoring &amp; Tracking</span>
+    </p>
+
+    {% if renewal_alerts %}
+    <section class="ad-panel ad-panel--alert" aria-labelledby="ad-alerts-title">
+      <div class="ad-panel-toolbar">
+        <h2 id="ad-alerts-title" class="ad-panel-title">
+          <i class="bi bi-bell" aria-hidden="true"></i> Renewal alerts
+        </h2>
+        <span class="ad-panel-count">{{ renewal_alerts|length }} due within 30 days</span>
       </div>
-    </div>
-  </div>
-  {% endif %}
+      <ul class="ad-alerts">
+        {% for alert in renewal_alerts %}
+        <li class="ad-alert">
+          <div class="ad-alert-main ad-who">
+            {{ alert.app.applicant.get_full_name() }}
+            <span>{{ alert.app.applicant.student_id or alert.app.applicant.email }} &middot; {{ alert.app.scholarship.title }}</span>
+          </div>
+          <div class="ad-alert-when">
+            <span class="ad-pill {% if alert.days_left <= 7 %}is-rejected{% elif alert.days_left <= 14 %}is-pending{% else %}is-mute{% endif %}">
+              {{ alert.days_left }}d left
+            </span>
+            <span class="ad-alert-due">Due {{ alert.due.strftime('%b %d, %Y') }}</span>
+          </div>
+          <form method="POST" action="{{ url_for('admin.send_renewal_reminder', app_id=alert.app.id) }}"
+                class="ad-acts ad-alert-act">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-sm btn-outline-warning"
+                    aria-label="Send renewal reminder to {{ alert.app.applicant.get_full_name() }}"
+                    title="Send renewal reminder">
+              <i class="bi bi-envelope" aria-hidden="true"></i>
+            </button>
+          </form>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
 
-  <!-- Filters -->
-  <div class="card border-0 shadow-sm mb-4" style="border-radius:12px;">
-    <div class="card-body">
-      <form method="GET" class="auto-filter row g-2 align-items-end">
-        <div class="col-md-3">
-          <label class="form-label small fw-semibold" for="mon-status">Scholar Status</label>
+    <form method="GET" class="ad-filter auto-filter" role="search">
+      <div class="ad-filter-row ad-filter-row--scholars">
+        <div class="ad-field">
+          <label for="mon-status">Scholar status</label>
           <select id="mon-status" name="scholar_status" class="form-select">
             <option value="">All Statuses</option>
             {% for val, label in [('active','Good Standing'),('at_risk','At Risk'),('probation','Probation'),('termination_warning','Termination Warning')] %}
@@ -95,8 +101,8 @@
             {% endfor %}
           </select>
         </div>
-        <div class="col-md-3">
-          <label class="form-label small fw-semibold" for="mon-course">Course / Program</label>
+        <div class="ad-field">
+          <label for="mon-course">Course / Program</label>
           <select id="mon-course" name="course" class="form-select">
             <option value="">All Courses</option>
             {% for c in courses %}
@@ -104,79 +110,92 @@
             {% endfor %}
           </select>
         </div>
-        <div class="col-md-3 d-flex justify-content-end">
-          <a href="{{ url_for('admin.monitoring') }}" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-x-circle me-1"></i>Reset
+        <div class="ad-field is-reset">
+          <a href="{{ url_for('admin.monitoring') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-x-circle me-1" aria-hidden="true"></i>Reset
           </a>
         </div>
-      </form>
-    </div>
-  </div>
+      </div>
+    </form>
 
-  <!-- Scholars Table -->
-  <div class="card border-0 shadow-sm" style="border-radius:12px;">
-    <div class="card-body p-0">
+    <section class="ad-panel" aria-labelledby="ad-scholars-title">
+      <div class="ad-panel-toolbar">
+        <h2 id="ad-scholars-title" class="ad-panel-title">Approved scholars</h2>
+        <span class="ad-panel-count">
+          {{ scholars|length }} shown &middot; {{ tally.me }} M&amp;E on file
+          {%- if me_deadline %} &middot; form due {{ me_deadline.strftime('%b %d, %Y') }}{% endif %}
+        </span>
+      </div>
+
       {% if scholars %}
       <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
+        <table class="table ad-table ad-table--scholars align-middle mb-0">
+          <thead>
             <tr>
-              <th class="ps-4">Scholar</th><th>Scholarship</th><th>GWA</th>
-              <th>Scholar Status</th><th>M&amp;E Form</th><th>Approved</th>
-              <th class="pe-4">Actions</th>
+              <th>Scholar</th>
+              <th>Scholarship</th>
+              <th>GWA</th>
+              <th>Standing</th>
+              <th>M&amp;E form</th>
+              <th>Approved</th>
+              <th class="text-end">Actions</th>
             </tr>
           </thead>
           <tbody>
             {% for app in scholars %}
             {% set student = app.applicant %}
+            {% set st = standing.get(app.scholar_status, ('is-mute', app.scholar_status|replace('_', ' ')|title or '—')) %}
+            {% set gwa = get_gwa_label(student.gwa) %}
+            {% set me_sub = me_forms.get(app.id) %}
+            {% set me_late = (me_deadline and (not me_sub) and (me_deadline < now_local)) %}
             <tr>
-              <td class="ps-4" data-label="Scholar">
-                <strong>{{ student.get_full_name() }}</strong><br>
-                <small class="text-muted">{{ student.student_id or student.email }}</small>
-                {% if student.course %}
-                <br><small class="text-muted">{{ student.course }}{% if student.year_level %} · {{ student.year_level }}{% endif %}</small>
-                {% endif %}
+              <td class="ad-s-scholar" data-label="Scholar">
+                <div class="ad-who">{{ student.get_full_name() }}
+                  <span>
+                    {{ student.student_id or student.email }}
+                    {%- if student.course %} &middot; {{ student.course[:38] }}{% if student.year_level %} &middot; {{ student.year_level }}{% endif %}{% endif %}
+                  </span>
+                </div>
               </td>
-              <td class="small" data-label="Scholarship">{{ app.scholarship.title }}</td>
-              <td data-label="GWA">
+              <td class="ad-s-program" data-label="Scholarship">{{ app.scholarship.title }}</td>
+              <td class="ad-s-gwa" data-label="GWA">
                 {% if student.gwa %}
-                  {% if student.gwa <= 1.25 %}<span class="badge bg-success">{{ student.gwa }}</span><small class="text-success d-block">Excellent</small>
-                  {% elif student.gwa <= 1.75 %}<span class="badge bg-success">{{ student.gwa }}</span><small class="text-success d-block">Very Good</small>
-                  {% elif student.gwa <= 2.25 %}<span class="badge bg-success">{{ student.gwa }}</span><small class="text-success d-block">Satisfactory</small>
-                  {% elif student.gwa <= 2.75 %}<span class="badge bg-info text-dark">{{ student.gwa }}</span><small class="text-info d-block">Fair</small>
-                  {% elif student.gwa <= 3.00 %}<span class="badge bg-warning text-dark">{{ student.gwa }}</span><small class="text-warning d-block">Passed</small>
-                  {% elif student.gwa < 4.00 %}<span class="badge" style="background:#fd7e14;color:#fff;">{{ student.gwa }}</span><small class="d-block" style="color:#fd7e14;">At Risk</small>
-                  {% else %}<span class="badge bg-danger">{{ student.gwa }}</span><small class="text-danger d-block">Failed</small>{% endif %}
-                {% else %}<span class="text-muted small">Not set</span>{% endif %}
-              </td>
-              <td data-label="Scholar Status">
-                {% if app.scholar_status == 'active' %}<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Good Standing</span>
-                {% elif app.scholar_status == 'at_risk' %}<span class="badge bg-warning text-dark"><i class="bi bi-exclamation-triangle me-1"></i>At Risk</span>
-                {% elif app.scholar_status == 'probation' %}<span class="badge" style="background:#fd7e14;color:#fff;"><i class="bi bi-exclamation-circle me-1"></i>Probation</span>
-                {% elif app.scholar_status == 'termination_warning' %}<span class="badge bg-danger"><i class="bi bi-x-octagon me-1"></i>Termination Warning</span>
-                {% else %}<span class="badge bg-secondary">{{ app.scholar_status or '—' }}</span>{% endif %}
-              </td>
-              <td data-label="M&E Form">
-                {% set me_sub = me_forms.get(app.id) %}
-                {% set me_overdue = (me_deadline and (not me_sub) and (me_deadline < now_local)) %}
-                {% if me_sub %}
-                  <a href="{{ url_for('admin.view_me_form', app_id=app.id) }}" target="_blank"
-                     class="badge bg-success text-decoration-none" title="View {{ me_sub.original_filename }} (uploaded {{ me_sub.uploaded_at.strftime('%b %d, %Y') }})">
-                    <i class="bi bi-file-earmark-check me-1"></i>Submitted
-                  </a>
-                  <small class="text-muted d-block">{{ me_sub.uploaded_at.strftime('%b %d, %Y') }}</small>
-                {% elif me_overdue %}
-                  <span class="badge bg-danger" title="Deadline was {{ me_deadline.strftime('%b %d, %Y') }} — not submitted"><i class="bi bi-exclamation-octagon me-1"></i>Overdue</span>
+                <span class="ad-gwa">{{ "%.2f"|format(student.gwa) }}</span>
+                <span class="ad-gwa-label {{ gwa[1] }}">{{ gwa[0] }}</span>
                 {% else %}
-                  <span class="badge bg-secondary"><i class="bi bi-file-earmark-x me-1"></i>Not submitted</span>
+                <span class="ad-pill is-mute">Not set</span>
                 {% endif %}
               </td>
-              <td class="small" data-label="Approved">{{ app.approved_at.strftime('%b %d, %Y') if app.approved_at else '—' }}</td>
-              <td class="pe-4" data-label="Actions">
-                <button class="btn btn-sm btn-outline-primary"
-                        data-bs-toggle="modal" data-bs-target="#updateModal{{ app.id }}">
-                  <i class="bi bi-pencil me-1"></i>Update
-                </button>
+              <td class="ad-s-standing" data-label="Standing">
+                <span class="ad-pill {{ st[0] }}">{{ st[1] }}</span>
+              </td>
+              <td class="ad-s-me" data-label="M&amp;E form">
+                {% if me_sub %}
+                <a href="{{ url_for('admin.view_me_form', app_id=app.id) }}" target="_blank"
+                   class="ad-pill is-approved"
+                   title="View {{ me_sub.original_filename }} (uploaded {{ me_sub.uploaded_at.strftime('%b %d, %Y') }})">
+                  <i class="bi bi-file-earmark-check" aria-hidden="true"></i>Submitted
+                </a>
+                <span class="ad-me-date">{{ me_sub.uploaded_at.strftime('%b %d, %Y') }}</span>
+                {% elif me_late %}
+                <span class="ad-pill is-rejected" title="Deadline was {{ me_deadline.strftime('%b %d, %Y') }} — not submitted">
+                  <i class="bi bi-exclamation-octagon" aria-hidden="true"></i>Overdue
+                </span>
+                {% else %}
+                <span class="ad-pill is-mute"><i class="bi bi-file-earmark-x" aria-hidden="true"></i>Not submitted</span>
+                {% endif %}
+              </td>
+              <td class="ad-s-approved" data-label="Approved">
+                {{ app.approved_at.strftime('%b %d, %Y') if app.approved_at else '—' }}
+              </td>
+              <td class="ad-s-acts" data-label="Actions">
+                <div class="ad-acts">
+                  <button class="btn btn-sm btn-outline-primary"
+                          data-bs-toggle="modal" data-bs-target="#updateModal{{ app.id }}"
+                          aria-label="Update {{ student.get_full_name() }}" title="Update scholar">
+                    <i class="bi bi-pencil" aria-hidden="true"></i>
+                  </button>
+                </div>
               </td>
             </tr>
             {% endfor %}
@@ -184,12 +203,14 @@
         </table>
       </div>
       {% else %}
-      <div class="text-center py-5 text-muted">
-        <i class="bi bi-people display-4"></i>
-        <p class="mt-3">No approved scholars found{% if status_filter or course_filter %} matching the current filters{% endif %}.</p>
+      <div class="ad-empty">
+        <i class="bi bi-people" aria-hidden="true"></i>
+        <h2>No approved scholars</h2>
+        <p>{% if status_filter or course_filter %}Nothing matches the current filters.{% else %}Approved applications will appear here for monitoring.{% endif %}</p>
+        <a href="{{ url_for('admin.monitoring') }}" class="btn ad-primary-btn">Clear filters</a>
       </div>
       {% endif %}
-    </div>
+    </section>
   </div>
 </div>
 

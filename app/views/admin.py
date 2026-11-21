@@ -339,7 +339,8 @@ def manage_scholarships():
     from app.models import Campus
     all_campuses = Campus.query.filter_by(is_active=True).order_by(Campus.id).all()
     return render_template('admin/scholarships.html', scholarships=scholarships,
-                           all_campuses=all_campuses)
+                           all_campuses=all_campuses,
+                           current_period=get_viewing_period())
 
 
 @admin_bp.route('/scholarships/create', methods=['POST'])
@@ -1003,6 +1004,7 @@ def monitoring():
         me_deadline=me_deadline,
         me_overdue_count=me_overdue_count,
         now_local=datetime.utcnow().date(),
+        current_period=current_period,
     )
 
 

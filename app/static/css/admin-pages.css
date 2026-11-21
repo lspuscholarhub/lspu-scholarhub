@@ -222,14 +222,14 @@
 
   /* applications card only: the programs ledger lays itself out by cell class,
      so index rules here would leak onto it */
-  .table-responsive .table.ad-table:not(.ad-table--programs):not(.ad-table--users) td:nth-child(1) { grid-column: 1; grid-row: 1; padding-top: .15rem; }
-  .table-responsive .table.ad-table:not(.ad-table--programs):not(.ad-table--users) td:nth-child(2) { display: none; }
-  .table-responsive .table.ad-table:not(.ad-table--programs):not(.ad-table--users) td:nth-child(3) { grid-column: 2; grid-row: 1; min-width: 0; }
-  .table-responsive .table.ad-table:not(.ad-table--programs):not(.ad-table--users) td:nth-child(4) { grid-column: 2; grid-row: 2; min-width: 0; overflow-wrap: anywhere; font-size: .74rem; }
-  .table-responsive .table.ad-table:not(.ad-table--programs):not(.ad-table--users) td:nth-child(5) { grid-column: 2; grid-row: 3; font-size: .72rem; color: #8494a8; }
-  .table-responsive .table.ad-table:not(.ad-table--programs):not(.ad-table--users) td:nth-child(6) { grid-column: 3; grid-row: 1; justify-self: end; }
-  .table-responsive .table.ad-table:not(.ad-table--programs):not(.ad-table--users) td:nth-child(7) { grid-column: 3; grid-row: 2; justify-self: end; }
-  .table-responsive .table.ad-table:not(.ad-table--programs):not(.ad-table--users) td:nth-child(8) { grid-column: 3; grid-row: 3; justify-self: end; }
+  .table-responsive .table.ad-table:not(.ad-table--programs):not(.ad-table--users):not(.ad-table--scholars) td:nth-child(1) { grid-column: 1; grid-row: 1; padding-top: .15rem; }
+  .table-responsive .table.ad-table:not(.ad-table--programs):not(.ad-table--users):not(.ad-table--scholars) td:nth-child(2) { display: none; }
+  .table-responsive .table.ad-table:not(.ad-table--programs):not(.ad-table--users):not(.ad-table--scholars) td:nth-child(3) { grid-column: 2; grid-row: 1; min-width: 0; }
+  .table-responsive .table.ad-table:not(.ad-table--programs):not(.ad-table--users):not(.ad-table--scholars) td:nth-child(4) { grid-column: 2; grid-row: 2; min-width: 0; overflow-wrap: anywhere; font-size: .74rem; }
+  .table-responsive .table.ad-table:not(.ad-table--programs):not(.ad-table--users):not(.ad-table--scholars) td:nth-child(5) { grid-column: 2; grid-row: 3; font-size: .72rem; color: #8494a8; }
+  .table-responsive .table.ad-table:not(.ad-table--programs):not(.ad-table--users):not(.ad-table--scholars) td:nth-child(6) { grid-column: 3; grid-row: 1; justify-self: end; }
+  .table-responsive .table.ad-table:not(.ad-table--programs):not(.ad-table--users):not(.ad-table--scholars) td:nth-child(7) { grid-column: 3; grid-row: 2; justify-self: end; }
+  .table-responsive .table.ad-table:not(.ad-table--programs):not(.ad-table--users):not(.ad-table--scholars) td:nth-child(8) { grid-column: 3; grid-row: 3; justify-self: end; }
 
   /* batch bar: the notes box takes its own line so both decisions share the next */
   .ad-panel > .card-header textarea[name="review_notes"] { flex: 1 1 100%; }
@@ -346,27 +346,34 @@
 .ad-empty p { margin: 0 0 .9rem; font-size: .8rem; }
 
 @media (max-width: 767.98px) {
-  /* both card ledgers share one skeleton; each then places its own cells */
+  /* the card ledgers share one skeleton; each then places its own cells */
   .table-responsive .table.ad-table--programs thead,
-  .table-responsive .table.ad-table--users thead { display: none; }
+  .table-responsive .table.ad-table--users thead,
+  .table-responsive .table.ad-table--scholars thead { display: none; }
   .table-responsive .table.ad-table--programs,
   .table-responsive .table.ad-table--programs tbody,
   .table-responsive .table.ad-table--users,
-  .table-responsive .table.ad-table--users tbody { display: block; }
+  .table-responsive .table.ad-table--users tbody,
+  .table-responsive .table.ad-table--scholars,
+  .table-responsive .table.ad-table--scholars tbody { display: block; }
   .table-responsive .table.ad-table--programs tbody tr,
-  .table-responsive .table.ad-table--users tbody tr {
+  .table-responsive .table.ad-table--users tbody tr,
+  .table-responsive .table.ad-table--scholars tbody tr {
     display: grid; grid-template-columns: minmax(0, 1fr) auto;
     gap: .3rem .6rem; padding: .8rem;
     border: 0; border-bottom: 1px solid #eef2f7; border-radius: 0; margin: 0; background: #fff;
   }
   .table-responsive .table.ad-table--programs tbody tr:last-child,
-  .table-responsive .table.ad-table--users tbody tr:last-child { border-bottom: 0; }
+  .table-responsive .table.ad-table--users tbody tr:last-child,
+  .table-responsive .table.ad-table--scholars tbody tr:last-child { border-bottom: 0; }
   .table-responsive .table.ad-table--programs tbody td,
-  .table-responsive .table.ad-table--users tbody td {
+  .table-responsive .table.ad-table--users tbody td,
+  .table-responsive .table.ad-table--scholars tbody td {
     display: block; padding: 0; border: 0; font-size: .8rem; white-space: normal;
   }
   .table-responsive .table.ad-table--programs tbody td[data-label]::before,
-  .table-responsive .table.ad-table--users tbody td[data-label]::before { content: none; }
+  .table-responsive .table.ad-table--users tbody td[data-label]::before,
+  .table-responsive .table.ad-table--scholars tbody td[data-label]::before { content: none; }
   .table-responsive .table.ad-table--programs tbody td.ad-c-name { grid-area: 1 / 1 / 2 / 2; }
   .table-responsive .table.ad-table--programs tbody td.ad-c-status { grid-area: 1 / 2 / 2 / 3; justify-self: end; align-self: start; }
   .table-responsive .table.ad-table--programs tbody td.ad-c-award { grid-area: 2 / 1 / 3 / 2; }
@@ -424,4 +431,47 @@
   .ad-filter-row--accounts .ad-field:nth-child(1) { grid-column: 1 / -1; }
   .ad-filter-row--accounts .ad-field.is-reset { grid-column: 1 / -1; justify-self: stretch; }
   .ad-filter-row--accounts .ad-field.is-reset .btn { width: 100%; text-align: center; }
+}
+
+/* ── monitoring: renewal alerts + scholar ledger ──────────────────────────── */
+.ad-panel--alert { border-color: #f0e0bc; }
+.ad-panel--alert .ad-panel-toolbar { background: #fffbf2; border-bottom-color: #f4e7cd; }
+.ad-panel--alert .ad-panel-title i { color: #b26a00; }
+
+.ad-alerts { list-style: none; margin: 0; padding: 0; }
+.ad-alert {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .75rem;
+  padding: .6rem .8rem; border-bottom: 1px solid #f6efe2;
+}
+.ad-alert:last-child { border-bottom: 0; }
+.ad-alert-main { flex: 1 1 13rem; min-width: 0; }
+.ad-alert-when { display: flex; align-items: center; gap: .45rem; }
+.ad-alert-due { font-size: .72rem; color: #8494a8; white-space: nowrap; }
+.ad-alert-act { margin-left: auto; }
+
+.ad-table--scholars tbody td.ad-s-program { font-size: .78rem; }
+.ad-table--scholars tbody td.ad-s-gwa { white-space: nowrap; }
+.ad-table--scholars tbody td.ad-s-approved { font-size: .76rem; color: #8494a8; white-space: nowrap; }
+.ad-gwa { display: block; font-size: .88rem; font-weight: 800; color: #0f2a4d; line-height: 1.1; }
+.ad-gwa-label { display: block; font-size: .68rem; font-weight: 700; white-space: nowrap; }
+.ad-me-date { display: block; margin-top: .15rem; font-size: .68rem; color: #8494a8; }
+
+@media (min-width: 768px) {
+  .ad-filter-row--scholars { grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto; }
+}
+
+@media (max-width: 767.98px) {
+  .table-responsive .table.ad-table--scholars tbody td.ad-s-scholar { grid-area: 1 / 1 / 2 / 2; }
+  .table-responsive .table.ad-table--scholars tbody td.ad-s-standing { grid-area: 1 / 2 / 2 / 3; justify-self: end; align-self: start; }
+  .table-responsive .table.ad-table--scholars tbody td.ad-s-program { grid-area: 2 / 1 / 3 / 2; }
+  .table-responsive .table.ad-table--scholars tbody td.ad-s-gwa { grid-area: 2 / 2 / 3 / 3; justify-self: end; text-align: right; font-size: .74rem; }
+  .table-responsive .table.ad-table--scholars tbody td.ad-s-me { grid-area: 3 / 1 / 4 / 2; }
+  .table-responsive .table.ad-table--scholars tbody td.ad-s-approved { grid-area: 3 / 2 / 4 / 3; justify-self: end; }
+  .table-responsive .table.ad-table--scholars tbody td.ad-s-acts { grid-area: 4 / 1 / 5 / 3; }
+
+  .ad-filter-row--scholars .ad-field.is-reset { grid-column: 1 / -1; justify-self: stretch; }
+  .ad-filter-row--scholars .ad-field.is-reset .btn { width: 100%; text-align: center; }
+
+  .ad-alert-when { width: 100%; }
+  .ad-alert-act { margin-left: auto; }
 }
