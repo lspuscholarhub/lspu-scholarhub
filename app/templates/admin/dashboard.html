@@ -3,7 +3,7 @@
 
 {% block head %}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261125b" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261127d" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -146,7 +146,7 @@
       </div>
       {% if top_performers %}
       <div class="table-responsive">
-        <table class="table ad-table align-middle mb-0">
+        <table class="table ad-table ad-table--performers align-middle mb-0">
           <thead>
             <tr>
               <th style="width:44px;">#</th>
