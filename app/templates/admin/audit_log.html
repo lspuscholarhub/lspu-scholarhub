@@ -1,171 +1,184 @@
 {% extends "base.html" %}
 {% block title %}Audit Log - Admin{% endblock %}
+
+{% block head %}
+<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261129a" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid py-4">
+{% set campus_name = session.get('campus_context_name') or session.get('campus_name') %}
+{% set role_pill = {'super_admin': ('is-rejected', 'Super Admin'),
+                    'admin': ('is-info', 'Admin'),
+                    'staff': ('is-approved', 'Staff'),
+                    'student': ('is-mute', 'Student')} %}
 
-  <nav aria-label="breadcrumb">
-    <ol class="breadcrumb mb-3">
-      <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">Dashboard</a></li>
-      <li class="breadcrumb-item active" aria-current="page">Audit Log</li>
-    </ol>
-  </nav>
-
-  <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
-    <div>
-      <h1 class="h4 h-md-3 fw-bold mb-0">Audit Log</h1>
-      <p class="text-muted small mb-0">Complete record of all system actions</p>
-    </div>
-    <div class="d-flex gap-2 flex-wrap">
-      <!-- Export buttons — pass current filters through -->
-      <div class="dropdown">
-        <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
-          <i class="bi bi-download me-1"></i>Export
-        </button>
-        <ul class="dropdown-menu dropdown-menu-end">
-          <li>
-            <a class="dropdown-item"
-               href="{{ url_for('admin.export_audit_log', format='xlsx', category=category, role=role, q=q) }}">
-              <i class="bi bi-file-earmark-excel text-success me-2"></i>Excel (.xlsx)
-            </a>
-          </li>
-          <li>
-            <a class="dropdown-item"
-               href="{{ url_for('admin.export_audit_log', format='pdf', category=category, role=role, q=q) }}">
-              <i class="bi bi-file-earmark-pdf text-danger me-2"></i>PDF
-            </a>
-          </li>
-        </ul>
-      </div>
-      <!-- Run Reminders button -->
-      <form method="POST" action="{{ url_for('admin.run_reminders') }}"
-            onsubmit="return confirm('Run all pending reminders now? This will send emails and in-app notifications.')">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit" class="btn btn-warning fw-semibold">
-          <i class="bi bi-bell-fill me-2"></i>Run Scheduled Reminders
-        </button>
-      </form>
-    </div>
-  </div>
-
-  <!-- Filters -->
-  <div class="card border-0 shadow-sm mb-4" style="border-radius:12px;">
-    <div class="card-body">
-      <form method="GET" class="auto-filter row g-2 align-items-end">
-        <div class="col-md-4">
-          <label class="form-label small fw-semibold">Search</label>
-          <input type="text" name="q" value="{{ q }}" class="form-control"
-                 placeholder="User, action, or description…">
+<div class="ad-page">
+  <header class="ad-board">
+    <div class="ad-board-inner">
+      <p class="ad-kicker">Audit Log</p>
+      <h1 class="ad-title">System audit trail</h1>
+      <p class="ad-sub">
+        <b>{{ campus_name or 'All Campuses' }}</b>
+        &middot; {{ "{:,.0f}".format(stats.total) }} entr{{ 'y' if stats.total == 1 else 'ies' }}
+        {%- if q or category or role_filter %} &middot; filtered{% endif %}
+      </p>
+      <div class="ad-kpis">
+        <div class="ad-kpi">
+          <span class="ad-kpi-label">Entries</span>
+          <span class="ad-kpi-value">{{ "{:,.0f}".format(stats.total) }}</span>
         </div>
-        <div class="col-md-2">
-          <label class="form-label small fw-semibold">Category</label>
-          <select name="category" class="form-select">
+        <div class="ad-kpi">
+          <span class="ad-kpi-label">Today</span>
+          <span class="ad-kpi-value">{{ "{:,.0f}".format(stats.today) }}</span>
+        </div>
+        <div class="ad-kpi">
+          <span class="ad-kpi-label">Admin actions</span>
+          <span class="ad-kpi-value">{{ "{:,.0f}".format(stats.admins) }}</span>
+        </div>
+        <div class="ad-kpi">
+          <span class="ad-kpi-label">Latest</span>
+          <span class="ad-kpi-value">{{ stats.latest_at.strftime('%I:%M %p').lstrip('0') if stats.latest_at else '—' }}</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="ad-body">
+    <p class="ad-crumbs">
+      <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
+      <span aria-hidden="true">&middot;</span> <span class="is-here">Audit Log</span>
+    </p>
+
+    <form method="GET" class="ad-filter auto-filter" role="search">
+      <div class="ad-filter-row ad-filter-row--audit">
+        <div class="ad-field is-wide">
+          <label for="a-q">Search</label>
+          <input type="text" id="a-q" name="q" value="{{ q }}" class="form-control"
+                 placeholder="User, action, or description">
+        </div>
+        <div class="ad-field">
+          <label for="a-category">Category</label>
+          <select id="a-category" name="category" class="form-select">
             <option value="">All Categories</option>
             {% for cat in categories %}
-            <option value="{{ cat }}" {% if category==cat %}selected{% endif %}>
-              {{ cat|title }}
-            </option>
+            <option value="{{ cat }}" {% if category==cat %}selected{% endif %}>{{ cat|title }}</option>
             {% endfor %}
           </select>
         </div>
-        <div class="col-md-2">
-          <label class="form-label small fw-semibold">Role</label>
-          <select name="role" class="form-select">
+        <div class="ad-field">
+          <label for="a-role">Role</label>
+          <select id="a-role" name="role" class="form-select">
             <option value="">All Roles</option>
             {% for r in roles %}
-            <option value="{{ r }}" {% if role==r %}selected{% endif %}>
-              {{ r.replace('_', ' ')|title }}
-            </option>
+            <option value="{{ r }}" {% if role_filter==r %}selected{% endif %}>{{ r.replace('_', ' ')|title }}</option>
             {% endfor %}
           </select>
         </div>
-        <div class="col-md-4 d-flex justify-content-end">
-          <a href="{{ url_for('admin.audit_log') }}" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-x-circle me-1"></i>Reset
+        <div class="ad-field is-reset">
+          <a href="{{ url_for('admin.audit_log') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-x-circle me-1" aria-hidden="true"></i>Reset
           </a>
         </div>
-      </form>
-    </div>
-  </div>
+      </div>
+    </form>
 
-  <!-- Log table -->
-  <div class="card border-0 shadow-sm" style="border-radius:12px;">
-    <div class="card-body p-0">
+    <section class="ad-panel" aria-labelledby="ad-audit-title">
+      <div class="ad-panel-toolbar">
+        <h2 id="ad-audit-title" class="ad-panel-title">Log entries</h2>
+        <span class="ad-panel-count">
+          {{ "{:,.0f}".format(stats.total) }} entr{{ 'y' if stats.total == 1 else 'ies' }}
+          {%- if logs.pages > 1 %} &middot; page {{ logs.page }} of {{ logs.pages }}{% endif %}
+        </span>
+        <div class="ad-toolbar-acts">
+          <div class="dropdown">
+            <button class="btn ad-ghost-btn dropdown-toggle" data-bs-toggle="dropdown"
+                    aria-expanded="false" title="Export the entries matching these filters">
+              <i class="bi bi-download" aria-hidden="true"></i> Export
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li>
+                <a class="dropdown-item"
+                   href="{{ url_for('admin.export_audit_log', format='xlsx', category=category, role=role_filter, q=q) }}">
+                  <i class="bi bi-file-earmark-excel text-success me-2" aria-hidden="true"></i>Excel (.xlsx)
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item"
+                   href="{{ url_for('admin.export_audit_log', format='pdf', category=category, role=role_filter, q=q) }}">
+                  <i class="bi bi-file-earmark-pdf text-danger me-2" aria-hidden="true"></i>PDF
+                </a>
+              </li>
+            </ul>
+          </div>
+          <form method="POST" action="{{ url_for('admin.run_reminders') }}"
+                onsubmit="return confirm('Run all pending reminders now? This will send emails and in-app notifications.')">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn ad-ghost-btn" title="Run all pending reminders now">
+              <i class="bi bi-bell-fill" aria-hidden="true"></i> Run reminders
+            </button>
+          </form>
+        </div>
+      </div>
+
       {% if logs.items %}
       <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0" style="font-size:.85rem;">
-          <thead class="table-light">
+        <table class="table ad-table ad-table--audit align-middle mb-0">
+          <thead>
             <tr>
-              <th class="ps-4" style="width:160px;">Timestamp</th>
-              <th style="width:120px;">User</th>
-              <th style="width:80px;">Role</th>
-              <th style="width:100px;">Category</th>
-              <th style="width:160px;">Action</th>
-              <th>Description</th>
-              <th style="width:110px;">IP Address</th>
+              <th style="width:8.5rem;">When</th>
+              <th style="width:12rem;">User</th>
+              <th>Event</th>
+              <th class="text-end" style="width:8rem;">IP</th>
             </tr>
           </thead>
           <tbody>
             {% for log in logs.items %}
+            {% set rp = role_pill.get(log.user_role, ('is-mute', (log.user_role or '—')|title)) %}
             <tr>
-              <td class="ps-4 text-muted small">
-                {{ log.timestamp.strftime('%b %d, %Y') }}<br>
-                <span class="text-muted" style="font-size:.75rem;">{{ log.timestamp.strftime('%I:%M:%S %p') }}</span>
+              <td class="ad-a-when" data-label="When">
+                <div class="ad-who">
+                  {{ log.timestamp_pht.strftime('%b %d, %Y') }}
+                  <span>{{ log.timestamp_pht.strftime('%I:%M:%S %p').lstrip('0') }}</span>
+                </div>
               </td>
-              <td class="fw-semibold">{{ log.user_name or '—' }}</td>
-              <td>
-                {% if log.user_role == 'admin' %}
-                  <span class="badge bg-danger">Admin</span>
-                {% elif log.user_role == 'staff' %}
-                  <span class="badge bg-warning text-dark">Staff</span>
-                {% elif log.user_role == 'student' %}
-                  <span class="badge bg-primary">Student</span>
-                {% else %}
-                  <span class="badge bg-secondary">{{ log.user_role or '—' }}</span>
-                {% endif %}
+              <td class="ad-a-who" data-label="User">
+                <div class="ad-who">{{ log.user_name or '—' }}</div>
+                <span class="ad-pill {{ rp[0] }}">{{ rp[1] }}</span>
               </td>
-              <td>
-                {% set cat_colors = {
-                  'auth': 'bg-info text-dark',
-                  'application': 'bg-primary',
-                  'scholarship': 'bg-success',
-                  'user': 'bg-secondary',
-                  'gwa': 'bg-warning text-dark',
-                  'document': 'bg-dark',
-                  'system': 'bg-danger',
-                } %}
-                <span class="badge {{ cat_colors.get(log.category, 'bg-secondary') }}">
-                  {{ log.category or '—' }}
-                </span>
+              <td class="ad-a-event" data-label="Event">
+                <div class="ad-a-event-head">
+                  <span class="ad-pill is-mute">{{ log.category or '—' }}</span>
+                  <span class="ad-a-action">{{ log.action }}</span>
+                </div>
+                <p class="ad-a-desc">{{ log.description or '—' }}</p>
               </td>
-              <td><code class="small">{{ log.action }}</code></td>
-              <td class="text-muted">{{ log.description or '—' }}</td>
-              <td class="text-muted small">{{ log.ip_address or '—' }}</td>
+              <td class="ad-a-ip" data-label="IP">{{ log.ip_address or '—' }}</td>
             </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
 
-      <!-- Pagination -->
       {% if logs.pages > 1 %}
-      <div class="d-flex justify-content-between align-items-center px-4 py-3 border-top">
-        <small class="text-muted">
+      <div class="ad-pager">
+        <span class="ad-pager-count">
           Showing {{ ((logs.page-1)*logs.per_page)+1 }}–{{ [logs.page*logs.per_page, logs.total]|min }}
           of {{ logs.total }} entries
-        </small>
-        <nav>
+        </span>
+        <nav aria-label="Audit log pages">
           <ul class="pagination pagination-sm mb-0">
             {% if logs.has_prev %}
             <li class="page-item">
-              <a class="page-link" href="{{ url_for('admin.audit_log', page=logs.prev_num, category=category, q=q) }}">
-                &laquo; Prev
-              </a>
+              <a class="page-link" href="{{ url_for('admin.audit_log', page=logs.prev_num, category=category, role=role_filter, q=q) }}"
+                 aria-label="Previous page">&laquo; Prev</a>
             </li>
             {% endif %}
             {% for p in logs.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
               {% if p %}
               <li class="page-item {% if p==logs.page %}active{% endif %}">
-                <a class="page-link" href="{{ url_for('admin.audit_log', page=p, category=category, q=q) }}">{{ p }}</a>
+                <a class="page-link" href="{{ url_for('admin.audit_log', page=p, category=category, role=role_filter, q=q) }}"
+                   {% if p==logs.page %}aria-current="page"{% endif %}>{{ p }}</a>
               </li>
               {% else %}
               <li class="page-item disabled"><span class="page-link">…</span></li>
@@ -173,9 +186,8 @@
             {% endfor %}
             {% if logs.has_next %}
             <li class="page-item">
-              <a class="page-link" href="{{ url_for('admin.audit_log', page=logs.next_num, category=category, q=q) }}">
-                Next &raquo;
-              </a>
+              <a class="page-link" href="{{ url_for('admin.audit_log', page=logs.next_num, category=category, role=role_filter, q=q) }}"
+                 aria-label="Next page">Next &raquo;</a>
             </li>
             {% endif %}
           </ul>
@@ -184,13 +196,18 @@
       {% endif %}
 
       {% else %}
-      <div class="text-center py-5 text-muted">
-        <i class="bi bi-journal-text display-4"></i>
-        <p class="mt-3">No audit log entries found{% if q or category %} matching the current filters{% endif %}.</p>
+      <div class="ad-empty">
+        <i class="bi bi-journal-text" aria-hidden="true"></i>
+        <h2>No entries match</h2>
+        <p>{% if q or category or role_filter %}Nothing in the trail matches these filters.{% else %}Nothing has been recorded yet.{% endif %}</p>
+        {% if q or category or role_filter %}
+        <a href="{{ url_for('admin.audit_log') }}" class="btn ad-ghost-btn">
+          <i class="bi bi-x-circle" aria-hidden="true"></i> Clear filters
+        </a>
+        {% endif %}
       </div>
       {% endif %}
-    </div>
+    </section>
   </div>
-
 </div>
 {% endblock %}

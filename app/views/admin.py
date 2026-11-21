@@ -3344,10 +3344,11 @@ def audit_log():
     if campus_ctx:
         query = query.join(User, AuditLog.user_id == User.id, isouter=True).filter(
             db.or_(User.campus_id == campus_ctx, User.campus_id.is_(None)))
+    # filter_by() would land on the joined User entity, so name the columns
     if category:
-        query = query.filter_by(category=category)
+        query = query.filter(AuditLog.category == category)
     if role:
-        query = query.filter_by(user_role=role)
+        query = query.filter(AuditLog.user_role == role)
     if q:
         query = query.filter(
             db.or_(
@@ -3362,13 +3363,32 @@ def audit_log():
     categories = ['auth', 'application', 'scholarship', 'user', 'gwa', 'document', 'system']
     roles      = ['super_admin', 'admin', 'staff', 'student']
 
+    # board figures — the same campus + filter scope as the table below.
+    # Rows store UTC; this page reads on the campus clock (PHT, UTC+8), so the
+    # day boundary and the "latest" figure are shifted to match the rows.
+    pht          = timedelta(hours=8)
+    midnight_utc = (datetime.utcnow() + pht).replace(hour=0, minute=0, second=0, microsecond=0) - pht
+    latest       = query.order_by(AuditLog.timestamp.desc()).first()
+    stats        = {
+        'total':     logs.total,
+        'today':     query.filter(AuditLog.timestamp >= midnight_utc).count(),
+        'admins':    query.filter(AuditLog.user_role.in_(("admin", "super_admin"))).count(),
+        'latest_at': (latest.timestamp + pht) if latest else None,
+    }
+
+    for log in logs.items:
+        log.timestamp_pht = log.timestamp + pht
+
     return render_template(
         'admin/audit_log.html',
         logs=logs,
+        stats=stats,
         categories=categories,
         roles=roles,
         category=category,
-        role=role,
+        # base.html sets a template-level `role` from the session, which would
+        # shadow the filter; hand it over under its own name
+        role_filter=role,
         q=q,
     )
 
@@ -3434,7 +3454,8 @@ def export_audit_log():
 
         # Data rows
         for ri, log in enumerate(logs, start=3):
-            ws.cell(row=ri, column=1, value=log.timestamp.strftime('%Y-%m-%d %H:%M:%S') if log.timestamp else '')
+            # exported on the campus clock (PHT, UTC+8), same as the page
+            ws.cell(row=ri, column=1, value=(log.timestamp + timedelta(hours=8)).strftime('%Y-%m-%d %H:%M:%S') if log.timestamp else '')
             ws.cell(row=ri, column=2, value=log.user_name or '')
             ws.cell(row=ri, column=3, value=(log.user_role or '').title())
             ws.cell(row=ri, column=4, value=(log.category or '').title())
@@ -3490,7 +3511,7 @@ def export_audit_log():
 
     for log in logs:
         table_data.append([
-            Paragraph(log.timestamp.strftime('%Y-%m-%d\n%H:%M:%S') if log.timestamp else '', cell_style),
+            Paragraph((log.timestamp + timedelta(hours=8)).strftime('%Y-%m-%d\n%H:%M:%S') if log.timestamp else '', cell_style),
             Paragraph(log.user_name or '', cell_style),
             Paragraph((log.user_role or '').title(), cell_style),
             Paragraph((log.category or '').title(), cell_style),
