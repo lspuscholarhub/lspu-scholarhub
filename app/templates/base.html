@@ -615,7 +615,13 @@
 document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('form').forEach(function(form) {
     form.addEventListener('submit', function(event) {
-      var btn = form.querySelector('button[type="submit"]');
+      // The button that sent this form: the one that was clicked when the
+      // browser names it, otherwise the first submit button (Enter in a
+      // text field). Only that button may be disabled, or the spinner
+      // appears on a decision the reviewer did not pick.
+      var btn = (event.submitter && event.submitter.tagName === 'BUTTON')
+        ? event.submitter
+        : form.querySelector('button[type="submit"]');
       if (btn && !btn.classList.contains('no-spinner')) {
         // Disabling the button that submitted the form drops its name/value
         // from the request in Chromium, and the review and batch forms say

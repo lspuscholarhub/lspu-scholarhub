@@ -299,35 +299,30 @@
         {% endif %}
       </div>
       <div class="modal-footer flex-column align-items-stretch gap-2">
-        {# One plain form per decision: the action is fixed in the form itself, so
-           Chromium cannot drop the clicked button's name and value, and both
-           buttons still submit with JavaScript unavailable. #}
-        {% for decision in [
-            {'key': 'reject', 'label': 'Reject', 'btn': 'btn-danger',
-             'ph': 'Reason for rejection (optional)'},
-            {'key': 'approve', 'label': 'Approve', 'btn': 'btn-success',
-             'ph': 'Approval note (optional)'},
-        ] %}
+        {# One form for both decisions: base.html echoes the clicked button's
+           name and value into a hidden field before disabling it, so the
+           action still arrives with JavaScript, and native submit buttons
+           carry it with JavaScript unavailable. #}
         <form method="POST" action="{{ url_for('admin.review_application', app_id=app.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-          <input type="hidden" name="action" value="{{ decision.key }}">
           <input type="text" class="form-control form-control-sm mb-2" name="review_notes"
-                 placeholder="{{ decision.ph }}" aria-label="{{ decision.label }} notes">
-          <div class="d-flex gap-2 align-items-center">
+                 placeholder="Review notes (optional)" aria-label="Review notes">
+          <div class="d-flex flex-wrap gap-2 align-items-center">
             <!-- Leaving the tag alone approves as Good Standing and leaves a
                  rejected scholar's standing untouched. -->
             <select class="form-select form-select-sm" name="tag"
-                    style="flex:1 1 auto;min-width:0;" aria-label="Scholar tag">
+                    style="flex:1 1 160px;min-width:0;" aria-label="Scholar tag">
               <option value="" selected>Tag: leave unchanged</option>
               {% for option in scholar_tags %}
               <option value="{{ option }}">Tag: {{ option|replace('_', ' ')|title }}</option>
               {% endfor %}
             </select>
-            <button type="submit" class="btn btn-sm {{ decision.btn }}"
-                    style="flex:0 0 auto;">{{ decision.label }}</button>
+            <button type="submit" name="action" value="reject"
+                    class="btn btn-sm btn-danger">Reject</button>
+            <button type="submit" name="action" value="approve"
+                    class="btn btn-sm btn-success">Approve</button>
           </div>
         </form>
-        {% endfor %}
         <div class="d-flex justify-content-end">
           <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
         </div>
