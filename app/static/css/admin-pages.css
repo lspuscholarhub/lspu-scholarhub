@@ -458,6 +458,9 @@
 
   .ad-toolbar-acts { width: 100%; margin-left: 0; }
   .ad-toolbar-acts .btn { flex: 1 1 0; justify-content: center; }
+  /* a toolbar button that submits a form shares the row with the plain ones */
+  .ad-toolbar-acts form { flex: 1 1 auto; }
+  .ad-toolbar-acts form .btn { width: 100%; justify-content: center; }
 
   .ad-filter-row--accounts { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .ad-filter-row--accounts .ad-field:nth-child(1) { grid-column: 1 / -1; }
@@ -529,7 +532,7 @@
 /* When reuses .ad-who (date over time) and the action line reuses the pill
    tones, so only the event block and the pager need their own shape */
 .ad-a-event-head { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem; }
-.ad-a-action { font-size: .8rem; font-weight: 700; color: #0f2a4d; }
+.ad-a-action { font-weight: 700; color: #0f2a4d; }
 .ad-a-desc { margin: .2rem 0 0; font-size: .76rem; color: #5b6878; overflow-wrap: anywhere; }
 .ad-a-who .ad-pill { margin-top: .3rem; }
 .ad-table--audit tbody td.ad-a-when { white-space: nowrap; }
@@ -564,9 +567,6 @@
     grid-area: 3 / 1 / 4 / 3; display: flex; flex-wrap: wrap; align-items: center; gap: .35rem;
   }
   .table-responsive .table.ad-table--audit tbody td.ad-a-who .ad-pill { margin-top: 0; }
-
-  .ad-toolbar-acts form { flex: 1 1 auto; }
-  .ad-toolbar-acts form .btn { width: 100%; justify-content: center; }
 
   .ad-pager { flex-direction: column; align-items: stretch; }
   .ad-pager-count { text-align: center; }

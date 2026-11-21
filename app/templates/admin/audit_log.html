@@ -12,6 +12,8 @@
                     'admin': ('is-info', 'Admin'),
                     'staff': ('is-approved', 'Staff'),
                     'student': ('is-mute', 'Student')} %}
+{% set is_filtered = q or category or role_filter %}
+{% set entry_word = 'entry' if stats.total == 1 else 'entries' %}
 
 <div class="ad-page">
   <header class="ad-board">
@@ -20,8 +22,8 @@
       <h1 class="ad-title">System audit trail</h1>
       <p class="ad-sub">
         <b>{{ campus_name or 'All Campuses' }}</b>
-        &middot; {{ "{:,.0f}".format(stats.total) }} entr{{ 'y' if stats.total == 1 else 'ies' }}
-        {%- if q or category or role_filter %} &middot; filtered{% endif %}
+        &middot; {{ "{:,.0f}".format(stats.total) }} {{ entry_word }}
+        {%- if is_filtered %} &middot; filtered{% endif %}
       </p>
       <div class="ad-kpis">
         <div class="ad-kpi">
@@ -87,7 +89,7 @@
       <div class="ad-panel-toolbar">
         <h2 id="ad-audit-title" class="ad-panel-title">Log entries</h2>
         <span class="ad-panel-count">
-          {{ "{:,.0f}".format(stats.total) }} entr{{ 'y' if stats.total == 1 else 'ies' }}
+          {{ "{:,.0f}".format(stats.total) }} {{ entry_word }}
           {%- if logs.pages > 1 %} &middot; page {{ logs.page }} of {{ logs.pages }}{% endif %}
         </span>
         <div class="ad-toolbar-acts">
@@ -199,8 +201,8 @@
       <div class="ad-empty">
         <i class="bi bi-journal-text" aria-hidden="true"></i>
         <h2>No entries match</h2>
-        <p>{% if q or category or role_filter %}Nothing in the trail matches these filters.{% else %}Nothing has been recorded yet.{% endif %}</p>
-        {% if q or category or role_filter %}
+        <p>{% if is_filtered %}Nothing in the trail matches these filters.{% else %}Nothing has been recorded yet.{% endif %}</p>
+        {% if is_filtered %}
         <a href="{{ url_for('admin.audit_log') }}" class="btn ad-ghost-btn">
           <i class="bi bi-x-circle" aria-hidden="true"></i> Clear filters
         </a>
