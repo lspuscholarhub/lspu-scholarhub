@@ -94,6 +94,7 @@ def set_period_context(period_id):
 @staff_bp.route('/')
 @role_required('staff')
 def dashboard():
+    from app.services.batch_service import campus_batch_filter
     from app.models import AcademicPeriod, ScholarshipBatch
 
     # ── Campus scoping: staff see their assigned campuses ──────────────────
@@ -180,13 +181,13 @@ def dashboard():
         db.func.coalesce(db.func.sum(ScholarshipBatch.total_amount), 0)
     )
     if campus_ctx:
-        _funds_q = _funds_q.filter(ScholarshipBatch.campus_id == campus_ctx)
+        _funds_q = campus_batch_filter(_funds_q, campus_ctx)
     if effective_pid:
         _funds_q = _funds_q.filter(ScholarshipBatch.academic_period_id == effective_pid)
     total_funds     = _funds_q.scalar() or 0
     _batches_q = ScholarshipBatch.query.filter_by(status='open')
     if campus_ctx:
-        _batches_q = _batches_q.filter(ScholarshipBatch.campus_id == campus_ctx)
+        _batches_q = campus_batch_filter(_batches_q, campus_ctx)
     if effective_pid:
         _batches_q = _batches_q.filter(ScholarshipBatch.academic_period_id == effective_pid)
     active_batches  = _batches_q.count()

@@ -111,6 +111,7 @@ def _scholarship_campus_guard(scholarship):
 @admin_bp.route('/')
 @role_required('admin')
 def dashboard():
+    from app.services.batch_service import campus_batch_filter
     from app.models import AcademicPeriod, ScholarshipBatch
 
     # ── Strict campus scoping ──────────────────────────────────────────────
@@ -231,7 +232,7 @@ def dashboard():
         db.func.coalesce(db.func.sum(ScholarshipBatch.total_amount), 0)
     )
     if campus_ctx:
-        _funds_q = _funds_q.filter(ScholarshipBatch.campus_id == campus_ctx)
+        _funds_q = campus_batch_filter(_funds_q, campus_ctx)
     if effective_pid:
         _funds_q = _funds_q.filter(ScholarshipBatch.academic_period_id == effective_pid)
     total_funds = _funds_q.scalar() or 0
@@ -250,7 +251,7 @@ def dashboard():
     # Active batches — scoped by campus AND period
     active_batches_q = ScholarshipBatch.query.filter_by(status='open')
     if campus_ctx:
-        active_batches_q = active_batches_q.filter(ScholarshipBatch.campus_id == campus_ctx)
+        active_batches_q = campus_batch_filter(active_batches_q, campus_ctx)
     if effective_pid:
         active_batches_q = active_batches_q.filter(ScholarshipBatch.academic_period_id == effective_pid)
     active_batches = active_batches_q.count()
