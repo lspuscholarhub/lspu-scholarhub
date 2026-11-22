@@ -780,6 +780,7 @@ def review_application(app_id):
     if decision_tag:
         application.scholar_status = decision_tag
 
+    batch = None
     if action == 'approve':
         application.approved_at    = datetime.utcnow()
         application.is_active      = True
@@ -812,6 +813,9 @@ def review_application(app_id):
     )
 
     flash(f'Application #{app_id} has been {new_status.value.replace("_", " ")}.', 'success')
+    if action == 'approve' and batch is None:
+        flash(f'{applicant.get_full_name()} is approved but not in a batch — '
+              f'assign them from the Batches page.', 'warning')
     return redirect(url_for('admin.manage_applications'))
 
 
@@ -864,9 +868,10 @@ def batch_review():
 
     # Auto-assign approved applications to batches
     batch_info = ''
+    unbatched = []
     if approved_apps:
         from app.services.batch_service import auto_assign_multiple
-        batch_results = auto_assign_multiple(approved_apps)
+        batch_results, unbatched = auto_assign_multiple(approved_apps)
         if batch_results:
             batch_info = ' Batches: ' + ', '.join(f'{k} → {v}' for k, v in batch_results.items())
 
@@ -892,11 +897,18 @@ def batch_review():
     log_action('application.batch_' + action,
                f'Admin {session.get("username")} batch-{action}d {processed} application(s). '
                f'IDs: {", ".join(app_ids[:10])}{"…" if len(app_ids) > 10 else ""}. '
-               f'Notes: {notes}',
+               f'Notes: {notes}'
+               + (f' {len(unbatched)} left unbatched.' if unbatched else ''),
                category='application')
     flash(f'{processed} application(s) {new_status.value.replace("_", " ")}.{batch_info}'
           + (f' {skipped_public} skipped — student already holds a public scholarship.' if skipped_public else ''),
           'success' if not skipped_public else 'warning')
+    if unbatched:
+        names = ', '.join(a.applicant.get_full_name() for a in unbatched[:3])
+        if len(unbatched) > 3:
+            names += f' and {len(unbatched) - 3} more'
+        flash(f'{len(unbatched)} approved scholar(s) are not in a batch — '
+              f'assign them from the Batches page: {names}.', 'warning')
     return redirect(url_for('admin.manage_applications'))
 
 
@@ -3734,9 +3746,25 @@ def manage_batches():
 
     batches = query.order_by(ScholarshipBatch.scholarship_id, ScholarshipBatch.batch_number).all()
 
+    # An approval whose auto-batching failed stays approved with no batch; list
+    # those here so the office sees the scholar instead of losing them.
+    unbatched_q = ScholarshipApplication.query.filter(
+        ScholarshipApplication.status == ApplicationStatus.APPROVED,
+        ScholarshipApplication.batch_id.is_(None))
+    if campus_ctx:
+        unbatched_q = unbatched_q.filter(ScholarshipApplication.campus_id == campus_ctx)
+    if scholarship_id:
+        unbatched_q = unbatched_q.filter_by(scholarship_id=int(scholarship_id))
+    if current_period:
+        unbatched_q = unbatched_q.filter(db.or_(
+            ScholarshipApplication.academic_period_id == current_period.id,
+            ScholarshipApplication.academic_period_id.is_(None)))
+    unbatched = unbatched_q.order_by(ScholarshipApplication.id).all()
+
     return render_template(
         'admin/batches.html',
         batches=batches,
+        unbatched=unbatched,
         scholarships=scholarships,
         periods=periods,
         current_period=current_period,
@@ -3784,6 +3812,7 @@ def create_batch():
             batch_name=batch_name,
             batch_number=batch_number,
             amount_per_scholar=max(0, float(amount)) if amount else None,
+            campus_id=_s.campus_id,
             created_by=session['user_id'],
         )
         db.session.add(batch)
@@ -3841,25 +3870,25 @@ def assign_to_batch(batch_id):
         flash('No applications selected.', 'error')
         return redirect(url_for('admin.manage_batches', scholarship_id=batch.scholarship_id))
 
-    assigned = 0
-    for app_id in app_ids:
-        app = ScholarshipApplication.query.get(int(app_id))
-        if app and app.status == ApplicationStatus.APPROVED:
-            app.batch_id = batch_id
-            app.amount_received = batch.amount_per_scholar
-            assigned += 1
-
-    # Recalculate batch totals
-    batch.recalculate_totals()
+    from app.services.batch_service import assign_applications_to_batch, batch_campus
+    assigned, skipped = assign_applications_to_batch(batch, app_ids)
     db.session.commit()
 
     from app.services.audit_service import log_action
     log_action('batch.assign',
-               f'Admin {session.get("username")} assigned {assigned} scholar(s) to '
-               f'"{batch.batch_name}" ({batch.scholarship.title}).',
+               f'Admin {session.get("username")} assigned {len(assigned)} scholar(s) to '
+               f'"{batch.batch_name}" ({batch.scholarship.title}).'
+               + (f' Skipped {len(skipped)}: '
+                  + ', '.join(f'#{a} ({why})' for a, why in skipped) + '.'
+                  if skipped else ''),
                category='scholarship', target_type='scholarship', target_id=batch.scholarship_id)
 
-    flash(f'{assigned} scholar(s) assigned to "{batch.batch_name}".', 'success')
+    if assigned:
+        flash(f'{len(assigned)} scholar(s) assigned to "{batch.batch_name}".', 'success')
+    if skipped:
+        flash(f'{len(skipped)} application(s) were not assigned — they are not approved '
+              f'applications for "{batch.scholarship.title}"'
+              + (' on this campus' if batch_campus(batch) else '') + '.', 'error')
     return redirect(url_for('admin.manage_batches', scholarship_id=batch.scholarship_id))
 
 

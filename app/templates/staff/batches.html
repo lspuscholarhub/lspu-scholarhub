@@ -55,6 +55,29 @@
       <span aria-hidden="true">&middot;</span> <span class="is-here">Batch Management</span>
     </p>
 
+    {% if unbatched %}
+    <section class="ad-panel ad-panel--alert" aria-labelledby="unbatched-title">
+      <div class="ad-panel-toolbar">
+        <h2 id="unbatched-title" class="ad-panel-title">
+          <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>
+          {{ unbatched|length }} approved scholar{{ '' if unbatched|length == 1 else 's' }} not in a batch
+        </h2>
+        <span class="ad-panel-count">Open a batch and use Assign scholars</span>
+      </div>
+      <ul class="ad-alerts">
+        {% for app in unbatched %}
+        <li class="ad-alert">
+          <div class="ad-alert-main">
+            <div class="ad-who">{{ app.applicant.get_full_name() }}<span>{{ app.applicant.student_id or '—' }}</span></div>
+            <div class="ad-alert-due">{{ app.scholarship.title }}</div>
+          </div>
+          <span class="ad-pill is-pending">Unbatched</span>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+
     <form method="GET" class="ad-filter auto-filter" role="search">
       <div class="ad-filter-row ad-filter-row--batches">
         <div class="ad-field">
