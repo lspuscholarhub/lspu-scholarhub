@@ -723,3 +723,82 @@
 .ad-ghost-btn.is-block { width: 100%; justify-content: center; margin-left: 0; }
 .ad-go.is-danger { color: #b02a37; }
 .ad-go.is-danger:hover { color: #8e1c26; }
+
+/* ── reports board ────────────────────────────────────────────────────────── */
+.ad-chart { position: relative; height: 230px; }
+.ad-chart > canvas { width: 100% !important; height: 100% !important; }
+.ad-chart--short { height: 190px; }
+.ad-chart--tall  { height: 270px; }
+.ad-figure-cap { margin: .55rem 0 0; font-size: .74rem; color: #8494a8; text-align: center; }
+
+/* the written report reads as prose, not as another ledger */
+.ad-prose { margin: 0 0 .65rem; font-size: .84rem; line-height: 1.68; color: #41556f; }
+.ad-prose:last-child { margin-bottom: 0; }
+.ad-prose-head {
+  margin: 1.05rem 0 .3rem; font-size: .6rem; font-weight: 800; letter-spacing: .11em;
+  text-transform: uppercase; color: #8494a8;
+}
+.ad-prose-head:first-child { margin-top: 0; }
+
+/* export controls: four fields and their button share a row when there is room */
+.ad-filter-row--export { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 768px) {
+  .ad-filter-row--export { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+}
+@media (min-width: 1100px) {
+  .ad-filter-row--export { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr) auto; }
+}
+.ad-quick-exports { display: flex; flex-wrap: wrap; gap: .4rem; }
+.ad-quick-exports .dropdown-menu { font-size: .8rem; }
+
+/* report tables: figures line up, the name column may wrap */
+.ad-table--reports { font-variant-numeric: tabular-nums; }
+.ad-table--reports tbody td, .ad-table--reports thead th { white-space: nowrap; }
+.ad-table--reports tbody td.ad-r-name { white-space: normal; min-width: 13rem; }
+.ad-table--reports tbody td.ad-r-num { text-align: right; }
+.ad-table--report-years tbody td { text-align: center; white-space: nowrap; }
+.ad-table--report-years tbody td.ad-r-name { text-align: left; }
+
+@media (max-width: 767.98px) {
+  /* the multi-year matrix is a small grid: keep its real columns, it fits */
+  .table-responsive .table.ad-table--report-years thead { display: table-header-group; }
+  .table-responsive .table.ad-table--report-years { display: table; width: 100%; }
+  .table-responsive .table.ad-table--report-years tbody { display: table-row-group; }
+  .table-responsive .table.ad-table--report-years tbody tr {
+    display: table-row; padding: 0; margin: 0; border: 0;
+    border-bottom: 1px solid #f1f4f9; border-radius: 0; background: #fff;
+  }
+  .table-responsive .table.ad-table--report-years tbody td {
+    display: table-cell; padding: .5rem .6rem; border: 0;
+    border-bottom: 1px solid #f1f4f9; font-size: .74rem; white-space: nowrap;
+  }
+
+  /* the per-scholarship ledger has nine counts, too many to swipe through:
+     each row becomes one card with every figure labelled in a 3-across grid */
+  .table-responsive .table.ad-table--reports thead { display: none; }
+  .table-responsive .table.ad-table--reports,
+  .table-responsive .table.ad-table--reports tbody { display: block; }
+  .table-responsive .table.ad-table--reports tbody tr {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: .5rem .55rem; padding: .8rem; margin: 0; border: 0;
+    border-bottom: 1px solid #eef2f7; border-radius: 0; background: #fff;
+  }
+  .table-responsive .table.ad-table--reports tbody tr:last-child { border-bottom: 0; }
+  .table-responsive .table.ad-table--reports tbody td {
+    display: block; padding: 0; border: 0;
+    text-align: left; font-size: .84rem; white-space: normal;
+  }
+  .table-responsive .table.ad-table--reports tbody td[data-label]::before {
+    content: attr(data-label); display: block; margin-bottom: .1rem;
+    font-size: .55rem; font-weight: 700; letter-spacing: .09em;
+    text-transform: uppercase; color: #8494a8;
+  }
+  .table-responsive .table.ad-table--reports tbody td.ad-r-name { grid-column: 1 / -1; }
+  .table-responsive .table.ad-table--reports tbody td.ad-r-name::before { content: none; }
+  .table-responsive .table.ad-table--reports tbody td.ad-r-fill { grid-column: 1 / 2; }
+  .table-responsive .table.ad-table--reports tbody td.ad-r-acts { grid-column: 2 / -1; }
+  .table-responsive .table.ad-table--reports tbody td.ad-r-acts .dropdown { width: 100%; }
+  .table-responsive .table.ad-table--reports tbody td.ad-r-acts .btn {
+    width: 100%; justify-content: center;
+  }
+}
