@@ -919,3 +919,55 @@
   .table-responsive .table.ad-table--notes tbody td.ad-n-when { grid-area: 3 / 2 / 4 / 3; justify-self: end; }
   .ad-notif-scroll { max-height: 210px; }
 }
+
+/* ── bulk import ──────────────────────────────────────────────────────────── */
+.ad-drop {
+  padding: 1.9rem 1rem; text-align: center; cursor: pointer;
+  border: 1.5px dashed #c6d5e6; border-radius: 12px; background: #f8f9ff;
+}
+.ad-drop > i { display: block; margin-bottom: .5rem; font-size: 2rem; color: #0b7d72; }
+.ad-drop-title { margin: 0; font-size: .88rem; font-weight: 700; color: #0f2a4d; }
+.ad-drop-sub { margin: .15rem 0 .8rem; font-size: .76rem; color: #8494a8; }
+.ad-drop-file { margin: .7rem 0 0; font-size: .78rem; font-weight: 700; color: #0f7a4f; }
+.ad-drop-go { width: 100%; margin-top: .85rem; justify-content: center; }
+.ad-steps { margin: 0; padding-left: 1.15rem; font-size: .8rem; color: #5b6878; }
+.ad-steps li { padding: .15rem 0; }
+
+.ad-table--cols tbody td.ad-c-col code {
+  padding: .1rem .3rem; border-radius: 5px; background: #f3f6fb;
+  font-size: .74rem; color: #0f2a4d;
+}
+.ad-table--cols tbody td.ad-c-eg { font-size: .76rem; color: #41556f; }
+
+.ad-note-title {
+  margin: 0 0 .35rem; font-size: .62rem; font-weight: 800; letter-spacing: .09em;
+  text-transform: uppercase; color: #8a5200;
+}
+.ad-note-list { margin: 0; padding-left: 1.05rem; font-size: .78rem; }
+.ad-note-list li { padding: .1rem 0; }
+
+@media (max-width: 767.98px) {
+  .table-responsive .table.ad-table--cols thead { display: none; }
+  .table-responsive .table.ad-table--cols,
+  .table-responsive .table.ad-table--cols tbody { display: block; }
+  .table-responsive .table.ad-table--cols tbody tr {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto;
+    gap: .2rem .6rem; padding: .55rem .8rem;
+    border: 0; border-bottom: 1px solid #eef2f7; background: #fff;
+  }
+  .table-responsive .table.ad-table--cols tbody tr:last-child { border-bottom: 0; }
+  .table-responsive .table.ad-table--cols tbody td {
+    display: block; padding: 0; border: 0; font-size: .8rem; white-space: normal;
+  }
+  .table-responsive .table.ad-table--cols tbody td.ad-c-col { grid-area: 1 / 1 / 2 / 2; }
+  .table-responsive .table.ad-table--cols tbody td.ad-c-req {
+    grid-area: 1 / 2 / 2 / 3; justify-self: end; align-self: start;
+  }
+  .table-responsive .table.ad-table--cols tbody td.ad-c-eg {
+    grid-area: 2 / 1 / 3 / 3; color: #8494a8;
+  }
+  .ad-drop { padding: 1.5rem .9rem; }
+}
+
+/* a split whose columns size to their own content instead of stretching */
+.ad-cols--top { align-items: start; }
