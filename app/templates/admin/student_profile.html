@@ -3,7 +3,7 @@
 
 {% block head %}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261205a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261209a" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -353,11 +353,14 @@
 </div>
 
 <!-- Upload Document Modal -->
-<div class="modal fade" id="uploadDocModal" tabindex="-1">
+<div class="modal fade ad-modal" id="uploadDocModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="bi bi-upload me-2"></i>Upload Document</h5>
+        <div>
+          <h5 class="modal-title">Upload document</h5>
+          <div class="ad-modal-sub"><span>{{ student.get_full_name() }} &middot; PDF, JPG, PNG, DOC or DOCX</span></div>
+        </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" action="{{ url_for('admin.upload_student_document', uid=student.id) }}"
@@ -387,9 +390,9 @@
                    placeholder="e.g. Semester 2 AY 2025-2026">
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">
+        <div class="modal-footer modal-footer--row">
+          <button type="button" class="btn ad-ghost-btn" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn ad-primary-btn">
             <i class="bi bi-upload me-1"></i>Upload
           </button>
         </div>
@@ -399,13 +402,14 @@
 </div>
 
 <!-- Replace COR Modal -->
-<div class="modal fade" id="replaceCorModal" tabindex="-1">
+<div class="modal fade ad-modal" id="replaceCorModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="bi bi-arrow-repeat me-2"></i>
-          {{ 'Replace' if student.cor_file_path else 'Upload' }} COR
-        </h5>
+        <div>
+          <h5 class="modal-title">{{ 'Replace' if student.cor_file_path else 'Upload' }} COR</h5>
+          <div class="ad-modal-sub"><span>Certificate of registration &middot; {{ student.get_full_name() }}</span></div>
+        </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" action="{{ url_for('admin.replace_reg_document', uid=student.id) }}"
@@ -414,7 +418,7 @@
         <input type="hidden" name="doc_type" value="cor">
         <div class="modal-body">
           {% if student.cor_file_path %}
-          <div class="alert alert-warning py-2 small">
+          <div class="ad-note">
             <i class="bi bi-exclamation-triangle me-1"></i>
             This will replace the existing COR file.
           </div>
@@ -426,9 +430,9 @@
             <div class="form-text">PDF, JPG, or PNG — max 5MB</div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-warning">
+        <div class="modal-footer modal-footer--row">
+          <button type="button" class="btn ad-ghost-btn" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn ad-primary-btn">
             <i class="bi bi-arrow-repeat me-1"></i>
             {{ 'Replace' if student.cor_file_path else 'Upload' }}
           </button>
@@ -439,13 +443,14 @@
 </div>
 
 <!-- Replace Grades Modal -->
-<div class="modal fade" id="replaceGradesModal" tabindex="-1">
+<div class="modal fade ad-modal" id="replaceGradesModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title"><i class="bi bi-arrow-repeat me-2"></i>
-          {{ 'Replace' if student.grades_file_path else 'Upload' }} Copy of Grades
-        </h5>
+        <div>
+          <h5 class="modal-title">{{ 'Replace' if student.grades_file_path else 'Upload' }} copy of grades</h5>
+          <div class="ad-modal-sub"><span>This semester's grades &middot; {{ student.get_full_name() }}</span></div>
+        </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" action="{{ url_for('admin.replace_reg_document', uid=student.id) }}"
@@ -454,7 +459,7 @@
         <input type="hidden" name="doc_type" value="grades">
         <div class="modal-body">
           {% if student.grades_file_path %}
-          <div class="alert alert-warning py-2 small">
+          <div class="ad-note">
             <i class="bi bi-exclamation-triangle me-1"></i>
             This will replace the existing grades file.
           </div>
@@ -466,9 +471,9 @@
             <div class="form-text">PDF, JPG, or PNG — max 5MB</div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-warning">
+        <div class="modal-footer modal-footer--row">
+          <button type="button" class="btn ad-ghost-btn" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn ad-primary-btn">
             <i class="bi bi-arrow-repeat me-1"></i>
             {{ 'Replace' if student.grades_file_path else 'Upload' }}
           </button>
@@ -479,11 +484,14 @@
 </div>
 
 <!-- Edit Modal -->
-<div class="modal fade" id="editModal" tabindex="-1">
+<div class="modal fade ad-modal" id="editModal" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Edit — {{ student.get_full_name() }}</h5>
+        <div>
+          <h5 class="modal-title">{{ student.get_full_name() }}</h5>
+          <div class="ad-modal-sub"><span>{{ student.student_id or student.email }}</span></div>
+        </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" action="{{ url_for('admin.edit_user', uid=student.id) }}">
@@ -531,9 +539,9 @@
             </div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Changes</button>
+        <div class="modal-footer modal-footer--row">
+          <button type="button" class="btn ad-ghost-btn" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn ad-primary-btn">Save Changes</button>
         </div>
       </form>
     </div>

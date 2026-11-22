@@ -3,7 +3,7 @@
 
 {% block head %}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261205a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261209a" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -190,10 +190,18 @@
 </div>
 
 <!-- Create Batch Modal -->
-<div class="modal fade" id="createBatchModal" tabindex="-1">
+<div class="modal fade ad-modal" id="createBatchModal" tabindex="-1">
   <div class="modal-dialog">
-    <div class="modal-content" style="border-radius:12px;">
-      <div class="modal-header"><h5 class="modal-title fw-bold">Create New Batch</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title">New batch</h5>
+          <div class="ad-modal-sub">
+            <span>Numbers itself after the next free batch if you leave the name blank</span>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
       <form method="POST" action="{{ url_for('admin.create_batch') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-body">
@@ -226,9 +234,9 @@
                    placeholder="e.g. 10000">
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Create Batch</button>
+        <div class="modal-footer modal-footer--row">
+          <button type="button" class="btn ad-ghost-btn" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn ad-primary-btn">Create Batch</button>
         </div>
       </form>
     </div>
@@ -238,10 +246,19 @@
 <!-- Edit & Assign Modals (one per batch) -->
 {% for batch in batches %}
 <!-- Edit Modal -->
-<div class="modal fade" id="editBatch{{ batch.id }}" tabindex="-1">
+<div class="modal fade ad-modal" id="editBatch{{ batch.id }}" tabindex="-1">
   <div class="modal-dialog">
-    <div class="modal-content" style="border-radius:12px;">
-      <div class="modal-header"><h5 class="modal-title fw-bold">Edit — {{ batch.batch_name }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title">{{ batch.batch_name }}</h5>
+          <div class="ad-modal-sub">
+            <span>{{ batch.scholarship.title }}</span>
+            <span class="ad-pill {% if batch.status == 'open' %}is-info{% elif batch.status == 'closed' %}is-mute{% else %}is-approved{% endif %}">{{ batch.status|title }}</span>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
       <form method="POST" action="{{ url_for('admin.edit_batch', batch_id=batch.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-body">
@@ -267,9 +284,9 @@
             <textarea class="form-control" name="notes" rows="2">{{ batch.notes or '' }}</textarea>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Changes</button>
+        <div class="modal-footer modal-footer--row">
+          <button type="button" class="btn ad-ghost-btn" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn ad-primary-btn">Save Changes</button>
         </div>
       </form>
     </div>
@@ -277,10 +294,16 @@
 </div>
 
 <!-- Assign Scholars Modal -->
-<div class="modal fade" id="assignBatch{{ batch.id }}" tabindex="-1">
+<div class="modal fade ad-modal" id="assignBatch{{ batch.id }}" tabindex="-1">
   <div class="modal-dialog modal-lg">
-    <div class="modal-content" style="border-radius:12px;">
-      <div class="modal-header"><h5 class="modal-title fw-bold">Assign Scholars — {{ batch.batch_name }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title">Assign scholars</h5>
+          <div class="ad-modal-sub"><span>{{ batch.batch_name }} &middot; {{ batch.scholarship.title }}</span></div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
       <form method="POST" action="{{ url_for('admin.assign_to_batch', batch_id=batch.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-body">
@@ -318,10 +341,10 @@
           </div>
           {% endif %}
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <div class="modal-footer modal-footer--row">
+          <button type="button" class="btn ad-ghost-btn" data-bs-dismiss="modal">Cancel</button>
           {% if unassigned %}
-          <button type="submit" class="btn btn-success">Assign Selected</button>
+          <button type="submit" class="btn ad-primary-btn">Assign Selected</button>
           {% endif %}
         </div>
       </form>

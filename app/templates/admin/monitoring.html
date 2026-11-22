@@ -3,7 +3,7 @@
 
 {% block head %}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261205a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261209a" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -217,48 +217,50 @@
 <!-- Update Modals -->
 {% for app in scholars %}
 {% set student = app.applicant %}
-<div class="modal fade" id="updateModal{{ app.id }}" tabindex="-1">
+{% set st = standing.get(app.scholar_status, ('is-mute', app.scholar_status|replace('_', ' ')|title or '—')) %}
+<div class="modal fade ad-modal" id="updateModal{{ app.id }}" tabindex="-1">
   <div class="modal-dialog modal-lg">
-    <div class="modal-content" style="border-radius:12px;">
+    <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title fw-bold">Update Scholar — {{ student.get_full_name() }}</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
-        <div class="row g-3 mb-3">
-          <div class="col-md-6">
-            <p class="mb-1"><strong>Student ID:</strong> {{ student.student_id or '—' }}</p>
-            <p class="mb-1"><strong>Course:</strong> {{ student.course or '—' }}</p>
-            <p class="mb-1"><strong>Year:</strong> {{ student.year_level or '—' }}</p>
-            <p class="mb-0"><strong>Scholarship:</strong> {{ app.scholarship.title }}</p>
-          </div>
-          <div class="col-md-6">
-            <p class="mb-1"><strong>Current GWA:</strong> {{ student.gwa or 'Not set' }}</p>
-            <p class="mb-0"><strong>Scholar Status:</strong> {{ app.scholar_status or '—' }}</p>
+        <div>
+          <h5 class="modal-title">{{ student.get_full_name() }}</h5>
+          <div class="ad-modal-sub">
+            <span>{{ student.student_id or student.email }}{% if student.course %} &middot; {{ student.course }}{% endif %}</span>
+            <span class="ad-pill {{ st[0] }}">{{ st[1] }}</span>
           </div>
         </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <dl class="ad-ledger">
+          <div><dt>Student ID</dt><dd>{{ student.student_id or '—' }}</dd></div>
+          <div><dt>Course</dt><dd>{{ student.course or '—' }}</dd></div>
+          <div><dt>Year</dt><dd>{{ student.year_level or '—' }}</dd></div>
+          <div><dt>Scholarship</dt><dd>{{ app.scholarship.title }}</dd></div>
+          <div><dt>Current GWA</dt><dd>{{ student.gwa or 'Not set' }}</dd></div>
+        </dl>
 
         <!-- Update GWA -->
-        <div class="card border-0 bg-light mb-3" style="border-radius:10px;">
+        <div class="ad-sheet-box mb-3">
           <div class="card-body">
-            <h6 class="fw-bold mb-3"><i class="bi bi-graph-up me-2 text-primary"></i>Update GWA</h6>
+            <h6 class="ad-section-title">Update GWA</h6>
             <form method="POST" action="{{ url_for('admin.update_scholar_gwa', app_id=app.id) }}" class="d-flex gap-2 align-items-end">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <div class="flex-grow-1">
                 <label class="form-label small fw-semibold">New GWA (1.00–5.00)</label>
                 <input type="number" step="0.01" min="1.00" max="5.00" class="form-control"
                        name="gwa" value="{{ student.gwa or '' }}" placeholder="e.g. 1.75" required>
-                <div class="form-text">Scholar status auto-updates based on GWA.</div>
               </div>
-              <button type="submit" class="btn btn-primary">Update GWA</button>
+              <button type="submit" class="btn ad-primary-btn">Update GWA</button>
             </form>
+            <div class="form-text mt-2">Scholar status auto-updates based on GWA.</div>
           </div>
         </div>
 
         <!-- Manual status override -->
-        <div class="card border-0 bg-light" style="border-radius:10px;">
+        <div class="ad-sheet-box">
           <div class="card-body">
-            <h6 class="fw-bold mb-3"><i class="bi bi-shield-check me-2 text-warning"></i>Manual Status Override</h6>
+            <h6 class="ad-section-title">Manual status override</h6>
             <form method="POST" action="{{ url_for('admin.update_scholar_status', app_id=app.id) }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <div class="row g-3">
@@ -276,8 +278,8 @@
                 </div>
               </div>
               <div class="mt-3 d-flex justify-content-end gap-2">
-                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
-                <button type="submit" class="btn btn-warning btn-sm fw-semibold">Save Status</button>
+                <button type="button" class="btn ad-ghost-btn btn-sm" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn ad-primary-btn btn-sm">Save Status</button>
               </div>
             </form>
           </div>
