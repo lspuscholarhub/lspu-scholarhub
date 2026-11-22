@@ -1,438 +1,321 @@
 {% extends "base.html" %}
 {% block title %}{{ student.get_full_name() }} - Staff{% endblock %}
 
+{% block head %}
+<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261203a" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid py-4">
+{% set campus_name = session.get('campus_context_name') or session.get('campus_name') %}
+{% set status_word = {'graduated': 'Graduated', 'dropped_out': 'Dropped out'}.get(student.student_status, 'Active') %}
+{% if student.gwa %}
+  {% if student.gwa <= 1.25 %}{% set standing, tone = 'Excellent', 'is-approved' %}
+  {% elif student.gwa <= 1.75 %}{% set standing, tone = 'Very good', 'is-approved' %}
+  {% elif student.gwa <= 2.25 %}{% set standing, tone = 'Satisfactory', 'is-approved' %}
+  {% elif student.gwa <= 2.75 %}{% set standing, tone = 'Fair', 'is-info' %}
+  {% elif student.gwa <= 3.00 %}{% set standing, tone = 'Passed', 'is-pending' %}
+  {% elif student.gwa <= 4.00 %}{% set standing, tone = 'At risk', 'is-rejected' %}
+  {% else %}{% set standing, tone = 'Failed', 'is-rejected' %}{% endif %}
+{% else %}
+  {% set standing, tone = 'Not set', 'is-mute' %}
+{% endif %}
 
-  <nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb">
-      <li class="breadcrumb-item">
-        <a href="{{ url_for('staff.student_directory') }}">Student Directory</a>
-      </li>
-      <li class="breadcrumb-item active">{{ student.get_full_name() }}</li>
-    </ol>
-  </nav>
-
-  <div class="row g-4">
-
-    <!-- Left: Profile -->
-    <div class="col-lg-4">
-      <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body text-center py-4">
-          <div class="bg-primary bg-opacity-10 rounded-circle d-inline-flex
-                      align-items-center justify-content-center mb-3"
-               style="width:80px;height:80px;">
-            <i class="bi bi-person-fill fs-1 text-primary"></i>
-          </div>
-          <h5 class="fw-bold mb-1">{{ student.get_full_name() }}</h5>
-          {% if student.student_id %}
-          <p class="text-primary fw-semibold small mb-1">{{ student.student_id }}</p>
-          {% endif %}
-          <p class="text-muted small mb-2">{{ student.email }}</p>
-          {% if student.year_level %}
-          <span class="badge bg-secondary">{{ student.year_level }}</span>
-          {% endif %}
-          {% if student.course %}
-          <span class="badge bg-light text-dark border ms-1">{{ student.course }}</span>
-          {% endif %}
-          {% if student.is_existing_scholar %}
-          <div class="mt-2 p-2 rounded-3 w-100" style="background:#e7f3ff;border:1px solid #b6d4fe;">
-            <div class="small fw-bold" style="color:#0a58ca;">
-              <i class="bi bi-award me-1"></i>Declared Existing Scholar
-            </div>
-            <div class="small text-muted">
-              {{ student.existing_scholarship_name or 'Program not specified' }}
-            </div>
-          </div>
-          {% endif %}
-          <a href="{{ url_for('staff.add_existing_scholar', uid=student.id) }}"
-             class="btn btn-sm btn-primary mt-2 w-100">
-            <i class="bi bi-person-plus me-1"></i>Add to Program
-          </a>
-          <div class="mt-2">
-            {% if student.is_verified %}
-              <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Verified</span>
-            {% else %}
-              <span class="badge bg-warning text-dark">Unverified</span>
-            {% endif %}
-            {% if student.ocr_verified == true %}
-              <span class="badge bg-info ms-1"><i class="bi bi-robot me-1"></i>OCR Passed</span>
-            {% elif student.ocr_verified == false %}
-              <span class="badge bg-danger ms-1" title="{{ student.ocr_result }}">
-                <i class="bi bi-exclamation-triangle me-1"></i>OCR Failed
-              </span>
-            {% else %}
-              <span class="badge bg-secondary ms-1"><i class="bi bi-hourglass-split me-1"></i>OCR Pending</span>
-            {% endif %}
-          </div>
+<div class="ad-page">
+  <header class="ad-board">
+    <div class="ad-board-inner">
+      <p class="ad-kicker">Student</p>
+      <h1 class="ad-title">{{ student.get_full_name() }}</h1>
+      <p class="ad-sub">
+        <b>{{ student.student_id or 'No student ID' }}</b> &middot;
+        {{ student.year_level or 'Year not set' }} &middot;
+        {{ student.course or 'No course on record' }}
+        {%- if campus_name %} &middot; {{ campus_name }}{% endif %}
+      </p>
+      <div class="ad-kpis">
+        <div class="ad-kpi{{ ' is-ok' if student.gwa and student.gwa <= 3.00 }}{{ ' is-bad' if student.gwa and student.gwa > 3.00 }}">
+          <span class="ad-kpi-label">GWA</span>
+          <span class="ad-kpi-value">{{ student.gwa or '—' }}</span>
         </div>
-        <div class="card-footer bg-white border-top">
-          <div class="row text-center g-0">
-            <div class="col-6 border-end py-2">
-              <div class="small text-muted">Phone</div>
-              <div class="small fw-semibold">{{ student.phone_number or '—' }}</div>
-            </div>
-            <div class="col-6 py-2">
-              <div class="small text-muted">Registered</div>
-              <div class="small fw-semibold">{{ student.created_at.strftime('%b %d, %Y') }}</div>
-            </div>
-          </div>
+        <div class="ad-kpi">
+          <span class="ad-kpi-label">Units</span>
+          <span class="ad-kpi-value">{{ student.units_enrolled or '—' }}</span>
         </div>
-      </div>
-
-      <!-- Student status -->
-      <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body">
-          <h6 class="fw-bold mb-3">Student Status</h6>
-          <div class="mb-3">
-            {% if student.student_status == 'graduated' %}
-            <span class="badge bg-success"><i class="bi bi-mortarboard me-1"></i>Graduated</span>
-            {% elif student.student_status == 'dropped_out' %}
-            <span class="badge bg-danger"><i class="bi bi-exclamation-octagon me-1"></i>Dropped Out</span>
-            {% else %}
-            <span class="badge bg-secondary"><i class="bi bi-person-check me-1"></i>Active</span>
-            {% endif %}
-            {% if student.status_date %}
-            <span class="text-muted small ms-1">since {{ student.status_date.strftime('%b %d, %Y') }}</span>
-            {% endif %}
-          </div>
-          <form method="POST" action="{{ url_for('staff.set_student_status', uid=student.id) }}"
-                onsubmit="return confirm('Change the status of this student? Marking as graduated or dropped out automatically closes their active scholarships.')">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="input-group input-group-sm">
-              <select name="student_status" class="form-select">
-                <option value="active" {% if student.student_status == 'active' %}selected{% endif %}>Active</option>
-                <option value="graduated" {% if student.student_status == 'graduated' %}selected{% endif %}>Graduated</option>
-                <option value="dropped_out" {% if student.student_status == 'dropped_out' %}selected{% endif %}>Dropped Out</option>
-              </select>
-              <button class="btn btn-primary" type="submit">Update</button>
-            </div>
-          </form>
-          <div class="form-text">Graduated and dropped-out students stay in the directory and reports as historical records.</div>
+        <div class="ad-kpi">
+          <span class="ad-kpi-label">Applications</span>
+          <span class="ad-kpi-value">{{ student.applications|length }}</span>
+        </div>
+        <div class="ad-kpi">
+          <span class="ad-kpi-label">Uploaded files</span>
+          <span class="ad-kpi-value">{{ student.documents|length }}</span>
         </div>
       </div>
     </div>
+  </header>
 
-    <!-- Right: GWA + Documents -->
-    <div class="col-lg-8">
+  <div class="ad-body">
+    <p class="ad-crumbs">
+      <a href="{{ url_for('staff.dashboard') }}">Dashboard</a>
+      <span aria-hidden="true">&middot;</span>
+      <a href="{{ url_for('staff.student_directory') }}">Student directory</a>
+      <span aria-hidden="true">&middot;</span> <span class="is-here">{{ student.get_full_name() }}</span>
+    </p>
 
-      <!-- GWA Card -->
-      <div class="card border-0 shadow-sm mb-4"
-           style="border-left: 4px solid #0d6efd !important;">
-        <div class="card-header bg-white border-bottom py-3">
-          <h6 class="m-0 fw-bold text-primary">
-            <i class="bi bi-graph-up me-2"></i>GWA (General Weighted Average)
-          </h6>
-        </div>
-        <div class="card-body">
-          <div class="row align-items-center">
-            <div class="col-md-4 text-center mb-3 mb-md-0">
-              {% if student.gwa %}
-                <div class="display-4 fw-bold
-                  {% if student.gwa <= 3.00 %}text-success
-                  {% elif student.gwa <= 4.00 %}text-warning
-                  {% else %}text-danger{% endif %}">
-                  {{ student.gwa }}
-                </div>
-                {% if student.units_enrolled %}
-                <div class="text-muted small mt-1">
-                  <i class="bi bi-journal-bookmark me-1"></i>{{ student.units_enrolled }} units enrolled
-                </div>
-                {% endif %}
-                {% if student.gwa <= 1.25 %}
-                  <span class="badge bg-success mt-1">Excellent</span>
-                {% elif student.gwa <= 1.75 %}
-                  <span class="badge bg-success mt-1">Very Good</span>
-                {% elif student.gwa <= 2.25 %}
-                  <span class="badge bg-success mt-1">Satisfactory</span>
-                {% elif student.gwa <= 2.75 %}
-                  <span class="badge bg-info mt-1">Fair</span>
-                {% elif student.gwa <= 3.00 %}
-                  <span class="badge bg-warning text-dark mt-1">Passed</span>
-                {% elif student.gwa <= 4.00 %}
-                  <span class="badge mt-1"
-                        style="background-color:#fd7e14;color:#fff;">
-                    <i class="bi bi-exclamation-triangle me-1"></i>At Risk
-                  </span>
-                {% else %}
-                  <span class="badge bg-danger mt-1">
-                    <i class="bi bi-x-circle me-1"></i>Failed
-                  </span>
-                {% endif %}
+    <div class="ad-cols ad-cols--sheet">
+      <div>
+        <section class="ad-panel ad-panel--hug" aria-labelledby="sheet-who">
+          <div class="ad-panel-head"><h2 id="sheet-who">Identity</h2></div>
+          <div class="ad-panel-body">
+            <div class="ad-idcard">
+              <span class="ad-idcard-avatar" aria-hidden="true"><i class="bi bi-person-fill"></i></span>
+              <div>
+                <div class="ad-idcard-name">{{ student.get_full_name() }}</div>
+                <div class="ad-idcard-meta">{{ student.email }}</div>
+              </div>
+            </div>
+            <div class="ad-idcard-flags">
+              <span class="ad-pill {{ 'is-approved' if status_word == 'Active' else 'is-rejected' }}">
+                <i class="bi bi-person-check" aria-hidden="true"></i>{{ status_word }}
+              </span>
+              {% if student.is_verified %}
+              <span class="ad-pill is-approved"><i class="bi bi-check-circle" aria-hidden="true"></i>Verified</span>
               {% else %}
-                <div class="display-4 fw-bold text-muted">—</div>
-                <small class="text-muted">Not yet recorded</small>
+              <span class="ad-pill is-pending"><i class="bi bi-clock" aria-hidden="true"></i>Unverified</span>
+              {% endif %}
+              {% if student.ocr_verified == true %}
+              <span class="ad-pill is-info"><i class="bi bi-robot" aria-hidden="true"></i>OCR passed</span>
+              {% elif student.ocr_verified == false %}
+              <span class="ad-pill is-rejected" title="{{ student.ocr_result }}"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i>OCR failed</span>
+              {% else %}
+              <span class="ad-pill is-mute"><i class="bi bi-hourglass-split" aria-hidden="true"></i>OCR pending</span>
+              {% endif %}
+              {% if student.is_existing_scholar %}
+              <span class="ad-pill is-info"><i class="bi bi-award" aria-hidden="true"></i>Existing scholar</span>
               {% endif %}
             </div>
-            <div class="col-md-8">
-              <p class="small text-muted mb-3">
-                Open the student's <strong>Copy of Grades</strong> document below,
-                then enter their GWA here.<br>
-                <strong>LSPU Grading:</strong> 1.00–1.25 Excellent · 1.50–1.75 Very Good ·
-                2.00–2.25 Satisfactory · 2.50–2.75 Fair · 3.00 Passed ·
-                3.01–3.99 At Risk · 4.00–5.00 Failed
-              </p>
-              <form method="POST"
-                    action="{{ url_for('staff.update_gwa', uid=student.id) }}"
-                    class="row g-2 align-items-end">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-                <div class="col-md-3">
-                  <label class="form-label small fw-semibold mb-1">GWA</label>
-                  <input type="number" step="0.01" min="1.00" max="5.00"
-                         class="form-control" name="gwa"
-                         value="{{ student.gwa or '' }}" placeholder="e.g. 1.75" required>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-semibold mb-1">Semester</label>
-                  <select class="form-select" name="semester">
-                    <option value="1st Semester">1st Semester</option>
-                    <option value="2nd Semester">2nd Semester</option>
-                    <option value="Inter-Semester">Inter-Semester</option>
-                  </select>
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-semibold mb-1">School Year</label>
-                  <input type="text" class="form-control" name="school_year"
-                         placeholder="e.g. 2025-2026"
-                         value="{{ now.year }}-{{ now.year + 1 }}">
-                </div>
-                <div class="col-md-3">
-                  <label class="form-label small fw-semibold mb-1">Units Enrolled</label>
-                  <input type="number" class="form-control" name="units_enrolled"
-                         min="1" max="30" placeholder="e.g. 21"
-                         value="{{ student.units_enrolled or '' }}">
-                </div>
-                <div class="col-md-3">
-                  <button type="submit" class="btn btn-primary w-100 mt-4">
-                    <i class="bi bi-check-lg me-1"></i>Save GWA
-                  </button>
-                </div>
-                <div class="col-12">
-                  <label class="form-label small fw-semibold mb-1">Notes (optional)</label>
-                  <input type="text" class="form-control form-control-sm" name="gwa_notes"
-                         placeholder="e.g. Based on submitted grades document">
-                </div>
-              </form>
-
-              <!-- GWA History -->
-              {% if student.gwa_history %}
-              <div class="mt-4">
-                <h6 class="fw-semibold small text-muted mb-2">
-                  <i class="bi bi-clock-history me-1"></i>GWA History
-                </h6>
-                <div class="table-responsive">
-                  <table class="table table-sm table-hover mb-0" style="font-size:.82rem;">
-                    <thead class="table-light">
-                      <tr><th>School Year</th><th>Semester</th><th>GWA</th><th>Standing</th><th>Recorded</th></tr>
-                    </thead>
-                    <tbody>
-                      {% for h in student.gwa_history %}
-                      <tr>
-                        <td>{{ h.school_year }}</td>
-                        <td>{{ h.semester }}</td>
-                        <td>
-                          <strong class="{% if h.gwa <= 3.00 %}text-success{% elif h.gwa < 4.00 %}text-warning{% else %}text-danger{% endif %}">
-                            {{ h.gwa }}
-                          </strong>
-                        </td>
-                        <td>
-                          {% if h.is_at_risk %}
-                            <span class="badge bg-warning text-dark">{{ h.standing }}</span>
-                          {% else %}
-                            <span class="badge bg-success">{{ h.standing }}</span>
-                          {% endif %}
-                        </td>
-                        <td class="text-muted">{{ h.recorded_at.strftime('%b %d, %Y') }}</td>
-                      </tr>
-                      {% endfor %}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              {% endif %}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Registration Documents -->
-      <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white border-bottom py-3">
-          <h6 class="m-0 fw-bold text-primary">
-            <i class="bi bi-folder2-open me-2"></i>Registration Documents
-          </h6>
-        </div>
-        <div class="card-body">
-          {% if student.cor_file_path or student.grades_file_path %}
-          <div class="row g-3">
-            {% if student.cor_file_path %}
-            <div class="col-md-6">
-              <div class="border rounded p-3 h-100">
-                <div class="d-flex align-items-center gap-2 mb-2">
-                  <i class="bi bi-file-earmark-pdf text-danger fs-4"></i>
-                  <div>
-                    <div class="fw-semibold small">Certificate of Registration</div>
-                    <div class="text-muted" style="font-size:.75rem;">COR</div>
-                  </div>
-                </div>
-                <div class="d-flex gap-2">
-                  <a href="{{ url_for('staff.view_reg_document', uid=student.id, doc_type='cor') }}"
-                     target="_blank" class="btn btn-sm btn-outline-primary flex-grow-1">
-                    <i class="bi bi-eye me-1"></i>View
-                  </a>
-                  <a href="{{ url_for('staff.view_reg_document', uid=student.id, doc_type='cor') }}"
-                     download class="btn btn-sm btn-outline-secondary">
-                    <i class="bi bi-download"></i>
-                  </a>
-                </div>
-              </div>
-            </div>
-            {% endif %}
-            {% if student.grades_file_path %}
-            <div class="col-md-6">
-              <div class="border rounded p-3 h-100">
-                <div class="d-flex align-items-center gap-2 mb-2">
-                  <i class="bi bi-file-earmark-text text-primary fs-4"></i>
-                  <div>
-                    <div class="fw-semibold small">Copy of Grades</div>
-                    <div class="text-muted" style="font-size:.75rem;">Grades Document</div>
-                  </div>
-                </div>
-                <div class="d-flex gap-2">
-                  <a href="{{ url_for('staff.view_reg_document', uid=student.id, doc_type='grades') }}"
-                     target="_blank" class="btn btn-sm btn-outline-primary flex-grow-1">
-                    <i class="bi bi-eye me-1"></i>View
-                  </a>
-                  <a href="{{ url_for('staff.view_reg_document', uid=student.id, doc_type='grades') }}"
-                     download class="btn btn-sm btn-outline-secondary">
-                    <i class="bi bi-download"></i>
-                  </a>
-                </div>
-              </div>
-            </div>
-            {% endif %}
-          </div>
-          {% else %}
-          <div class="text-center py-4 text-muted">
-            <i class="bi bi-folder2 display-5"></i>
-            <p class="mt-2 small">
-              No registration documents uploaded.
-              {% if student.year_level == '1st Year' %}
-              (1st year students are not required to upload documents.)
-              {% endif %}
+            {% if student.is_existing_scholar %}
+            <p class="ad-note">
+              Declared existing scholar &mdash; {{ student.existing_scholarship_name or 'program not specified' }}.
             </p>
+            {% endif %}
+
+            <ul class="ad-facts">
+              <li><span><i class="bi bi-telephone" aria-hidden="true"></i>Phone</span><b>{{ student.phone_number or '—' }}</b></li>
+              <li><span><i class="bi bi-calendar-plus" aria-hidden="true"></i>Registered</span><b>{{ student.created_at.strftime('%b %d, %Y') }}</b></li>
+              {% if student.status_date %}
+              <li><span><i class="bi bi-calendar-check" aria-hidden="true"></i>Status since</span><b>{{ student.status_date.strftime('%b %d, %Y') }}</b></li>
+              {% endif %}
+            </ul>
+
+            <a href="{{ url_for('staff.add_existing_scholar', uid=student.id) }}" class="btn ad-primary-btn is-block mt-2">
+              <i class="bi bi-person-plus" aria-hidden="true"></i>Add to program
+            </a>
           </div>
-          {% endif %}
-        </div>
+        </section>
+
+        <section class="ad-panel ad-panel--hug mt-3" aria-labelledby="sheet-status">
+          <div class="ad-panel-head">
+            <h2 id="sheet-status">Student status</h2>
+            <span class="ad-pill {{ 'is-approved' if status_word == 'Active' else 'is-rejected' }}">{{ status_word }}</span>
+          </div>
+          <div class="ad-panel-body">
+            <form method="POST" action="{{ url_for('staff.set_student_status', uid=student.id) }}"
+                  class="ad-status-form"
+                  onsubmit="return confirm('Change the status of this student? Marking as graduated or dropped out automatically closes their active scholarships.')">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <select name="student_status" class="form-select" aria-label="Student status">
+                <option value="active" {% if student.student_status == 'active' %}selected{% endif %}>Active</option>
+                <option value="graduated" {% if student.student_status == 'graduated' %}selected{% endif %}>Graduated</option>
+                <option value="dropped_out" {% if student.student_status == 'dropped_out' %}selected{% endif %}>Dropped out</option>
+              </select>
+              <button class="btn ad-primary-btn" type="submit">Update</button>
+            </form>
+            <p class="ad-figure-sub mt-2 mb-0">Graduated and dropped-out students stay in the directory and reports as historical records.</p>
+          </div>
+        </section>
       </div>
 
-      <!-- Uploaded Documents -->
-      <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
-          <h6 class="m-0 fw-bold text-primary">
-            <i class="bi bi-folder2-open me-2"></i>Uploaded Documents
-          </h6>
-          <span class="badge bg-secondary">{{ student.documents|length }} file(s)</span>
-        </div>
-        <div class="card-body p-0">
-          {% set uploaded_docs = student.documents %}
-          {% if uploaded_docs %}
-          <div class="table-responsive">
-            <table class="table table-sm align-middle mb-0">
-              <thead class="table-light">
-                <tr><th>File</th><th>Description</th><th>Uploaded</th><th>Size</th><th>Status</th><th>Action</th></tr>
-              </thead>
-              <tbody>
-                {% for doc in uploaded_docs %}
-                <tr>
-                  <td>
-                    <i class="{{ doc.icon_class }} me-1"></i>
-                    <small>{{ doc.original_filename }}</small>
-                  </td>
-                  <td class="small text-muted">{{ doc.description or '—' }}</td>
-                  <td class="small text-muted">{{ doc.uploaded_at.strftime('%b %d, %Y') }}</td>
-                  <td class="small">{{ doc.file_size_display }}</td>
-                  <td>
-                    {% if doc.is_verified %}
-                      <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Verified</span>
-                    {% else %}
-                      <span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Pending</span>
-                    {% endif %}
-                  </td>
-                  <td>
-                    <div class="d-flex gap-1">
-                      <a href="{{ url_for('staff.view_student_document', doc_id=doc.id) }}"
-                         target="_blank" class="btn btn-sm btn-outline-primary">
-                        <i class="bi bi-eye"></i>
-                      </a>
-                      {% if not doc.is_verified %}
-                      <form method="POST" action="{{ url_for('staff.verify_student_document', doc_id=doc.id) }}" class="d-inline">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button class="btn btn-sm btn-outline-success" title="Mark as Verified">
-                          <i class="bi bi-check-lg"></i>
-                        </button>
-                      </form>
-                      {% else %}
-                      <form method="POST" action="{{ url_for('staff.unverify_student_document', doc_id=doc.id) }}" class="d-inline">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button class="btn btn-sm btn-outline-secondary" title="Mark as Pending">
-                          <i class="bi bi-arrow-counterclockwise"></i>
-                        </button>
-                      </form>
-                      {% endif %}
-                    </div>
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
+      <div>
+        <section class="ad-panel ad-panel--hug" aria-labelledby="sheet-gwa">
+          <div class="ad-panel-head">
+            <h2 id="sheet-gwa">GWA &middot; general weighted average</h2>
+            <span class="ad-pill {{ tone }}">{{ standing }}</span>
           </div>
-          {% else %}
-          <div class="text-center py-3 text-muted small">
-            <i class="bi bi-folder2 display-5 d-block mb-2"></i>No documents uploaded yet.
-          </div>
-          {% endif %}
-        </div>
-      </div>
+          <div class="ad-panel-body">
+            <div class="ad-gwa-figure">
+              <b>{{ student.gwa or '—' }}</b>
+              <span class="ad-figure-sub">
+                {%- if student.units_enrolled %}{{ student.units_enrolled }} units enrolled{% else %}No units recorded{% endif %}
+                {%- if student.grades_semester %} &middot; {{ student.grades_semester }}{% endif %}
+              </span>
+            </div>
+            <p class="ad-note mt-2 mb-0">
+              Open the Copy of Grades below, then record the GWA here. LSPU scale: 1.00–1.25 excellent &middot;
+              1.50–1.75 very good &middot; 2.00–2.25 satisfactory &middot; 2.50–2.75 fair &middot; 3.00 passed &middot;
+              3.01–3.99 at risk &middot; 4.00–5.00 failed.
+            </p>
 
-      <!-- Applications summary -->
-      <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white border-bottom py-3">
-          <h6 class="m-0 fw-bold text-primary">
-            <i class="bi bi-file-earmark-text me-2"></i>Scholarship Applications
-          </h6>
-        </div>
-        <div class="card-body p-0">
-          {% set apps = student.applications %}
-          {% if apps %}
-          <div class="table-responsive">
-            <table class="table table-sm align-middle mb-0">
-              <thead class="table-light">
-                <tr><th>Scholarship</th><th>Submitted</th><th>Status</th></tr>
-              </thead>
-              <tbody>
-                {% for app in apps %}
-                <tr>
-                  <td class="small">{{ app.scholarship.title }}</td>
-                  <td class="small text-muted">{{ app.submitted_at.strftime('%b %d, %Y') }}</td>
-                  <td>
-                    {% set sv = app.status.value %}
-                    {% if sv=='approved' %}<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Approved</span>
-                    {% elif sv=='rejected' %}<span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Rejected</span>
-                    {% else %}<span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Pending</span>{% endif %}
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          {% else %}
-          <div class="text-center py-3 text-muted small">No applications yet.</div>
-          {% endif %}
-        </div>
-      </div>
+            <form method="POST" action="{{ url_for('staff.update_gwa', uid=student.id) }}" class="ad-gwa-form">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <div class="ad-field">
+                <label for="sheet-gwa-value">GWA</label>
+                <input id="sheet-gwa-value" type="number" step="0.01" min="1.00" max="5.00"
+                       class="form-control" name="gwa" value="{{ student.gwa or '' }}"
+                       placeholder="e.g. 1.75" required>
+              </div>
+              <div class="ad-field">
+                <label for="sheet-gwa-sem">Semester</label>
+                <select id="sheet-gwa-sem" class="form-select" name="semester">
+                  <option value="1st Semester">1st semester</option>
+                  <option value="2nd Semester">2nd semester</option>
+                  <option value="Inter-Semester">Inter-semester</option>
+                </select>
+              </div>
+              <div class="ad-field">
+                <label for="sheet-gwa-sy">School year</label>
+                <input id="sheet-gwa-sy" type="text" class="form-control" name="school_year"
+                       placeholder="e.g. 2025-2026" value="{{ now.year }}-{{ now.year + 1 }}">
+              </div>
+              <div class="ad-field">
+                <label for="sheet-gwa-units">Units enrolled</label>
+                <input id="sheet-gwa-units" type="number" class="form-control" name="units_enrolled"
+                       min="1" max="30" placeholder="e.g. 21" value="{{ student.units_enrolled or '' }}">
+              </div>
+              <div class="ad-field is-wide">
+                <label for="sheet-gwa-notes">Notes (optional)</label>
+                <input id="sheet-gwa-notes" type="text" class="form-control form-control-sm" name="gwa_notes"
+                       placeholder="e.g. Based on submitted grades document">
+              </div>
+              <div class="ad-field is-go">
+                <button type="submit" class="btn ad-primary-btn">
+                  <i class="bi bi-check-lg" aria-hidden="true"></i>Save GWA
+                </button>
+              </div>
+            </form>
 
+            {% if student.gwa_history %}
+            <h3 class="ad-section-title mt-3">GWA history</h3>
+            <ul class="ad-list">
+              {% for h in student.gwa_history %}
+              <li>
+                <div class="ad-who">{{ h.school_year }}
+                  <span>{{ h.semester }} &middot; GWA {{ h.gwa }} &middot; recorded {{ h.recorded_at.strftime('%b %d, %Y') }}</span>
+                </div>
+                <span class="ad-pill {{ 'is-pending' if h.is_at_risk else 'is-approved' }}">{{ h.standing }}</span>
+              </li>
+              {% endfor %}
+            </ul>
+            {% endif %}
+          </div>
+        </section>
+
+        <section class="ad-panel ad-panel--hug mt-3" aria-labelledby="sheet-reg">
+          <div class="ad-panel-head">
+            <h2 id="sheet-reg">Registration documents</h2>
+            <span class="ad-panel-count">
+              {% if student.cor_file_path or student.grades_file_path %}on file{% else %}none yet{% endif %}
+            </span>
+          </div>
+          <div class="ad-panel-body">
+            {% if student.cor_file_path or student.grades_file_path %}
+            <ul class="ad-docs">
+              {% if student.cor_file_path %}
+              <li>
+                <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i>
+                <span class="ad-doc-name">Certificate of Registration</span>
+                <span class="ad-doc-acts">
+                  <a href="{{ url_for('staff.view_reg_document', uid=student.id, doc_type='cor') }}" target="_blank" rel="noopener">View</a>
+                  <a href="{{ url_for('staff.view_reg_document', uid=student.id, doc_type='cor') }}" download>Download</a>
+                </span>
+              </li>
+              {% endif %}
+              {% if student.grades_file_path %}
+              <li>
+                <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
+                <span class="ad-doc-name">Copy of Grades</span>
+                <span class="ad-doc-acts">
+                  <a href="{{ url_for('staff.view_reg_document', uid=student.id, doc_type='grades') }}" target="_blank" rel="noopener">View</a>
+                  <a href="{{ url_for('staff.view_reg_document', uid=student.id, doc_type='grades') }}" download>Download</a>
+                </span>
+              </li>
+              {% endif %}
+            </ul>
+            {% else %}
+            <p class="ad-note mb-0">
+              No registration documents uploaded.{% if student.year_level == '1st Year' %} First-year students are not required to upload documents.{% endif %}
+            </p>
+            {% endif %}
+          </div>
+        </section>
+
+        <section class="ad-panel ad-panel--hug mt-3" aria-labelledby="sheet-uploads">
+          <div class="ad-panel-toolbar">
+            <h2 id="sheet-uploads" class="ad-panel-title">Uploaded documents</h2>
+            <span class="ad-panel-count">{{ student.documents|length }} file{{ '' if student.documents|length == 1 else 's' }}</span>
+          </div>
+          <div class="ad-panel-body">
+            {% if student.documents %}
+            <ul class="ad-docs ad-docs--files">
+              {% for doc in student.documents %}
+              <li>
+                <i class="{{ doc.icon_class }}" aria-hidden="true"></i>
+                <div class="ad-docx-main">
+                  <div class="ad-doc-name">{{ doc.original_filename }}</div>
+                  <div class="ad-figure-sub">
+                    {{ doc.description or 'No description' }} &middot; {{ doc.uploaded_at.strftime('%b %d, %Y') }} &middot; {{ doc.file_size_display }}
+                  </div>
+                </div>
+                <span class="ad-doc-acts">
+                  <a href="{{ url_for('staff.view_student_document', doc_id=doc.id) }}" target="_blank" rel="noopener">View</a>
+                  <span class="ad-pill {{ 'is-approved' if doc.is_verified else 'is-pending' }}">
+                    {{- 'Verified' if doc.is_verified else 'Pending' -}}
+                  </span>
+                  {% if doc.is_verified %}
+                  <form method="POST" action="{{ url_for('staff.unverify_student_document', doc_id=doc.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="ad-go" type="submit">Unverify</button>
+                  </form>
+                  {% else %}
+                  <form method="POST" action="{{ url_for('staff.verify_student_document', doc_id=doc.id) }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="ad-go" type="submit">Verify</button>
+                  </form>
+                  {% endif %}
+                </span>
+              </li>
+              {% endfor %}
+            </ul>
+            {% else %}
+            <p class="ad-note mb-0">No documents uploaded yet.</p>
+            {% endif %}
+          </div>
+        </section>
+
+        <section class="ad-panel ad-panel--hug mt-3" aria-labelledby="sheet-apps">
+          <div class="ad-panel-toolbar">
+            <h2 id="sheet-apps" class="ad-panel-title">Scholarship applications</h2>
+            <span class="ad-panel-count">{{ student.applications|length }} record{{ '' if student.applications|length == 1 else 's' }}</span>
+          </div>
+          <div class="ad-panel-body">
+            {% if student.applications %}
+            <ul class="ad-list">
+              {% for app in student.applications %}
+              {% set sv = app.status.value %}
+              <li>
+                <div class="ad-who">{{ app.scholarship.title }}
+                  <span>Submitted {{ app.submitted_at.strftime('%b %d, %Y') if app.submitted_at else '—' }}</span>
+                </div>
+                <span class="ad-pill {{ 'is-approved' if sv == 'approved' else 'is-rejected' if sv == 'rejected' else 'is-withdrawn' if sv == 'withdrawn' else 'is-pending' }}">{{ sv|replace('_', ' ')|title }}</span>
+              </li>
+              {% endfor %}
+            </ul>
+            {% else %}
+            <p class="ad-note mb-0">No applications yet.</p>
+            {% endif %}
+          </div>
+        </section>
+      </div>
     </div>
   </div>
 </div>

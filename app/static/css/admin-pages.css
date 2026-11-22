@@ -655,3 +655,53 @@
   .ad-filter-row--dir, .ad-filter-row--dir2 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
   .ad-filter-row--dir .ad-field:first-child { grid-column: 1 / -1; }
 }
+
+/* ── student sheet ────────────────────────────────────────────────────────── */
+/* a narrow identity rail beside the long panels; one column on a phone */
+@media (min-width: 960px) {
+  .ad-cols--sheet { grid-template-columns: minmax(0, 320px) minmax(0, 1fr); }
+}
+
+.ad-idcard { display: flex; align-items: center; gap: .7rem; }
+.ad-idcard-avatar {
+  flex: 0 0 auto; width: 46px; height: 46px; border-radius: 12px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #eaf1fb; color: #1d4e89; font-size: 1.15rem;
+}
+.ad-idcard-name { font-size: 1rem; font-weight: 800; color: #0f2a4d; line-height: 1.2; }
+.ad-idcard-meta { margin-top: .1rem; font-size: .72rem; color: #8494a8; overflow-wrap: anywhere; }
+.ad-idcard-flags { display: flex; flex-wrap: wrap; gap: .25rem; margin-top: .6rem; }
+
+/* the GWA reads as the page's second headline; the standing sits beside it */
+.ad-gwa-figure { display: flex; flex-wrap: wrap; align-items: baseline; gap: .1rem .55rem; }
+.ad-gwa-figure b {
+  font-size: 2.1rem; font-weight: 800; letter-spacing: -.02em;
+  line-height: 1; color: #0f2a4d;
+}
+.ad-gwa-figure .ad-figure-sub { margin: 0; }
+
+.ad-gwa-form { display: grid; gap: .5rem; grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: .9rem; }
+.ad-gwa-form .ad-field.is-wide { grid-column: 1 / -1; }
+.ad-gwa-form .ad-field.is-go { display: flex; align-items: flex-end; }
+.ad-gwa-form .ad-field.is-go .btn { width: 100%; }
+@media (min-width: 768px) {
+  .ad-gwa-form { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .ad-gwa-form .ad-field.is-go .btn { width: auto; }
+}
+
+.ad-status-form { display: flex; flex-wrap: wrap; gap: .45rem; }
+.ad-status-form .form-select { flex: 1 1 8rem; min-height: 36px; font-size: .8rem; border-color: #dbe3ee; }
+.ad-status-form .btn { flex: 0 0 auto; min-height: 36px; font-size: .78rem; font-weight: 700; border-radius: 8px; }
+
+/* document rows: the file name wraps, the view and verify actions stay right */
+.ad-docx-main { flex: 1 1 9rem; min-width: 0; }
+.ad-docs .ad-doc-acts form { margin: 0; }
+/* a primary button that owns the full width of the rail */
+.ad-primary-btn.is-block { width: 100%; justify-content: center; margin-left: 0; }
+@media (max-width: 767.98px) {
+  /* a file row reads as: icon, name, meta, then its actions underneath */
+  .ad-docs--files li { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: .15rem .5rem; }
+  .ad-docs--files li > i { grid-row: 1 / 3; }
+  .ad-docs--files .ad-docx-main { grid-column: 2; }
+  .ad-docs--files .ad-doc-acts { grid-column: 2; margin: .3rem 0 0; justify-content: flex-start; }
+}
