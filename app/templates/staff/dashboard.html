@@ -2,14 +2,17 @@
 {% block title %}Staff Dashboard — LSPU ScholarHub{% endblock %}
 
 {% block head %}
-{# student-pages.css owns the .st base layer and tokens; staff-pages.css adds .sf-* #}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/staff-pages.css') }}?v=20261122a" rel="stylesheet">
-<style>main { padding: 0 !important; margin: 0 !important; background: #fff; }</style>
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261219a" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
-<div class="st sf-page">
+{% set status_pill = {'pending': 'is-pending', 'approved': 'is-approved',
+                      'rejected': 'is-rejected', 'withdrawn': 'is-withdrawn'} %}
+{% set status_label = {'pending': 'Pending', 'approved': 'Approved',
+                       'rejected': 'Rejected', 'withdrawn': 'Withdrawn'} %}
+
+<div class="ad-page">
 
   <!-- ══ command board: who you are, what needs doing, the five numbers ══════ -->
   {% set board_kicker = 'Staff dashboard' %}
@@ -33,189 +36,197 @@
   ] %}
   {% include 'staff/_board.html' %}
 
-  <div class="sf-body">
+  <div class="ad-body">
+    <p class="ad-crumbs">
+      <span class="is-here">Dashboard</span>
+      <span aria-hidden="true">&middot;</span>
+      <a href="{{ url_for('staff.review_applications', status='pending') }}">Review queue</a>
+      <span aria-hidden="true">&middot;</span>
+      <a href="{{ url_for('staff.student_directory') }}">Student directory</a>
+    </p>
 
-    <div class="sf-main">
+    <div class="ad-cols ad-cols--dash">
+      <div class="ad-cols">
 
-      <!-- ── the queue, as a queue ─────────────────────────────────────────── -->
-      <section class="sf-panel" aria-labelledby="sf-queue-title">
-        <div class="sf-panel-head">
-          <h2 id="sf-queue-title">Waiting on you</h2>
-          {% if pending_apps %}
-          <a class="sf-link" href="{{ url_for('staff.review_applications', status='pending') }}">Open review queue</a>
-          {% endif %}
-        </div>
-
-        {% if pending_apps %}
-        <table class="sf-table">
-          <thead>
-            <tr>
-              <th scope="col">Applicant</th>
-              <th scope="col">Program</th>
-              <th scope="col" class="num">Waiting</th>
-              <th scope="col"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for app in pending_apps %}
-            {% set waited = (now - app.submitted_at).days if app.submitted_at else 0 %}
-            <tr>
-              <td class="who">
-                {{ app.applicant.get_full_name() }}
-                <span>{{ 'Pending' if app.status.value == 'pending' else 'Under review' }}</span>
-              </td>
-              <td class="prog">{{ app.scholarship.title }}</td>
-              <td class="num">
-                <span class="sf-flag {{ 'is-bad' if waited >= 7 else ('is-warn' if waited >= 3 else '') }}">
+        <!-- ── the queue, as a queue ───────────────────────────────────────── -->
+        <section class="card ad-panel ad-panel--hug" aria-labelledby="ad-queue-title">
+          <div class="ad-panel-head">
+            <h2 id="ad-queue-title">Waiting on you</h2>
+            {% if pending_apps %}
+            <a class="ad-go" href="{{ url_for('staff.review_applications', status='pending') }}">Open review queue</a>
+            {% endif %}
+          </div>
+          <div class="ad-panel-body">
+            {% if pending_apps %}
+            <ul class="ad-list">
+              {% for app in pending_apps %}
+              {% set waited = (now - app.submitted_at).days if app.submitted_at else 0 %}
+              <li>
+                <div class="ad-who">
+                  {{ app.applicant.get_full_name() }}
+                  <span>{{ app.scholarship.title }} &middot; {{ 'Pending' if app.status.value == 'pending' else 'Under review' }}</span>
+                </div>
+                <span class="ad-pill {{ 'is-rejected' if waited >= 7 else ('is-pending' if waited >= 3 else 'is-mute') }}">
                   {{- 'today' if waited <= 0 else waited ~ ' day' ~ ('s' if waited != 1) -}}
                 </span>
-              </td>
-              <td class="go">
-                <a href="{{ url_for('staff.review_applications', status='pending') }}">Review</a>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        {% if to_review > pending_apps|length %}
-        <p class="sf-more">
-          <a class="sf-link" href="{{ url_for('staff.review_applications', status='pending') }}">
-            {{ to_review - pending_apps|length }} more waiting
-          </a>
-        </p>
-        {% endif %}
-        {% else %}
-        <p class="sf-clear">
-          <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
-          Nothing waiting — every application{% if campus_name == 'All campuses' %} across all of your campuses{% else %} for {{ campus_name }}{% endif %} has been reviewed.
-        </p>
-        {% endif %}
-      </section>
+              </li>
+              {% endfor %}
+            </ul>
+            {% if to_review > pending_apps|length %}
+            <p class="ad-figure-sub mt-2 mb-0">
+              <a class="ad-go" href="{{ url_for('staff.review_applications', status='pending') }}">
+                {{ to_review - pending_apps|length }} more waiting
+              </a>
+            </p>
+            {% endif %}
+            {% else %}
+            <p class="ad-note mb-0">
+              <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+              Nothing waiting — every application{% if campus_name == 'All campuses' %} across all of your campuses{% else %} for {{ campus_name }}{% endif %} has been reviewed.
+            </p>
+            {% endif %}
+          </div>
+        </section>
 
-      <!-- ── batches as tiles, not rows ────────────────────────────────────── -->
-      <section class="sf-panel" aria-labelledby="sf-batches-title">
-        <div class="sf-panel-head">
-          <h2 id="sf-batches-title">Open batches</h2>
-          <a class="sf-link" href="{{ url_for('staff.manage_batches') }}">Manage batches</a>
-        </div>
-        {% if open_batches %}
-        <div class="sf-tiles">
-          {% for b in open_batches %}
-          <a class="sf-tile" href="{{ url_for('staff.batch_detail', batch_id=b.id) }}">
-            <span class="sf-tile-amount">₱{{ '{:,.0f}'.format(b.amount) }}</span>
-            <b>{{ b.name }} · {{ b.program }}</b>
-            <span>{{ b.scholars }} scholar{{ 's' if b.scholars != 1 }}{% if b.period %} · {{ b.period }}{% endif %}</span>
-            <span class="sf-tile-go">Open batch <i class="bi bi-arrow-right" aria-hidden="true"></i></span>
-          </a>
-          {% endfor %}
-        </div>
-        {% else %}
-        <p class="sf-empty">No open batches{% if current_period %} for {{ current_period.display_name }}{% endif %}.</p>
-        {% endif %}
-      </section>
+        <!-- ── batches as tiles, not rows ──────────────────────────────────── -->
+        <section class="card ad-panel ad-panel--hug" aria-labelledby="ad-batches-title">
+          <div class="ad-panel-head">
+            <h2 id="ad-batches-title">Open batches</h2>
+            <a class="ad-go" href="{{ url_for('staff.manage_batches') }}">Manage batches</a>
+          </div>
+          <div class="ad-panel-body">
+            {% if open_batches %}
+            <div class="ad-tiles">
+              {% for b in open_batches %}
+              <a class="ad-tile ad-tile--stack" href="{{ url_for('staff.batch_detail', batch_id=b.id) }}">
+                <span class="ad-tile-amount">₱{{ '{:,.0f}'.format(b.amount) }}</span>
+                <b>{{ b.name }} · {{ b.program }}</b>
+                <span class="ad-tile-meta">{{ b.scholars }} scholar{{ 's' if b.scholars != 1 }}{% if b.period %} · {{ b.period }}{% endif %}</span>
+                <span class="ad-tile-go">Open batch <i class="bi bi-arrow-right" aria-hidden="true"></i></span>
+              </a>
+              {% endfor %}
+            </div>
+            {% else %}
+            <p class="ad-figure-sub mb-0">No open batches{% if current_period %} for {{ current_period.display_name }}{% endif %}.</p>
+            {% endif %}
+          </div>
+        </section>
 
-      <!-- ── performers, same table language ───────────────────────────────── -->
-      <section class="sf-panel" aria-labelledby="sf-perf-title">
-        <div class="sf-panel-head">
-          <h2 id="sf-perf-title">Top performers</h2>
-          <a class="sf-link" href="{{ url_for('staff.student_directory') }}">Student directory</a>
-        </div>
-        {% if top_performers %}
-        <table class="sf-table sf-table--perf">
-          <thead>
-            <tr>
-              <th scope="col" class="rank">#</th>
-              <th scope="col">Student</th>
-              <th scope="col" class="course">Course</th>
-              <th scope="col" class="num">GWA</th>
-              <th scope="col" class="num">Standing</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for s in top_performers %}
-            {% set g = s.gwa %}
-            <tr>
-              <td class="rank">{{ loop.index }}</td>
-              <td class="who">
-                <a href="{{ url_for('staff.student_profile', uid=s.id) }}">{{ s.get_full_name() }}</a>
-                <span>{{ s.year_level or '—' }}</span>
-              </td>
-              <td class="course">{{ s.course or '—' }}</td>
-              <td class="num col-gwa"><b class="sf-gwa">{{ '%.2f'|format(g) }}</b></td>
-              <td class="num col-standing">
-                {% if g <= 1.25 %}<span class="sf-flag is-ok sf-perf-flag">Excellent</span>
-                {% elif g <= 1.75 %}<span class="sf-flag is-ok sf-perf-flag">Very good</span>
-                {% elif g <= 2.25 %}<span class="sf-flag is-ok sf-perf-flag">Satisfactory</span>
-                {% elif g <= 2.75 %}<span class="sf-flag is-mute sf-perf-flag">Fair</span>
-                {% elif g <= 3.00 %}<span class="sf-flag is-warn sf-perf-flag">Passed</span>
-                {% else %}<span class="sf-flag is-bad sf-perf-flag">At risk</span>{% endif %}
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        {% else %}
-        <p class="sf-empty">No GWA on record yet.</p>
-        {% endif %}
-      </section>
+        <!-- ── performers, same table language ─────────────────────────────── -->
+        <section class="card ad-panel" aria-labelledby="ad-perf-title">
+          <div class="ad-panel-head">
+            <h2 id="ad-perf-title">Top performers</h2>
+            <a class="ad-go" href="{{ url_for('staff.student_directory') }}">Student directory</a>
+          </div>
+          {% if top_performers %}
+          <div class="table-responsive">
+            <table class="table ad-table ad-table--performers align-middle mb-0">
+              <thead>
+                <tr>
+                  <th style="width:44px;">#</th>
+                  <th>Student</th>
+                  <th class="ad-hide-md">Student ID</th>
+                  <th>Course</th>
+                  <th class="ad-hide-md">Year</th>
+                  <th>GWA</th>
+                  <th>Standing</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for s in top_performers %}
+                {% set g = s.gwa %}
+                <tr>
+                  <td class="ad-app-id">{{ loop.index }}</td>
+                  <td>
+                    <div class="ad-who">
+                      <a href="{{ url_for('staff.student_profile', uid=s.id) }}">{{ s.get_full_name() }}</a>
+                      <span>{{ s.year_level or '—' }}</span>
+                    </div>
+                  </td>
+                  <td class="ad-hide-md">{{ s.student_id or '—' }}</td>
+                  <td class="ad-prog">{{ s.course or '—' }}</td>
+                  <td class="ad-hide-md">{{ s.year_level or '—' }}</td>
+                  <td><strong>{{ '%.2f'|format(g) }}</strong></td>
+                  <td>
+                    {% if g <= 1.25 %}<span class="ad-pill is-approved">Excellent</span>
+                    {% elif g <= 1.75 %}<span class="ad-pill is-approved">Very good</span>
+                    {% elif g <= 2.25 %}<span class="ad-pill is-approved">Satisfactory</span>
+                    {% elif g <= 2.75 %}<span class="ad-pill is-mute">Fair</span>
+                    {% elif g <= 3.00 %}<span class="ad-pill is-pending">Passed</span>
+                    {% else %}<span class="ad-pill is-rejected">At risk</span>{% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+          {% else %}
+          <div class="ad-panel-body"><p class="ad-figure-sub mb-0">No GWA on record yet.</p></div>
+          {% endif %}
+        </section>
 
+      </div>
+
+      <!-- ── side notes: actions, campus, activity ─────────────────────────── -->
+      <div class="ad-cols">
+
+        <section class="card ad-panel ad-panel--hug" aria-labelledby="ad-actions-title">
+          <div class="ad-panel-head"><h2 id="ad-actions-title">Quick actions</h2></div>
+          <div class="ad-panel-body">
+            <div class="ad-tiles">
+              <a class="ad-tile" href="{{ url_for('staff.review_applications') }}"><i class="bi bi-inbox" aria-hidden="true"></i>Review applications</a>
+              <a class="ad-tile" href="{{ url_for('staff.manage_batches') }}"><i class="bi bi-collection" aria-hidden="true"></i>Manage batches</a>
+              <a class="ad-tile" href="{{ url_for('staff.monitoring') }}"><i class="bi bi-activity" aria-hidden="true"></i>Monitoring</a>
+              <a class="ad-tile" href="{{ url_for('staff.reports') }}"><i class="bi bi-graph-up" aria-hidden="true"></i>Reports</a>
+            </div>
+          </div>
+        </section>
+
+        <section class="card ad-panel ad-panel--hug" aria-labelledby="ad-campus-title">
+          <div class="ad-panel-head"><h2 id="ad-campus-title">Campus profile</h2></div>
+          <div class="ad-panel-body">
+            {% set gender_total = male_students + female_students %}
+            <div class="ad-bar" role="img"
+                 aria-label="{{ male_students }} male, {{ female_students }} female students">
+              <span class="is-m" style="width:{{ (male_students / gender_total * 100) if gender_total else 50 }}%"></span>
+              <span class="is-f" style="width:{{ (female_students / gender_total * 100) if gender_total else 50 }}%"></span>
+            </div>
+            <ul class="ad-legend">
+              <li><span class="dot is-m" aria-hidden="true"></span><b>{{ male_students }}</b> male</li>
+              <li><span class="dot is-f" aria-hidden="true"></span><b>{{ female_students }}</b> female</li>
+            </ul>
+            <ul class="ad-facts mt-3">
+              <li><span>Active students</span><b>{{ active_students }}</b></li>
+              <li><span>New in 30 days</span><b>{{ new_users }}</b></li>
+              <li><span>Open batches</span><b>{{ active_batches }}</b></li>
+            </ul>
+          </div>
+        </section>
+
+        <section class="card ad-panel ad-panel--hug" aria-labelledby="ad-feed-title">
+          <div class="ad-panel-head"><h2 id="ad-feed-title">Recent activity</h2></div>
+          <div class="ad-panel-body">
+            {% if recent_activity %}
+            <ul class="ad-list">
+              {% for app in recent_activity %}
+              {% set sv = app.status.value %}
+              <li>
+                <div class="ad-who">
+                  {{ app.applicant.get_full_name() }}
+                  <span>{{ app.scholarship.title }} &middot; {{ app.submitted_at.strftime('%b %d') }}</span>
+                </div>
+                <span class="ad-pill {{ status_pill.get(sv, 'is-mute') }}">{{ status_label.get(sv, sv|title) }}</span>
+              </li>
+              {% endfor %}
+            </ul>
+            {% else %}
+            <p class="ad-figure-sub mb-0">No applications yet.</p>
+            {% endif %}
+          </div>
+        </section>
+
+      </div>
     </div>
-
-    <!-- ── side notes: actions, campus, activity ───────────────────────────── -->
-    <aside class="sf-side">
-
-      <section class="sf-panel sf-panel--side" aria-labelledby="sf-actions-title">
-        <h2 class="sf-side-title" id="sf-actions-title">Quick actions</h2>
-        <ul class="sf-links">
-          <li><a href="{{ url_for('staff.review_applications') }}"><i class="bi bi-inbox" aria-hidden="true"></i>Review applications<i class="bi bi-chevron-right" aria-hidden="true"></i></a></li>
-          <li><a href="{{ url_for('staff.manage_batches') }}"><i class="bi bi-collection" aria-hidden="true"></i>Manage batches<i class="bi bi-chevron-right" aria-hidden="true"></i></a></li>
-          <li><a href="{{ url_for('staff.monitoring') }}"><i class="bi bi-activity" aria-hidden="true"></i>Monitoring<i class="bi bi-chevron-right" aria-hidden="true"></i></a></li>
-          <li><a href="{{ url_for('staff.reports') }}"><i class="bi bi-graph-up" aria-hidden="true"></i>Reports<i class="bi bi-chevron-right" aria-hidden="true"></i></a></li>
-        </ul>
-      </section>
-
-      <section class="sf-panel sf-panel--side" aria-labelledby="sf-profile-title">
-        <h2 class="sf-side-title" id="sf-profile-title">Campus profile</h2>
-        {% set gender_total = male_students + female_students %}
-        <div class="sf-bar" role="img"
-             aria-label="{{ male_students }} male, {{ female_students }} female students">
-          <span class="is-m" style="width:{{ (male_students / gender_total * 100) if gender_total else 50 }}%"></span>
-          <span class="is-f" style="width:{{ (female_students / gender_total * 100) if gender_total else 50 }}%"></span>
-        </div>
-        <ul class="sf-legend">
-          <li><span class="dot is-m" aria-hidden="true"></span><b>{{ male_students }}</b> male</li>
-          <li><span class="dot is-f" aria-hidden="true"></span><b>{{ female_students }}</b> female</li>
-        </ul>
-        <div class="sf-facts">
-          <div class="sf-fact"><span>Active students</span><b>{{ active_students }}</b></div>
-          <div class="sf-fact"><span>New in 30 days</span><b>{{ new_users }}</b></div>
-          <div class="sf-fact"><span>Open batches</span><b>{{ active_batches }}</b></div>
-        </div>
-      </section>
-
-      <section class="sf-panel sf-panel--side" aria-labelledby="sf-feed-title">
-        <h2 class="sf-side-title" id="sf-feed-title">Recent activity</h2>
-        {% if recent_activity %}
-        <ul class="sf-tl">
-          {% for app in recent_activity %}
-          {% set sv = app.status.value %}
-          <li class="is-{{ 'ok' if sv == 'approved' else ('bad' if sv == 'rejected' else ('muted' if sv == 'withdrawn' else ('info' if sv == 'under_review' else 'warn'))) }}">
-            <b>{{ app.applicant.get_full_name() }}</b>
-            <span>{{ app.scholarship.title }} · {{ app.submitted_at.strftime('%b %d') }}</span>
-            <em>
-              {{- 'Approved' if sv == 'approved' else ('Rejected' if sv == 'rejected'
-                  else ('Withdrawn' if sv == 'withdrawn' else ('Under review' if sv == 'under_review' else 'Pending'))) -}}
-            </em>
-          </li>
-          {% endfor %}
-        </ul>
-        {% else %}
-        <p class="sf-empty">No applications yet.</p>
-        {% endif %}
-      </section>
-
-    </aside>
   </div>
-
 </div>
 {% endblock %}

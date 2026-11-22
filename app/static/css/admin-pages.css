@@ -1019,3 +1019,92 @@
 @media (min-width: 1200px) {
   .ad-cols--sheet > .ad-cols:first-child { position: sticky; top: 1rem; align-self: start; }
 }
+
+/* ── staff dashboard & review queue ──────────────────────────────────────── */
+.ad-board-actions { display: flex; flex-wrap: wrap; gap: .5rem; margin: .85rem 0 .2rem; }
+.ad-board-actions .btn { min-height: 36px; font-size: .8rem; font-weight: 700; border-radius: 8px; }
+.ad-btn-count {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 1.35rem; margin-left: .4rem; padding: 0 .35rem;
+  font-size: .68rem; font-weight: 800; line-height: 1.5;
+  border-radius: 99px; background: #fff; color: #0f2a4d;
+}
+.ad-kpi-sub { display: block; margin-top: .2rem; font-size: .68rem; color: #8494a8; }
+.ad-kpi.is-money .ad-kpi-value { font-size: 1.3rem; }
+
+.ad-seg { display: flex; flex-wrap: wrap; gap: .3rem; }
+.ad-seg-item {
+  padding: .32rem .7rem; font-size: .75rem; font-weight: 700;
+  border: 1px solid #dbe3ee; border-radius: 99px;
+  background: #fff; color: #41556f; text-decoration: none;
+}
+.ad-seg-item:hover { border-color: #c6d5e6; color: #0f2a4d; }
+.ad-seg-item.is-on { background: #0f2a4d; border-color: #0f2a4d; color: #fff; }
+
+.ad-bulkbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .5rem;
+  margin: 0 0 .7rem; padding: .55rem .7rem;
+  background: #fffaf0; border: 1px solid #f0dfbc; border-radius: 10px;
+}
+.ad-bulkbar[hidden] { display: none; }
+.ad-bulk-count { font-size: .74rem; font-weight: 700; color: #8a5a00; }
+.ad-bulkbar textarea { flex: 1 1 12rem; min-height: 34px; font-size: .8rem; }
+.ad-bulk-acts { display: flex; gap: .4rem; margin-left: auto; }
+
+.ad-tile--stack { flex-direction: column; align-items: flex-start; gap: .15rem; }
+.ad-tile--stack .ad-tile-amount { font-size: 1.02rem; font-weight: 800; color: #0f2a4d; }
+.ad-tile--stack b { font-size: .8rem; color: #0f2a4d; }
+.ad-tile--stack .ad-tile-meta { font-size: .72rem; color: #8494a8; }
+.ad-tile--stack .ad-tile-go { font-size: .72rem; font-weight: 700; color: #0b7d72; }
+
+.ad-bar { display: flex; height: 8px; border-radius: 99px; overflow: hidden; background: #eef2f7; }
+.ad-bar .is-m { background: #1d4e89; }
+.ad-bar .is-f { background: #0b7d72; }
+.ad-legend {
+  list-style: none; display: flex; flex-wrap: wrap; gap: .9rem;
+  margin: .55rem 0 0; padding: 0; font-size: .74rem; color: #5b6878;
+}
+.ad-legend .dot { display: inline-block; width: 8px; height: 8px; margin-right: .3rem; border-radius: 50%; }
+.ad-legend .dot.is-m { background: #1d4e89; }
+.ad-legend .dot.is-f { background: #0b7d72; }
+
+.ad-sheet-grid { display: grid; gap: 1.1rem; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 768px) { .ad-sheet-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+.ad-pager .btn.is-off { opacity: .45; pointer-events: none; }
+
+@media (min-width: 960px) {
+  .ad-cols--dash { grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); }
+  .ad-kpis--five { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .ad-kpis--five .ad-kpi { border-bottom: 0; padding: .85rem 0 1rem; }
+  .ad-kpis--five .ad-kpi + .ad-kpi { padding-left: .9rem; border-left: 1px solid #edf1f7; }
+  .ad-filter-row--review { grid-template-columns: minmax(0, 1.3fr) minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, .7fr) auto; }
+}
+@media (max-width: 767.98px) {
+  .ad-filter-row--review { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .ad-filter-row--review .ad-field:first-child { grid-column: 1 / -1; }
+  .ad-bulk-acts { width: 100%; }
+  .ad-bulk-acts .btn { flex: 1 1 0; }
+}
+
+/* the staff review sheet's two ledgers need more than the default sheet width */
+@media (min-width: 960px) {
+  .ad-modal .modal-dialog.ad-dialog--review { max-width: 1000px; }
+}
+/* staff queue only: status and tag share one cell, and the waiting pill must
+   not stretch like the meta line. The admin queue's cells are untouched. */
+.ad-table--review .ad-q-status { display: flex; flex-wrap: wrap; gap: .25rem; }
+
+/* a status pill inside a two-line cell must not stretch like the meta line */
+.ad-table--review .ad-who span.ad-pill { display: inline-flex; margin-top: .25rem; }
+
+/* the staff dashboard's performer ledger keeps five columns on a desktop; the
+   ID and year ride along for the phone card, where the index rules place them */
+@media (min-width: 768px) {
+  .table-responsive .table.ad-table--performers thead th.ad-hide-md,
+  .table-responsive .table.ad-table--performers tbody td.ad-hide-md { display: none; }
+  /* the five-column ledger gives the name room instead of breaking it */
+  .table-responsive .table.ad-table--performers thead th:nth-child(2) { width: 27%; }
+  .table-responsive .table.ad-table--performers thead th:nth-child(6) { width: 9%; }
+  .table-responsive .table.ad-table--performers thead th:nth-child(7) { width: 13%; }
+}
