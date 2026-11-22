@@ -1241,8 +1241,14 @@ def monitoring():
                 .order_by(CampusFormSubmission.uploaded_at.desc()).all())
         subs = [s for s in subs if s.user_id in scholar_ids]
         submitted_ids = {s.user_id for s in subs}
-        pending = sorted((a.applicant for a in apps
-                          if a.applicant_id not in submitted_ids),
+        # One scholar holds one place in the tally even when they carry two
+        # approved applications for the same campus, so build the pending list
+        # per applicant rather than per application.
+        pending_by_id = {}
+        for a in apps:
+            if a.applicant_id not in submitted_ids:
+                pending_by_id.setdefault(a.applicant_id, a.applicant)
+        pending = sorted(pending_by_id.values(),
                          key=lambda u: (u.last_name or '', u.first_name or ''))
         form_rows.append({
             'form': form,

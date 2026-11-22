@@ -151,7 +151,7 @@
 }
 .ad-docs li > i { color: #0b7d72; }
 .ad-doc-name { font-weight: 600; color: #0f2a4d; overflow-wrap: anywhere; }
-.ad-doc-acts { display: flex; gap: .6rem; margin-left: auto; }
+.ad-doc-acts { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .2rem .6rem; margin-left: auto; }
 .ad-doc-acts a { font-size: .72rem; font-weight: 700; color: #0b7d72; text-decoration: none; }
 .ad-doc-acts a:hover { color: #095e56; }
 .ad-ctc-btn {
