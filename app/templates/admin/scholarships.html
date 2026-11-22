@@ -3,7 +3,7 @@
 
 {% block head %}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261127d" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261203a" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -24,6 +24,7 @@
       <p class="ad-sub">
         <b>{{ campus_name or 'All Campuses' }}</b>
         {%- if current_period %} &middot; {{ current_period.display_name }}{% endif %}
+        &middot; {{ scholarships|length }} program{{ '' if scholarships|length == 1 else 's' }}
       </p>
       <div class="ad-kpis">
         <div class="ad-kpi">
@@ -175,11 +176,16 @@
 </div>
 
 <!-- ══ Add Modal ══════════════════════════════════════════════════════════════ -->
-<div class="modal fade" id="addModal" tabindex="-1">
+<div class="modal fade ad-modal" id="addModal" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title fw-bold">Add New Scholarship</h5>
+        <div>
+          <h5 class="modal-title">New scholarship program</h5>
+          <div class="ad-modal-sub">
+            <span>{{ campus_name or 'All campuses' }}</span>
+          </div>
+        </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" action="{{ url_for('admin.create_scholarship') }}">
@@ -193,8 +199,8 @@
           <div class="mb-3">
             <label class="form-label fw-semibold">Funding Type</label>
             <select class="form-select" name="funding_type">
-              <option value="public" selected>Public (government-funded) — a student may hold only one</option>
-              <option value="private">Private — students may hold this alongside other scholarships</option>
+              <option value="public" selected>Public — only one per student</option>
+              <option value="private">Private — can be held alongside others</option>
             </select>
             <div class="form-text">Students can hold only ONE public scholarship, but any number of private ones.</div>
           </div>
@@ -262,7 +268,7 @@
           <!-- Custom Form Builder -->
           <div class="border rounded p-3 mb-3" style="background:#f8f9fa;">
             <div class="d-flex justify-content-between align-items-center mb-3">
-              <h6 class="fw-bold mb-0"><i class="bi bi-ui-checks me-2 text-primary"></i>Application Form Fields</h6>
+              <h6 class="ad-section-title"><i class="bi bi-ui-checks me-2" aria-hidden="true"></i>Application form fields</h6>
               <button type="button" class="btn btn-sm btn-outline-primary" onclick="addFormField('add')">
                 <i class="bi bi-plus me-1"></i>Add Field
               </button>
@@ -317,9 +323,9 @@
             </div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Create</button>
+        <div class="modal-footer modal-footer--row">
+          <button type="button" class="btn ad-ghost-btn" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn ad-primary-btn">Create program</button>
         </div>
       </form>
     </div>
@@ -328,11 +334,24 @@
 
 <!-- ══ Edit Modals ════════════════════════════════════════════════════════════ -->
 {% for s in scholarships %}
-<div class="modal fade" id="editModal{{ s.id }}" tabindex="-1">
+<div class="modal fade ad-modal" id="editModal{{ s.id }}" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title fw-bold">Edit — {{ s.title }}</h5>
+        <div>
+          <h5 class="modal-title">{{ s.title }}</h5>
+          <div class="ad-modal-sub">
+            <span>#{{ s.id }} &middot;
+              {%- if s.scope == 'university' %} All campuses
+              {%- elif s.campus %} {{ s.campus.name }}
+              {%- else %} No campus scope{% endif %}</span>
+            {% if s.status and s.status.value == 'active' %}
+            <span class="ad-pill is-approved">Open</span>
+            {% elif s.status %}
+            <span class="ad-pill is-mute">Closed</span>
+            {% endif %}
+          </div>
+        </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
       <form method="POST" action="{{ url_for('admin.edit_scholarship', sid=s.id) }}">
@@ -345,13 +364,13 @@
           <div class="mb-3">
             <label class="form-label fw-semibold">Funding Type</label>
             <select class="form-select" name="funding_type">
-              <option value="public" {% if s.funding_type != 'private' %}selected{% endif %}>Public (government-funded) — a student may hold only one</option>
-              <option value="private" {% if s.funding_type == 'private' %}selected{% endif %}>Private — students may hold this alongside other scholarships</option>
+              <option value="public" {% if s.funding_type != 'private' %}selected{% endif %}>Public — only one per student</option>
+              <option value="private" {% if s.funding_type == 'private' %}selected{% endif %}>Private — can be held alongside others</option>
             </select>
           </div>
           <div class="row g-3 mb-3">
             <div class="col-md-6">
-              <label class="form-label fw-semibold">Amount (₱)</label>
+              <label class="form-label fw-semibold">Award (₱)</label>
               <input type="number" step="0.01" min="0" class="form-control" name="award_amount"
                      value="{{ s.award_amount or '' }}" placeholder="e.g. 10000">
             </div>
@@ -397,7 +416,7 @@
           <!-- Custom Form Builder (Edit) -->
           <div class="border rounded p-3 mb-3" style="background:#f8f9fa;">
             <div class="d-flex justify-content-between align-items-center mb-3">
-              <h6 class="fw-bold mb-0"><i class="bi bi-ui-checks me-2 text-primary"></i>Application Form Fields</h6>
+              <h6 class="ad-section-title"><i class="bi bi-ui-checks me-2" aria-hidden="true"></i>Application form fields</h6>
               <button type="button" class="btn btn-sm btn-outline-primary" onclick="addFormField('edit{{ s.id }}')">
                 <i class="bi bi-plus me-1"></i>Add Field
               </button>
@@ -458,9 +477,9 @@
             </div>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Save Changes</button>
+        <div class="modal-footer modal-footer--row">
+          <button type="button" class="btn ad-ghost-btn" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn ad-primary-btn">Save changes</button>
         </div>
       </form>
     </div>
