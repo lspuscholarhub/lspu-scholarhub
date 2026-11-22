@@ -5,44 +5,70 @@
 <style>
   main { padding: 0 !important; }
   footer { display: none !important; }
+
+  /* a document opened from a student's file list reads as one sheet of the
+     board: a light tool bar, then the file itself on a framed panel */
   #viewerWrap {
     display: flex; flex-direction: column;
     height: calc(100vh - 60px);
-    background: #1e1e1e;
+    background: #f5f8fd;
   }
   #viewerBar {
-    display: flex; align-items: center; gap: 12px;
-    padding: 10px 20px; background: #2d2d2d; color: #fff;
-    flex-shrink: 0; border-bottom: 1px solid #444;
+    display: flex; align-items: center; gap: .6rem; flex-wrap: wrap;
+    padding: .6rem 1.1rem; background: #fff;
+    border-bottom: 1px solid #e3e8ef; flex-shrink: 0;
   }
   #viewerBar .doc-name {
-    font-size: .9rem; font-weight: 600; flex: 1;
+    flex: 1 1 8rem; min-width: 0;
+    font-size: .88rem; font-weight: 800; color: #0f2a4d; letter-spacing: -.01em;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   #viewerBar .badge-type {
-    background: #444; color: #ccc; font-size: .72rem;
-    padding: 3px 10px; border-radius: 10px;
+    flex: 0 0 auto;
+    padding: .18rem .5rem; border-radius: 999px;
+    background: #f1f3f6; color: #5b6878;
+    font-size: .64rem; font-weight: 800; letter-spacing: .02em;
   }
-  #viewerContent { flex: 1; overflow: hidden; position: relative; }
-  #viewerContent iframe,
-  #viewerContent img {
+  .btn-viewer {
+    flex: 0 0 auto;
+    display: inline-flex; align-items: center; gap: .35rem;
+    min-height: 34px; padding: .3rem .75rem; border-radius: 8px;
+    font-size: .78rem; font-weight: 700; text-decoration: none;
+    border: 1px solid transparent;
+  }
+  .btn-back { background: #fff; border-color: #dbe3ee; color: #41556f; }
+  .btn-back:hover { border-color: #c6d5e6; color: #0f2a4d; }
+  .btn-download { background: #0f2a4d; border-color: #0f2a4d; color: #fff; }
+  .btn-download:hover { background: #16395f; border-color: #16395f; color: #fff; }
+
+  #viewerContent { flex: 1; min-height: 0; padding: .85rem; }
+  .docv-frame {
+    height: 100%; overflow: hidden;
+    background: #fff; border: 1px solid #e3e8ef; border-radius: 12px;
+  }
+  .docv-frame iframe,
+  .docv-frame img {
     width: 100%; height: 100%; border: none; display: block;
   }
-  #viewerContent img { object-fit: contain; background: #333; }
-  .btn-viewer {
-    padding: 5px 14px; font-size: .8rem; border-radius: 8px;
-    font-weight: 600; text-decoration: none; display: inline-flex;
-    align-items: center; gap: 5px;
-  }
-  .btn-back { background: #444; color: #fff; border: none; }
-  .btn-back:hover { background: #555; color: #fff; }
-  .btn-download { background: #0d6efd; color: #fff; border: none; }
-  .btn-download:hover { background: #0b5ed7; color: #fff; }
+  .docv-frame img { object-fit: contain; background: #f7f9fc; }
+
   #unsupported {
-    display: flex; flex-direction: column; align-items: center;
-    justify-content: center; height: 100%; color: #aaa; gap: 16px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: .9rem; height: 100%; padding: 1.5rem; text-align: center;
+    background: #fff; border: 1px solid #e3e8ef; border-radius: 12px;
   }
-  #unsupported i { font-size: 4rem; color: #666; }
+  #unsupported i { font-size: 2.6rem; color: #c6d5e6; }
+  #unsupported p { margin: 0; font-size: .86rem; color: #5b6878; }
+
+  @media (max-width: 575.98px) {
+    /* the file name takes its own row so the two buttons stay side by side */
+    #viewerBar { padding: .55rem .85rem .7rem; gap: .45rem; }
+    #viewerBar .doc-name { order: 3; flex: 1 1 100%; white-space: normal; }
+    .btn-download { margin-left: auto; }
+    #viewerContent { padding: .6rem; }
+    /* the fixed bottom nav would sit on top of the document */
+    #viewerWrap { height: calc(100vh - 60px - var(--sh-bottomnav-h, 60px)); }
+  }
 </style>
 {% endblock %}
 
@@ -52,17 +78,17 @@
   <div id="viewerBar">
     {% if back_url is defined and back_url %}
     <a href="{{ back_url }}" class="btn-viewer btn-back">
-      <i class="bi bi-arrow-left"></i> Back
+      <i class="bi bi-arrow-left" aria-hidden="true"></i> Back
     </a>
     {% else %}
     <a href="javascript:history.back()" class="btn-viewer btn-back">
-      <i class="bi bi-arrow-left"></i> Back
+      <i class="bi bi-arrow-left" aria-hidden="true"></i> Back
     </a>
     {% endif %}
-    <span class="doc-name">{{ doc.original_filename }}</span>
+    <span class="doc-name" title="{{ doc.original_filename }}">{{ doc.original_filename }}</span>
     <span class="badge-type">{{ (doc.file_type or 'file')|upper }}</span>
     <a href="{{ raw_url }}?dl=1" class="btn-viewer btn-download">
-      <i class="bi bi-download"></i> Download
+      <i class="bi bi-download" aria-hidden="true"></i> Download
     </a>
   </div>
 
@@ -72,26 +98,32 @@
 
     {# ── PDF ── #}
     {% if ext == 'pdf' %}
-    <iframe src="{{ raw_url }}" title="{{ doc.original_filename }}"></iframe>
+    <div class="docv-frame">
+      <iframe src="{{ raw_url }}" title="{{ doc.original_filename }}"></iframe>
+    </div>
 
     {# ── Images ── #}
     {% elif ext in ('jpg', 'jpeg', 'png') %}
-    <img src="{{ raw_url }}" alt="{{ doc.original_filename }}">
+    <div class="docv-frame">
+      <img src="{{ raw_url }}" alt="{{ doc.original_filename }}">
+    </div>
 
     {# ── Word documents — Google Docs viewer ── #}
     {% elif ext in ('doc', 'docx') %}
-    <iframe
-      src="https://docs.google.com/gview?url={{ request.host_url }}{{ raw_url[1:] }}&embedded=true"
-      title="{{ doc.original_filename }}">
-    </iframe>
+    <div class="docv-frame">
+      <iframe
+        src="https://docs.google.com/gview?url={{ request.host_url }}{{ raw_url[1:] }}&embedded=true"
+        title="{{ doc.original_filename }}">
+      </iframe>
+    </div>
 
     {# ── Unsupported ── #}
     {% else %}
     <div id="unsupported">
-      <i class="bi bi-file-earmark"></i>
+      <i class="bi bi-file-earmark" aria-hidden="true"></i>
       <p>This file type ({{ ext|upper }}) cannot be previewed in the browser.</p>
-      <a href="{{ raw_url }}?dl=1" class="btn btn-primary">
-        <i class="bi bi-download me-2"></i>Download File
+      <a href="{{ raw_url }}?dl=1" class="btn-viewer btn-download">
+        <i class="bi bi-download" aria-hidden="true"></i> Download file
       </a>
     </div>
     {% endif %}

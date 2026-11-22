@@ -2,70 +2,51 @@
 
 {% block title %}Add Existing Scholar — LSPU ScholarHub{% endblock %}
 
+{% block head %}
+<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261220a" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid px-4 py-4">
-  <nav aria-label="breadcrumb" class="mb-3">
-    <ol class="breadcrumb mb-0 small">
-      <li class="breadcrumb-item"><a href="{{ back_url }}">Student Profile</a></li>
-      <li class="breadcrumb-item active" aria-current="page">Add Existing Scholar</li>
-    </ol>
-  </nav>
+<div class="ad-page ad-flow">
+  <header class="ad-board">
+    <div class="ad-board-inner">
+      <p class="ad-kicker">Scholarship programs</p>
+      <h1 class="ad-title">Add an existing scholar</h1>
+      <p class="ad-sub">
+        {{ student.get_full_name() }}
+        &middot; {{ student.student_id or 'no student ID' }}
+        &middot; {{ student.year_level or 'year not set' }}
+      </p>
+      <div class="ad-board-actions">
+        <a class="btn ad-ghost-btn" href="{{ back_url }}">
+          <i class="bi bi-arrow-left" aria-hidden="true"></i> Back to student
+        </a>
+      </div>
+    </div>
+  </header>
 
-  <div class="row justify-content-center">
-    <div class="col-lg-8">
-      <div class="card border-0 shadow-sm" style="border-radius:12px;">
-        <div class="card-header bg-white border-bottom py-3">
-          <h5 class="m-0 fw-bold text-primary">
-            <i class="bi bi-person-check me-2"></i>Add Existing Scholar to a Program
-          </h5>
+  <div class="ad-body">
+    <p class="ad-crumbs">
+      <a href="{{ back_url }}">Student profile</a>
+      <span aria-hidden="true">&middot;</span> <span class="is-here">Add existing scholar</span>
+    </p>
+
+    <div class="ad-cols ad-cols--split ad-cols--top">
+      <section class="ad-panel" aria-labelledby="ad-program-title">
+        <div class="ad-panel-toolbar">
+          <h2 id="ad-program-title" class="ad-panel-title">Program</h2>
+          <span class="ad-panel-count">
+            {{ programs|length }} active program{{ '' if programs|length == 1 else 's' }}
+          </span>
         </div>
-        <div class="card-body p-4">
 
-          <!-- Student summary -->
-          <div class="p-3 rounded-3 mb-4" style="background:#f8f9fa;border:1px solid #e9ecef;">
-            <div class="d-flex align-items-center gap-3">
-              <div class="flex-shrink-0 d-flex align-items-center justify-content-center rounded-circle"
-                   style="width:48px;height:48px;background:#0d6efd;color:#fff;font-weight:700;font-size:1.1rem;">
-                {{ student.first_name[0] }}{{ student.last_name[0] }}
-              </div>
-              <div>
-                <div class="fw-bold">{{ student.get_full_name() }}</div>
-                <div class="small text-muted">
-                  {{ student.student_id or '—' }} · {{ student.year_level or '—' }}
-                  {% if student.campus %} · {{ student.campus.name }}{% endif %}
-                </div>
-              </div>
-              <span class="ms-auto badge" style="background:#e7f3ff;color:#0a58ca;">
-                <i class="bi bi-award me-1"></i>
-                {%- if student.is_existing_scholar %}Declared existing scholar{% else %}Registered student{% endif %}
-              </span>
-            </div>
-            {% if student.existing_scholarship_name %}
-            <div class="mt-3 small">
-              <span class="fw-semibold">Declared program:</span>
-              “{{ student.existing_scholarship_name }}”
-              <span class="text-muted">(self-declared by the student — verify with the office's records)</span>
-            </div>
-            {% elif student.is_existing_scholar %}
-            <div class="mt-3 small text-warning">
-              <i class="bi bi-exclamation-triangle me-1"></i>
-              The student did not specify a program name.
-            </div>
-            {% else %}
-            <div class="mt-3 small text-muted">
-              This student did not declare an existing scholarship — choose the
-              program to add them to below.
-            </div>
-            {% endif %}
-          </div>
+        <form method="POST" class="ad-panel-body">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-          <form method="POST">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-
-            <div class="mb-3">
-              <label class="form-label fw-semibold" for="scholarshipSelect">
-                Scholarship Program <span class="text-danger">*</span>
-              </label>
+          <div class="ad-form">
+            <div class="ad-field is-wide">
+              <label for="scholarshipSelect">Scholarship program</label>
               <select class="form-select" id="scholarshipSelect" name="scholarship_id" required>
                 <option value="">— Select Scholarship Program —</option>
                 {% for p in programs %}
@@ -75,38 +56,83 @@
                 </option>
                 {% endfor %}
               </select>
-              <div class="form-text">
-                Choosing a program creates an <strong>approved application</strong> for this
-                student — they will appear in batches, monitoring, and reports exactly like a
-                normally-approved scholar, and will be notified by email/SMS.
-              </div>
+              <p class="ad-hint">
+                Choosing a program creates an <b>approved application</b> for this student —
+                they appear in batches, monitoring and reports exactly like a normally-approved
+                scholar, and are notified by email/SMS.
+              </p>
             </div>
 
-            <div class="mb-4">
-              <label class="form-label fw-semibold" for="notesInput">Notes (optional)</label>
+            <div class="ad-field is-wide">
+              <label for="notesInput">Notes (optional)</label>
               <textarea class="form-control" id="notesInput" name="notes" rows="2"
                         placeholder="e.g. Verified against office records — active scholar of this program"></textarea>
             </div>
+          </div>
 
-            <div class="alert alert-warning py-2 px-3 small d-flex gap-2 align-items-start">
-              <i class="bi bi-shield-exclamation mt-1 flex-shrink-0"></i>
-              <div>
+          <div class="ad-note is-warn">
+            <p class="ad-note-title">Before you add</p>
+            <ul class="ad-note-list">
+              <li>
                 The one-public-scholarship-per-period rule still applies — the system will
                 block this if the student already holds a public scholarship this period.
-                Private programs can be combined freely.
-              </div>
-            </div>
+              </li>
+              <li>Private programs can be combined freely.</li>
+            </ul>
+          </div>
 
-            <div class="d-flex gap-2">
-              <button type="submit" class="btn btn-primary px-4">
-                <i class="bi bi-check-lg me-1"></i>Add as Approved Scholar
-              </button>
-              <a href="{{ back_url }}" class="btn btn-outline-secondary px-4">Cancel</a>
-            </div>
-          </form>
+          <div class="ad-form-actions">
+            <a href="{{ back_url }}" class="btn ad-ghost-btn">Cancel</a>
+            <button type="submit" class="btn ad-primary-btn">
+              <i class="bi bi-check-lg" aria-hidden="true"></i> Add as approved scholar
+            </button>
+          </div>
+        </form>
+      </section>
 
+      <aside class="ad-panel ad-panel--hug" aria-labelledby="ad-student-title">
+        <div class="ad-panel-head">
+          <h2 id="ad-student-title">Student</h2>
+          {% if student.is_existing_scholar %}
+          <span class="ad-pill is-info">Declared scholar</span>
+          {% else %}
+          <span class="ad-pill is-mute">Registered student</span>
+          {% endif %}
         </div>
-      </div>
+        <div class="ad-panel-body">
+          <p class="ad-who">
+            {{ student.get_full_name() }}
+            <span>{{ student.student_id or '—' }} &middot; {{ student.year_level or '—' }}</span>
+          </p>
+
+          <ul class="ad-facts">
+            <li>
+              <span><i class="bi bi-geo-alt" aria-hidden="true"></i>Campus</span>
+              <b>{% if student.campus %}{{ student.campus.name }}{% else %}—{% endif %}</b>
+            </li>
+            <li>
+              <span><i class="bi bi-award" aria-hidden="true"></i>Declared program</span>
+              <b>{% if student.existing_scholarship_name %}“{{ student.existing_scholarship_name }}”{% else %}—{% endif %}</b>
+            </li>
+          </ul>
+
+          {% if student.existing_scholarship_name %}
+          <div class="ad-note">
+            Self-declared by the student — verify with the office's records before adding.
+          </div>
+          {% elif student.is_existing_scholar %}
+          <div class="ad-note is-warn">
+            <i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>
+            The student did not specify a program name.
+          </div>
+          {% else %}
+          <div class="ad-note">
+            This student did not declare an existing scholarship — choose the program to add
+            them to.
+          </div>
+          {% endif %}
+        </div>
+      </aside>
     </div>
   </div>
 </div>

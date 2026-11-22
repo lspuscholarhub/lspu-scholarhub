@@ -1,6 +1,6 @@
 /* ═══════════════════════════════════════════════════════════════════════════
    Admin pages — .ad-* components.
-   Same light command board as staff-pages.css: a board carrying the figures,
+   The light command board: a board carrying the figures,
    a flat working panel, a ledger-style review sheet. Load student-pages.css
    first for the .st button base and tokens.
    ═══════════════════════════════════════════════════════════════════════════ */
@@ -1107,4 +1107,39 @@
   .table-responsive .table.ad-table--performers thead th:nth-child(2) { width: 27%; }
   .table-responsive .table.ad-table--performers thead th:nth-child(6) { width: 9%; }
   .table-responsive .table.ad-table--performers thead th:nth-child(7) { width: 13%; }
+}
+
+/* ── shared flows: adding a scholar to a program ─────────────────────────── */
+/* every rule here is gated on .ad-flow, the wrapper these two forms carry, so
+   no other board page can see them. A short form still fills the viewport, so
+   the page reads as one sheet instead of a white panel on blue. */
+.ad-flow { min-height: calc(100vh - 60px); }
+.ad-flow .ad-hint { margin: .4rem 0 0; font-size: .72rem; line-height: 1.55; color: #8494a8; }
+.ad-flow .ad-hint b { color: #41556f; }
+.ad-flow .ad-note.is-warn { background: #fff8ec; color: #7a4a00; }
+.ad-flow .ad-facts b { overflow-wrap: anywhere; text-align: right; }
+
+/* the pick list: one row per student, scrolled inside a framed list */
+.ad-flow .ad-choices {
+  display: grid; gap: .1rem; margin: 0; padding: .3rem;
+  max-height: 320px; overflow-y: auto;
+  background: #fbfcfe; border: 1px solid #e3e8ef; border-radius: 10px;
+}
+.ad-flow .ad-choice {
+  display: flex; align-items: center; gap: .5rem; margin: 0;
+  padding: .45rem .55rem; border-radius: 8px;
+  font-size: .8rem; color: #41556f; cursor: pointer;
+}
+.ad-flow .ad-choice:hover { background: #fff; }
+.ad-flow .ad-choice input { flex: 0 0 auto; margin: 0; accent-color: #0b7d72; }
+.ad-flow .ad-choice-main { flex: 1 1 auto; min-width: 0; }
+.ad-flow .ad-choice-name { display: block; font-weight: 700; color: #0f2a4d; }
+.ad-flow .ad-choice-meta { display: block; font-size: .72rem; color: #8494a8; }
+.ad-flow .ad-choice .ad-pill { flex: 0 0 auto; }
+.ad-flow .ad-choices-empty { margin: 0; padding: .8rem .6rem; font-size: .8rem; color: #8494a8; }
+
+@media (max-width: 575.98px) {
+  .ad-flow .ad-choice { flex-wrap: wrap; align-items: flex-start; }
+  .ad-flow .ad-choice-main { flex-basis: calc(100% - 1.6rem); }
+  .ad-flow .ad-choice .ad-pill { margin-left: 1.5rem; }
 }
