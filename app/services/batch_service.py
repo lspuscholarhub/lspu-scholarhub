@@ -102,12 +102,12 @@ def campus_batch_filter(query, campus_id):
     listed for the campus its program belongs to instead of disappearing from
     that campus's Batches page.
     """
-    from app.models import Scholarship, ScholarshipBatch
+    from app.models import ScholarshipBatch
 
     return query.filter(db.or_(
         ScholarshipBatch.campus_id == campus_id,
         db.and_(ScholarshipBatch.campus_id.is_(None),
-                ScholarshipBatch.scholarship.has(Scholarship.campus_id == campus_id)),
+                ScholarshipBatch.scholarship.has(campus_id=campus_id)),
     ))
 
 
@@ -118,12 +118,12 @@ def campus_application_filter(query, campus_id):
     applicant — the same fallback :func:`application_campus` uses — so such a
     scholar still appears on their campus's unbatched list.
     """
-    from app.models import ScholarshipApplication, User
+    from app.models import ScholarshipApplication
 
     return query.filter(db.or_(
         ScholarshipApplication.campus_id == campus_id,
         db.and_(ScholarshipApplication.campus_id.is_(None),
-                ScholarshipApplication.applicant.has(User.campus_id == campus_id)),
+                ScholarshipApplication.applicant.has(campus_id=campus_id)),
     ))
 
 
@@ -154,23 +154,26 @@ def assign_applications_to_batch(batch, app_ids):
         application = db.session.get(ScholarshipApplication, app_id)
         if not application:
             skipped.append((app_id, 'no such application'))
-        elif application.status != ApplicationStatus.APPROVED:
+            continue
+        if application.status != ApplicationStatus.APPROVED:
             skipped.append((app_id, 'not approved'))
-        elif application.scholarship_id != batch.scholarship_id:
+            continue
+        if application.scholarship_id != batch.scholarship_id:
             skipped.append((app_id, 'different scholarship'))
-        elif (campus and application_campus(application)
-              and application_campus(application) != campus):
+            continue
+
+        app_campus = application_campus(application)
+        if campus and app_campus and app_campus != campus:
             skipped.append((app_id, 'different campus'))
-        else:
-            if campus is None:
-                # University-wide program: the batch pays out where its first
-                # scholar studies, and stays there for everyone after them.
-                campus = application_campus(application)
-                if campus:
-                    batch.campus_id = campus
-            application.batch_id = batch.id
-            application.amount_received = batch.amount_per_scholar
-            assigned.append(application)
+            continue
+        if campus is None and app_campus:
+            # University-wide program: the batch pays out where its first
+            # scholar studies, and stays there for everyone after them.
+            campus = app_campus
+            batch.campus_id = app_campus
+        application.batch_id = batch.id
+        application.amount_received = batch.amount_per_scholar
+        assigned.append(application)
 
     if assigned:
         db.session.flush()          # the batch's own totals query must see the links
@@ -206,16 +209,27 @@ def auto_assign_to_batch(application):
         scholarship = application.scholarship
         app_campus = application_campus(application)
 
-        # Find an open batch for this scholarship in the current period, on the
-        # scholar's campus — a batch that has not been pinned to a campus yet is
-        # still a candidate.
+        # A campus-scoped program binds its scholars: one from another campus is
+        # left unbatched for an admin to place, exactly as the manual assignment
+        # refuses them. A university-wide program has no such limit — its batches
+        # are per campus, so each campus gets its own.
+        if scholarship.campus_id and app_campus and app_campus != scholarship.campus_id:
+            logger.warning(
+                'Application %s is from campus %s but "%s" is a campus %s program; left unbatched.',
+                getattr(application, 'id', None), app_campus,
+                scholarship.title, scholarship.campus_id)
+            return None
+        campus = scholarship.campus_id or app_campus
+
+        # Find an open batch for this scholarship in the current period, on this
+        # campus — a batch not pinned to a campus yet is still a candidate.
         batch_q = ScholarshipBatch.query.filter_by(
             scholarship_id=scholarship.id,
             academic_period_id=current_period.id,
             status='open',
         )
-        if app_campus:
-            batch_q = batch_q.filter(db.or_(ScholarshipBatch.campus_id == app_campus,
+        if campus:
+            batch_q = batch_q.filter(db.or_(ScholarshipBatch.campus_id == campus,
                                             ScholarshipBatch.campus_id.is_(None)))
         batch = batch_q.order_by(ScholarshipBatch.batch_number.desc()).first()
 
@@ -231,24 +245,14 @@ def auto_assign_to_batch(application):
                 batch_number=batch_number,
                 amount_per_scholar=scholarship.award_amount,
                 status='open',
-                campus_id=app_campus or scholarship.campus_id,
+                campus_id=campus,
             )
             db.session.add(batch)
             db.session.flush()  # get batch.id
             logger.info(f'Auto-created batch "{batch_name}" for {scholarship.title}')
 
-        # The batch's campus (its own, or its program's) is binding: a scholar
-        # from another campus is left unbatched for an admin to place, never
-        # folded into a batch that pays out somewhere else.
-        batch_campus_id = batch_campus(batch)
-        if batch_campus_id and app_campus and batch_campus_id != app_campus:
-            logger.warning(
-                'Application %s is from campus %s but batch %s (%s) pays out on campus %s; left unbatched.',
-                getattr(application, 'id', None), app_campus, batch.id,
-                batch.batch_name, batch_campus_id)
-            return None
-        if batch.campus_id is None and app_campus:
-            batch.campus_id = app_campus
+        if batch.campus_id is None and campus:
+            batch.campus_id = campus
 
         # Assign the application to this batch
         application.batch_id = batch.id
