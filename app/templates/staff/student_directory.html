@@ -1,242 +1,214 @@
 {% extends "base.html" %}
 {% block title %}Student Directory - Staff{% endblock %}
 
+{% block head %}
+<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261202a" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid py-4">
+{% set campus_name = session.get('campus_context_name') or session.get('campus_name') %}
+{% set filtered = q or year or course or gender or gwa_flag or scholar_filter or status_f or sort != 'name' %}
+{% set qs = {'q': q, 'year': year, 'course': course, 'gender': gender, 'sort': sort,
+             'gwa_flag': gwa_flag, 'scholar': scholar_filter, 'status': status_f} %}
 
-  <!-- Breadcrumb -->
-  <nav aria-label="breadcrumb">
-    <ol class="breadcrumb mb-3">
-      <li class="breadcrumb-item"><a href="{{ url_for('staff.dashboard') }}">Dashboard</a></li>
-      <li class="breadcrumb-item active" aria-current="page">Student Directory</li>
-    </ol>
-  </nav>
-
-  <h1 class="h3 fw-bold mb-4">Student Directory</h1>
-
-  <!-- Stats -->
-  <div class="row mb-4 g-3">
-    <div class="col-md-3">
-      <div class="card border-0 shadow-sm text-center py-3">
-        <h2 class="text-primary mb-0">{{ total_students }}</h2>
-        <small class="text-muted">Total Students</small>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card border-0 shadow-sm text-center py-3">
-        <h2 class="text-success mb-0">{{ with_gwa_count }}</h2>
-        <small class="text-muted">GWA Recorded</small>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card border-0 shadow-sm text-center py-3">
-        <h2 class="text-danger mb-0">{{ at_risk_count }}</h2>
-        <small class="text-muted">At Risk (GWA &gt; 3.00)</small>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card border-0 shadow-sm text-center py-3">
-        <h2 class="text-info mb-0">{{ avg_gwa or '—' }}</h2>
-        <small class="text-muted">Average GWA</small>
-      </div>
-    </div>
-    <div class="col-md-3">
-      <div class="card border-0 shadow-sm text-center py-3">
-        <h2 class="mb-0" style="color:#0a58ca;">{{ existing_scholars }}</h2>
-        <small class="text-muted">Declared Existing Scholars</small>
-      </div>
-    </div>
-  </div>
-
-  <!-- Filters -->
-  <div class="card border-0 shadow-sm mb-4">
-    <div class="card-body">
-      <form method="GET" class="auto-filter">
-        <div class="row g-2 mb-2">
-          <div class="col-md-4">
-            <label class="form-label small fw-semibold" for="sd-search">Search</label>
-            <input type="text" id="sd-search" name="q" value="{{ q }}" class="form-control"
-                   placeholder="Name or Student ID…">
-          </div>
-          <div class="col-md-2">
-            <label class="form-label small fw-semibold" for="sd-year">Year Level</label>
-            <select id="sd-year" name="year" class="form-select">
-              <option value="">All Years</option>
-              {% for y in ['1st Year','2nd Year','3rd Year','4th Year'] %}
-              <option value="{{ y }}" {% if year==y %}selected{% endif %}>{{ y }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small fw-semibold" for="sd-course">Course / Program</label>
-            <select id="sd-course" name="course" class="form-select">
-              <option value="">All Courses</option>
-              {% for c in courses %}
-              <option value="{{ c }}" {% if course==c %}selected{% endif %}>{{ c }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small fw-semibold" for="sd-gender">Gender</label>
-            <select id="sd-gender" name="gender" class="form-select">
-              <option value="" {% if gender=='' %}selected{% endif %}>All Genders</option>
-              <option value="Male"   {% if gender=='Male'   %}selected{% endif %}>Male</option>
-              <option value="Female" {% if gender=='Female' %}selected{% endif %}>Female</option>
-            </select>
-          </div>
+<div class="ad-page">
+  <header class="ad-board">
+    <div class="ad-board-inner">
+      <p class="ad-kicker">Students</p>
+      <h1 class="ad-title">Student directory</h1>
+      <p class="ad-sub">
+        <b>{{ campus_name or 'All my campuses' }}</b> &middot;
+        {{ total_students }} student{{ '' if total_students == 1 else 's' }}{% if filtered %} after filtering{% else %} on record{% endif %}
+      </p>
+      <div class="ad-kpis ad-kpis--five">
+        <div class="ad-kpi">
+          <span class="ad-kpi-label">Students</span>
+          <span class="ad-kpi-value">{{ total_students }}</span>
         </div>
-        <div class="row g-2 align-items-end">
-          <div class="col-md-3">
-            <label class="form-label small fw-semibold" for="sd-sort">Sort By</label>
-            <select id="sd-sort" name="sort" class="form-select">
-              <option value="name"     {% if sort=='name'     %}selected{% endif %}>Name (A–Z)</option>
-              <option value="gwa_desc" {% if sort=='gwa_desc' %}selected{% endif %}>GWA High → Low</option>
-              <option value="gwa_asc"  {% if sort=='gwa_asc'  %}selected{% endif %}>GWA Low → High</option>
-            </select>
-          </div>
-          <div class="col-md-3">
-            <label class="form-label small fw-semibold" for="sd-gwa">GWA Status</label>
-            <select id="sd-gwa" name="gwa_flag" class="form-select">
-              <option value=""        {% if gwa_flag==''        %}selected{% endif %}>All</option>
-              <option value="at_risk" {% if gwa_flag=='at_risk' %}selected{% endif %}>At Risk (GWA &gt; 3.00)</option>
-            </select>
-          </div>
-          <div class="col-md-2">
-            <label class="form-label small fw-semibold" for="sd-scholar">Scholar Declaration</label>
-            <select id="sd-scholar" name="scholar" class="form-select">
-              <option value=""         {% if scholar_filter==''         %}selected{% endif %}>All Students</option>
-              <option value="existing" {% if scholar_filter=='existing' %}selected{% endif %}>Declared existing scholar</option>
-              <option value="none"     {% if scholar_filter=='none'     %}selected{% endif %}>No declaration</option>
-            </select>
-          </div>
-          <div class="col-md-2">
-            <label class="form-label small fw-semibold" for="sd-status">Student Status</label>
-            <select id="sd-status" name="status" class="form-select">
-              <option value=""           {% if status_f==''           %}selected{% endif %}>All Statuses</option>
-              <option value="active"      {% if status_f=='active'      %}selected{% endif %}>Active</option>
-              <option value="graduated"   {% if status_f=='graduated'   %}selected{% endif %}>Graduated</option>
-              <option value="dropped_out" {% if status_f=='dropped_out' %}selected{% endif %}>Dropped Out</option>
-            </select>
-          </div>
-          <div class="col-md-1"></div>
-          <div class="col-md-3 d-flex justify-content-end">
-            <a href="{{ url_for('staff.student_directory') }}" class="btn btn-outline-secondary btn-sm">
-              <i class="bi bi-x-circle me-1"></i>Reset
-            </a>
-          </div>
+        <div class="ad-kpi is-ok">
+          <span class="ad-kpi-label">GWA recorded</span>
+          <span class="ad-kpi-value">{{ with_gwa_count }}</span>
         </div>
-      </form>
+        <div class="ad-kpi{{ ' is-bad' if at_risk_count else '' }}">
+          <span class="ad-kpi-label">At risk</span>
+          <span class="ad-kpi-value">{{ at_risk_count }}</span>
+        </div>
+        <div class="ad-kpi">
+          <span class="ad-kpi-label">Average GWA</span>
+          <span class="ad-kpi-value">{{ avg_gwa or '—' }}</span>
+        </div>
+        <div class="ad-kpi">
+          <span class="ad-kpi-label">Existing scholars</span>
+          <span class="ad-kpi-value">{{ existing_scholars }}</span>
+        </div>
+      </div>
     </div>
-  </div>
+  </header>
 
-  <!-- GWA legend -->
-  <div class="d-flex flex-wrap justify-content-end align-items-center gap-2 small mb-2">
-    <span class="fw-semibold text-muted me-1">GWA:</span>
-    <span class="badge bg-success">1.00–2.25 · Excellent–Satisfactory</span>
-    <span class="badge bg-info text-dark">2.26–2.75 · Fair</span>
-    <span class="badge bg-warning text-dark">2.76–3.00 · Passed</span>
-    <span class="badge" style="background-color:#fd7e14;color:#fff;">3.01–4.00 · At Risk</span>
-    <span class="badge bg-danger">4.01+ · Failed</span>
-    <span class="badge bg-secondary">Not set</span>
-  </div>
+  <div class="ad-body">
+    <p class="ad-crumbs">
+      <a href="{{ url_for('staff.dashboard') }}">Dashboard</a>
+      <span aria-hidden="true">&middot;</span> <span class="is-here">Student directory</span>
+    </p>
 
-  <!-- Table -->
-  <div class="card border-0 shadow-sm">
-    <div class="card-body p-0">
+    <form method="GET" class="ad-filter auto-filter" role="search">
+      <div class="ad-filter-row ad-filter-row--dir">
+        <div class="ad-field">
+          <label for="d-q">Search</label>
+          <input id="d-q" type="text" name="q" value="{{ q }}" class="form-control"
+                 placeholder="Name, student ID or email…">
+        </div>
+        <div class="ad-field">
+          <label for="d-year">Year level</label>
+          <select id="d-year" name="year" class="form-select">
+            <option value="">All years</option>
+            {% for y in ['1st Year','2nd Year','3rd Year','4th Year'] %}
+            <option value="{{ y }}" {% if year==y %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="ad-field">
+          <label for="d-course">Course</label>
+          <select id="d-course" name="course" class="form-select">
+            <option value="">All courses</option>
+            {% for c in courses %}
+            <option value="{{ c }}" {% if course==c %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="ad-field">
+          <label for="d-gender">Gender</label>
+          <select id="d-gender" name="gender" class="form-select">
+            <option value="">All genders</option>
+            <option value="Male"   {% if gender=='Male'   %}selected{% endif %}>Male</option>
+            <option value="Female" {% if gender=='Female' %}selected{% endif %}>Female</option>
+          </select>
+        </div>
+      </div>
+      <div class="ad-filter-row ad-filter-row--dir2">
+        <div class="ad-field">
+          <label for="d-sort">Sort by</label>
+          <select id="d-sort" name="sort" class="form-select">
+            <option value="name"     {% if sort=='name'     %}selected{% endif %}>Name (A–Z)</option>
+            <option value="gwa_desc" {% if sort=='gwa_desc' %}selected{% endif %}>GWA high → low</option>
+            <option value="gwa_asc"  {% if sort=='gwa_asc'  %}selected{% endif %}>GWA low → high</option>
+          </select>
+        </div>
+        <div class="ad-field">
+          <label for="d-gwa">GWA status</label>
+          <select id="d-gwa" name="gwa_flag" class="form-select">
+            <option value=""        {% if gwa_flag==''        %}selected{% endif %}>All</option>
+            <option value="at_risk" {% if gwa_flag=='at_risk' %}selected{% endif %}>At risk</option>
+          </select>
+        </div>
+        <div class="ad-field">
+          <label for="d-scholar">Scholar declaration</label>
+          <select id="d-scholar" name="scholar" class="form-select">
+            <option value=""         {% if scholar_filter==''         %}selected{% endif %}>All students</option>
+            <option value="existing" {% if scholar_filter=='existing' %}selected{% endif %}>Declared existing scholar</option>
+            <option value="none"     {% if scholar_filter=='none'     %}selected{% endif %}>No declaration</option>
+          </select>
+        </div>
+        <div class="ad-field">
+          <label for="d-status">Student status</label>
+          <select id="d-status" name="status" class="form-select">
+            <option value=""           {% if status_f==''           %}selected{% endif %}>All statuses</option>
+            <option value="active"      {% if status_f=='active'      %}selected{% endif %}>Active</option>
+            <option value="graduated"   {% if status_f=='graduated'   %}selected{% endif %}>Graduated</option>
+            <option value="dropped_out" {% if status_f=='dropped_out' %}selected{% endif %}>Dropped out</option>
+          </select>
+        </div>
+        <div class="ad-field is-reset">
+          <a href="{{ url_for('staff.student_directory') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-x-circle me-1" aria-hidden="true"></i>Reset
+          </a>
+        </div>
+      </div>
+    </form>
+
+    <p class="ad-legend">
+      <span><i class="is-ok" aria-hidden="true"></i>1.00–2.25 excellent</span>
+      <span><i class="is-info" aria-hidden="true"></i>2.26–2.75 fair</span>
+      <span><i class="is-warn" aria-hidden="true"></i>2.76–3.00 passed</span>
+      <span><i class="is-bad" aria-hidden="true"></i>above 3.00 at risk</span>
+      <span><i aria-hidden="true"></i>not set</span>
+    </p>
+
+    <section class="ad-panel" aria-labelledby="ad-dir-title">
+      <div class="ad-panel-toolbar">
+        <h2 id="ad-dir-title" class="ad-panel-title">Students in scope</h2>
+        <span class="ad-panel-count">
+          {{ students.total }} match{{ '' if students.total == 1 else 'es' }}{% if students.pages > 1 %} &middot; page {{ students.page }} of {{ students.pages }}{% endif %}
+        </span>
+      </div>
+
       {% if students.items %}
       <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
-          <thead class="table-light">
+        <table class="table ad-table ad-table--directory align-middle mb-0">
+          <thead>
             <tr>
-              <th>Student</th><th>Student ID</th><th>Year / Course</th>
-              <th>Gender</th><th>GWA</th><th>Units</th><th class="text-center">COR</th><th class="text-center">Grades</th><th></th>
+              <th>Student</th>
+              <th>Year &amp; course</th>
+              <th class="text-end">GWA</th>
+              <th class="text-end">Units</th>
+              <th>Documents</th>
+              <th class="text-end">Profile</th>
             </tr>
           </thead>
           <tbody>
             {% for s in students.items %}
             <tr>
-              <td data-label="Student">
-                <strong>{{ s.get_full_name() }}</strong><br>
-                <small class="text-muted">{{ s.email }}</small>
-                {% if s.is_existing_scholar %}
-                <span class="badge mt-1" style="background:#e7f3ff;color:#0a58ca;"
-                      data-bs-toggle="tooltip" title="Self-declared existing scholar: {{ s.existing_scholarship_name or 'program not specified' }}">
-                  <i class="bi bi-award me-1"></i>Existing scholar
-                </span>
-                {% endif %}
-                {% if s.student_status == 'graduated' %}
-                <span class="badge bg-success mt-1"><i class="bi bi-mortarboard me-1"></i>Graduated</span>
-                {% elif s.student_status == 'dropped_out' %}
-                <span class="badge bg-danger mt-1"><i class="bi bi-exclamation-octagon me-1"></i>Dropped Out</span>
-                {% endif %}
-              </td>
-              <td data-label="ID" class="small">{{ s.student_id or '—' }}</td>
-              <td data-label="Year / Course" class="small">
-                {{ s.year_level or '—' }}
-                {% if s.course %}<br><span class="text-muted">{{ s.course }}</span>{% endif %}
-              </td>
-              <td data-label="Gender" class="small">
-                {% if s.gender == 'Male' %}
-                  <span class="badge" style="background:#e8f0fe;color:#0d6efd;">
-                    <i class="bi bi-gender-male me-1"></i>Male
+              <td class="ad-d-name" data-label="Student">
+                <div class="ad-who">{{ s.get_full_name() }}
+                  <span>{{ s.student_id or 'No student ID' }}{% if s.gender %} &middot; {{ s.gender }}{% endif %}{% if s.town %} &middot; {{ s.town }}{% endif %}{% if s.email %} &middot; {{ s.email }}{% endif %}</span>
+                </div>
+                {% if s.is_existing_scholar or s.student_status in ('graduated', 'dropped_out') %}
+                <div class="ad-d-flags">
+                  {% if s.is_existing_scholar %}
+                  <span class="ad-pill is-info" title="Self-declared existing scholar: {{ s.existing_scholarship_name or 'program not specified' }}">
+                    <i class="bi bi-award" aria-hidden="true"></i>Existing scholar
                   </span>
-                {% elif s.gender == 'Female' %}
-                  <span class="badge" style="background:#fce4ec;color:#e91e63;">
-                    <i class="bi bi-gender-female me-1"></i>Female
-                  </span>
-                {% else %}—{% endif %}
-              </td>
-              <td data-label="GWA">
-                {% if s.gwa %}
-                  {% if s.gwa <= 2.25 %}
-                    <span class="badge bg-success">{{ s.gwa }}</span>
-                  {% elif s.gwa <= 2.75 %}
-                    <span class="badge bg-info">{{ s.gwa }}</span>
-                  {% elif s.gwa <= 3.00 %}
-                    <span class="badge bg-warning text-dark">{{ s.gwa }}</span>
-                  {% elif s.gwa <= 4.00 %}
-                    <span class="badge" style="background-color:#fd7e14;color:#fff;">{{ s.gwa }}</span>
-                  {% else %}
-                    <span class="badge bg-danger">{{ s.gwa }}</span>
                   {% endif %}
-                {% else %}
-                  <span class="text-muted small">Not set</span>
+                  {% if s.student_status == 'graduated' %}
+                  <span class="ad-pill is-approved"><i class="bi bi-mortarboard" aria-hidden="true"></i>Graduated</span>
+                  {% elif s.student_status == 'dropped_out' %}
+                  <span class="ad-pill is-rejected"><i class="bi bi-exclamation-octagon" aria-hidden="true"></i>Dropped out</span>
+                  {% endif %}
+                </div>
                 {% endif %}
               </td>
-              <td data-label="Units" class="small text-center">
-                {% if s.units_enrolled %}
-                  <span class="badge bg-secondary">{{ s.units_enrolled }}</span>
+              <td class="ad-d-year" data-label="Year &amp; course">
+                <div class="ad-strong">{{ s.year_level or '—' }}</div>
+                {% if s.course %}<div class="ad-soft">{{ s.course }}</div>{% endif %}
+              </td>
+              <td class="ad-d-gwa" data-label="GWA">
+                <span class="ad-d-gwa-label" aria-hidden="true">GWA</span>
+                {% if s.gwa is not none %}
+                  {% if s.gwa <= 2.25 %}<span class="ad-pill is-approved">{{ '%.2f'|format(s.gwa) }}</span>
+                  {% elif s.gwa <= 2.75 %}<span class="ad-pill is-info">{{ '%.2f'|format(s.gwa) }}</span>
+                  {% elif s.gwa <= 3.00 %}<span class="ad-pill is-pending">{{ '%.2f'|format(s.gwa) }}</span>
+                  {% else %}<span class="ad-pill is-rejected">{{ '%.2f'|format(s.gwa) }}</span>{% endif %}
                 {% else %}
-                  <span class="text-muted">—</span>
+                  <span class="ad-pill is-mute">Not set</span>
                 {% endif %}
               </td>
-              <td data-label="COR" class="small text-center">
-                {% if s.cor_file_path %}
-                  <a href="{{ url_for('staff.view_reg_document', uid=s.id, doc_type='cor') }}"
-                     target="_blank" class="text-success text-decoration-none"
-                     title="View Certificate of Registration">
-                    <i class="bi bi-check-circle-fill"></i>
-                  </a>
-                {% else %}
-                  <span class="text-muted">—</span>
-                {% endif %}
+              <td class="ad-d-units" data-label="Units">
+                {% if s.units_enrolled %}{{ s.units_enrolled }}<span class="ad-soft"> units</span>{% else %}<span class="ad-soft">—</span>{% endif %}
               </td>
-              <td data-label="Grades" class="small text-center">
-                {% if s.grades_file_path %}
-                  <a href="{{ url_for('staff.view_reg_document', uid=s.id, doc_type='grades') }}"
-                     target="_blank" class="text-success text-decoration-none"
-                     title="View Copy of Grades">
-                    <i class="bi bi-check-circle-fill"></i>
-                  </a>
-                {% else %}
-                  <span class="text-muted">—</span>
-                {% endif %}
+              <td class="ad-d-docs" data-label="Documents">
+                <span class="ad-docx">
+                  {% if s.cor_file_path %}
+                  <a href="{{ url_for('staff.view_reg_document', uid=s.id, doc_type='cor') }}" target="_blank" rel="noopener">COR</a>
+                  {% else %}<span class="is-off" title="No Certificate of Registration on file">COR</span>{% endif %}
+                  {% if s.grades_file_path %}
+                  <a href="{{ url_for('staff.view_reg_document', uid=s.id, doc_type='grades') }}" target="_blank" rel="noopener">Grades</a>
+                  {% else %}<span class="is-off" title="No Copy of Grades on file">Grades</span>{% endif %}
+                </span>
               </td>
-              <td data-label="Action">
-                <a href="{{ url_for('staff.student_profile', uid=s.id) }}"
-                   class="btn btn-sm btn-outline-primary"
-                   data-bs-toggle="tooltip" title="View student profile">
-                  <i class="bi bi-eye me-1"></i>View
+              <td class="ad-d-go" data-label="Profile">
+                <a class="ad-d-link" href="{{ url_for('staff.student_profile', uid=s.id) }}">
+                  View <i class="bi bi-arrow-right" aria-hidden="true"></i>
                 </a>
               </td>
             </tr>
@@ -244,51 +216,54 @@
           </tbody>
         </table>
       </div>
+
+      {% if students.pages > 1 %}
+      <div class="ad-pager">
+        <span class="ad-pager-count">Showing {{ students.first }}–{{ students.last }} of {{ students.total }}</span>
+        <ul class="pagination">
+          <li class="page-item {% if not students.has_prev %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('staff.student_directory', page=students.prev_num or 1, **qs) }}" aria-label="Previous page">&laquo;</a>
+          </li>
+          {% for p in students.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if p %}
+            <li class="page-item {% if p == students.page %}active{% endif %}">
+              <a class="page-link" href="{{ url_for('staff.student_directory', page=p, **qs) }}"{% if p == students.page %} aria-current="page"{% endif %}>{{ p }}</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">…</span></li>
+            {% endif %}
+          {% endfor %}
+          <li class="page-item {% if not students.has_next %}disabled{% endif %}">
+            <a class="page-link" href="{{ url_for('staff.student_directory', page=students.next_num or students.pages, **qs) }}" aria-label="Next page">&raquo;</a>
+          </li>
+        </ul>
+      </div>
+      {% endif %}
+
       {% else %}
-      <div class="card-body empty-state">
-        <i class="bi bi-people"></i>
-        <h5>No students found{% if q %} for "{{ q }}"{% endif %}</h5>
-        <p>{% if q %}Try a different search term.{% else %}Students will appear here after they register.{% endif %}</p>
-        {% if q %}
-        <a href="{{ url_for('staff.student_directory') }}" class="btn btn-outline-primary btn-sm">
-          <i class="bi bi-x-circle me-1"></i>Clear Search
+      <div class="ad-empty">
+        <i class="bi bi-people" aria-hidden="true"></i>
+        {% if students.page > 1 and students.total %}
+        <h2>That page is past the end</h2>
+        <p>There {{ 'is' if students.pages == 1 else 'are' }} {{ students.pages }} page{{ '' if students.pages == 1 else 's' }} of students.</p>
+        <a class="btn ad-ghost-btn" href="{{ url_for('staff.student_directory', page=1, **qs) }}">
+          <i class="bi bi-arrow-left" aria-hidden="true"></i>First page
         </a>
+        {% else %}
+        <h2>No students match</h2>
+        <p>
+          {% if q %}Nothing for “{{ q }}”. {% endif %}
+          {% if filtered %}Try a different year, course, GWA or status.{% else %}Students appear here once they register.{% endif %}
+        </p>
+        {% if filtered %}
+        <a class="btn ad-ghost-btn" href="{{ url_for('staff.student_directory') }}">
+          <i class="bi bi-x-circle" aria-hidden="true"></i>Clear filters
+        </a>
+        {% endif %}
         {% endif %}
       </div>
       {% endif %}
-    </div>
+    </section>
   </div>
-
-  {# ── Pagination ─────────────────────────────────────────────────── #}
-  {% if students.pages > 1 %}
-  <nav class="mt-4 d-flex justify-content-center" aria-label="Student directory pagination">
-    <ul class="pagination">
-      <li class="page-item {% if not students.has_prev %}disabled{% endif %}">
-        <a class="page-link" href="{{ url_for('staff.student_directory', page=students.prev_num, q=q, year=year, course=course, gender=gender, sort=sort, gwa_flag=gwa_flag, scholar=scholar_filter) }}">&laquo;</a>
-      </li>
-      {% for p in students.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
-        {% if p %}
-        <li class="page-item {% if p == students.page %}active{% endif %}">
-          <a class="page-link" href="{{ url_for('staff.student_directory', page=p, q=q, year=year, course=course, gender=gender, sort=sort, gwa_flag=gwa_flag, scholar=scholar_filter) }}">{{ p }}</a>
-        </li>
-        {% else %}
-        <li class="page-item disabled"><span class="page-link">…</span></li>
-        {% endif %}
-      {% endfor %}
-      <li class="page-item {% if not students.has_next %}disabled{% endif %}">
-        <a class="page-link" href="{{ url_for('staff.student_directory', page=students.next_num, q=q, year=year, course=course, gender=gender, sort=sort, gwa_flag=gwa_flag, scholar=scholar_filter) }}">&raquo;</a>
-      </li>
-    </ul>
-  </nav>
-  {% endif %}
 </div>
-{% endblock %}
-
-{% block scripts %}
-<script>
-// Initialize tooltips
-document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) {
-  new bootstrap.Tooltip(el);
-});
-</script>
 {% endblock %}
