@@ -3716,6 +3716,8 @@ def manage_batches():
     """View and manage scholarship batches."""
     from app.models import AcademicPeriod, ScholarshipBatch
 
+    from app.services.batch_service import campus_application_filter, campus_batch_filter
+
     scholarship_id = request.args.get('scholarship_id', '', type=str)
     period_id      = request.args.get('period_id', '', type=str)
 
@@ -3736,7 +3738,7 @@ def manage_batches():
 
     query = ScholarshipBatch.query
     if campus_ctx:
-        query = query.filter(ScholarshipBatch.campus_id == campus_ctx)
+        query = campus_batch_filter(query, campus_ctx)
     if scholarship_id:
         query = query.filter_by(scholarship_id=int(scholarship_id))
     if period_id:
@@ -3752,7 +3754,7 @@ def manage_batches():
         ScholarshipApplication.status == ApplicationStatus.APPROVED,
         ScholarshipApplication.batch_id.is_(None))
     if campus_ctx:
-        unbatched_q = unbatched_q.filter(ScholarshipApplication.campus_id == campus_ctx)
+        unbatched_q = campus_application_filter(unbatched_q, campus_ctx)
     if scholarship_id:
         unbatched_q = unbatched_q.filter_by(scholarship_id=int(scholarship_id))
     if current_period:

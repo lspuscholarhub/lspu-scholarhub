@@ -94,6 +94,39 @@ def batch_campus(batch):
     return scholarship.campus_id if scholarship else None
 
 
+def campus_batch_filter(query, campus_id):
+    """Restrict a ScholarshipBatch query to the batches that pay out on a campus.
+
+    An unpinned batch is read through its program, exactly as
+    :func:`batch_campus` does, so a batch created before campus stamping is
+    listed for the campus its program belongs to instead of disappearing from
+    that campus's Batches page.
+    """
+    from app.models import Scholarship, ScholarshipBatch
+
+    return query.filter(db.or_(
+        ScholarshipBatch.campus_id == campus_id,
+        db.and_(ScholarshipBatch.campus_id.is_(None),
+                ScholarshipBatch.scholarship.has(Scholarship.campus_id == campus_id)),
+    ))
+
+
+def campus_application_filter(query, campus_id):
+    """Restrict a ScholarshipApplication query to one campus.
+
+    An application row without its own campus stamp is read through its
+    applicant — the same fallback :func:`application_campus` uses — so such a
+    scholar still appears on their campus's unbatched list.
+    """
+    from app.models import ScholarshipApplication, User
+
+    return query.filter(db.or_(
+        ScholarshipApplication.campus_id == campus_id,
+        db.and_(ScholarshipApplication.campus_id.is_(None),
+                ScholarshipApplication.applicant.has(User.campus_id == campus_id)),
+    ))
+
+
 def assign_applications_to_batch(batch, app_ids):
     """Attach posted applications to a batch, refusing everything that does not
     belong to it.
