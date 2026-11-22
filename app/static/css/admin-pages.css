@@ -830,3 +830,46 @@
 .modal-footer--row .form-check { display: flex; align-items: center; gap: .45rem; padding-left: 0; margin: 0; }
 .modal-footer--row .form-check .form-check-input { margin: 0; position: static; }
 .modal-footer--row .form-check .form-check-label { font-size: .78rem; color: #41556f; }
+
+/* ── batch roster (one batch's scholars) ──────────────────────────────────── */
+.ad-table--batch tbody td.ad-bt-gwa,
+.ad-table--batch tbody td.ad-bt-amount { white-space: nowrap; }
+.ad-table--batch tbody td.ad-bt-amount { text-align: right; }
+.ad-table--batch tbody td.ad-bt-sid,
+.ad-table--batch tbody td.ad-bt-year { font-size: .76rem; white-space: nowrap; color: #41556f; }
+.ad-table--batch tbody td.ad-bt-year { color: #8494a8; }
+.ad-who a { color: inherit; text-decoration: none; }
+.ad-who a:hover { color: #0b7d72; text-decoration: underline; }
+.ad-ledger dd.is-prose { text-align: left; font-weight: 500; color: #41556f; }
+
+@media (max-width: 767.98px) {
+  .table-responsive .table.ad-table--batch thead { display: none; }
+  .table-responsive .table.ad-table--batch,
+  .table-responsive .table.ad-table--batch tbody { display: block; }
+  .table-responsive .table.ad-table--batch tbody tr {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto;
+    gap: .3rem .6rem; padding: .8rem;
+    border: 0; border-bottom: 1px solid #eef2f7; background: #fff;
+  }
+  .table-responsive .table.ad-table--batch tbody tr:last-child { border-bottom: 0; }
+  .table-responsive .table.ad-table--batch tbody td {
+    display: block; padding: 0; border: 0; font-size: .8rem; white-space: normal;
+  }
+  .table-responsive .table.ad-table--batch tbody td.ad-bt-num { display: none; }
+  .table-responsive .table.ad-table--batch tbody td.ad-bt-student { grid-area: 1 / 1 / 2 / 2; }
+  .table-responsive .table.ad-table--batch tbody td.ad-bt-amount {
+    grid-area: 1 / 2 / 2 / 3; justify-self: end; align-self: start;
+  }
+  .table-responsive .table.ad-table--batch tbody td.ad-bt-course {
+    grid-area: 2 / 1 / 3 / 2; font-size: .74rem; color: #8494a8;
+  }
+  .table-responsive .table.ad-table--batch tbody td.ad-bt-gwa { grid-area: 2 / 2 / 3 / 3; justify-self: end; }
+  .table-responsive .table.ad-table--batch tbody td.ad-bt-sid {
+    grid-area: 3 / 1 / 4 / 2; font-size: .72rem; color: #8494a8;
+  }
+  .table-responsive .table.ad-table--batch tbody td.ad-bt-year {
+    grid-area: 3 / 2 / 4 / 3; justify-self: end;
+  }
+  .table-responsive .table.ad-table--batch tbody td.ad-bt-gender { grid-area: 4 / 1 / 5 / 2; }
+  .table-responsive .table.ad-table--batch tbody td.ad-bt-seq { grid-area: 4 / 2 / 5 / 3; justify-self: end; }
+}
