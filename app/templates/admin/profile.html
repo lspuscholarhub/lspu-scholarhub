@@ -1,126 +1,137 @@
 {% extends "base.html" %}
 {% block title %}Admin Profile - LSPU ScholarHub{% endblock %}
 
+{% block head %}
+<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261215a" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
-<div class="container py-5">
-  <div class="row">
-    <!-- Sidebar -->
-    <div class="col-lg-4 mb-4">
-      <div class="card shadow text-center mb-4">
-        <div class="card-body py-4">
-          <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
-               style="width:100px;height:100px;">
-            <i class="bi bi-person-fill fs-1 text-muted"></i>
-          </div>
-          <h5 class="mb-0">{{ user.get_full_name() }}</h5>
-          <p class="text-muted small mb-1">{{ user.user_type|title }}</p>
-          <p class="small mb-0">{{ user.email }}</p>
-          {% if user.phone_number %}
-          <p class="small text-muted">{{ user.phone_number }}</p>
-          {% endif %}
-          <span class="badge bg-danger mt-1">Administrator</span>
-        </div>
-      </div>
-
-      <!-- Quick links -->
-      <div class="card shadow">
-        <div class="card-body">
-          <h6 class="fw-bold mb-3">Quick Actions</h6>
-          <div class="d-grid gap-2">
-            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline-primary btn-sm">
-              <i class="bi bi-speedometer2 me-1"></i>Dashboard
-            </a>
-            <a href="{{ url_for('admin.manage_users') }}" class="btn btn-outline-info btn-sm">
-              <i class="bi bi-people me-1"></i>Manage Users
-            </a>
-            <a href="{{ url_for('admin.manage_scholarships') }}" class="btn btn-outline-success btn-sm">
-              <i class="bi bi-mortarboard me-1"></i>Scholarships
-            </a>
-            <a href="{{ url_for('admin.manage_applications') }}" class="btn btn-outline-warning btn-sm">
-              <i class="bi bi-file-earmark-text me-1"></i>Applications
-            </a>
-          </div>
-        </div>
-      </div>
+{% set campus_name = session.get('campus_context_name') or session.get('campus_name') %}
+<div class="ad-page">
+  <header class="ad-board">
+    <div class="ad-board-inner">
+      <p class="ad-kicker">Account</p>
+      <h1 class="ad-title">My profile</h1>
+      <p class="ad-sub">
+        <b>{{ user.get_full_name() }}</b>
+        &middot; <span class="ad-pill is-info">{{ user.user_type|title }}</span>
+        {%- if campus_name %} &middot; {{ campus_name }}{% endif %}
+      </p>
     </div>
+  </header>
 
-    <!-- Main -->
-    <div class="col-lg-8">
-      <!-- Profile form -->
-      <div class="card shadow mb-4">
-        <div class="card-header py-3">
-          <h6 class="m-0 fw-bold text-primary">Profile Information</h6>
-        </div>
-        <div class="card-body">
-          <form method="POST" action="{{ url_for('admin.update_profile') }}">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+  <div class="ad-body">
+    <p class="ad-crumbs">
+      <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
+      <span aria-hidden="true">&middot;</span> <span class="is-here">My profile</span>
+    </p>
 
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">First Name</label>
-                <input type="text" class="form-control" name="first_name"
-                       value="{{ user.first_name }}" required>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Last Name</label>
-                <input type="text" class="form-control" name="last_name"
-                       value="{{ user.last_name }}" required>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Username</label>
-                <input type="text" class="form-control" value="{{ user.username }}" readonly>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Email</label>
-                <input type="email" class="form-control" value="{{ user.email }}" readonly>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Phone Number</label>
-                <input type="tel" class="form-control" name="phone_number"
-                       value="{{ user.phone_number or '' }}">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Address</label>
-                <input type="text" class="form-control" name="address"
-                       value="{{ user.address or '' }}">
-              </div>
+    <div class="ad-cols ad-cols--split ad-cols--top">
+      <div class="ad-cols">
+        <section class="ad-panel ad-panel--hug" aria-labelledby="ad-id-title">
+          <div class="ad-me">
+            <span class="ad-me-avatar" aria-hidden="true">{{ (user.first_name or '?')[0]|upper }}{{ (user.last_name or '')[0]|upper }}</span>
+            <h2 id="ad-id-title">{{ user.get_full_name() }}</h2>
+            <p>{{ user.email }}</p>
+            {% if user.phone_number %}<p>{{ user.phone_number }}</p>{% endif %}
+          </div>
+          <dl class="ad-ledger ad-ledger--inset">
+            <div><dt>Username</dt><dd>{{ user.username }}</dd></div>
+            <div><dt>Role</dt><dd>{{ user.user_type|title }}</dd></div>
+            <div><dt>Email</dt><dd>{{ user.email }}</dd></div>
+            <div><dt>Phone</dt><dd>{{ user.phone_number or 'Not set' }}</dd></div>
+            <div><dt>Member since</dt><dd>{{ user.created_at.strftime('%b %d, %Y') if user.created_at else '—' }}</dd></div>
+          </dl>
+        </section>
+
+        <section class="ad-panel ad-panel--hug" aria-labelledby="ad-quick-title">
+          <div class="ad-panel-toolbar">
+            <h2 id="ad-quick-title" class="ad-panel-title">Quick actions</h2>
+          </div>
+          <div class="ad-panel-body">
+            <div class="ad-tiles">
+              <a href="{{ url_for('admin.dashboard') }}" class="ad-tile"><i class="bi bi-speedometer2" aria-hidden="true"></i> Dashboard</a>
+              <a href="{{ url_for('admin.manage_users') }}" class="ad-tile"><i class="bi bi-people" aria-hidden="true"></i> Manage users</a>
+              <a href="{{ url_for('admin.manage_scholarships') }}" class="ad-tile"><i class="bi bi-mortarboard" aria-hidden="true"></i> Scholarships</a>
+              <a href="{{ url_for('admin.manage_applications') }}" class="ad-tile"><i class="bi bi-file-earmark-text" aria-hidden="true"></i> Applications</a>
             </div>
-            <div class="mt-3">
-              <button type="submit" class="btn btn-primary">Save Profile</button>
-            </div>
-          </form>
-        </div>
+          </div>
+        </section>
       </div>
 
-      <!-- Change password -->
-      <div class="card shadow">
-        <div class="card-header py-3">
-          <h6 class="m-0 fw-bold text-primary">Change Password</h6>
-        </div>
-        <div class="card-body">
-          <form method="POST" action="{{ url_for('admin.update_profile') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="row g-3">
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">New Password</label>
-                <div class="input-group">
-                  <input type="password" class="form-control" name="new_password"
-                         placeholder="Leave blank to keep current" minlength="8">
+      <div class="ad-cols">
+        <section class="ad-panel ad-panel--hug" aria-labelledby="ad-info-title">
+          <div class="ad-panel-toolbar">
+            <h2 id="ad-info-title" class="ad-panel-title">Profile information</h2>
+            <span class="ad-panel-count">Username and email are fixed</span>
+          </div>
+          <div class="ad-panel-body">
+            <form method="POST" action="{{ url_for('admin.update_profile') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <div class="ad-form">
+                <div class="ad-field">
+                  <label for="pf-first">First name</label>
+                  <input type="text" class="form-control" id="pf-first" name="first_name"
+                         value="{{ user.first_name }}" required>
+                </div>
+                <div class="ad-field">
+                  <label for="pf-last">Last name</label>
+                  <input type="text" class="form-control" id="pf-last" name="last_name"
+                         value="{{ user.last_name }}" required>
+                </div>
+                <div class="ad-field">
+                  <label for="pf-username">Username</label>
+                  <input type="text" class="form-control" id="pf-username" value="{{ user.username }}" readonly>
+                </div>
+                <div class="ad-field">
+                  <label for="pf-email">Email</label>
+                  <input type="email" class="form-control" id="pf-email" value="{{ user.email }}" readonly>
+                </div>
+                <div class="ad-field">
+                  <label for="pf-phone">Phone number</label>
+                  <input type="tel" class="form-control" id="pf-phone" name="phone_number"
+                         value="{{ user.phone_number or '' }}">
+                </div>
+                <div class="ad-field">
+                  <label for="pf-address">Address</label>
+                  <input type="text" class="form-control" id="pf-address" name="address"
+                         value="{{ user.address or '' }}">
                 </div>
               </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold">Confirm New Password</label>
-                <div class="input-group">
+              <div class="ad-form-actions">
+                <button type="submit" class="btn ad-primary-btn">Save Profile</button>
+              </div>
+            </form>
+          </div>
+        </section>
+
+        <section class="ad-panel ad-panel--hug" aria-labelledby="ad-pw-title">
+          <div class="ad-panel-toolbar">
+            <h2 id="ad-pw-title" class="ad-panel-title">Change password</h2>
+            <span class="ad-panel-count">At least 8 characters</span>
+          </div>
+          <div class="ad-panel-body">
+            <form method="POST" action="{{ url_for('admin.update_profile') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <div class="ad-form">
+                <div class="ad-field">
+                  <label for="pf-newpw">New password</label>
+                  <input type="password" class="form-control" id="pf-newpw" name="new_password"
+                         placeholder="Leave blank to keep current" minlength="8">
+                </div>
+                <div class="ad-field">
+                  <label for="pf-confirmpw">Confirm new password</label>
                   <input type="password" class="form-control" id="confirmPw"
                          placeholder="Repeat new password">
                 </div>
               </div>
-            </div>
-            <div class="mt-3">
-              <button type="submit" class="btn btn-warning">Update Password</button>
-            </div>
-          </form>
-        </div>
+              <div class="ad-form-actions">
+                <button type="submit" class="btn ad-ghost-btn">Update Password</button>
+              </div>
+            </form>
+          </div>
+        </section>
       </div>
     </div>
   </div>

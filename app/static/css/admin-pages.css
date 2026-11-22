@@ -971,3 +971,20 @@
 
 /* a split whose columns size to their own content instead of stretching */
 .ad-cols--top { align-items: start; }
+
+/* ── my profile ───────────────────────────────────────────────────────────── */
+.ad-me { display: grid; gap: .15rem; justify-items: start; padding: 1.05rem 1rem .25rem; }
+.ad-me-avatar {
+  width: 52px; height: 52px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #eaf1fb; color: #1d4e89; font-size: 1rem; font-weight: 800; letter-spacing: .02em;
+}
+.ad-me h2 { margin: .5rem 0 .05rem; font-size: 1rem; font-weight: 800; color: #0f2a4d; }
+.ad-me p { margin: 0; font-size: .78rem; color: #5b6878; overflow-wrap: anywhere; }
+.ad-ledger--inset { margin: 0; padding: .35rem 1rem .95rem; }
+
+.ad-form { display: grid; gap: .65rem .8rem; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 576px) { .ad-form { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.ad-form .ad-field.is-wide { grid-column: 1 / -1; }
+.ad-form .form-control[readonly] { background: #f7f9fc; color: #8494a8; }
+.ad-form-actions { margin-top: .95rem; display: flex; flex-wrap: wrap; gap: .5rem; justify-content: flex-end; }
