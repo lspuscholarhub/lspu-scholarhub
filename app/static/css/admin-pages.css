@@ -701,6 +701,8 @@
 .ad-gwa-form .ad-field.is-go .btn { width: 100%; }
 @media (min-width: 768px) {
   .ad-gwa-form { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  /* notes take the full row, then Save sits under them at the right edge */
+  .ad-gwa-form .ad-field.is-go { grid-column: 1 / -1; justify-content: flex-end; }
   .ad-gwa-form .ad-field.is-go .btn { width: auto; }
 }
 
@@ -1012,3 +1014,8 @@
 .ad-table--periods .ad-acts { flex-wrap: nowrap; }
 .ad-table--periods .ad-acts .btn { padding: .22rem .38rem; }
 .ad-table--periods tbody td { overflow-wrap: normal; }
+
+/* the identity rail rides along while the long panels scroll */
+@media (min-width: 1200px) {
+  .ad-cols--sheet > .ad-cols:first-child { position: sticky; top: 1rem; align-self: start; }
+}

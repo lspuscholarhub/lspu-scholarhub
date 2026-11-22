@@ -3,7 +3,7 @@
 
 {% block head %}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261216a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261218a" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -61,8 +61,8 @@
       <span aria-hidden="true">&middot;</span> <span class="is-here">{{ student.get_full_name() }}</span>
     </p>
 
-    <div class="ad-cols ad-cols--sheet">
-      <div>
+    <div class="ad-cols ad-cols--sheet ad-cols--top">
+      <div class="ad-cols">
         <section class="ad-panel ad-panel--hug" aria-labelledby="sheet-who">
           <div class="ad-panel-head"><h2 id="sheet-who">Identity</h2></div>
           <div class="ad-panel-body">
@@ -118,7 +118,7 @@
           </div>
         </section>
 
-        <section class="ad-panel ad-panel--hug mt-3" aria-labelledby="sheet-status">
+        <section class="ad-panel ad-panel--hug" aria-labelledby="sheet-status">
           <div class="ad-panel-head">
             <h2 id="sheet-status">Student status</h2>
             <span class="ad-pill {{ 'is-approved' if status_word == 'Active' else 'is-rejected' }}">{{ status_word }}</span>
@@ -139,7 +139,7 @@
           </div>
         </section>
 
-        <section class="ad-panel ad-panel--hug mt-3" aria-labelledby="sheet-acts">
+        <section class="ad-panel ad-panel--hug" aria-labelledby="sheet-acts">
           <div class="ad-panel-head"><h2 id="sheet-acts">Quick actions</h2></div>
           <div class="ad-panel-body">
             <button class="btn ad-primary-btn is-block" data-bs-toggle="modal" data-bs-target="#editModal">
@@ -157,7 +157,7 @@
         </section>
       </div>
 
-      <div>
+      <div class="ad-cols">
         <section class="ad-panel ad-panel--hug" aria-labelledby="sheet-gwa">
           <div class="ad-panel-head">
             <h2 id="sheet-gwa">GWA &middot; general weighted average</h2>
@@ -231,7 +231,7 @@
           </div>
         </section>
 
-        <section class="ad-panel ad-panel--hug mt-3" aria-labelledby="sheet-reg">
+        <section class="ad-panel ad-panel--hug" aria-labelledby="sheet-reg">
           <div class="ad-panel-head">
             <h2 id="sheet-reg">Registration documents</h2>
             <span class="ad-panel-count">
@@ -273,7 +273,7 @@
           </div>
         </section>
 
-        <section class="ad-panel ad-panel--hug mt-3" aria-labelledby="sheet-uploads">
+        <section class="ad-panel ad-panel--hug" aria-labelledby="sheet-uploads">
           <div class="ad-panel-toolbar">
             <h2 id="sheet-uploads" class="ad-panel-title">Uploaded documents</h2>
             <span class="ad-panel-count">{{ student.documents|length }} file{{ '' if student.documents|length == 1 else 's' }}</span>
@@ -324,7 +324,7 @@
           </div>
         </section>
 
-        <section class="ad-panel ad-panel--hug mt-3" aria-labelledby="sheet-apps">
+        <section class="ad-panel ad-panel--hug" aria-labelledby="sheet-apps">
           <div class="ad-panel-toolbar">
             <h2 id="sheet-apps" class="ad-panel-title">Scholarship applications</h2>
             <span class="ad-panel-count">{{ student.applications|length }} record{{ '' if student.applications|length == 1 else 's' }}</span>
@@ -497,44 +497,44 @@
       <form method="POST" action="{{ url_for('admin.edit_user', uid=student.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-body">
-          <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">First Name</label>
-              <input type="text" class="form-control" name="first_name"
+          <div class="ad-form">
+            <div class="ad-field">
+              <label for="eu-first">First Name</label>
+              <input type="text" class="form-control" id="eu-first" name="first_name"
                      value="{{ student.first_name }}" required>
             </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Last Name</label>
-              <input type="text" class="form-control" name="last_name"
+            <div class="ad-field">
+              <label for="eu-last">Last Name</label>
+              <input type="text" class="form-control" id="eu-last" name="last_name"
                      value="{{ student.last_name }}" required>
             </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Email</label>
-              <input type="email" class="form-control" name="email"
+            <div class="ad-field">
+              <label for="eu-email">Email</label>
+              <input type="email" class="form-control" id="eu-email" name="email"
                      value="{{ student.email }}" required>
             </div>
-            <div class="col-md-6">
-              <label class="form-label fw-semibold">Phone</label>
-              <input type="tel" class="form-control" name="phone_number"
+            <div class="ad-field">
+              <label for="eu-phone">Phone</label>
+              <input type="tel" class="form-control" id="eu-phone" name="phone_number"
                      value="{{ student.phone_number or '' }}">
             </div>
-            <div class="col-md-4">
-              <label class="form-label fw-semibold">Student ID</label>
-              <input type="text" class="form-control" name="student_id"
+            <div class="ad-field">
+              <label for="eu-sid">Student ID</label>
+              <input type="text" class="form-control" id="eu-sid" name="student_id"
                      value="{{ student.student_id or '' }}">
             </div>
-            <div class="col-md-4">
-              <label class="form-label fw-semibold">Year Level</label>
-              <select class="form-select" name="year_level">
+            <div class="ad-field">
+              <label for="eu-year">Year Level</label>
+              <select class="form-select" id="eu-year" name="year_level">
                 <option value="">—</option>
                 {% for y in ['1st Year','2nd Year','3rd Year','4th Year','5th Year','Irregular','Graduate'] %}
                 <option value="{{ y }}" {% if student.year_level==y %}selected{% endif %}>{{ y }}</option>
                 {% endfor %}
               </select>
             </div>
-            <div class="col-md-4">
-              <label class="form-label fw-semibold">Course</label>
-              <input type="text" class="form-control" name="course"
+            <div class="ad-field is-wide">
+              <label for="eu-course">Course</label>
+              <input type="text" class="form-control" id="eu-course" name="course"
                      value="{{ student.course or '' }}">
             </div>
           </div>

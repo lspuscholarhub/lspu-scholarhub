@@ -3,7 +3,7 @@
 
 {% block head %}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261216a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261218a" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -61,8 +61,8 @@
       <span aria-hidden="true">&middot;</span> <span class="is-here">{{ student.get_full_name() }}</span>
     </p>
 
-    <div class="ad-cols ad-cols--sheet">
-      <div>
+    <div class="ad-cols ad-cols--sheet ad-cols--top">
+      <div class="ad-cols">
         <section class="ad-panel ad-panel--hug" aria-labelledby="sheet-who">
           <div class="ad-panel-head"><h2 id="sheet-who">Identity</h2></div>
           <div class="ad-panel-body">
@@ -114,7 +114,7 @@
           </div>
         </section>
 
-        <section class="ad-panel ad-panel--hug mt-3" aria-labelledby="sheet-status">
+        <section class="ad-panel ad-panel--hug" aria-labelledby="sheet-status">
           <div class="ad-panel-head">
             <h2 id="sheet-status">Student status</h2>
             <span class="ad-pill {{ 'is-approved' if status_word == 'Active' else 'is-rejected' }}">{{ status_word }}</span>
@@ -136,7 +136,7 @@
         </section>
       </div>
 
-      <div>
+      <div class="ad-cols">
         <section class="ad-panel ad-panel--hug" aria-labelledby="sheet-gwa">
           <div class="ad-panel-head">
             <h2 id="sheet-gwa">GWA &middot; general weighted average</h2>
@@ -210,7 +210,7 @@
           </div>
         </section>
 
-        <section class="ad-panel ad-panel--hug mt-3" aria-labelledby="sheet-reg">
+        <section class="ad-panel ad-panel--hug" aria-labelledby="sheet-reg">
           <div class="ad-panel-head">
             <h2 id="sheet-reg">Registration documents</h2>
             <span class="ad-panel-count">
@@ -249,7 +249,7 @@
           </div>
         </section>
 
-        <section class="ad-panel ad-panel--hug mt-3" aria-labelledby="sheet-uploads">
+        <section class="ad-panel ad-panel--hug" aria-labelledby="sheet-uploads">
           <div class="ad-panel-toolbar">
             <h2 id="sheet-uploads" class="ad-panel-title">Uploaded documents</h2>
             <span class="ad-panel-count">{{ student.documents|length }} file{{ '' if student.documents|length == 1 else 's' }}</span>
@@ -292,7 +292,7 @@
           </div>
         </section>
 
-        <section class="ad-panel ad-panel--hug mt-3" aria-labelledby="sheet-apps">
+        <section class="ad-panel ad-panel--hug" aria-labelledby="sheet-apps">
           <div class="ad-panel-toolbar">
             <h2 id="sheet-apps" class="ad-panel-title">Scholarship applications</h2>
             <span class="ad-panel-count">{{ student.applications|length }} record{{ '' if student.applications|length == 1 else 's' }}</span>
