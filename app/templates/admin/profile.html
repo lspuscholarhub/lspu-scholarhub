@@ -3,7 +3,7 @@
 
 {% block head %}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261215a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261216a" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -115,6 +115,11 @@
             <form method="POST" action="{{ url_for('admin.update_profile') }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <div class="ad-form">
+                <div class="ad-field is-wide">
+                  <label for="pf-currentpw">Current password</label>
+                  <input type="password" class="form-control" id="pf-currentpw" name="current_password"
+                         placeholder="Required to change your password" autocomplete="current-password">
+                </div>
                 <div class="ad-field">
                   <label for="pf-newpw">New password</label>
                   <input type="password" class="form-control" id="pf-newpw" name="new_password"

@@ -1,193 +1,242 @@
 {% extends "base.html" %}
 {% block title %}Academic Periods — Admin{% endblock %}
-{% block content %}
-<div class="container-fluid py-4">
-  <div class="mb-4">
-    <h1 class="h3 fw-bold mb-0">Academic Periods</h1>
-    <p class="text-muted small mb-0">Manage academic periods, the M&amp;E deadline, and system configuration.</p>
-  </div>
 
-  <div class="row g-4">
-    <!-- Academic Periods -->
-    <div class="col-lg-8">
-      <div class="card border-0 shadow-sm" style="border-radius:12px;">
-        <div class="card-header bg-white border-0 pt-3 pb-0 px-4 d-flex justify-content-between align-items-center">
-          <h5 class="fw-bold mb-0"><i class="bi bi-calendar3 me-2 text-primary"></i>Academic Periods</h5>
-          <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#createPeriodModal">
-            <i class="bi bi-plus-circle me-1"></i>New Period
-          </button>
+{% block head %}
+<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261216a" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+{% set ns = namespace(batches=0) %}
+{% for p in periods %}{% set ns.batches = ns.batches + (p.batches|length) %}{% endfor %}
+{% set deadline_set = current and current.me_form_deadline %}
+<div class="ad-page">
+  <header class="ad-board">
+    <div class="ad-board-inner">
+      <p class="ad-kicker">System</p>
+      <h1 class="ad-title">Academic periods</h1>
+      <p class="ad-sub">
+        Current &middot; <b>{{ current.display_name if current else 'not set' }}</b>
+        &middot; {{ periods|length }} period{{ '' if periods|length == 1 else 's' }}
+        &middot; {{ ns.batches }} batch{{ '' if ns.batches == 1 else 'es' }}
+      </p>
+      <div class="ad-kpis">
+        <div class="ad-kpi">
+          <span class="ad-kpi-label">Periods</span>
+          <span class="ad-kpi-value">{{ periods|length }}</span>
         </div>
-        <div class="card-body px-4">
-          {% if periods %}
-          <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-              <thead>
-                <tr style="font-size:.78rem;text-transform:uppercase;letter-spacing:.5px;">
-                  <th class="text-muted">Semester</th>
-                  <th class="text-muted">Academic Year</th>
-                  <th class="text-muted">Status</th>
-                  <th class="text-muted">Batches</th>
-                  <th class="text-muted"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for p in periods %}
-                <tr>
-                  <td class="fw-semibold">{{ p.semester }}</td>
-                  <td>AY {{ p.academic_year }}</td>
-                  <td>
-                    {% if p.is_current %}
-                    <span class="badge bg-success">Current</span>
-                    {% else %}
-                    <span class="badge bg-secondary">Past</span>
-                    {% endif %}
-                  </td>
-                  <td class="small text-muted">{{ p.batches|length }} batch(es)</td>
-                  <td>
-                    <button class="btn btn-sm btn-outline-secondary me-1" data-bs-toggle="modal" data-bs-target="#editPeriodModal{{ p.id }}">
-                      <i class="bi bi-pencil"></i>Edit
-                    </button>
-                    {% if not p.is_current %}
-                    <form method="POST" action="{{ url_for('admin.set_current_period', pid=p.id) }}" class="d-inline">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                      <button class="btn btn-sm btn-outline-primary">
-                        <i class="bi bi-check-circle me-1"></i>Set Current
-                      </button>
-                    </form>
-                    <form method="POST" action="{{ url_for('admin.delete_academic_period', pid=p.id) }}" class="d-inline ms-1"
-                          onsubmit="return confirm('Delete {{ p.display_name }}? This cannot be undone.');">
-                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                      <button class="btn btn-sm btn-outline-danger">
-                        <i class="bi bi-trash me-1"></i>Delete
-                      </button>
-                    </form>
-                    {% endif %}
-                  </td>
-                </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-          {% for p in periods %}
-          <div class="modal fade" id="editPeriodModal{{ p.id }}" tabindex="-1">
-            <div class="modal-dialog">
-              <div class="modal-content" style="border-radius:12px;">
-                <div class="modal-header">
-                  <h5 class="modal-title fw-bold">Edit Academic Period</h5>
-                  <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form method="POST" action="{{ url_for('admin.edit_academic_period', pid=p.id) }}">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <div class="modal-body">
-                    <div class="mb-3">
-                      <label class="form-label fw-semibold">Academic Year</label>
-                      <input type="text" class="form-control" name="academic_year"
-                             value="{{ p.academic_year }}" pattern="\d{4}-\d{4}"
-                             title="Format: YYYY-YYYY — the second year must be the first +1 (e.g. 2027-2028)"
-                             required>
-                    </div>
-                    <div class="mb-3">
-                      <label class="form-label fw-semibold">Semester</label>
-                      <select class="form-select" name="semester" required>
-                        <option value="1st Semester" {% if p.semester == '1st Semester' %}selected{% endif %}>1st Semester</option>
-                        <option value="2nd Semester" {% if p.semester == '2nd Semester' %}selected{% endif %}>2nd Semester</option>
-                        <option value="Inter-Semester" {% if p.semester == 'Inter-Semester' %}selected{% endif %}>Inter-Semester</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-          {% endfor %}
-          {% else %}
-          <div class="text-center py-4 text-muted">
-            <i class="bi bi-calendar3 display-4"></i>
-            <p class="mt-2">No academic periods configured yet.</p>
-            <p class="small">Periods are auto-created when staff approve applications, or you can create one manually.</p>
-          </div>
-          {% endif %}
+        <div class="ad-kpi">
+          <span class="ad-kpi-label">Batches</span>
+          <span class="ad-kpi-value">{{ ns.batches }}</span>
+        </div>
+        <div class="ad-kpi{% if deadline_set %} is-ok{% else %} is-warn{% endif %}">
+          <span class="ad-kpi-label">M&amp;E deadline</span>
+          <span class="ad-kpi-value">{{ 'Set' if deadline_set else 'Not set' }}</span>
         </div>
       </div>
     </div>
+  </header>
 
-    <!-- System Info -->
-    <div class="col-lg-4">
-      <div class="card border-0 shadow-sm" style="border-radius:12px;">
-        <div class="card-body p-4">
-          <h5 class="fw-bold mb-3"><i class="bi bi-info-circle me-2 text-info"></i>System Info</h5>
-          <div class="mb-3">
-            <div class="small text-muted">Current Period</div>
-            <div class="fw-semibold">{{ current.display_name if current else 'Not set' }}</div>
-          </div>
-          <div class="mb-3">
-            <div class="small text-muted">GWA At-Risk Threshold</div>
-            <div class="fw-semibold">> 3.00</div>
-          </div>
-          <div class="mb-3">
-            <div class="small text-muted">Session Timeout</div>
-            <div class="fw-semibold">30 minutes</div>
-          </div>
-          <div class="mb-3">
-            <div class="small text-muted">Auto-Batching</div>
-            <div class="fw-semibold text-success">Enabled</div>
+  <div class="ad-body">
+    <p class="ad-crumbs">
+      <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
+      <span aria-hidden="true">&middot;</span> <span class="is-here">Academic periods</span>
+    </p>
+
+    <div class="ad-cols ad-cols--split ad-cols--periods ad-cols--top">
+      <section class="ad-panel" aria-labelledby="ad-periods-title">
+        <div class="ad-panel-toolbar">
+          <h2 id="ad-periods-title" class="ad-panel-title">Periods</h2>
+          <span class="ad-panel-count">Newest first &middot; the current one scopes every page</span>
+          <div class="ad-toolbar-acts">
+            <button class="btn ad-primary-btn" data-bs-toggle="modal" data-bs-target="#createPeriodModal">
+              <i class="bi bi-plus-circle" aria-hidden="true"></i> New Period
+            </button>
           </div>
         </div>
-      </div>
 
-      <!-- M&E Form Deadline -->
-      <div class="card border-0 shadow-sm" style="border-radius:12px;">
-        <div class="card-body p-4">
-          <h5 class="fw-bold mb-1"><i class="bi bi-clipboard-check me-2 text-primary"></i>M&amp;E Form Deadline</h5>
-          <p class="text-muted small mb-3">
-            Due date for scholars' Monitoring &amp; Evaluation form submissions
-            {% if current %}for <strong>{{ current.display_name }}</strong>{% endif %}.
-          </p>
-          <form method="POST" action="{{ url_for('admin.set_me_deadline') }}">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <div class="mb-3">
-              <label class="form-label small fw-semibold">Deadline</label>
-              <input type="date" class="form-control" name="me_form_deadline"
-                     value="{{ current.me_form_deadline.strftime('%Y-%m-%d') if current and current.me_form_deadline else '' }}">
-            </div>
-            <div class="d-flex gap-2">
-              <button type="submit" class="btn btn-primary btn-sm" {% if not current %}disabled{% endif %}>
-                <i class="bi bi-save me-1"></i>Save
-              </button>
-              {% if current and current.me_form_deadline %}
-              <button type="submit" formaction="{{ url_for('admin.set_me_deadline') }}" name="clear" value="1"
-                      class="btn btn-outline-secondary btn-sm">Clear</button>
+        {% if periods %}
+        <div class="table-responsive">
+          <table class="table ad-table ad-table--periods align-middle mb-0">
+            <thead>
+              <tr>
+                <th>Semester</th>
+                <th>Academic year</th>
+                <th>Status</th>
+                <th>Batches</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for p in periods %}
+              <tr>
+                <td class="ad-p-period" data-label="Semester">
+                  <div class="ad-who">{{ p.semester }}</div>
+                </td>
+                <td class="ad-p-year" data-label="Academic year">AY {{ p.academic_year }}</td>
+                <td class="ad-p-status" data-label="Status">
+                  {% if p.is_current %}
+                  <span class="ad-pill is-approved">Current</span>
+                  {% else %}
+                  <span class="ad-pill is-mute">Past</span>
+                  {% endif %}
+                </td>
+                <td class="ad-p-batches" data-label="Batches">{{ p.batches|length }} batch(es)</td>
+                <td class="ad-p-acts text-end" data-label="Actions">
+                  <div class="ad-acts">
+                    <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#editPeriodModal{{ p.id }}"
+                            aria-label="Edit {{ p.display_name }}" title="Edit period">
+                      <i class="bi bi-pencil" aria-hidden="true"></i>
+                    </button>
+                    {% if not p.is_current %}
+                    <form method="POST" action="{{ url_for('admin.set_current_period', pid=p.id) }}">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button class="btn btn-sm btn-outline-primary"
+                              aria-label="Make {{ p.display_name }} the current period" title="Set as current">
+                        <i class="bi bi-check-circle" aria-hidden="true"></i>
+                      </button>
+                    </form>
+                    <form method="POST" action="{{ url_for('admin.delete_academic_period', pid=p.id) }}"
+                          onsubmit="return confirm('Delete {{ p.display_name }}? This cannot be undone.');">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button class="btn btn-sm btn-outline-danger"
+                              aria-label="Delete {{ p.display_name }}" title="Delete period">
+                        <i class="bi bi-trash" aria-hidden="true"></i>
+                      </button>
+                    </form>
+                    {% endif %}
+                  </div>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="ad-empty">
+          <i class="bi bi-calendar3" aria-hidden="true"></i>
+          <h2>No academic periods yet</h2>
+          <p>Periods are created automatically when staff approve applications, or you can add one by hand.</p>
+          <button class="btn ad-primary-btn" data-bs-toggle="modal" data-bs-target="#createPeriodModal">
+            <i class="bi bi-plus-lg" aria-hidden="true"></i> Create the first period
+          </button>
+        </div>
+        {% endif %}
+      </section>
+
+      <div class="ad-cols">
+        <section class="ad-panel ad-panel--hug" aria-labelledby="ad-sysinfo-title">
+          <div class="ad-panel-toolbar">
+            <h2 id="ad-sysinfo-title" class="ad-panel-title">System info</h2>
+          </div>
+          <div class="ad-panel-body">
+            <dl class="ad-ledger">
+              <div><dt>Current period</dt><dd>{{ current.display_name if current else 'Not set' }}</dd></div>
+              <div><dt>GWA at-risk threshold</dt><dd>&gt; 3.00</dd></div>
+              <div><dt>Session timeout</dt><dd>30 minutes</dd></div>
+              <div><dt>Auto-batching</dt><dd><span class="ad-pill is-approved">Enabled</span></dd></div>
+            </dl>
+          </div>
+        </section>
+
+        <section class="ad-panel ad-panel--hug" aria-labelledby="ad-deadline-title">
+          <div class="ad-panel-toolbar">
+            <h2 id="ad-deadline-title" class="ad-panel-title">M&amp;E form deadline</h2>
+          </div>
+          <div class="ad-panel-body">
+            <p class="ad-note">
+              Due date for scholars' Monitoring &amp; Evaluation form submissions
+              {% if current %}for <strong>{{ current.display_name }}</strong>{% endif %}.
+            </p>
+            <form method="POST" action="{{ url_for('admin.set_me_deadline') }}">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <div class="ad-field">
+                <label for="meDeadline">Deadline</label>
+                <input type="date" class="form-control" id="meDeadline" name="me_form_deadline"
+                       value="{{ current.me_form_deadline.strftime('%Y-%m-%d') if current and current.me_form_deadline else '' }}">
+              </div>
+              <div class="ad-form-actions">
+                {% if current and current.me_form_deadline %}
+                <button type="submit" formaction="{{ url_for('admin.set_me_deadline') }}" name="clear" value="1"
+                        class="btn ad-ghost-btn">Clear</button>
+                {% endif %}
+                <button type="submit" class="btn ad-primary-btn" {% if not current %}disabled{% endif %}>
+                  <i class="bi bi-save" aria-hidden="true"></i> Save
+                </button>
+              </div>
+              {% if not current %}
+              <p class="ad-note mb-0 mt-3">Set a current academic period first.</p>
               {% endif %}
-            </div>
-            {% if not current %}
-            <p class="text-muted small mt-2 mb-0">Set a current academic period first.</p>
-            {% endif %}
-          </form>
-        </div>
+            </form>
+          </div>
+        </section>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Create Period Modal -->
-<div class="modal fade" id="createPeriodModal" tabindex="-1">
+<!-- Edit sheet for each period -->
+{% for p in periods %}
+<div class="modal fade ad-modal" id="editPeriodModal{{ p.id }}" tabindex="-1">
   <div class="modal-dialog">
-    <div class="modal-content" style="border-radius:12px;">
+    <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title fw-bold">Create Academic Period</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div>
+          <h5 class="modal-title">Edit academic period</h5>
+          <div class="ad-modal-sub">
+            <span>{{ p.display_name }}</span>
+            <span class="ad-pill {{ 'is-approved' if p.is_current else 'is-mute' }}">{{ 'Current' if p.is_current else 'Past' }}</span>
+          </div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST" action="{{ url_for('admin.edit_academic_period', pid=p.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="py{{ p.id }}">Academic Year</label>
+            <input type="text" class="form-control" id="py{{ p.id }}" name="academic_year"
+                   value="{{ p.academic_year }}" pattern="\d{4}-\d{4}"
+                   title="Format: YYYY-YYYY — the second year must be the first +1 (e.g. 2027-2028)"
+                   required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-semibold" for="ps{{ p.id }}">Semester</label>
+            <select class="form-select" id="ps{{ p.id }}" name="semester" required>
+              <option value="1st Semester" {% if p.semester == '1st Semester' %}selected{% endif %}>1st Semester</option>
+              <option value="2nd Semester" {% if p.semester == '2nd Semester' %}selected{% endif %}>2nd Semester</option>
+              <option value="Inter-Semester" {% if p.semester == 'Inter-Semester' %}selected{% endif %}>Inter-Semester</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-footer modal-footer--row">
+          <button type="button" class="btn ad-ghost-btn" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn ad-primary-btn">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
+
+<!-- Create Period Modal -->
+<div class="modal fade ad-modal" id="createPeriodModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h5 class="modal-title">New academic period</h5>
+          <div class="ad-modal-sub"><span>Becomes the current period as soon as it is created</span></div>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <form method="POST" action="{{ url_for('admin.create_academic_period') }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-body">
-          <p class="text-muted small">This will be automatically set as the current period.</p>
+          <p class="ad-note">This will be automatically set as the current period.</p>
           <div class="mb-3">
-            <label class="form-label fw-semibold">Academic Year</label>
-            <input type="text" class="form-control" name="academic_year"
+            <label class="form-label fw-semibold" for="newPeriodYear">Academic Year</label>
+            <input type="text" class="form-control" id="newPeriodYear" name="academic_year"
                    value="{{ suggest_year }}" placeholder="e.g. 2027-2028"
                    pattern="\d{4}-\d{4}"
                    title="Format: YYYY-YYYY — the second year must be the first +1 (e.g. 2027-2028)"
@@ -198,8 +247,8 @@
             </div>
           </div>
           <div class="mb-3">
-            <label class="form-label fw-semibold">Semester</label>
-            <select class="form-select" name="semester" required>
+            <label class="form-label fw-semibold" for="newPeriodSem">Semester</label>
+            <select class="form-select" id="newPeriodSem" name="semester" required>
               <option value="">Select...</option>
               <option value="1st Semester" {% if suggest_sem == '1st Semester' %}selected{% endif %}>1st Semester</option>
               <option value="2nd Semester" {% if suggest_sem == '2nd Semester' %}selected{% endif %}>2nd Semester</option>
@@ -207,9 +256,9 @@
             </select>
           </div>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-primary">Create Period</button>
+        <div class="modal-footer modal-footer--row">
+          <button type="button" class="btn ad-ghost-btn" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn ad-primary-btn">Create Period</button>
         </div>
       </form>
     </div>

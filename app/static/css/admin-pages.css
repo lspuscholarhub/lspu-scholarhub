@@ -988,3 +988,27 @@
 .ad-form .ad-field.is-wide { grid-column: 1 / -1; }
 .ad-form .form-control[readonly] { background: #f7f9fc; color: #8494a8; }
 .ad-form-actions { margin-top: .95rem; display: flex; flex-wrap: wrap; gap: .5rem; justify-content: flex-end; }
+
+/* campuses and periods: two-line rows on a phone, actions underneath */
+@media (max-width: 767.98px) {
+  .table-responsive .table.ad-table--campus tbody tr,
+  .table-responsive .table.ad-table--periods tbody tr { grid-template-columns: minmax(0, 1fr) auto; }
+  .table-responsive .table.ad-table--campus tbody td.ad-c-name,
+  .table-responsive .table.ad-table--periods tbody td.ad-p-period { grid-column: 1; grid-row: 1; min-width: 0; }
+  .table-responsive .table.ad-table--campus tbody td.ad-c-status,
+  .table-responsive .table.ad-table--periods tbody td.ad-p-status { grid-column: 2; grid-row: 1; justify-self: end; }
+  .table-responsive .table.ad-table--campus tbody td.ad-c-short,
+  .table-responsive .table.ad-table--periods tbody td.ad-p-year { grid-column: 1; grid-row: 2; font-size: .74rem; color: #8494a8; }
+  .table-responsive .table.ad-table--campus tbody td.ad-c-users,
+  .table-responsive .table.ad-table--periods tbody td.ad-p-batches { grid-column: 2; grid-row: 2; justify-self: end; font-size: .72rem; color: #8494a8; }
+  .table-responsive .table.ad-table--campus tbody td.ad-c-acts,
+  .table-responsive .table.ad-table--periods tbody td.ad-p-acts { grid-column: 1 / -1; grid-row: 3; }
+}
+
+/* periods: the row carries up to three icon actions, so the ledger gets the wider column */
+@media (min-width: 960px) {
+  .ad-cols--periods { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
+}
+.ad-table--periods .ad-acts { flex-wrap: nowrap; }
+.ad-table--periods .ad-acts .btn { padding: .22rem .38rem; }
+.ad-table--periods tbody td { overflow-wrap: normal; }
