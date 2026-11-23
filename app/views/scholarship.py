@@ -283,10 +283,16 @@ def view_scholarship(scholarship_id):
     holds_public = False
     active_scholarship_title = None
     if session.get('user_type') == 'student':
-        existing = ScholarshipApplication.query.filter_by(
-            scholarship_id=scholarship_id,
-            applicant_id=session['user_id'],
-        ).first()
+        # Same rule as the list page: one record per program, the most recent.
+        # Without the ordering a reapplied student's detail page kept finding the
+        # old withdrawn/rejected row and offering "Re-apply" next to a pending
+        # application.
+        existing = (ScholarshipApplication.query
+                    .filter_by(scholarship_id=scholarship_id,
+                               applicant_id=session['user_id'])
+                    .order_by(ScholarshipApplication.submitted_at.desc(),
+                              ScholarshipApplication.id.desc())
+                    .first())
         if existing:
             if existing.status in (ApplicationStatus.WITHDRAWN, ApplicationStatus.REJECTED):
                 can_reapply = True      # withdrawn or rejected → allowed to re-apply
