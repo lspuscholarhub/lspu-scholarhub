@@ -148,3 +148,68 @@ class ScholarshipApplication(db.Model):
 
     def __repr__(self):
         return f'<ScholarshipApplication {self.id}>'
+
+
+# ── Batch totals follow every application change ──────────────────────────────
+# total_scholars / total_amount on a batch are denormalised copies of its
+# approved applications, and the dashboards' money figures read them. Instead of
+# trusting every route, service and script to remember recalculate_totals(), the
+# session watches for applications that are created, edited (status, batch) or
+# deleted and queues both the new and the previous batch for a recalculation
+# later in the same flush.
+from sqlalchemy import event, inspect as sa_inspect, update       # noqa: E402
+from sqlalchemy.orm import Session                                 # noqa: E402
+from sqlalchemy.orm.attributes import set_committed_value           # noqa: E402
+
+_TOTAL_COLUMNS = ('total_scholars', 'total_male', 'total_female', 'total_amount')
+
+
+def _batches_touched_by(session):
+    ids = set()
+    for obj in session.new | session.dirty | session.deleted:
+        if not isinstance(obj, ScholarshipApplication):
+            continue
+        history = sa_inspect(obj).attrs.batch_id.history
+        for value in tuple(history.added) + tuple(history.deleted):
+            if value:
+                ids.add(value)
+        if obj.batch_id:
+            ids.add(obj.batch_id)
+    return ids
+
+
+@event.listens_for(Session, 'before_flush')
+def _queue_batch_recalculations(session, flush_context, instances):
+    ids = _batches_touched_by(session)
+    if ids:
+        session.info.setdefault('batch_totals_pending', set()).update(ids)
+
+
+@event.listens_for(Session, 'after_flush_postexec')
+def _recalculate_queued_batches(session, flush_context):
+    """Refresh the totals of every batch an application just left or joined.
+
+    Runs after the flush so the links are visible. The values are written with an
+    explicit UPDATE rather than by leaving the instances dirty: a change made
+    inside a flush handler is discarded when the flush finishes, which is how the
+    dashboard figures could silently revert to zero.
+    """
+    ids = session.info.pop('batch_totals_pending', set())
+    if not ids:
+        return
+    from app.models.scholarship_batch import ScholarshipBatch
+
+    table = ScholarshipBatch.__table__
+    with session.no_autoflush:
+        for batch_id in ids:
+            batch = session.get(ScholarshipBatch, batch_id)
+            if batch is None:                       # deleted in this flush
+                continue
+            # The collection may have been loaded before this flush and still list
+            # an application that has just left; recalculate from the database.
+            session.expire(batch, ['applications'])
+            batch.recalculate_totals()              # one source of truth
+            values = {name: getattr(batch, name) for name in _TOTAL_COLUMNS}
+            session.execute(update(table).where(table.c.id == batch_id).values(**values))
+            for name, value in values.items():
+                set_committed_value(batch, name, value)
