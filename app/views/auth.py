@@ -705,7 +705,7 @@ def register():
             'attempts':             0,
         }
 
-        flash(f'A 6-digit verification code has been sent to <strong>{email}</strong>. '
+        flash(f'A 6-digit verification code has been sent to {email}. '
               f'Please check your inbox.', 'info')
         return redirect(url_for('auth.verify_otp'))
 
@@ -882,7 +882,7 @@ def resend_otp():
     full_name = f"{pending['first_name']} {pending['last_name']}"
     _send_otp_email(pending['email'], full_name, new_otp)
 
-    flash(f'A new verification code has been sent to <strong>{pending["email"]}</strong>.', 'info')
+    flash(f'A new verification code has been sent to {pending["email"]}.', 'info')
     return redirect(url_for('auth.verify_otp'))
 
 

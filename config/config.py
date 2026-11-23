@@ -90,9 +90,10 @@ class ProductionConfig(Config):
     WTF_CSRF_TIME_LIMIT = None   # no expiry on CSRF tokens
     PREFERRED_URL_SCHEME = 'https'
     # Session cookies — expire when browser is closed
-    SESSION_COOKIE_SECURE   = False   # Railway terminates TLS at the proxy; the app
-                                      # receives plain HTTP internally, so Secure flag
-                                      # would break session cookies
+    # Railway redirects every http:// request to https:// (verified), and
+    # ProxyFix makes Flask see the original scheme, so a Secure cookie is safe
+    # and stops the browser from ever sending the session over plain HTTP.
+    SESSION_COOKIE_SECURE   = True
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
     PERMANENT_SESSION_LIFETIME = 3600   # 1 hour if session IS permanent

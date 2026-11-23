@@ -1190,7 +1190,13 @@ def manage_users():
     if role:
         query = query.filter_by(user_type=role)
 
-    users = query.order_by(User.created_at.desc()).all()
+    # Eager-load campus data: the template reads u.assigned_campuses and
+    # u.campus for every row, and lazy loading those over the remote database
+    # turned this page into an 80-second request (N+1).
+    from sqlalchemy.orm import selectinload, joinedload
+    users = (query.options(selectinload(User.assigned_campuses),
+                           joinedload(User.campus))
+             .order_by(User.created_at.desc()).all())
     from app.models import Campus
     all_campuses = Campus.query.filter_by(is_active=True).order_by(Campus.id).all()
     return render_template('admin/users.html', users=users, q=q, role_filter=role,

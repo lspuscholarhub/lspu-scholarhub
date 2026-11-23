@@ -552,4 +552,20 @@ def create_app(config_name=None):
             'all_academic_periods': all_academic_periods,
         }
 
+    # ── Security headers ──────────────────────────────────────────────────
+    # Browser hardening that does not depend on the host's proxy. HSTS is only
+    # sent over HTTPS, so plain-HTTP local development is unaffected.
+    @app.after_request
+    def _security_headers(response):
+        from flask import request as _req
+        response.headers.setdefault('X-Content-Type-Options', 'nosniff')
+        response.headers.setdefault('X-Frame-Options', 'SAMEORIGIN')
+        response.headers.setdefault('Referrer-Policy', 'strict-origin-when-cross-origin')
+        response.headers.setdefault('Permissions-Policy',
+                                    'geolocation=(), microphone=(), camera=()')
+        if _req.is_secure:
+            response.headers.setdefault('Strict-Transport-Security',
+                                        'max-age=31536000; includeSubDomains')
+        return response
+
     return app
