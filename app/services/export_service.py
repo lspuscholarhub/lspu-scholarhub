@@ -61,21 +61,33 @@ def _safe(val, default='—'):
     return str(val)
 
 
-def _campus_id(filters):
-    """The campus an export is limited to, or None for every campus.
-
-    The routes derive this from the session (a campus admin's own campus, or the
-    super admin's campus selector) — never from the query string.
-    """
+def _int_filter(filters, key):
     if not filters:
         return None
-    raw = filters.get('campus_id')
+    raw = filters.get(key)
     if raw in (None, '', 0, '0'):
         return None
     try:
         return int(raw)
     except (TypeError, ValueError):
         return None
+
+
+def _campus_id(filters):
+    """The campus an export is limited to, or None for every campus.
+
+    The routes derive this from the session (a campus admin's own campus, or the
+    super admin's campus selector) — never from the query string.
+    """
+    return _int_filter(filters, 'campus_id')
+
+
+def _period_id(filters):
+    """The academic period an export is limited to, or None for every period.
+
+    Comes from the same viewing-period session state the reports pages read.
+    """
+    return _int_filter(filters, 'period_id')
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -91,6 +103,9 @@ def _build_applications_data(filters=None):
     campus_id = _campus_id(filters)
     if campus_id:
         query = query.filter(User.campus_id == campus_id)
+    period_id = _period_id(filters)
+    if period_id:
+        query = query.filter(ScholarshipApplication.academic_period_id == period_id)
     if filters:
         status = filters.get('status')
         scholarship_id = filters.get('scholarship_id')
@@ -166,6 +181,18 @@ def _build_students_data(filters=None):
     campus_id = _campus_id(filters)
     if campus_id:
         query = query.filter(User.campus_id == campus_id)
+    period_id = _period_id(filters)
+    if period_id and filters.get('period_is_specific'):
+        # Same rule as the reports page: a roster is period-filtered only when
+        # the viewer deliberately picked a past period.
+        from app import db
+
+        applicant_ids = [row[0] for row in db.session.query(
+            ScholarshipApplication.applicant_id
+        ).filter(ScholarshipApplication.academic_period_id == period_id)
+            .distinct().all()]
+        query = (query.filter(User.id.in_(applicant_ids)) if applicant_ids
+                 else query.filter(User.id == -1))
     if filters:
         course = filters.get('course')
         if course:
@@ -204,6 +231,9 @@ def _build_approved_data(filters=None):
     campus_id = _campus_id(filters)
     if campus_id:
         query = query.filter(User.campus_id == campus_id)
+    period_id = _period_id(filters)
+    if period_id:
+        query = query.filter(ScholarshipApplication.academic_period_id == period_id)
     apps = query.order_by(ScholarshipApplication.final_decision_date.desc()).all()
 
     rows = []

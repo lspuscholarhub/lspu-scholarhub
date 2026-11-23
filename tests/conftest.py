@@ -89,7 +89,7 @@ def open_batch(seed):
 def approve(app):
     """Create an application; campus_id defaults to the applicant's own campus."""
     def _approve(applicant, program=None, *, scholarship_id=None,
-                 campus_id='applicant', status=ApplicationStatus.APPROVED):
+                 campus_id='applicant', status=ApplicationStatus.APPROVED, period=None):
         application = ScholarshipApplication(
             scholarship_id=scholarship_id if scholarship_id is not None else program.id,
             applicant_id=applicant.id,
@@ -98,6 +98,7 @@ def approve(app):
             application_data={},
             submitted_at=datetime.utcnow(),
             campus_id=applicant.campus_id if campus_id == 'applicant' else campus_id,
+            academic_period_id=period.id if period else None,
         )
         db.session.add(application)
         db.session.commit()

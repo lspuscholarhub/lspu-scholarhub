@@ -319,11 +319,8 @@ def dashboard():
 @role_required('admin')
 def manage_scholarships():
     # Strict campus scoping (super admin honors campus selector)
-    if session.get('user_type') == 'super_admin':
-        campus_ctx = session.get('campus_context')          # None = all campuses
-    else:
-        _me = db.session.get(User, session.get('user_id'))
-        campus_ctx = _me.campus_id if _me else None
+    from app.utils.scoping import current_campus_context
+    campus_ctx = current_campus_context()
 
     query = Scholarship.query
     if session.get('user_type') == 'super_admin':
@@ -1371,11 +1368,8 @@ def verify_user(uid):
 @role_required('admin')
 def manage_notifications():
     # Strict campus scoping (super admin honors campus selector)
-    if session.get('user_type') == 'super_admin':
-        campus_ctx = session.get('campus_context')          # None = all campuses
-    else:
-        _me = db.session.get(User, session.get('user_id'))
-        campus_ctx = _me.campus_id if _me else None
+    from app.utils.scoping import current_campus_context
+    campus_ctx = current_campus_context()
 
     _stu_q = User.query.filter_by(user_type='student', is_active=True)
     if campus_ctx:
@@ -1883,11 +1877,8 @@ def reports():
     import json
 
     # Strict campus scoping (super admin honors campus selector)
-    if session.get('user_type') == 'super_admin':
-        campus_ctx = session.get('campus_context')          # None = all campuses
-    else:
-        _me = db.session.get(User, session.get('user_id'))
-        campus_ctx = _me.campus_id if _me else None
+    from app.utils.scoping import current_campus_context
+    campus_ctx = current_campus_context()
 
     current_period = get_viewing_period()
     pid = current_period.id if current_period else None
@@ -1938,11 +1929,8 @@ def reports():
         ScholarshipApplication.scholar_status == 'active').count()
 
     # Strict campus scoping (super admin honors campus selector)
-    if session.get('user_type') == 'super_admin':
-        campus_ctx = session.get('campus_context')          # None = all campuses
-    else:
-        _me = db.session.get(User, session.get('user_id'))
-        campus_ctx = _me.campus_id if _me else None
+    from app.utils.scoping import current_campus_context
+    campus_ctx = current_campus_context()
 
     _sch_q = Scholarship.query
     if campus_ctx:
@@ -2095,15 +2083,13 @@ def export_report():
     }
     filters = {k: v for k, v in filters.items() if v}
 
-    # Same scoping as the reports page this file mirrors: a campus admin exports
-    # their own campus, the super admin exports whatever the selector shows.
-    if session.get('user_type') == 'super_admin':
-        campus_ctx = session.get('campus_context')          # None = all campuses
-    else:
-        _me = db.session.get(User, session.get('user_id'))
-        campus_ctx = _me.campus_id if _me else None
+    # Same scoping as the reports page this file mirrors: the viewer's campus
+    # plus the period they are looking at.
+    from app.utils.scoping import current_campus_context, current_period_filters
+    campus_ctx = current_campus_context()
     if campus_ctx:
         filters['campus_id'] = campus_ctx
+    filters.update(current_period_filters())
 
     try:
         buf, mime, filename = generate_export(report_type, fmt, filters)
