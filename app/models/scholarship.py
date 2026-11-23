@@ -174,8 +174,12 @@ def _remember_previous_batch(mapper, connection, target):
     state = sa_inspect(target)
     batch_hist = state.attrs.batch_id.history
     target._totals_previous_batch_id = next((v for v in batch_hist.deleted if v), target.batch_id)
+    # amount_received is part of a batch's total whenever the batch has no fixed
+    # rate (the fallback sums what each approved application was granted), so a
+    # grant edit must recount just like a status or batch change.
     target._totals_touched = (batch_hist.has_changes()
-                              or state.attrs.status.history.has_changes())
+                              or state.attrs.status.history.has_changes()
+                              or state.attrs.amount_received.history.has_changes())
 
 
 @event.listens_for(ScholarshipApplication, 'before_delete')

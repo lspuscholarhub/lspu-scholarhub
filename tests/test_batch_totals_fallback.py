@@ -59,3 +59,19 @@ def test_totals_fall_back_to_amount_received_without_a_rate(seed, approve):
     db.session.expire_all()
     batch = db.session.get(ScholarshipBatch, batch.id)
     assert (batch.total_scholars, float(batch.total_amount)) == (1, 1000.0)
+
+    # Dropping the rate again falls back to the granted amount...
+    batch = db.session.get(ScholarshipBatch, batch.id)
+    batch.amount_per_scholar = None
+    db.session.commit()
+    db.session.expire_all()
+    batch = db.session.get(ScholarshipBatch, batch.id)
+    assert (batch.total_scholars, float(batch.total_amount)) == (1, 1500.0)
+
+    # ...and editing that grant must refresh the total on its own, with no
+    # status or batch change to notice it.
+    second.amount_received = 900
+    db.session.commit()
+    db.session.expire_all()
+    batch = db.session.get(ScholarshipBatch, batch.id)
+    assert (batch.total_scholars, float(batch.total_amount)) == (1, 900.0)
