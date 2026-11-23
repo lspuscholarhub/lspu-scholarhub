@@ -2058,6 +2058,16 @@ def export_report():
         'scholarship_id': request.args.get('scholarship_id', ''),
         'course': request.args.get('course', ''),
     }.items() if v}
+
+    # Same scoping as the reports page this file mirrors: a campus admin exports
+    # their own campus, the super admin exports whatever the selector shows.
+    if session.get('user_type') == 'super_admin':
+        campus_ctx = session.get('campus_context')          # None = all campuses
+    else:
+        _me = db.session.get(User, session.get('user_id'))
+        campus_ctx = _me.campus_id if _me else None
+    if campus_ctx:
+        filters['campus_id'] = campus_ctx
     try:
         buf, mime, filename = generate_export(report_type, fmt, filters)
         return send_file(buf, mimetype=mime, as_attachment=True, download_name=filename)

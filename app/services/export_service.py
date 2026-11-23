@@ -61,6 +61,23 @@ def _safe(val, default='—'):
     return str(val)
 
 
+def _campus_id(filters):
+    """The campus an export is limited to, or None for every campus.
+
+    The routes derive this from the session (a campus admin's own campus, or the
+    super admin's campus selector) — never from the query string.
+    """
+    if not filters:
+        return None
+    raw = filters.get('campus_id')
+    if raw in (None, '', 0, '0'):
+        return None
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return None
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Data builders  (return list-of-dicts regardless of report type)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -69,7 +86,11 @@ def _build_applications_data(filters=None):
     from app.models import ScholarshipApplication, User, Scholarship
     from app.models.scholarship import ApplicationStatus
 
-    query = ScholarshipApplication.query
+    query = ScholarshipApplication.query.join(
+        User, ScholarshipApplication.applicant_id == User.id)
+    campus_id = _campus_id(filters)
+    if campus_id:
+        query = query.filter(User.campus_id == campus_id)
     if filters:
         status = filters.get('status')
         scholarship_id = filters.get('scholarship_id')
@@ -105,11 +126,19 @@ def _build_applications_data(filters=None):
 
 
 def _build_scholarships_data(filters=None):
+    from sqlalchemy import or_
+
     from app.models import Scholarship, ScholarshipApplication
     from app.models.scholarship import ScholarshipStatus, ApplicationStatus
 
-    scholarships = Scholarship.query.order_by(
-        Scholarship.application_deadline.asc()).all()
+    campus_id = _campus_id(filters)
+    query = Scholarship.query
+    if campus_id:
+        # Same rule as the reports page: a campus sees its own programs plus
+        # university-wide ones (campus_id IS NULL).
+        query = query.filter(or_(Scholarship.campus_id == campus_id,
+                                 Scholarship.campus_id.is_(None)))
+    scholarships = query.order_by(Scholarship.application_deadline.asc()).all()
 
     rows = []
     for s in scholarships:
@@ -134,6 +163,9 @@ def _build_students_data(filters=None):
     from app.models.scholarship import ApplicationStatus
 
     query = User.query.filter_by(user_type='student')
+    campus_id = _campus_id(filters)
+    if campus_id:
+        query = query.filter(User.campus_id == campus_id)
     if filters:
         course = filters.get('course')
         if course:
@@ -163,12 +195,16 @@ def _build_students_data(filters=None):
 
 
 def _build_approved_data(filters=None):
-    from app.models import ScholarshipApplication
+    from app.models import ScholarshipApplication, User
     from app.models.scholarship import ApplicationStatus
 
-    apps = ScholarshipApplication.query.filter_by(
-        status=ApplicationStatus.APPROVED
-    ).order_by(ScholarshipApplication.final_decision_date.desc()).all()
+    query = ScholarshipApplication.query.join(
+        User, ScholarshipApplication.applicant_id == User.id
+    ).filter(ScholarshipApplication.status == ApplicationStatus.APPROVED)
+    campus_id = _campus_id(filters)
+    if campus_id:
+        query = query.filter(User.campus_id == campus_id)
+    apps = query.order_by(ScholarshipApplication.final_decision_date.desc()).all()
 
     rows = []
     for a in apps:
