@@ -232,6 +232,10 @@ def _fetch_from_cloudinary(public_id, resource_type):
 def _upload_local(file_bytes, filename, folder):
     try:
         from flask import current_app
+        from werkzeug.utils import secure_filename
+        # Callers already sanitize, but this is the last write to disk: never
+        # let a filename escape the upload directory even if a caller forgets.
+        filename = secure_filename(filename)
         upload_root = current_app.config.get('UPLOAD_FOLDER', 'app/static/uploads')
         target_dir  = os.path.join(upload_root, folder)
         os.makedirs(target_dir, exist_ok=True)
