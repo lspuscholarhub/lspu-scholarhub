@@ -1,8 +1,9 @@
-"""The admin dashboard must count and total batches that carry no campus.
+"""The admin and staff dashboards must count and total batches with no campus.
 
-A batch for a program on the admin's campus may have campus_id NULL (legacy rows,
-university-wide programs). The Batches page already resolved that through the
-scholarship; the dashboard used to compare campus_id directly and drop the row.
+A batch for a program on the viewer's campus may have campus_id NULL (legacy
+rows, university-wide programs). The Batches page already resolved that through
+the scholarship; both dashboards used to compare campus_id directly and drop the
+row, under-reporting the count and the fund total.
 """
 import pytest
 
@@ -32,7 +33,10 @@ def app(tmp_path):
         admin = User(username='t-admin', email='admin@example.test', password_hash='x',
                      first_name='Test', last_name='Admin', user_type='admin',
                      campus_id=mine.id)
-        db.session.add(admin)
+        staff = User(username='t-staff', email='staff@example.test', password_hash='x',
+                     first_name='Test', last_name='Staff', user_type='staff',
+                     campus_id=mine.id)
+        db.session.add_all([admin, staff])
         db.session.commit()
 
         program = Scholarship(title='Test Grant', description='d',
@@ -79,6 +83,28 @@ def test_dashboard_counts_and_totals_a_campus_less_batch(app, monkeypatch):
         sess['user_type'] = 'admin'
 
     response = client.get('/admin/')
+
+    assert response.status_code == 200
+    assert captured['active_batches'] == 2
+    assert float(captured['total_funds']) == 12500
+
+
+def test_staff_dashboard_counts_and_totals_a_campus_less_batch(app, monkeypatch):
+    """The staff dashboard got the same campus fix and must agree with the admin one."""
+    from app.views import staff as staff_views
+
+    captured = {}
+    monkeypatch.setattr(staff_views, 'render_template',
+                        lambda template, **context: captured.update(context) or 'rendered')
+
+    staff = User.query.filter_by(username='t-staff').one()
+    client = app.test_client()
+    with client.session_transaction() as sess:
+        sess['user_id'] = staff.id
+        sess['username'] = staff.username
+        sess['user_type'] = 'staff'
+
+    response = client.get('/staff/')
 
     assert response.status_code == 200
     assert captured['active_batches'] == 2
