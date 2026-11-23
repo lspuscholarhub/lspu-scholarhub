@@ -72,6 +72,59 @@ def test_super_admin_export_still_spans_every_campus(seed, approve, sign_in):
     assert 'Other Student' in body
 
 
+def test_roster_export_follows_a_selected_past_period(seed, approve, sign_in):
+    """The student roster is period-filtered only once a past period is picked."""
+    past = AcademicPeriod(academic_year='2024-2025', semester='1st Semester',
+                          is_current=False)
+    older = User(username='t-older', email='older@example.test', password_hash='x',
+                 first_name='Past', last_name='Student', user_type='student',
+                 student_id='TEST-0004', campus_id=seed.campus.id)
+    idle = User(username='t-idle', email='idle@example.test', password_hash='x',
+                first_name='Idle', last_name='Student', user_type='student',
+                student_id='TEST-0005', campus_id=seed.campus.id)
+    db.session.add_all([past, older, idle])
+    db.session.commit()
+    approve(older, seed.program, period=past)
+    approve(seed.student, seed.program, period=seed.period)
+
+    client = sign_in(seed.admin)
+    everyone = _export(client, 'students')            # no past period picked
+    assert 'Past Student' in everyone
+    assert 'Test Student' in everyone
+    assert 'Idle Student' in everyone
+
+    with client.session_transaction() as sess:
+        sess['viewing_period_id'] = past.id
+    scoped = _export(client, 'students')
+    assert 'Past Student' in scoped
+    assert 'Test Student' not in scoped
+    assert 'Idle Student' not in scoped
+
+
+def test_exports_keep_applications_without_a_period(seed, approve, sign_in):
+    """An unrecorded period is unknown, not elsewhere: the row stays in the file."""
+    past = AcademicPeriod(academic_year='2024-2025', semester='1st Semester',
+                          is_current=False)
+    unset = User(username='t-unset', email='unset@example.test', password_hash='x',
+                 first_name='No', last_name='Period', user_type='student',
+                 student_id='TEST-0006', campus_id=seed.campus.id)
+    db.session.add_all([past, unset])
+    db.session.commit()
+    approve(seed.student, seed.program, period=seed.period)
+    approve(unset, seed.program)                      # academic_period_id stays NULL
+
+    client = sign_in(seed.admin)
+    current = _export(client, 'applications')
+    assert 'Test Student' in current
+    assert 'No Period' in current
+
+    with client.session_transaction() as sess:
+        sess['viewing_period_id'] = past.id
+    earlier = _export(client, 'applications')
+    assert 'Test Student' not in earlier
+    assert 'No Period' in earlier
+
+
 def test_export_follows_the_viewing_period(seed, approve, sign_in):
     """A past period picked on the reports page limits the export the same way."""
     past = AcademicPeriod(academic_year='2025-2026', semester='2nd Semester',

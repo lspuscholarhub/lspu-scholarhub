@@ -14,6 +14,8 @@ import io
 import csv
 from datetime import datetime
 
+from sqlalchemy import or_
+
 # ── PDF ───────────────────────────────────────────────────────────────────────
 from reportlab.lib.pagesizes import A4, landscape
 from reportlab.lib import colors
@@ -105,7 +107,11 @@ def _build_applications_data(filters=None):
         query = query.filter(User.campus_id == campus_id)
     period_id = _period_id(filters)
     if period_id:
-        query = query.filter(ScholarshipApplication.academic_period_id == period_id)
+        # An application with no period is one whose period was never recorded,
+        # not one belonging to another period. Dropping it would silently
+        # shorten an official report, so unknown-period rows stay in every file.
+        query = query.filter(or_(ScholarshipApplication.academic_period_id == period_id,
+                                 ScholarshipApplication.academic_period_id.is_(None)))
     if filters:
         status = filters.get('status')
         scholarship_id = filters.get('scholarship_id')
@@ -233,7 +239,9 @@ def _build_approved_data(filters=None):
         query = query.filter(User.campus_id == campus_id)
     period_id = _period_id(filters)
     if period_id:
-        query = query.filter(ScholarshipApplication.academic_period_id == period_id)
+        # Same rule as the applications report: unknown-period rows stay.
+        query = query.filter(or_(ScholarshipApplication.academic_period_id == period_id,
+                                 ScholarshipApplication.academic_period_id.is_(None)))
     apps = query.order_by(ScholarshipApplication.final_decision_date.desc()).all()
 
     rows = []
