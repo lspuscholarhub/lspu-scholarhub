@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from flask import current_app
 from app import db
 from app.models import User, ScholarshipApplication, Scholarship
+from app.models.scholarship import ApplicationStatus
 from app.services.notification_service import notification_service
 import logging
 
@@ -46,7 +47,7 @@ class PerformanceService:
             # Get active scholarship
             active_application = ScholarshipApplication.query.filter(
                 ScholarshipApplication.applicant_id == scholar_id,
-                ScholarshipApplication.status == 'approved',
+                ScholarshipApplication.status == ApplicationStatus.APPROVED,
                 ScholarshipApplication.is_active == True
             ).first()
             
@@ -107,7 +108,7 @@ class PerformanceService:
             scholar = User.query.get(scholar_id)
             active_application = ScholarshipApplication.query.filter(
                 ScholarshipApplication.applicant_id == scholar_id,
-                ScholarshipApplication.status == 'approved',
+                ScholarshipApplication.status == ApplicationStatus.APPROVED,
                 ScholarshipApplication.is_active == True
             ).first()
             
@@ -219,7 +220,7 @@ class PerformanceService:
             
             active_application = ScholarshipApplication.query.filter(
                 ScholarshipApplication.applicant_id == scholar_id,
-                ScholarshipApplication.status == 'approved',
+                ScholarshipApplication.status == ApplicationStatus.APPROVED,
                 ScholarshipApplication.is_active == True
             ).first()
             
@@ -398,7 +399,7 @@ class PerformanceService:
                 
                 active_application = ScholarshipApplication.query.filter(
                     ScholarshipApplication.applicant_id == scholar_id,
-                    ScholarshipApplication.status == 'approved',
+                    ScholarshipApplication.status == ApplicationStatus.APPROVED,
                     ScholarshipApplication.is_active == True
                 ).first()
                 
@@ -430,7 +431,7 @@ class PerformanceService:
             else:
                 # System-wide performance report
                 active_scholars = db.session.query(ScholarshipApplication).filter(
-                    ScholarshipApplication.status == 'approved',
+                    ScholarshipApplication.status == ApplicationStatus.APPROVED,
                     ScholarshipApplication.is_active == True
                 ).all()
                 
