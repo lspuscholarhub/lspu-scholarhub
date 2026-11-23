@@ -79,3 +79,11 @@ def test_sms_flag_and_number_returns_masked(monkeypatch, capsys):
     out = capsys.readouterr().out
     assert '***4567' in out
     assert '+639171234567' not in out
+
+
+def test_sms_scripts_have_no_hardcoded_recipient():
+    root = Path(__file__).resolve().parents[1]
+    for name in ('test_sms.py', 'check_semaphore.py'):
+        text = (root / 'scripts' / 'dev' / name).read_text(encoding='utf-8')
+        assert '09683652615' not in text
+        assert 'require_sms_confirmation()' in text
