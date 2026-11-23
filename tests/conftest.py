@@ -3,6 +3,7 @@
 Every fixture builds its SQLite database under pytest's tmp_path, so the preview
 database is never opened, copied or written to.
 """
+import re
 from datetime import datetime
 from types import SimpleNamespace
 
@@ -103,6 +104,18 @@ def approve(app):
         return application
 
     return _approve
+
+
+@pytest.fixture()
+def unbatched_panel():
+    """Read the unbatched panel out of a Batches page; '' when none is rendered."""
+    pattern = re.compile(r'aria-labelledby="unbatched-title".*?</section>', re.S)
+
+    def _panel(body):
+        match = pattern.search(body)
+        return match.group(0) if match else ''
+
+    return _panel
 
 
 @pytest.fixture()

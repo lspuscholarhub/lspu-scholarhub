@@ -4,21 +4,12 @@ An approved scholar whose application row carries no campus stamp still belongs
 to their applicant's campus, and a batch with no campus of its own still belongs
 to its program's campus. Verify sections 7 and 12 pin both.
 """
-import re
-
 from app import db
 from app.models import ScholarshipApplication, ScholarshipBatch
 
-PANEL = re.compile(r'aria-labelledby="unbatched-title".*?</section>', re.S)
 
-
-def _panel(body):
-    """The unbatched panel's html, or '' when there is nothing to list."""
-    match = PANEL.search(body)
-    return match.group(0) if match else ''
-
-
-def test_panel_lists_then_clears_an_unbatched_scholar(open_batch, seed, approve, sign_in):
+def test_panel_lists_then_clears_an_unbatched_scholar(open_batch, seed, approve, sign_in,
+                                                      unbatched_panel):
     """Section 7: an approved scholar with no batch is listed, then clears."""
     stray = approve(seed.student, seed.program)
     client = sign_in(seed.admin)
@@ -26,7 +17,7 @@ def test_panel_lists_then_clears_an_unbatched_scholar(open_batch, seed, approve,
 
     response = client.get('/admin/batches')
     assert response.status_code == 200
-    panel = _panel(response.get_data(as_text=True))
+    panel = unbatched_panel(response.get_data(as_text=True))
     assert panel, 'the unbatched panel was not rendered'
     assert name in panel
     assert 'Unbatched' in panel
@@ -36,12 +27,12 @@ def test_panel_lists_then_clears_an_unbatched_scholar(open_batch, seed, approve,
 
     response = client.get('/admin/batches')
     assert response.status_code == 200
-    assert name not in _panel(response.get_data(as_text=True))
+    assert name not in unbatched_panel(response.get_data(as_text=True))
     db.session.expire_all()
     assert db.session.get(ScholarshipApplication, stray.id).batch_id == open_batch.id
 
 
-def test_panel_resolves_the_applicants_campus(seed, approve, sign_in):
+def test_panel_resolves_the_applicants_campus(seed, approve, sign_in, unbatched_panel):
     """Section 12: an unstamped application is listed for the applicant's campus."""
     ours = approve(seed.student, seed.program, campus_id=None)
     theirs = approve(seed.other_student, seed.program, campus_id=None)
@@ -49,7 +40,7 @@ def test_panel_resolves_the_applicants_campus(seed, approve, sign_in):
 
     response = client.get('/admin/batches')
     assert response.status_code == 200
-    panel = _panel(response.get_data(as_text=True))
+    panel = unbatched_panel(response.get_data(as_text=True))
     assert panel, 'the unbatched panel was not rendered'
     assert seed.student.get_full_name() in panel
     assert seed.other_student.get_full_name() not in panel
@@ -57,7 +48,7 @@ def test_panel_resolves_the_applicants_campus(seed, approve, sign_in):
     seed.other_student.campus_id = seed.campus.id
     db.session.commit()
 
-    panel = _panel(client.get('/admin/batches').get_data(as_text=True))
+    panel = unbatched_panel(client.get('/admin/batches').get_data(as_text=True))
     assert seed.other_student.get_full_name() in panel
     assert ours.batch_id is None and theirs.batch_id is None
 
