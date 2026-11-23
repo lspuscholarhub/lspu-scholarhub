@@ -23,6 +23,38 @@ def current_campus_context():
     return me.campus_id if me else None
 
 
+def batch_in_campus_context(batch, campus_id):
+    """Whether a campus-scoped viewer may see and act on this batch.
+
+    No campus context (super admin showing every campus) allows anything. A
+    batch with no campus of its own and no campus-scoped program is open to every
+    campus — a university-wide batch before its first scholar pins it — which is
+    the same rule the Batches page lists by.
+    """
+    if not campus_id:
+        return True
+    from app.services.batch_service import batch_campus
+
+    campus = batch_campus(batch)
+    return campus is None or campus == campus_id
+
+
+def campus_scoped_batch_or_404(batch_id):
+    """Load a batch, treating another campus's batch as non-existent.
+
+    404 rather than 403 on purpose: an id from another campus should look exactly
+    like an id that was never issued.
+    """
+    from flask import abort
+
+    from app.models import ScholarshipBatch
+
+    batch = ScholarshipBatch.query.get_or_404(batch_id)
+    if not batch_in_campus_context(batch, current_campus_context()):
+        abort(404)
+    return batch
+
+
 def current_period_filters():
     """Filters describing the period the viewer is looking at.
 

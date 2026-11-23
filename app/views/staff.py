@@ -15,6 +15,7 @@ from app.services.scholarship_service import resolve_slot_cap
 from app.utils.custom_fields import parse_custom_fields
 from app.utils.decorators import role_required
 from app.utils.period_context import get_viewing_period, is_viewing_specific_period
+from app.utils.scoping import campus_scoped_batch_or_404
 from app.utils.timefmt import PHT
 
 staff_bp = Blueprint('staff', __name__)
@@ -2567,8 +2568,7 @@ def create_batch():
 @staff_bp.route('/batches/<int:batch_id>/edit', methods=['POST'])
 @role_required('staff')
 def edit_batch(batch_id):
-    from app.models import ScholarshipBatch
-    batch = ScholarshipBatch.query.get_or_404(batch_id)
+    batch = campus_scoped_batch_or_404(batch_id)
     batch.batch_name = request.form.get('batch_name', batch.batch_name).strip()
     amount = request.form.get('amount_per_scholar', '').strip()
     if amount: batch.amount_per_scholar = max(0, float(amount))
@@ -2584,8 +2584,7 @@ def edit_batch(batch_id):
 @staff_bp.route('/batches/<int:batch_id>/assign', methods=['POST'])
 @role_required('staff')
 def assign_to_batch(batch_id):
-    from app.models import ScholarshipBatch
-    batch   = ScholarshipBatch.query.get_or_404(batch_id)
+    batch   = campus_scoped_batch_or_404(batch_id)
     app_ids = request.form.getlist('app_ids')
     if not app_ids:
         flash('No applications selected.', 'error')
@@ -2617,8 +2616,7 @@ def assign_to_batch(batch_id):
 @staff_bp.route('/batches/<int:batch_id>/delete', methods=['POST'])
 @role_required('staff')
 def delete_batch(batch_id):
-    from app.models import ScholarshipBatch
-    batch = ScholarshipBatch.query.get_or_404(batch_id)
+    batch = campus_scoped_batch_or_404(batch_id)
     name, sid = batch.batch_name, batch.scholarship_id
     for app in batch.applications:
         app.batch_id = None; app.seq_number = None
@@ -2646,10 +2644,9 @@ def export_batch(batch_id):
     import io
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-    from app.models import ScholarshipBatch
     from flask import send_file as _send_file
 
-    batch = ScholarshipBatch.query.get_or_404(batch_id)
+    batch = campus_scoped_batch_or_404(batch_id)
     apps  = [a for a in batch.applications if a.status and a.status.value == 'approved']
 
     wb = Workbook()
@@ -2737,8 +2734,7 @@ def export_batch(batch_id):
 @role_required('staff')
 def batch_detail(batch_id):
     """View the list of scholars assigned to a specific batch."""
-    from app.models import ScholarshipBatch
-    batch = ScholarshipBatch.query.get_or_404(batch_id)
+    batch = campus_scoped_batch_or_404(batch_id)
     # Get approved applications in this batch
     applications = [
         a for a in batch.applications

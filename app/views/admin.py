@@ -88,6 +88,7 @@ def set_period_context(period_id):
 
 
 from app.utils.period_context import get_viewing_period, is_viewing_specific_period
+from app.utils.scoping import campus_scoped_batch_or_404
 
 
 # ── Scholarship campus guard ─────────────────────────────────────────────────
@@ -3846,9 +3847,7 @@ def create_batch():
 @role_required('admin')
 def edit_batch(batch_id):
     """Edit batch name, amount, or status."""
-    from app.models import ScholarshipBatch
-
-    batch = ScholarshipBatch.query.get_or_404(batch_id)
+    batch = campus_scoped_batch_or_404(batch_id)
     batch.batch_name = request.form.get('batch_name', batch.batch_name).strip()
     amount = request.form.get('amount_per_scholar', '').strip()
     if amount:
@@ -3870,9 +3869,7 @@ def edit_batch(batch_id):
 @role_required('admin')
 def assign_to_batch(batch_id):
     """Assign approved applications to a batch."""
-    from app.models import ScholarshipBatch
-
-    batch   = ScholarshipBatch.query.get_or_404(batch_id)
+    batch   = campus_scoped_batch_or_404(batch_id)
     app_ids = request.form.getlist('app_ids')
 
     if not app_ids:
@@ -3910,9 +3907,7 @@ def assign_to_batch(batch_id):
 @role_required('admin')
 def delete_batch(batch_id):
     """Delete a batch (unassigns all applications from it)."""
-    from app.models import ScholarshipBatch
-
-    batch = ScholarshipBatch.query.get_or_404(batch_id)
+    batch = campus_scoped_batch_or_404(batch_id)
     name  = batch.batch_name
     sid   = batch.scholarship_id
 
@@ -3956,9 +3951,8 @@ def export_batch(batch_id):
     import io
     from openpyxl import Workbook
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
-    from app.models import ScholarshipBatch
 
-    batch = ScholarshipBatch.query.get_or_404(batch_id)
+    batch = campus_scoped_batch_or_404(batch_id)
     apps  = [a for a in batch.applications if a.status and a.status.value == 'approved']
 
     wb = Workbook()
@@ -4074,8 +4068,7 @@ def export_batch(batch_id):
 @role_required('admin')
 def batch_detail(batch_id):
     """View the list of scholars assigned to a specific batch."""
-    from app.models import ScholarshipBatch
-    batch = ScholarshipBatch.query.get_or_404(batch_id)
+    batch = campus_scoped_batch_or_404(batch_id)
     applications = [
         a for a in batch.applications
         if a.status and a.status.value == 'approved'

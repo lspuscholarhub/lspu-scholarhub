@@ -122,6 +122,48 @@ def test_university_wide_program_batches_per_campus(seed, approve):
     assert db.session.get(ScholarshipApplication, campus_two.id).batch_id == own_batch.id
 
 
+@pytest.fixture()
+def foreign_batch(seed):
+    """A batch pinned to the other campus, for a program on this one."""
+    row = ScholarshipBatch(scholarship_id=seed.program.id,
+                           academic_period_id=seed.period.id,
+                           batch_name='Other campus batch', batch_number=2,
+                           amount_per_scholar=10000, status='open',
+                           campus_id=seed.other_campus.id)
+    db.session.add(row)
+    db.session.commit()
+    return row
+
+
+@pytest.mark.parametrize('portal', ['admin', 'staff'])
+@pytest.mark.parametrize('action', ['detail', 'edit', 'assign', 'delete', 'export'])
+def test_another_campus_batch_id_is_refused(action, portal, foreign_batch, seed, approve,
+                                            sign_in):
+    """A campus-1 user gets a 404 for a campus-2 batch, by every route that takes an id."""
+    scholar = approve(seed.student, seed.program)
+    client = sign_in(seed.admin if portal == 'admin' else seed.staff)
+    base = f'/{portal}/batches/{foreign_batch.id}'
+
+    if action == 'detail':
+        response = client.get(base)
+    elif action == 'export':
+        response = client.get(f'{base}/export')
+    else:
+        response = client.post(f'{base}/{action}', data={
+            'batch_name': 'Hijacked', 'amount_per_scholar': '1',
+            'status': 'finalized', 'app_ids': [str(scholar.id)]})
+
+    assert response.status_code == 404
+
+    db.session.expire_all()
+    row = db.session.get(ScholarshipBatch, foreign_batch.id)
+    assert row is not None
+    assert row.batch_name == 'Other campus batch'
+    assert row.status == 'open'
+    assert float(row.amount_per_scholar) == 10000
+    assert db.session.get(ScholarshipApplication, scholar.id).batch_id is None
+
+
 @pytest.mark.parametrize('status', ['closed', 'finalized'])
 def test_settled_batch_refuses_assignment(status, open_batch, seed, approve, sign_in):
     """A closed or finalized batch is history: the form must not add scholars to it."""
