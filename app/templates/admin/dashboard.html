@@ -125,7 +125,7 @@
             <li>
               <div class="ad-who">
                 {{ app.applicant.get_full_name() }}
-                <span>{{ app.scholarship.title[:38] }} · {{ app.submitted_at.strftime('%b %d, %Y') }}</span>
+                <span>{{ app.scholarship.title[:38] if app.scholarship else 'Program removed' }} · {{ app.submitted_at.strftime('%b %d, %Y') if app.submitted_at else 'No date' }}</span>
               </div>
               <span class="ad-pill {{ status_pill.get(sv, 'is-mute') }}">{{ status_label.get(sv, sv|title) }}</span>
             </li>
