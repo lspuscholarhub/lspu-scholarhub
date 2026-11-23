@@ -9,7 +9,7 @@ capstone/
 ├── app/                        ← All application code & templates
 ├── config/                     ← Flask configuration
 ├── database/
-│   └── lspu_scholarhub_dump.sql  ← Full database dump (schema + data)
+│   └── lspu_scholarhub_dump.sql  ← Schema snapshot (structure only, no data)
 ├── requirements.txt            ← All Python dependencies
 ├── .env                        ← Environment variables (edit before running)
 ├── run.py                      ← App entry point
@@ -153,15 +153,15 @@ app.run(debug=True, port=5001)
 
 ---
 
-## Re-exporting the Database (when you want to move again)
+## Re-exporting the Database Schema
 
-Run this from the `capstone/` folder on the source device:
+Run this from the `capstone/` folder on the source device. This keeps the committed file free of student data; for a data backup, write to a separate uncommitted file.
 
 ```bash
-C:\xampp\mysql\bin\mysqldump.exe --host=localhost --user=root --single-transaction --add-drop-table lspu_scholarhub > database\lspu_scholarhub_dump.sql
+C:\xampp\mysql\bin\mysqldump.exe --host=localhost --user=root --no-data --skip-comments --skip-dump-date --no-tablespaces lspu_scholarhub > database\lspu_scholarhub_dump.sql
 ```
 
 If MySQL has a password:
 ```bash
-C:\xampp\mysql\bin\mysqldump.exe --host=localhost --user=root --password=YOUR_PASSWORD --single-transaction --add-drop-table lspu_scholarhub > database\lspu_scholarhub_dump.sql
+C:\xampp\mysql\bin\mysqldump.exe --host=localhost --user=root --password=YOUR_PASSWORD --no-data --skip-comments --skip-dump-date --no-tablespaces lspu_scholarhub > database\lspu_scholarhub_dump.sql
 ```
