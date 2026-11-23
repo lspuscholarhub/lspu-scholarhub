@@ -3,6 +3,7 @@
 Every fixture builds its SQLite database under pytest's tmp_path, so the preview
 database is never opened, copied or written to.
 """
+import os
 import re
 from datetime import datetime
 from types import SimpleNamespace
@@ -19,8 +20,12 @@ from app.models.scholarship import ApplicationStatus, ScholarshipStatus
 
 @pytest.fixture()
 def app(tmp_path):
-    """A fresh app whose database is a private temp file, not the preview DB."""
-    uri = f"sqlite:///{tmp_path / 'copy.sqlite'}"
+    """A fresh app whose database is a private temp file, not the preview DB.
+
+    Set TEST_DATABASE_URL to run the same suite against MySQL (CI does); without
+    it every test gets its own SQLite file under pytest's tmp_path.
+    """
+    uri = os.environ.get('TEST_DATABASE_URL') or f"sqlite:///{tmp_path / 'copy.sqlite'}"
     config_map['testing_copy'] = type('CopyConfig', (TestingConfig,),
                                       {'SQLALCHEMY_DATABASE_URI': uri})
     application = create_app('testing_copy')
