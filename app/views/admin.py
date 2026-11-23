@@ -3873,6 +3873,11 @@ def assign_to_batch(batch_id):
         flash('No applications selected.', 'error')
         return redirect(url_for('admin.manage_batches', scholarship_id=batch.scholarship_id))
 
+    if batch.status != 'open':
+        flash(f'"{batch.batch_name}" is {batch.status} — reopen it before assigning '
+              f'scholars.', 'error')
+        return redirect(url_for('admin.manage_batches', scholarship_id=batch.scholarship_id))
+
     from app.services.batch_service import assign_applications_to_batch, batch_campus
     assigned, skipped = assign_applications_to_batch(batch, app_ids)
     db.session.commit()

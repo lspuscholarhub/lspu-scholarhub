@@ -25,3 +25,6 @@ jobs:
 
       - name: Run tests
         run: python -m pytest tests -q
+
+      - name: Check the schema matches the models
+        run: python scripts/check_schema.py --create --url "sqlite:////tmp/schema_check.sqlite"

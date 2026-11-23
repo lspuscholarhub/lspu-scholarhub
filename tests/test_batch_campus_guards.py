@@ -121,6 +121,51 @@ def test_university_wide_program_batches_per_campus(seed, approve):
     assert db.session.get(ScholarshipApplication, campus_two.id).batch_id == own_batch.id
 
 
+@pytest.mark.parametrize('status', ['closed', 'finalized'])
+def test_settled_batch_refuses_assignment(status, open_batch, seed, approve, sign_in):
+    """A closed or finalized batch is history: the form must not add scholars to it."""
+    open_batch.status = status
+    db.session.commit()
+    scholar = approve(seed.student, seed.program)
+
+    client = sign_in(seed.admin)
+    response = client.post(f'/admin/batches/{open_batch.id}/assign',
+                           data={'app_ids': [str(scholar.id)]})
+    assert response.status_code == 302
+
+    db.session.expire_all()
+    assert db.session.get(ScholarshipApplication, scholar.id).batch_id is None
+    assert db.session.get(ScholarshipBatch, open_batch.id).total_scholars == 0
+
+
+def test_settled_batch_is_refused_by_the_service_too(open_batch, seed, approve):
+    """The guard lives in the service, so every caller gets it, not only the route."""
+    open_batch.status = 'finalized'
+    db.session.commit()
+    scholar = approve(seed.student, seed.program)
+
+    assigned, skipped = assign_applications_to_batch(open_batch, [str(scholar.id)])
+
+    assert assigned == []
+    assert [reason for _, reason in skipped] == ['batch is finalized']
+    assert db.session.get(ScholarshipApplication, scholar.id).batch_id is None
+
+
+def test_manual_assignment_stamps_the_batch_period(open_batch, seed, approve):
+    """A manually assigned scholar joins the batch's period, not a null one."""
+    scholar = approve(seed.student, seed.program)
+    assert scholar.academic_period_id is None
+
+    assigned, skipped = assign_applications_to_batch(open_batch, [str(scholar.id)])
+    db.session.commit()
+
+    assert [a.id for a in assigned] == [scholar.id]
+    assert skipped == []
+    saved = db.session.get(ScholarshipApplication, scholar.id)
+    assert saved.academic_period_id == seed.period.id
+    assert saved.batch_id == open_batch.id
+
+
 def test_failed_auto_assignment_leaves_the_approval_commitable(seed, approve):
     """A broken auto-assignment returns None, keeps the session usable and keeps
     the approval row, so the caller's own commit still lands."""

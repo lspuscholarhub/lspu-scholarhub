@@ -142,6 +142,11 @@ def assign_applications_to_batch(batch, app_ids):
     from app.models import ScholarshipApplication
     from app.models.scholarship import ApplicationStatus
 
+    if batch.status in ('closed', 'finalized'):
+        # A settled batch is history: reopening it is a deliberate act, not a
+        # side effect of posting a form that was still open in a tab.
+        return [], [(raw, f'batch is {batch.status}') for raw in app_ids]
+
     assigned, skipped = [], []
     campus = batch_campus(batch)
     for raw in app_ids:
@@ -173,6 +178,10 @@ def assign_applications_to_batch(batch, app_ids):
             batch.campus_id = app_campus
         application.batch_id = batch.id
         application.amount_received = batch.amount_per_scholar
+        if batch.academic_period_id:
+            # The batch's period is the payout's period; a manually assigned
+            # scholar must show up in it, not only in the batches page.
+            application.academic_period_id = batch.academic_period_id
         assigned.append(application)
 
     if assigned:
