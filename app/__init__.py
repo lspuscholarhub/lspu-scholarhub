@@ -372,6 +372,32 @@ def create_app(config_name=None):
                 _migrate_log.info(f'OK: {_index} already exists.')
         except Exception as e:
             _migrate_log.error(f'MIGRATION FAILED (batch uniqueness): {e}')
+            # Say which batches block it, so they can be renamed without
+            # hunting through the table.
+            try:
+                from app.models import ScholarshipBatch
+                duplicates = (db.session.query(
+                    ScholarshipBatch.scholarship_id,
+                    ScholarshipBatch.academic_period_id,
+                    ScholarshipBatch.batch_number,
+                    db.func.count(ScholarshipBatch.id))
+                    .group_by(ScholarshipBatch.scholarship_id,
+                              ScholarshipBatch.academic_period_id,
+                              ScholarshipBatch.batch_number)
+                    .having(db.func.count(ScholarshipBatch.id) > 1)
+                    .all())
+                for scholarship_id, period_id, number, count in duplicates:
+                    names = [b.batch_name for b in ScholarshipBatch.query.filter_by(
+                        scholarship_id=scholarship_id,
+                        academic_period_id=period_id,
+                        batch_number=number).all()]
+                    _migrate_log.error(
+                        'MIGRATION BLOCKED: %s batches share batch_number %s for '
+                        'scholarship %s in period %s: %s',
+                        count, number, scholarship_id, period_id,
+                        ', '.join(f'"{name}"' for name in names))
+            except Exception as report_error:
+                _migrate_log.error(f'Could not list duplicate batches: {report_error}')
 
     # ── Inactivity timeout ────────────────────────────────────────────────
     # Log out users who have been inactive for more than 30 minutes.

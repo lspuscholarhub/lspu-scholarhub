@@ -181,6 +181,32 @@ def test_manual_assignment_moves_the_scholar_into_the_batch_period(prior_period,
     assert saved.batch_id == open_batch.id
 
 
+@pytest.mark.parametrize('role', ['admin', 'staff'])
+def test_double_submitted_create_batch_is_not_duplicated(role, seed, sign_in):
+    """Second click on Create batch reuses the batch and says so, without an error."""
+    client = sign_in(seed.admin if role == 'admin' else seed.staff)
+    data = {'scholarship_id': str(seed.program.id),
+            'academic_period_id': str(seed.period.id),
+            'batch_name': 'Batch 1',
+            'amount_per_scholar': '10000'}
+
+    first = client.post(f'/{role}/batches/create', data=data)
+    assert first.status_code == 302
+    second = client.post(f'/{role}/batches/create', data=data, follow_redirects=True)
+
+    assert second.status_code == 200
+    body = second.get_data(as_text=True)
+    assert 'already exists' in body
+    assert 'Error' not in body
+
+    batches = ScholarshipBatch.query.filter_by(
+        scholarship_id=seed.program.id,
+        academic_period_id=seed.period.id,
+        batch_number=1).all()
+    assert len(batches) == 1
+    assert batches[0].batch_name == 'Batch 1'
+
+
 def test_batch_number_is_unique_per_scholarship_and_period(open_batch, seed):
     """The database itself refuses a second batch with the same number."""
     from sqlalchemy.exc import IntegrityError

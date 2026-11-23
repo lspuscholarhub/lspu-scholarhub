@@ -2540,12 +2540,21 @@ def create_batch():
         nums = _re.findall(r'[\d.]+', batch_name)
         batch_number = float(nums[-1]) if nums else 1.0
     try:
-        batch = ScholarshipBatch(scholarship_id=scholarship_id, academic_period_id=period_id,
-                                 batch_name=batch_name, batch_number=batch_number,
-                                 amount_per_scholar=max(0, float(amount)) if amount else None,
-                                 campus_id=_s.campus_id,
-                                 created_by=session['user_id'])
-        db.session.add(batch); db.session.commit()
+        from app.services.batch_service import create_batch_or_reuse
+        batch, created = create_batch_or_reuse(
+            _s, period_id, batch_name, batch_number,
+            max(0, float(amount)) if amount else None,
+            created_by=session['user_id'],
+        )
+        if batch is None:
+            db.session.rollback()
+            flash(f'Batch "{batch_name}" could not be created.', 'error')
+            return redirect(url_for('staff.manage_batches', scholarship_id=scholarship_id))
+        db.session.commit()
+        if not created:
+            flash(f'Batch "{batch.batch_name}" already exists for this program and '
+                  f'period — it was not duplicated.', 'warning')
+            return redirect(url_for('staff.manage_batches', scholarship_id=scholarship_id))
         from app.services.audit_service import log_action
         log_action('batch.create', f'Staff {session.get("username")} created "{batch_name}".',
                    category='scholarship', target_type='scholarship', target_id=scholarship_id)

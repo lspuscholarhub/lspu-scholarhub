@@ -193,6 +193,43 @@ def assign_applications_to_batch(batch, app_ids):
     return assigned, skipped
 
 
+def create_batch_or_reuse(scholarship, period_id, batch_name, batch_number,
+                          amount_per_scholar, created_by=None, campus_id=None):
+    """Create a batch, or return the one that already owns its number.
+
+    A double-submitted form or two clicks racing each other hit the unique
+    (scholarship, period, batch_number) rule. The caller gets the existing row
+    and ``created=False`` so it can say so, instead of a database error.
+    """
+    from sqlalchemy.exc import IntegrityError
+
+    from app.models import ScholarshipBatch
+
+    candidate = ScholarshipBatch(
+        scholarship_id=scholarship.id,
+        academic_period_id=period_id,
+        batch_name=batch_name,
+        batch_number=batch_number,
+        amount_per_scholar=amount_per_scholar,
+        campus_id=scholarship.campus_id if campus_id is None else campus_id,
+        created_by=created_by,
+    )
+    try:
+        with db.session.begin_nested():
+            db.session.add(candidate)
+            db.session.flush()
+        return candidate, True
+    except IntegrityError:
+        existing = ScholarshipBatch.query.filter_by(
+            scholarship_id=scholarship.id,
+            academic_period_id=period_id,
+            batch_number=batch_number,
+        ).first()
+        logger.info('Batch "%s" already exists (%s); reusing it.',
+                    batch_name, getattr(existing, 'id', None))
+        return existing, False
+
+
 def _open_batches_for(scholarship_id, period_id, campus):
     """Open batches for a program/period, including unpinned campus-less ones."""
     from app.models import ScholarshipBatch
