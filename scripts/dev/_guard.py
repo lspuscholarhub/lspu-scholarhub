@@ -18,6 +18,7 @@ import sys
 from urllib.parse import urlparse
 
 CONFIRM_FLAG = '--confirm-production'
+SEND_FLAG = '--send-sms'
 
 _LOCAL_HOSTS = {'localhost', '127.0.0.1', '::1'}
 
@@ -68,3 +69,41 @@ def require_confirmation(action):
     print('[guard] This script can overwrite accounts or expose password hashes.')
     print(f'[guard] Re-run with {CONFIRM_FLAG} only if that is really intended.')
     sys.exit(1)
+
+
+def mask_phone(number):
+    """Show only the last four digits of a phone number."""
+    digits = ''.join(ch for ch in (number or '') if ch.isdigit())
+    return f'***{digits[-4:]}' if len(digits) >= 4 else '***'
+
+
+def require_sms_confirmation():
+    """Return TEST_SMS_NUMBER only when an explicit send was requested.
+
+    SMS test scripts are one command away from texting a real person, so they
+    send nothing unless BOTH ``--send-sms`` and a valid TEST_SMS_NUMBER are
+    present. The recipient is never hardcoded in the repository.
+    """
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()  # local .env; real environment variables win
+    except ImportError:
+        pass
+
+    number = (os.environ.get('TEST_SMS_NUMBER') or '').strip()
+    digits = ''.join(ch for ch in number if ch.isdigit())
+
+    if SEND_FLAG not in sys.argv:
+        print('[guard] No SMS was sent: this script sends a real text message.')
+        print(f'[guard] Re-run with {SEND_FLAG} and '
+              'TEST_SMS_NUMBER=+639XXXXXXXXX to send exactly one test SMS.')
+        sys.exit(1)
+
+    if len(digits) < 7:
+        print('[guard] Refusing to send: TEST_SMS_NUMBER is missing or too short.')
+        print('[guard] Set it to the full recipient number, e.g. +639171234567.')
+        sys.exit(1)
+
+    print(f'[guard] Sending ONE test SMS to {mask_phone(number)} '
+          f'because {SEND_FLAG} was passed.')
+    return number

@@ -15,6 +15,7 @@ def clean_env(monkeypatch):
     monkeypatch.delenv('MYSQL_HOST', raising=False)
     monkeypatch.delenv('FLASK_ENV', raising=False)
     monkeypatch.delenv('RAILWAY_ENVIRONMENT', raising=False)
+    monkeypatch.delenv('TEST_SMS_NUMBER', raising=False)
     monkeypatch.setattr(sys, 'argv', ['script.py'])
 
 
@@ -53,3 +54,28 @@ def test_railway_environment_blocks(monkeypatch):
     monkeypatch.setenv('RAILWAY_ENVIRONMENT', 'production')
     with pytest.raises(SystemExit):
         _guard.require_confirmation('seed demo data')
+
+
+def test_sms_requires_explicit_flag(monkeypatch, capsys):
+    monkeypatch.setenv('TEST_SMS_NUMBER', '+639171234567')
+    with pytest.raises(SystemExit) as exc:
+        _guard.require_sms_confirmation()
+    assert exc.value.code == 1
+    assert 'No SMS was sent' in capsys.readouterr().out
+
+
+def test_sms_requires_recipient(monkeypatch, capsys):
+    monkeypatch.setattr(sys, 'argv', ['script.py', '--send-sms'])
+    with pytest.raises(SystemExit) as exc:
+        _guard.require_sms_confirmation()
+    assert exc.value.code == 1
+    assert 'TEST_SMS_NUMBER is missing' in capsys.readouterr().out
+
+
+def test_sms_flag_and_number_returns_masked(monkeypatch, capsys):
+    monkeypatch.setenv('TEST_SMS_NUMBER', '+639171234567')
+    monkeypatch.setattr(sys, 'argv', ['script.py', '--send-sms'])
+    assert _guard.require_sms_confirmation() == '+639171234567'
+    out = capsys.readouterr().out
+    assert '***4567' in out
+    assert '+639171234567' not in out

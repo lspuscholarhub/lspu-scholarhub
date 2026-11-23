@@ -1,20 +1,27 @@
 """
-After registering a sender name in Semaphore dashboard,
-run this to test SMS and confirm the correct sender name.
-Usage: py check_semaphore.py
+After registering a sender name in Semaphore dashboard, use this to test SMS.
+
+Nothing is sent unless explicitly requested:
+  TEST_SMS_NUMBER=+639171234567 python scripts/dev/check_semaphore.py --send-sms
 """
 import urllib.request, urllib.parse, urllib.error, json, os, sys
 from dotenv import load_dotenv
 load_dotenv()
 
+from _guard import mask_phone, require_sms_confirmation
+
+number      = require_sms_confirmation()
+
 api_key     = os.environ.get('SEMAPHORE_API_KEY', '').strip()
 sender_name = os.environ.get('SEMAPHORE_SENDER_NAME', '').strip()
-number      = '09683652615'
 message     = 'LSPU ScholarHub: SMS notification test. If you receive this, SMS is working!'
 
-print(f"API Key   : {api_key[:8]}...")
+if not api_key:
+    sys.exit("[guard] SEMAPHORE_API_KEY is not set; nothing was sent.")
+
+print(f"API Key   : set")
 print(f"Sender    : '{sender_name}'")
-print(f"Sending to: {number}")
+print(f"Sending to: {mask_phone(number)}")
 
 params = {'apikey': api_key, 'number': number, 'message': message}
 if sender_name:

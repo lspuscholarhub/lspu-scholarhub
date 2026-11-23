@@ -62,6 +62,10 @@ The seed/debug scripts in `scripts/dev/` refuse a production-like database
 unless `--confirm-production` is passed. That flag is for deliberate recovery
 only — never use it as part of a routine deploy.
 
+The SMS test scripts are separate: `test_sms.py` and `check_semaphore.py`
+send a real text only when both `--send-sms` and `TEST_SMS_NUMBER` are set,
+and they no longer contain a hardcoded recipient.
+
 ```bash
 # Does the database have every table/column the models expect?
 python scripts/check_schema.py --url "$DATABASE_URL"

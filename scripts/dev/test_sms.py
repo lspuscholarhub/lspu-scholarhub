@@ -1,7 +1,10 @@
 """
 Quick SMS test script.
-Run: py test_sms.py
-This sends a test SMS to the verified Twilio number.
+
+Sends exactly one real test SMS, only when explicitly requested:
+  TEST_SMS_NUMBER=+639171234567 python scripts/dev/test_sms.py --send-sms
+
+Without both the flag and the number it exits without sending anything.
 """
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -9,13 +12,16 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from dotenv import load_dotenv
 load_dotenv()
 
+from _guard import require_sms_confirmation
+
+test_number = require_sms_confirmation()
+
 from app import create_app
 app = create_app()
 
 with app.app_context():
     from app.services.notification_service import notification_service
 
-    # Test with your number — +63 968 365 2615
     test_number = '09683652615'
 
     print(f"\nSending test SMS to {test_number}...")
