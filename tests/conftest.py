@@ -31,6 +31,14 @@ def app(tmp_path):
     application = create_app('testing_copy')
     with application.app_context():
         db.create_all()
+        if db.engine.dialect.name == 'mysql':
+            # A few tests model a program row that no longer exists (a deleted
+            # scholarship still referenced by an old application). SQLite does
+            # not enforce foreign keys, so MySQL runs these sessions that way
+            # too, instead of those fixtures being rewritten per dialect.
+            from sqlalchemy import text
+            db.session.execute(text('SET FOREIGN_KEY_CHECKS=0'))
+            db.session.commit()
         try:
             yield application
         finally:
@@ -105,6 +113,10 @@ def approve(app):
             campus_id=applicant.campus_id if campus_id == 'applicant' else campus_id,
             academic_period_id=period.id if period else None,
         )
+        if scholarship_id is not None and db.session.get(Scholarship, scholarship_id) is None \
+                and db.engine.dialect.name == 'mysql':
+            from sqlalchemy import text
+            db.session.execute(text('SET FOREIGN_KEY_CHECKS=0'))
         db.session.add(application)
         db.session.commit()
         return application
