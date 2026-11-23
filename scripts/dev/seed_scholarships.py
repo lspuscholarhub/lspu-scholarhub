@@ -9,6 +9,9 @@ try:  # Windows consoles default to cp1252; don't crash on ₱/emoji output
 except AttributeError:
     pass
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
+from _guard import require_confirmation
+require_confirmation('seed demo scholarship programs')
 from dotenv import load_dotenv
 load_dotenv()
 

@@ -6,6 +6,9 @@ Create sample staff accounts for LSPU ScholarHub
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
+from _guard import require_confirmation
+require_confirmation('create demo staff accounts')
+
 import os
 from app import create_app, db
 from app.models import User

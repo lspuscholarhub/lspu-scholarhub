@@ -58,6 +58,10 @@ restored is not a backup.
 
 Run from the project root with the production `DATABASE_URL` in the environment:
 
+The seed/debug scripts in `scripts/dev/` refuse a production-like database
+unless `--confirm-production` is passed. That flag is for deliberate recovery
+only — never use it as part of a routine deploy.
+
 ```bash
 # Does the database have every table/column the models expect?
 python scripts/check_schema.py --url "$DATABASE_URL"
