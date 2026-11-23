@@ -350,6 +350,29 @@ def create_app(config_name=None):
         except Exception as e:
             _migrate_log.error(f'MIGRATION FAILED (campus form template): {e}')
 
+    # Migration 8: one batch number per scholarship + period, so two approvals
+    # racing for "Batch 1" cannot both win. Existing duplicates make this fail
+    # loudly here — rename them before deploying.
+    with app.app_context():
+        import logging
+        _migrate_log = logging.getLogger('migrate')
+        _index = 'uq_scholarship_batches_number'
+        try:
+            from sqlalchemy import inspect as _inspect
+            names = {i['name'] for i in _inspect(db.engine).get_indexes('scholarship_batches')}
+            if _index not in names:
+                from sqlalchemy import text
+                with db.engine.connect() as conn:
+                    conn.execute(text(
+                        f'CREATE UNIQUE INDEX {_index} ON scholarship_batches '
+                        '(scholarship_id, academic_period_id, batch_number)'))
+                    conn.commit()
+                _migrate_log.info(f'SUCCESS: Added {_index}.')
+            else:
+                _migrate_log.info(f'OK: {_index} already exists.')
+        except Exception as e:
+            _migrate_log.error(f'MIGRATION FAILED (batch uniqueness): {e}')
+
     # ── Inactivity timeout ────────────────────────────────────────────────
     # Log out users who have been inactive for more than 30 minutes.
     # Checked on every request — if last_active is older than timeout, clear session.

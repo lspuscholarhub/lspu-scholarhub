@@ -181,6 +181,54 @@ def test_manual_assignment_moves_the_scholar_into_the_batch_period(prior_period,
     assert saved.batch_id == open_batch.id
 
 
+def test_batch_number_is_unique_per_scholarship_and_period(open_batch, seed):
+    """The database itself refuses a second batch with the same number."""
+    from sqlalchemy.exc import IntegrityError
+
+    duplicate = ScholarshipBatch(scholarship_id=seed.program.id,
+                                 academic_period_id=seed.period.id,
+                                 batch_name='Batch 1 again', batch_number=1,
+                                 amount_per_scholar=10000, status='open',
+                                 campus_id=seed.other_campus.id)
+    db.session.add(duplicate)
+
+    with pytest.raises(IntegrityError):
+        db.session.commit()
+    db.session.rollback()
+
+    assert ScholarshipBatch.query.count() == 1
+
+
+def test_racing_approval_joins_the_batch_that_won(seed, approve, monkeypatch):
+    """The loser of a batch-number race re-reads and joins the winner's batch."""
+    scholar = approve(seed.student, seed.program)
+    winner = {}
+
+    def racing_suggestion(cls, scholarship_id, academic_period_id):
+        # Stand in for another approval committing between this call's lookup of
+        # an open batch and its insert: the row appears with the same number.
+        if not winner:
+            row = ScholarshipBatch(scholarship_id=scholarship_id,
+                                   academic_period_id=academic_period_id,
+                                   batch_name='Batch 1', batch_number=1.0,
+                                   amount_per_scholar=10000, status='open',
+                                   campus_id=seed.campus.id)
+            db.session.add(row)
+            db.session.commit()
+            winner['row'] = row
+        return 'Batch 1', 1.0
+
+    monkeypatch.setattr(ScholarshipBatch, 'suggest_next_batch_name',
+                        classmethod(racing_suggestion))
+
+    batch = auto_assign_to_batch(scholar)
+
+    assert batch is not None
+    assert batch.id == winner['row'].id
+    assert ScholarshipBatch.query.count() == 1
+    assert db.session.get(ScholarshipApplication, scholar.id).batch_id == winner['row'].id
+
+
 def test_failed_auto_assignment_leaves_the_approval_commitable(seed, approve):
     """A broken auto-assignment returns None, keeps the session usable and keeps
     the approval row, so the caller's own commit still lands."""

@@ -193,6 +193,60 @@ def assign_applications_to_batch(batch, app_ids):
     return assigned, skipped
 
 
+def _open_batches_for(scholarship_id, period_id, campus):
+    """Open batches for a program/period, including unpinned campus-less ones."""
+    from app.models import ScholarshipBatch
+
+    query = ScholarshipBatch.query.filter_by(
+        scholarship_id=scholarship_id,
+        academic_period_id=period_id,
+        status='open',
+    )
+    if campus:
+        query = query.filter(db.or_(ScholarshipBatch.campus_id == campus,
+                                    ScholarshipBatch.campus_id.is_(None)))
+    return query.order_by(ScholarshipBatch.batch_number.desc())
+
+
+def _create_open_batch(scholarship, period, campus):
+    """Create the next open batch, or join the one a racing approval just made.
+
+    The insert runs inside a SAVEPOINT so the unique (scholarship, period,
+    batch_number) rule can reject a duplicate without discarding the approval the
+    caller has not committed yet; the loser then re-reads and joins the winner.
+    """
+    from sqlalchemy.exc import IntegrityError
+
+    from app.models import ScholarshipBatch
+
+    for _attempt in range(2):
+        batch_name, batch_number = ScholarshipBatch.suggest_next_batch_name(
+            scholarship.id, period.id
+        )
+        candidate = ScholarshipBatch(
+            scholarship_id=scholarship.id,
+            academic_period_id=period.id,
+            batch_name=batch_name,
+            batch_number=batch_number,
+            amount_per_scholar=scholarship.award_amount,
+            status='open',
+            campus_id=campus,
+        )
+        try:
+            with db.session.begin_nested():
+                db.session.add(candidate)
+                db.session.flush()          # get batch.id, and hit the constraint
+            logger.info('Auto-created batch "%s" for %s', batch_name, scholarship.title)
+            return candidate
+        except IntegrityError:
+            winner = _open_batches_for(scholarship.id, period.id, campus).first()
+            if winner:
+                logger.info('Batch "%s" was created concurrently; joining it.',
+                            winner.batch_name)
+                return winner
+    return None
+
+
 def auto_assign_to_batch(application):
     """
     Automatically assign an approved application to the appropriate batch.
@@ -205,7 +259,6 @@ def auto_assign_to_batch(application):
         The ScholarshipBatch the application was assigned to, or None when it
         could not be batched (cross-campus, or a failure).
     """
-    from app.models import ScholarshipBatch
     from app.models.scholarship import ApplicationStatus
 
     if application.status != ApplicationStatus.APPROVED:
@@ -235,33 +288,16 @@ def auto_assign_to_batch(application):
 
         # Find an open batch for this scholarship in the current period, on this
         # campus — a batch not pinned to a campus yet is still a candidate.
-        batch_q = ScholarshipBatch.query.filter_by(
-            scholarship_id=scholarship.id,
-            academic_period_id=current_period.id,
-            status='open',
-        )
-        if campus:
-            batch_q = batch_q.filter(db.or_(ScholarshipBatch.campus_id == campus,
-                                            ScholarshipBatch.campus_id.is_(None)))
-        batch = batch_q.order_by(ScholarshipBatch.batch_number.desc()).first()
+        batch = _open_batches_for(scholarship.id, current_period.id, campus).first()
 
-        # If no open batch exists, create one for this campus
+        # If no open batch exists, create one for this campus — or join the one a
+        # racing approval created while this one was being placed.
         if not batch:
-            batch_name, batch_number = ScholarshipBatch.suggest_next_batch_name(
-                scholarship.id, current_period.id
-            )
-            batch = ScholarshipBatch(
-                scholarship_id=scholarship.id,
-                academic_period_id=current_period.id,
-                batch_name=batch_name,
-                batch_number=batch_number,
-                amount_per_scholar=scholarship.award_amount,
-                status='open',
-                campus_id=campus,
-            )
-            db.session.add(batch)
-            db.session.flush()  # get batch.id
-            logger.info(f'Auto-created batch "{batch_name}" for {scholarship.title}')
+            batch = _create_open_batch(scholarship, current_period, campus)
+            if batch is None:
+                logger.warning('Could not create or find a batch for "%s".',
+                               scholarship.title)
+                return None
 
         if batch.campus_id is None and campus:
             batch.campus_id = campus

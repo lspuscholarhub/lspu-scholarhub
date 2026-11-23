@@ -14,6 +14,14 @@ from app import db
 class ScholarshipBatch(db.Model):
     __tablename__ = 'scholarship_batches'
 
+    # One batch number per scholarship and period: two approvals racing for the
+    # same number collide here rather than creating two "Batch 1"s. Batch names
+    # stay editable; the number is what the sequence promises.
+    __table_args__ = (
+        db.UniqueConstraint('scholarship_id', 'academic_period_id', 'batch_number',
+                            name='uq_scholarship_batches_number'),
+    )
+
     id                 = db.Column(db.Integer, primary_key=True)
     scholarship_id     = db.Column(db.Integer, db.ForeignKey('scholarships.id', ondelete='CASCADE'), nullable=False)
     academic_period_id = db.Column(db.Integer, db.ForeignKey('academic_periods.id'), nullable=False)

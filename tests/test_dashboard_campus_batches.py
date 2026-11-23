@@ -17,17 +17,18 @@ def batches(seed):
     db.session.add_all([
         ScholarshipBatch(scholarship_id=seed.program.id,
                          academic_period_id=seed.period.id,
-                         batch_name='Batch 1', campus_id=seed.campus.id,
+                         batch_name='Batch 1', batch_number=1, campus_id=seed.campus.id,
                          status='open', total_amount=10000),
         # No campus of its own, but its program is on this campus.
         ScholarshipBatch(scholarship_id=seed.program.id,
                          academic_period_id=seed.period.id,
-                         batch_name='Batch 2', campus_id=None,
+                         batch_name='Batch 2', batch_number=2, campus_id=None,
                          status='open', total_amount=2500),
         # Pinned elsewhere: must stay out of this campus's figures.
         ScholarshipBatch(scholarship_id=seed.program.id,
                          academic_period_id=seed.period.id,
-                         batch_name='Other campus batch', campus_id=seed.other_campus.id,
+                         batch_name='Other campus batch', batch_number=3,
+                         campus_id=seed.other_campus.id,
                          status='open', total_amount=9999),
     ])
     db.session.commit()
