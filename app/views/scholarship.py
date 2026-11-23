@@ -591,6 +591,11 @@ def withdraw_application(app_id):
     application.scholarship.current_applicants = max(
         0, (application.scholarship.current_applicants or 1) - 1
     )
+
+    # Withdrawing drops the scholar from any batch's paid roster.
+    from app.services.batch_service import recalculate_batch_totals
+    db.session.flush()
+    recalculate_batch_totals(application.batch_id)
     db.session.commit()
 
     from app.services.audit_service import log_action

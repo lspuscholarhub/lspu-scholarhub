@@ -1046,6 +1046,11 @@ def review_application(app_id):
     else:
         batch_msg = ''
 
+    # A status change can take the scholar out of a batch's paid roster.
+    from app.services.batch_service import recalculate_batch_totals
+    db.session.flush()
+    recalculate_batch_totals(application.batch_id)
+
     db.session.commit()
 
     applicant = application.applicant
@@ -1081,6 +1086,7 @@ def batch_review():
         return redirect(url_for('staff.review_applications'))
     decision_tag = scholar_status_after_decision(action)
     processed = 0
+    processed_apps = []
     approved_apps = []
     skipped_public = 0
     for app_id in app_ids:
@@ -1104,6 +1110,7 @@ def batch_review():
                 app.approved_at    = datetime.utcnow()
                 app.is_active      = True
                 approved_apps.append(app)
+            processed_apps.append(app)
             processed += 1
 
     # Auto-assign approved applications to batches
@@ -1114,6 +1121,11 @@ def batch_review():
         results, unbatched = auto_assign_multiple(approved_apps)
         if results:
             batch_info = ' Batches: ' + ', '.join(f'{k} → {v}' for k, v in results.items())
+
+    # Every status change above can move a scholar out of a paid roster.
+    from app.services.batch_service import recalculate_batch_totals
+    db.session.flush()
+    recalculate_batch_totals(*(app.batch_id for app in processed_apps))
 
     db.session.commit()
 

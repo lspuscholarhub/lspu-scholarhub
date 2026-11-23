@@ -127,6 +127,26 @@ def campus_application_filter(query, campus_id):
     ))
 
 
+def recalculate_batch_totals(*batch_ids):
+    """Recompute the totals of the batches named; unknown ids are skipped.
+
+    total_scholars / total_amount (and the male/female counts) are denormalised
+    copies of a batch's approved applications, and the dashboards read them. Every
+    place that changes an application's status or batch must call this once the
+    change has been flushed — ``db.session.flush()`` first, or the recount reads
+    the old rows. The cached collection is dropped first so an application that
+    has just left or joined is counted where it now belongs.
+    """
+    from app.models import ScholarshipBatch
+
+    ids = {int(i) for i in batch_ids if i}
+    if not ids:
+        return
+    for batch in ScholarshipBatch.query.filter(ScholarshipBatch.id.in_(ids)).all():
+        db.session.expire(batch, ['applications'])
+        batch.recalculate_totals()
+
+
 def assign_applications_to_batch(batch, app_ids):
     """Attach posted applications to a batch, refusing everything that does not
     belong to it.
@@ -148,6 +168,7 @@ def assign_applications_to_batch(batch, app_ids):
         return [], [(raw, f'batch is {batch.status}') for raw in app_ids]
 
     assigned, skipped = [], []
+    former_batches = set()
     campus = batch_campus(batch)
     for raw in app_ids:
         try:
@@ -176,6 +197,8 @@ def assign_applications_to_batch(batch, app_ids):
             # scholar studies, and stays there for everyone after them.
             campus = app_campus
             batch.campus_id = app_campus
+        if application.batch_id and application.batch_id != batch.id:
+            former_batches.add(application.batch_id)
         application.batch_id = batch.id
         application.amount_received = batch.amount_per_scholar
         if batch.academic_period_id:
@@ -190,6 +213,7 @@ def assign_applications_to_batch(batch, app_ids):
     if assigned:
         db.session.flush()          # the batch's own totals query must see the links
         batch.recalculate_totals()
+        recalculate_batch_totals(*former_batches)   # batches this scholar left
     return assigned, skipped
 
 
@@ -340,12 +364,15 @@ def auto_assign_to_batch(application):
             batch.campus_id = campus
 
         # Assign the application to this batch
+        previous_batch_id = application.batch_id
         application.batch_id = batch.id
         application.academic_period_id = current_period.id
         application.amount_received = batch.amount_per_scholar
 
         # Recalculate batch totals
         batch.recalculate_totals()
+        if previous_batch_id and previous_batch_id != batch.id:
+            recalculate_batch_totals(previous_batch_id)
 
         return batch
 
