@@ -31,19 +31,42 @@ def app(tmp_path):
     application = create_app('testing_copy')
     with application.app_context():
         db.create_all()
-        if db.engine.dialect.name == 'mysql':
-            # A few tests model a program row that no longer exists (a deleted
-            # scholarship still referenced by an old application). SQLite does
-            # not enforce foreign keys, so MySQL runs these sessions that way
-            # too, instead of those fixtures being rewritten per dialect.
-            from sqlalchemy import text
-            db.session.execute(text('SET FOREIGN_KEY_CHECKS=0'))
-            db.session.commit()
         try:
             yield application
         finally:
             db.session.remove()
             db.drop_all()
+
+
+def _commit_application(application, orphan=False):
+    """Commit a new application row.
+
+    A few tests model a program that no longer exists, leaving the application's
+    scholarship_id pointing nowhere. SQLite never enforced that foreign key, but
+    MySQL does — so for that one insert only, the check is switched off on one
+    connection and back on before the connection returns to the pool. Every
+    other insert keeps MySQL's normal enforcement.
+    """
+    if not orphan or db.engine.dialect.name != 'mysql':
+        db.session.add(application)
+        db.session.commit()
+        return application
+
+    from sqlalchemy import text
+    from sqlalchemy.orm import Session
+
+    with db.engine.connect() as conn:
+        conn.execute(text('SET FOREIGN_KEY_CHECKS=0'))
+        try:
+            with Session(bind=conn) as orphan_session:
+                orphan_session.add(application)
+                orphan_session.commit()
+                new_id = application.id
+        finally:
+            conn.execute(text('SET FOREIGN_KEY_CHECKS=1'))
+        conn.commit()
+
+    return db.session.get(ScholarshipApplication, new_id)
 
 
 @pytest.fixture()
@@ -113,13 +136,9 @@ def approve(app):
             campus_id=applicant.campus_id if campus_id == 'applicant' else campus_id,
             academic_period_id=period.id if period else None,
         )
-        if scholarship_id is not None and db.session.get(Scholarship, scholarship_id) is None \
-                and db.engine.dialect.name == 'mysql':
-            from sqlalchemy import text
-            db.session.execute(text('SET FOREIGN_KEY_CHECKS=0'))
-        db.session.add(application)
-        db.session.commit()
-        return application
+        orphan = (scholarship_id is not None
+                  and db.session.get(Scholarship, scholarship_id) is None)
+        return _commit_application(application, orphan=orphan)
 
     return _approve
 
