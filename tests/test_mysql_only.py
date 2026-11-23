@@ -38,7 +38,11 @@ def test_startup_migration_recreates_the_batch_index_on_mysql(app, seed):
     from sqlalchemy import inspect, text
 
     index = 'uq_scholarship_batches_number'
+    helper = 'ix_test_batch_scholarship'
 
+    # InnoDB refuses to drop the unique index while it is the only index backing
+    # the scholarship_id foreign key, so give that FK an index of its own first.
+    db.session.execute(text(f'CREATE INDEX {helper} ON scholarship_batches (scholarship_id)'))
     db.session.execute(text(f'DROP INDEX {index} ON scholarship_batches'))
     db.session.commit()
     assert index not in {i['name'] for i in inspect(db.engine).get_indexes('scholarship_batches')}
@@ -47,3 +51,6 @@ def test_startup_migration_recreates_the_batch_index_on_mysql(app, seed):
 
     names = {i['name'] for i in inspect(db.engine).get_indexes('scholarship_batches')}
     assert index in names
+
+    db.session.execute(text(f'DROP INDEX {helper} ON scholarship_batches'))
+    db.session.commit()

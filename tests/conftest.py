@@ -66,6 +66,9 @@ def _commit_application(application, orphan=False):
             conn.execute(text('SET FOREIGN_KEY_CHECKS=1'))
         conn.commit()
 
+    # MySQL's REPEATABLE READ would keep the session on a snapshot taken before
+    # that insert; ending the transaction lets the next read see the new row.
+    db.session.commit()
     return db.session.get(ScholarshipApplication, new_id)
 
 
