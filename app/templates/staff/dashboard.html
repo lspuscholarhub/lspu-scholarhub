@@ -64,7 +64,7 @@
               <li>
                 <div class="ad-who">
                   {{ app.applicant.get_full_name() }}
-                  <span>{{ app.scholarship.title }} &middot; {{ 'Pending' if app.status.value == 'pending' else 'Under review' }}</span>
+                  <span>{{ app.scholarship.title if app.scholarship else 'Program removed' }} &middot; {{ 'Pending' if app.status.value == 'pending' else 'Under review' }}</span>
                 </div>
                 <span class="ad-pill {{ 'is-rejected' if waited >= 7 else ('is-pending' if waited >= 3 else 'is-mute') }}">
                   {{- 'today' if waited <= 0 else waited ~ ' day' ~ ('s' if waited != 1) -}}
@@ -213,7 +213,7 @@
               <li>
                 <div class="ad-who">
                   {{ app.applicant.get_full_name() }}
-                  <span>{{ app.scholarship.title }} &middot; {{ app.submitted_at.strftime('%b %d') }}</span>
+                  <span>{{ app.scholarship.title if app.scholarship else 'Program removed' }} &middot; {{ app.submitted_at.strftime('%b %d') }}</span>
                 </div>
                 <span class="ad-pill {{ status_pill.get(sv, 'is-mute') }}">{{ status_label.get(sv, sv|title) }}</span>
               </li>

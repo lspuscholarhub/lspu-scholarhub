@@ -170,6 +170,8 @@ def dashboard():
                  url_for('student.my_scholarship'), 'bi-clipboard-check')
 
     for a in approved_apps:
+        if not a.scholarship:
+            continue        # program row is gone, so it has no requirements to chase
         for r in sorted(a.scholarship.requirements or [],
                         key=lambda x: (x.sort_order, x.id)):
             sub = (RequirementSubmission.query

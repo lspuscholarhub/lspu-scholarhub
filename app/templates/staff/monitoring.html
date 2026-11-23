@@ -67,7 +67,7 @@
         <li class="ad-alert">
           <div class="ad-alert-main ad-who">
             {{ alert.app.applicant.get_full_name() }}
-            <span>{{ alert.app.applicant.student_id or alert.app.applicant.email }} &middot; {{ alert.app.scholarship.title }}</span>
+            <span>{{ alert.app.applicant.student_id or alert.app.applicant.email }} &middot; {{ alert.app.scholarship.title if alert.app.scholarship else 'Program removed' }}</span>
           </div>
           <div class="ad-alert-when">
             <span class="ad-pill {% if alert.days_left <= 7 %}is-rejected{% elif alert.days_left <= 14 %}is-pending{% else %}is-mute{% endif %}">
@@ -157,7 +157,7 @@
                   </span>
                 </div>
               </td>
-              <td class="ad-s-program" data-label="Scholarship">{{ app.scholarship.title }}</td>
+              <td class="ad-s-program" data-label="Scholarship">{{ app.scholarship.title if app.scholarship else 'Program removed' }}</td>
               <td class="ad-s-gwa" data-label="GWA">
                 {% if student.gwa %}
                 <span class="ad-gwa">{{ "%.2f"|format(student.gwa) }}</span>
@@ -295,7 +295,7 @@
           <div><dt>Student ID</dt><dd>{{ student.student_id or '—' }}</dd></div>
           <div><dt>Course</dt><dd>{{ student.course or '—' }}</dd></div>
           <div><dt>Year</dt><dd>{{ student.year_level or '—' }}</dd></div>
-          <div><dt>Scholarship</dt><dd>{{ app.scholarship.title }}</dd></div>
+          <div><dt>Scholarship</dt><dd>{{ app.scholarship.title if app.scholarship else 'Program removed' }}</dd></div>
           <div><dt>Current GWA</dt><dd>{{ student.gwa or 'Not set' }}</dd></div>
         </dl>
 

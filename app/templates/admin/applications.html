@@ -154,7 +154,7 @@
                       <span>#{{ app.id }} &middot; {{ app.applicant.email }}</span>
                     </div>
                   </td>
-                  <td class="ad-q-scholarship ad-prog">{{ app.scholarship.title }}</td>
+                  <td class="ad-q-scholarship ad-prog">{{ app.scholarship.title if app.scholarship else 'Program removed' }}</td>
                   <td class="ad-q-when">
                     <div class="ad-who">
                       {{ app.submitted_pht.strftime('%b %d, %Y') }}
@@ -244,7 +244,7 @@
         <div>
           <h5 class="modal-title">{{ app.applicant.get_full_name() }}</h5>
           <div class="ad-modal-sub">
-            <span>{{ app.scholarship.title }} · #{{ app.id }}</span>
+            <span>{{ app.scholarship.title if app.scholarship else 'Program removed' }} · #{{ app.id }}</span>
             <span class="ad-pill {{ status_pill.get(sv2, 'is-mute') }}">{{ status_label.get(sv2, sv2|title) }}</span>
           </div>
         </div>

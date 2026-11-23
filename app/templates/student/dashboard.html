@@ -111,10 +111,10 @@
             {% set sv = app.status.value %}
             <a class="sd-row" href="{{ url_for('scholarship.list_scholarships', view='mine') }}">
               <span class="sd-row-main">
-                <b>{{ app.scholarship.title }}</b>
+                <b>{{ app.scholarship.title if app.scholarship else 'Program removed' }}</b>
                 <span>
                   Submitted {{ app.submitted_at.strftime('%b %d, %Y') }}
-                  {% if sv == 'approved' and app.scholarship.award_amount %}
+                  {% if sv == 'approved' and app.scholarship and app.scholarship.award_amount %}
                     · ₱{{ '{:,.0f}'.format(app.scholarship.award_amount) }} award
                   {% endif %}
                 </span>

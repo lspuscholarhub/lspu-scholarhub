@@ -140,7 +140,7 @@
                     <span>{{ app.applicant.student_id or app.applicant.email }}{% if app.applicant.course %} · {{ app.applicant.course }}{% endif %}</span>
                   </div>
                 </td>
-                <td class="ad-q-scholarship ad-prog">{{ app.scholarship.title }}</td>
+                <td class="ad-q-scholarship ad-prog">{{ app.scholarship.title if app.scholarship else 'Program removed' }}</td>
                 <td class="ad-q-when">
                   <div class="ad-who">
                     {{ app.submitted_at.strftime('%b %d, %Y') if app.submitted_at else '—' }}
@@ -207,7 +207,7 @@
         <div>
           <h5 class="modal-title" id="reviewTitle{{ app.id }}">{{ app.applicant.get_full_name() }}</h5>
           <div class="ad-modal-sub">
-            <span>{{ app.scholarship.title }} · #{{ app.id }}</span>
+            <span>{{ app.scholarship.title if app.scholarship else 'Program removed' }} · #{{ app.id }}</span>
             {% if sv2 == 'approved' %}<span class="ad-pill is-approved">Approved</span>
             {% elif sv2 == 'rejected' %}<span class="ad-pill is-rejected">Rejected</span>
             {% elif sv2 == 'withdrawn' %}<span class="ad-pill is-withdrawn">Withdrawn</span>
@@ -232,7 +232,7 @@
 
             <h6 class="ad-section-title">Application</h6>
             <dl class="ad-ledger">
-              <div><dt>Program</dt><dd>{{ app.scholarship.title }}</dd></div>
+              <div><dt>Program</dt><dd>{{ app.scholarship.title if app.scholarship else 'Program removed' }}</dd></div>
               <div><dt>Submitted</dt><dd>{{ app.submitted_at.strftime('%b %d, %Y · %I:%M %p') if app.submitted_at else '—' }}</dd></div>
               <div><dt>Scholar tag</dt><dd>
                 {% if app.scholar_status == 'active' %}Good standing

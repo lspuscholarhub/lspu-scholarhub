@@ -303,7 +303,7 @@
               {% for app in student.applications %}
               {% set sv = app.status.value %}
               <li>
-                <div class="ad-who">{{ app.scholarship.title }}
+                <div class="ad-who">{{ app.scholarship.title if app.scholarship else 'Program removed' }}
                   <span>Submitted {{ app.submitted_at.strftime('%b %d, %Y') if app.submitted_at else '—' }}</span>
                 </div>
                 <span class="ad-pill {{ 'is-approved' if sv == 'approved' else 'is-rejected' if sv == 'rejected' else 'is-withdrawn' if sv == 'withdrawn' else 'is-pending' }}">{{ sv|replace('_', ' ')|title }}</span>

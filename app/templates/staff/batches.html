@@ -69,7 +69,7 @@
         <li class="ad-alert">
           <div class="ad-alert-main">
             <div class="ad-who">{{ app.applicant.get_full_name() }}<span>{{ app.applicant.student_id or '—' }}</span></div>
-            <div class="ad-alert-due">{{ app.scholarship.title }}</div>
+            <div class="ad-alert-due">{{ app.scholarship.title if app.scholarship else 'Program removed' }}</div>
           </div>
           <span class="ad-pill is-pending">Unbatched</span>
         </li>
