@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy.dialects.mysql import DECIMAL
-from sqlalchemy import case, event, func, select, update
+from sqlalchemy import event
 from sqlalchemy import inspect as sa_inspect
 from app import db
 from enum import Enum
@@ -164,41 +164,8 @@ class ScholarshipApplication(db.Model):
 # discarded by SQLAlchemy, and it mirrors ScholarshipBatch.recalculate_totals().
 def _refresh_batch_totals_on(connection, batch_ids):
     """Recalculate the named batches using the connection of the running flush."""
-    from app.models.scholarship_batch import ScholarshipBatch
-    from app.models.user import User
-
-    ids = {int(i) for i in batch_ids if i}
-    if not ids:
-        return
-    apps = ScholarshipApplication.__table__
-    batches = ScholarshipBatch.__table__
-    users = User.__table__
-
-    for batch_id in ids:
-        row = connection.execute(
-            select(batches.c.id, batches.c.amount_per_scholar)
-            .where(batches.c.id == batch_id)
-        ).first()
-        if row is None:                       # the batch itself is gone
-            continue
-        amount_per_scholar = row[1]
-        count, male, female, received = connection.execute(
-            select(func.count(apps.c.id),
-                   func.coalesce(func.sum(case((users.c.gender == 'Male', 1), else_=0)), 0),
-                   func.coalesce(func.sum(case((users.c.gender == 'Female', 1), else_=0)), 0),
-                   func.coalesce(func.sum(apps.c.amount_received), 0))
-            .select_from(apps.join(users, apps.c.applicant_id == users.c.id))
-            .where(apps.c.batch_id == batch_id,
-                   apps.c.status == ApplicationStatus.APPROVED)
-        ).one()
-        count, male, female = int(count), int(male), int(female)
-        total = float(amount_per_scholar) * count if amount_per_scholar else float(received or 0)
-        connection.execute(
-            update(batches).where(batches.c.id == batch_id).values(
-                total_scholars=count, total_male=male,
-                total_female=female, total_amount=total,
-            )
-        )
+    from app.models.scholarship_batch import refresh_batch_totals_on
+    refresh_batch_totals_on(connection, batch_ids)
 
 
 @event.listens_for(ScholarshipApplication, 'before_update')

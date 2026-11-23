@@ -8,6 +8,8 @@ Real-world workflow:
   - The system auto-suggests the next batch name but admin can rename it
 """
 from datetime import datetime
+from sqlalchemy import case, event, func, select, update
+from sqlalchemy import inspect as sa_inspect
 from app import db
 
 
@@ -122,3 +124,61 @@ class ScholarshipBatch(db.Model):
 
     def __repr__(self):
         return f'<ScholarshipBatch {self.batch_name} (scholarship={self.scholarship_id})>'
+
+
+# ── Batch totals ──────────────────────────────────────────────────────────────
+# total_scholars / total_amount (and the male/female counts) are denormalised
+# copies of a batch's approved applications, and the dashboards read the columns
+# instead of re-summing. This SQL is the single implementation used by the
+# per-model mapper events: it runs on the connection of the flush that changed
+# something, because dirtying an ORM instance again during its own flush is
+# discarded by SQLAlchemy. It mirrors recalculate_totals() above.
+def refresh_batch_totals_on(connection, batch_ids):
+    """Recalculate the named batches using the connection of the running flush."""
+    from app.models.scholarship import ApplicationStatus, ScholarshipApplication
+    from app.models.user import User
+
+    ids = {int(i) for i in batch_ids if i}
+    if not ids:
+        return
+    apps = ScholarshipApplication.__table__
+    batches = ScholarshipBatch.__table__
+    users = User.__table__
+
+    for batch_id in ids:
+        row = connection.execute(
+            select(batches.c.id, batches.c.amount_per_scholar)
+            .where(batches.c.id == batch_id)
+        ).first()
+        if row is None:                       # the batch itself is gone
+            continue
+        amount_per_scholar = row[1]
+        count, male, female, received = connection.execute(
+            select(func.count(apps.c.id),
+                   func.coalesce(func.sum(case((users.c.gender == 'Male', 1), else_=0)), 0),
+                   func.coalesce(func.sum(case((users.c.gender == 'Female', 1), else_=0)), 0),
+                   func.coalesce(func.sum(apps.c.amount_received), 0))
+            .select_from(apps.join(users, apps.c.applicant_id == users.c.id))
+            .where(apps.c.batch_id == batch_id,
+                   apps.c.status == ApplicationStatus.APPROVED)
+        ).one()
+        count, male, female = int(count), int(male), int(female)
+        total = float(amount_per_scholar) * count if amount_per_scholar else float(received or 0)
+        connection.execute(
+            update(batches).where(batches.c.id == batch_id).values(
+                total_scholars=count, total_male=male,
+                total_female=female, total_amount=total,
+            )
+        )
+
+
+@event.listens_for(ScholarshipBatch, 'before_update')
+def _remember_rate_change(mapper, connection, target):
+    """A rate edit changes what every approved scholar in the batch is owed."""
+    target._totals_rate_changed = sa_inspect(target).attrs.amount_per_scholar.history.has_changes()
+
+
+@event.listens_for(ScholarshipBatch, 'after_update')
+def _refresh_totals_after_rate_change(mapper, connection, target):
+    if getattr(target, '_totals_rate_changed', False):
+        refresh_batch_totals_on(connection, {target.id})

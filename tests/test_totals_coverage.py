@@ -47,6 +47,7 @@ EXEMPT = {
 _APPLICATION_OBJECT = re.compile(r'^(app|application)(_\w+)?$')
 
 _APPLICATION_NAMES = {'ScholarshipApplication', 'scholarship_applications'}
+_BATCH_NAMES = {'ScholarshipBatch', 'scholarship_batches'}
 
 
 def _functions(tree):
@@ -80,12 +81,12 @@ def _mutates_application(node):
     return False
 
 
-def _refers_to_applications(node):
-    """Whether an expression names the application model or its table."""
+def _refers_to(node, names):
+    """Whether an expression names the given model or table."""
     for sub in ast.walk(node):
-        if isinstance(sub, ast.Name) and sub.id in _APPLICATION_NAMES:
+        if isinstance(sub, ast.Name) and sub.id in names:
             return True
-        if isinstance(sub, ast.Attribute) and sub.attr in _APPLICATION_NAMES:
+        if isinstance(sub, ast.Attribute) and sub.attr in names:
             return True
     return False
 
@@ -101,7 +102,7 @@ def _raw_application_write(node):
     if not isinstance(node, ast.Call):
         return False
     name = node.func.attr if isinstance(node.func, ast.Attribute) else getattr(node.func, 'id', '')
-    if name in ('update', 'bulk_update_mappings') and _refers_to_applications(node):
+    if name in ('update', 'bulk_update_mappings') and _refers_to(node, _APPLICATION_NAMES):
         return True
     if name == 'text':
         return any(isinstance(arg, ast.Constant) and isinstance(arg.value, str)
@@ -110,12 +111,42 @@ def _raw_application_write(node):
     return False
 
 
+def _mutates_batch_rate(node):
+    """True for ``batch.amount_per_scholar = ...``: one edit every total in it follows."""
+    targets = []
+    if isinstance(node, ast.Assign):
+        targets = node.targets
+    elif isinstance(node, ast.AnnAssign) and node.value is not None:
+        targets = [node.target]
+    return any(isinstance(t, ast.Attribute) and t.attr == 'amount_per_scholar'
+               for t in targets)
+
+
+def _raw_batch_write(node):
+    """True for bulk/raw SQL writes to batches, whose rate edits the events miss."""
+    if not isinstance(node, ast.Call):
+        return False
+    name = node.func.attr if isinstance(node.func, ast.Attribute) else getattr(node.func, 'id', '')
+    if name in ('update', 'bulk_update_mappings') and _refers_to(node, _BATCH_NAMES):
+        return True
+    if name == 'text':
+        return any(isinstance(arg, ast.Constant) and isinstance(arg.value, str)
+                   and 'scholarship_batches' in arg.value.lower()
+                   for arg in node.args)
+    return False
+
+
 def _called_names(node, allowed):
-    return {
-        call.func.id
-        for call in ast.walk(node)
-        if isinstance(call, ast.Call) and isinstance(call.func, ast.Name)
-    } & allowed
+    """Bare-name and method calls, so ``batch.recalculate_totals()`` counts too."""
+    names = set()
+    for call in ast.walk(node):
+        if not isinstance(call, ast.Call):
+            continue
+        if isinstance(call.func, ast.Name):
+            names.add(call.func.id)
+        elif isinstance(call.func, ast.Attribute):
+            names.add(call.func.attr)
+    return names & allowed
 
 
 def _recalculates(node, relative):
@@ -172,6 +203,45 @@ def test_raw_or_bulk_application_writes_ask_for_a_recount():
     )
 
 
+def test_every_batch_rate_change_recalculates_totals():
+    """The rate multiplies every approved scholar, so an edit must recount."""
+    offenders = []
+    for relative, function in _app_functions():
+        lines = [node.lineno for node in ast.walk(function)
+                 if _mutates_batch_rate(node)]
+        if not lines:
+            continue
+        if _called_names(function, EXPLICIT_RECOUNTS):
+            continue
+        offenders.append(
+            f'{relative}:{lines[0]} in {function.name}() edits amount_per_scholar '
+            f'without calling {sorted(EXPLICIT_RECOUNTS)}'
+        )
+    assert not offenders, (
+        'these writes would leave batch totals stale:\n  ' + '\n  '.join(offenders)
+    )
+
+
+def test_raw_or_bulk_batch_writes_ask_for_a_recount():
+    """A bulk rate edit bypasses the batch mapper events, so it needs a recount."""
+    offenders = []
+    for relative, function in _app_functions():
+        lines = [node.lineno for node in ast.walk(function)
+                 if _raw_batch_write(node)]
+        if not lines:
+            continue
+        if _called_names(function, EXPLICIT_RECOUNTS):
+            continue
+        offenders.append(
+            f'{relative}:{lines[0]} in {function.name}() writes batches with bulk/raw '
+            f'SQL; the mapper events will not see it, so it must call '
+            f'{sorted(EXPLICIT_RECOUNTS)}'
+        )
+    assert not offenders, (
+        'these writes would leave batch totals stale:\n  ' + '\n  '.join(offenders)
+    )
+
+
 def test_the_model_refreshes_totals_without_anyone_remembering():
     """The automatic safety net itself must stay registered."""
     listeners = {
@@ -184,6 +254,15 @@ def test_the_model_refreshes_totals_without_anyone_remembering():
     for name, listener in listeners.items():
         assert event.contains(ScholarshipApplication, name, listener), \
             f'missing {name} listener: totals would drift again'
+
+    from app.models import scholarship_batch as batch_model
+    rate_listeners = {
+        'before_update': batch_model._remember_rate_change,
+        'after_update': batch_model._refresh_totals_after_rate_change,
+    }
+    for name, listener in rate_listeners.items():
+        assert event.contains(ScholarshipBatch, name, listener), \
+            f'missing batch {name} listener: a rate edit would not refresh totals'
 
 
 def test_bulk_updates_bypass_the_model_so_callers_must_recount(open_batch, seed, approve):
