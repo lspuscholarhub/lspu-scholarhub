@@ -1,11 +1,11 @@
 """Crawl every GET route as every role and report any 5xx errors.
 
 Runs against the LIVE Railway database (read-only GET requests only).
-Run:  DATABASE_URL='mysql://...' python docs/error_sweep.py
+Run:  DATABASE_URL='mysql://...' python scripts/dev/verification/error_sweep.py
 """
 import os
 import sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from app import create_app
 
@@ -13,7 +13,7 @@ app = create_app()
 app.config['WTF_CSRF_ENABLED'] = False
 
 SCHOLARSHIP_IDS = [29, 30, 31]   # private, public, public
-# Testing policy (docs/test_accounts.py): ONLY these accounts may be used.
+# Testing policy (scripts/dev/verification/test_accounts.py): ONLY these accounts may be used.
 STUDENT_ID = 150  # 0123-1714 — approved test student
 STAFF_ID = 53     # Alfonso
 ADMIN_ID = 1

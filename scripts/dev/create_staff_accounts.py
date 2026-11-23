@@ -3,6 +3,9 @@
 Create sample staff accounts for LSPU ScholarHub
 """
 
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 import os
 from app import create_app, db
 from app.models import User

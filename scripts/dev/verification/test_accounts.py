@@ -31,4 +31,4 @@ def assert_allowed(user_id):
     if user_id not in ALLOWED_USER_IDS:
         raise PermissionError(
             f'user_id={user_id} is not an approved test account. '
-            f'Allowed: {ALLOWED_USER_IDS} (see docs/test_accounts.py)')
+            f'Allowed: {ALLOWED_USER_IDS} (see scripts/dev/verification/test_accounts.py)')

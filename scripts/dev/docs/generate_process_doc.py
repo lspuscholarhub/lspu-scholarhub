@@ -1,10 +1,10 @@
 """Generate LSPU ScholarHub process documentation (DOCX with flowcharts).
 
 Outputs:
-  <project root>/LSPU-ScholarHub-Process-Documentation.docx
+  docs/LSPU-ScholarHub-Process-Documentation.docx
   docs/flowcharts/*.png  (flowchart images, reusable in slides/papers)
 
-Run:  python docs/generate_process_doc.py
+Run:  python scripts/dev/docs/generate_process_doc.py
 """
 import os
 import datetime
@@ -20,10 +20,10 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml.ns import qn
 from docx.oxml import OxmlElement
 
-BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 IMG_DIR = os.path.join(BASE, 'docs', 'flowcharts')
 os.makedirs(IMG_DIR, exist_ok=True)
-DOCX_PATH = os.path.join(BASE, 'LSPU-ScholarHub-Process-Documentation.docx')
+DOCX_PATH = os.path.join(BASE, 'docs', 'LSPU-ScholarHub-Process-Documentation.docx')
 
 NAVY_RGB = RGBColor(0x1F, 0x4E, 0x79)
 GRAY_RGB = RGBColor(0x59, 0x59, 0x59)

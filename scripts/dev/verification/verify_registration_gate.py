@@ -7,13 +7,13 @@ Tests (all with CSRF disabled, test client):
   4. POST with valid synthetic PDF w/ matching ID+name → passes gate, reaches OTP step
   5. Cleanup: delete created user + files
 
-Run:  DATABASE_URL='mysql://...' python docs/verify_registration_gate.py
+Run:  DATABASE_URL='mysql://...' python scripts/dev/verification/verify_registration_gate.py
 """
 import io
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 os.environ.setdefault('_testing', '1')
 
 DATABASE_URL = os.environ.get('DATABASE_URL')

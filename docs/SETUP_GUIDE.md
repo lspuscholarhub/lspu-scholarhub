@@ -66,7 +66,7 @@ Press Enter, then type your MySQL password (leave blank if none).
 ```sql
 CREATE DATABASE lspu_scholarhub;
 ```
-Then run `python seed_database.py` in Step 6 — it will create all tables automatically.
+Then run `python scripts/dev/seed_database.py` in Step 6 — it will create all tables automatically.
 
 ---
 
@@ -120,7 +120,7 @@ This installs everything — Flask, SQLAlchemy, PyMySQL, Gemini AI, export libra
 ### Step 6 — Seed the database with sample data
 
 ```bash
-python seed_database.py
+python scripts/dev/seed_database.py
 ```
 
 This creates all tables and inserts sample accounts:
@@ -201,7 +201,7 @@ MySQL is not running. Start it in XAMPP or as a Windows service.
 ### `Table 'lspu_scholarhub.users' doesn't exist`
 Run the seed script:
 ```bash
-python seed_database.py
+python scripts/dev/seed_database.py
 ```
 
 ### `pip is not recognized`
@@ -239,8 +239,8 @@ capstone/
 ├── .env.example         ← Example environment file
 ├── requirements.txt     ← Python package list
 ├── run.py               ← Start the application
-├── seed_database.py     ← Create sample data
-└── SETUP_GUIDE.md       ← This file
+├── scripts/dev/        ← Dev tools (seed, debug, one-off patches)
+└── docs/SETUP_GUIDE.md ← This file
 ```
 
 ---
@@ -252,7 +252,7 @@ capstone/
 pip install -r requirements.txt
 
 # Seed sample data
-python seed_database.py
+python scripts/dev/seed_database.py
 
 # Run the app
 python run.py

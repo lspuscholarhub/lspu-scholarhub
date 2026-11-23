@@ -1,11 +1,11 @@
 """Verify all Excel/PDF export endpoints work against the live Railway DB.
 
 READ-ONLY: only calls export/report endpoints that generate files.
-Run:  DATABASE_URL='mysql://...' python docs/verify_exports.py
+Run:  DATABASE_URL='mysql://...' python scripts/dev/verification/verify_exports.py
 """
 import os
 import sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from app import create_app, db
 

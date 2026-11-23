@@ -4,6 +4,9 @@ Database seeding script for LSPU ScholarHub
 Creates initial data for testing and demonstration
 """
 
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 import os
 from datetime import datetime, timedelta
 from app import create_app, db

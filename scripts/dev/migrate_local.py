@@ -4,6 +4,10 @@ Run this once to bring your local XAMPP database up to date with Railway.
 Usage: py migrate_local.py
 Make sure XAMPP MySQL is running first.
 """
+
+import os, sys
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 from app import create_app, db
 from sqlalchemy import text, inspect
 

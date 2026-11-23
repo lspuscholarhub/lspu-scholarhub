@@ -16,7 +16,7 @@ left on the ScholarHub side.
 |---|---|---|
 | Portal access | Read-only: replica database or a `SELECT`-only SQL login. | `app/services/portal/source.py` (`SqlPortalSource`); CSV/JSON export while waiting (`FilePortalSource`) |
 | Student sign-in | Portal SSO once ICTS delivers it; ScholarHub passwords until then. | `app/views/auth.py` `login()` (unchanged); SSO seam documented in §9 |
-| Staff / campus admin / super admin | Local ScholarHub accounts created by SFAO / super admin. | `app/views/admin.py`, `create_staff_accounts.py` |
+| Staff / campus admin / super admin | Local ScholarHub accounts created by SFAO / super admin. | `app/views/admin.py`, `scripts/dev/create_staff_accounts.py` |
 | Self-registration + COR/grades OCR | Skipped for students the portal knows; kept as the fallback for unknown students. | Portal branch at the top of `register()`; legacy document gate untouched below it |
 | Source of truth | Portal owns identity + academic data. ScholarHub owns applications, awards, documents, monitoring. | `PORTAL_OWNED_FIELDS` in `app/services/portal/sync.py` |
 | GWA | One per-semester GWA value from the portal. | `User.gwa` + `GwaHistory` row per semester |

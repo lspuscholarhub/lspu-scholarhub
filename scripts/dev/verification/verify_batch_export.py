@@ -2,11 +2,11 @@
 
 Creates a synthetic scholarship + period + batch + 2 approved scholars, then
 calls the real /staff/batches/<id>/export endpoint and validates the xlsx.
-Run:  python docs/verify_batch_export.py
+Run:  python scripts/dev/verification/verify_batch_export.py
 """
 import os
 import sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from datetime import datetime
 from app import create_app, db

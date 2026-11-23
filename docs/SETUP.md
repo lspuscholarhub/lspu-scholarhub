@@ -13,7 +13,7 @@ capstone/
 ├── requirements.txt            ← All Python dependencies
 ├── .env                        ← Environment variables (edit before running)
 ├── run.py                      ← App entry point
-└── SETUP.md                    ← This file
+└── docs/SETUP.md              ← This file
 ```
 
 > **Note:** The `app/static/uploads/` folder contains uploaded student documents.
@@ -116,7 +116,7 @@ After importing the database, the admin account is:
 |---|---|
 | Username | `admin` |
 | Email | `admin@lspu-scholarhub.edu` |
-| Password | *(same as on the original device — check your email or the seed_database.py file)* |
+| Password | *(same as on the original device — check your email or scripts/dev/seed_database.py)* |
 
 If you need to reset the admin password, run:
 ```bash

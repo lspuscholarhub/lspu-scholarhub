@@ -1,5 +1,5 @@
 import compileall, sys, glob, os
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 ok = compileall.compile_dir('app', quiet=1, force=True)
 print('compile:', 'OK' if ok else 'FAIL')

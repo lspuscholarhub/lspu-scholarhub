@@ -11,7 +11,7 @@ not touch any other user's data.
 | Student | 51    | 0123-1633  | ajmaclld@gmail.com           |
 | Student | 150   | 0123-1714  | masaonyx@gmail.com           |
 
-Machine-readable source of truth: `docs/test_accounts.py`
+Machine-readable source of truth: `scripts/dev/verification/test_accounts.py`
 (`ALLOWED_STAFF_IDS`, `ALLOWED_STUDENT_IDS`, `PRIMARY_STUDENT_ID = 150`,
 `PRIMARY_STAFF_ID = 53`, plus `assert_allowed()` for scripts).
 
@@ -24,4 +24,4 @@ Rules:
 4. Synthetic records (scholarships/applications) created for a test must be
    attached to an approved account and deleted in the same run.
 
-`docs/error_sweep.py` and `docs/post_sweep.py` already follow this policy.
+`scripts/dev/verification/error_sweep.py` and `scripts/dev/verification/post_sweep.py` already follow this policy.

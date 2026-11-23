@@ -5,11 +5,11 @@ POSTs are done against the LIVE DB but only in ways that are safe:
 - apply without terms (validation flash, no DB write)
 - edit with valid data then restore original data
 - withdraw on a synthetic app created+deleted in the same run
-Run:  DATABASE_URL='mysql://...' python docs/post_sweep.py
+Run:  DATABASE_URL='mysql://...' python scripts/dev/verification/post_sweep.py
 """
 import os
 import sys
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from app import create_app
 from datetime import datetime
@@ -46,7 +46,7 @@ with app.test_client() as c:
     post_check('guest', '/chatbot/chat', {'message': 'hello'})
 
     # ── Student flows ─────────────────────────────────────────────────────────
-    # Testing policy (docs/test_accounts.py): use ONLY approved test accounts.
+    # Testing policy (scripts/dev/verification/test_accounts.py): use ONLY approved test accounts.
     with app.app_context():
         from app.models import Scholarship
         from docs.test_accounts import PRIMARY_STUDENT_ID

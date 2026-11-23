@@ -52,6 +52,11 @@ capstone/
 │       └── uploads/
 ├── config/
 │   └── config.py               # Configuration settings
+├── docs/                       # Guides, runbook and flowcharts
+├── scripts/
+│   ├── check_schema.py         # Schema drift check
+│   ├── recalculate_batch_totals.py  # Batch totals repair
+│   └── dev/                    # Seeds, debug tools, one-off checks
 ├── migrations/                  # Database migrations
 ├── tests/                      # Test files
 ├── .env                        # Environment variables
