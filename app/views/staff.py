@@ -1916,7 +1916,10 @@ def reports():
         if campus_ctx:
             q = q.filter(User.campus_id == campus_ctx)
         if pid:
-            q = q.filter(ScholarshipApplication.academic_period_id == pid)
+            # Unrecorded periods are unknown, not another period: keep them so the
+            # page's counts match the CSV this page's export produces.
+            q = q.filter(db.or_(ScholarshipApplication.academic_period_id == pid,
+                                ScholarshipApplication.academic_period_id.is_(None)))
         return q
 
     total_apps    = _apps_q().count()
