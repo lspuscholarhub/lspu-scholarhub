@@ -199,7 +199,7 @@
               {% else %}
               <p class="gs-app-note">
                 <i class="bi bi-hourglass-split" aria-hidden="true"></i>
-                <span>With the scholarship office{% if app.awaiting_days is not none %} · {{ app.awaiting_days }} day{{ 's' if app.awaiting_days != 1 }} so far{% endif %} — no action needed from you.</span>
+                <span>With the scholarship office{% if app.awaiting_days is not none %} · {{ app.awaiting_days }} day{{ 's' if app.awaiting_days != 1 }} so far{% endif %} — no action needed, but you can still withdraw before a decision.</span>
               </p>
               {% endif %}
 
@@ -208,10 +208,14 @@
                   <i class="bi bi-eye" aria-hidden="true"></i>Details
                 </button>
 
-                {% if sv in ('pending', 'under_review') and s.is_application_open() %}
+                {% if sv in ('pending', 'under_review') %}
+                {% if s.is_application_open() %}
                 <a class="gs-app-btn gs-app-btn--primary" href="{{ url_for('scholarship.edit_application', app_id=app.id) }}">
                   <i class="bi bi-pencil" aria-hidden="true"></i>Edit
                 </a>
+                {% endif %}
+                {# Withdrawing is opting out, not submitting: it stays available
+                   after the deadline, while editing closes with the window. #}
                 <button type="button" class="gs-app-btn gs-app-btn--danger"
                         data-bs-toggle="modal" data-bs-target="#withdrawModal{{ app.id }}">
                   <i class="bi bi-x-circle" aria-hidden="true"></i>Withdraw
@@ -382,7 +386,7 @@
 <!-- ══ Withdraw modals ══════════════════════════════════════════════════════ -->
 {% for s in scholarships %}
 {% set app = app_by_sch.get(s.id) if app_by_sch else none %}
-{% if app and app.status.value in ('pending', 'under_review') and s.is_application_open() %}
+{% if app and app.status.value in ('pending', 'under_review') %}
 <div class="modal fade" id="withdrawModal{{ app.id }}" tabindex="-1" aria-labelledby="withdrawLabel{{ app.id }}">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content gwm">

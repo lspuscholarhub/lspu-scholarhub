@@ -116,16 +116,17 @@ def test_a_private_program_stays_open_while_holding_a_public_one(student_client,
     assert ScholarshipApplication.query.filter_by(scholarship_id=seed.program.id).count() == 1
 
 
-def test_withdraw_after_the_deadline_still_succeeds(student_client, seed, approve):
-    """The card hides the withdraw modal once the window closes, but the POST works:
-    a student may still take themselves out while the office is reviewing."""
+def test_withdraw_after_the_deadline_is_offered_and_works(student_client, seed, approve):
+    """Withdrawing is opting out, not submitting: it stays available after the
+    deadline, while editing closes with the application window."""
     application = approve(seed.student, seed.program, status=ApplicationStatus.PENDING,
                           period=seed.period)
     seed.program.application_deadline = datetime.utcnow() - timedelta(days=1)
     db.session.commit()
 
     listing = student_client.get('/scholarship/?view=mine')
-    assert f'withdrawModal{application.id}'.encode() not in listing.data
+    assert f'withdrawModal{application.id}'.encode() in listing.data
+    assert f'/scholarship/application/{application.id}/edit'.encode() not in listing.data
 
     response = student_client.post(
         f'/scholarship/application/{application.id}/withdraw',
