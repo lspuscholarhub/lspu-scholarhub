@@ -37,6 +37,24 @@ def test_apply_creates_a_pending_application(student_client, seed):
     assert rows[0].academic_period_id == seed.period.id
 
 
+def test_editing_a_pending_application_persists(student_client, seed, approve):
+    application = approve(seed.student, seed.program, status=ApplicationStatus.PENDING,
+                          period=seed.period)
+    # Start from a non-empty payload: editing an empty {} always looked changed,
+    # which hid the in-place-mutation bug for real applications.
+    application.application_data = {'units_enrolled': 18}
+    db.session.commit()
+
+    r = student_client.post(f'/scholarship/application/{application.id}/edit',
+                            data={'units_enrolled': '15', 'course': 'BSIT'})
+
+    assert r.status_code == 302
+    db.session.expire_all()
+    stored = db.session.get(ScholarshipApplication, application.id).application_data
+    assert stored['units_enrolled'] == 15
+    assert stored['course'] == 'BSIT'
+
+
 def test_duplicate_application_is_blocked(student_client, seed, approve):
     existing = approve(seed.student, seed.program, status=ApplicationStatus.PENDING,
                        period=seed.period)

@@ -533,7 +533,10 @@ def edit_application(app_id):
         return redirect(url_for('scholarship.list_scholarships', view='mine'))
 
     if request.method == 'POST':
-        form_data = application.application_data or {}
+        # Copy before mutating: assigning the loaded dict back after editing it in
+        # place compares equal to itself, so SQLAlchemy records no change and the
+        # edit is silently dropped on commit.
+        form_data = dict(application.application_data or {})
 
         # Persist birthday to the user's profile
         bday_raw = (request.form.get('birthday') or '').strip()
