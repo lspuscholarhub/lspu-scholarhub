@@ -157,6 +157,10 @@ def _user_context(user_id):
         approved = [a for a in apps if a.status == ApplicationStatus.APPROVED]
         rejected = [a for a in apps if a.status == ApplicationStatus.REJECTED]
 
+        def _titles(items):
+            return ', '.join(a.scholarship.title if a.scholarship else 'removed program'
+                             for a in items) or 'none'
+
         lines = [
             "\n=== CURRENT USER (personalise your response to this student) ===",
             f"Name       : {user.get_full_name()}",
@@ -169,10 +173,10 @@ def _user_context(user_id):
             f"GWA Status : {'Current' if user.grades_up_to_date else 'Outdated or not uploaded'}",
             f"\nApplication Summary:",
             f"  Total     : {len(apps)}",
-            f"  Pending   : {len(pending)} — {', '.join(a.scholarship.title for a in pending) or 'none'}",
-            f"  Pending   : {len(pending) + len(review)} — {', '.join(a.scholarship.title for a in pending + review) or 'none'}",
-            f"  Approved  : {len(approved)} — {', '.join(a.scholarship.title for a in approved) or 'none'}",
-            f"  Rejected  : {len(rejected)} — {', '.join(a.scholarship.title for a in rejected) or 'none'}",
+            f"  Pending   : {len(pending)} — {_titles(pending)}",
+            f"  Pending   : {len(pending) + len(review)} — {_titles(pending + review)}",
+            f"  Approved  : {len(approved)} — {_titles(approved)}",
+            f"  Rejected  : {len(rejected)} — {_titles(rejected)}",
         ]
         return "\n".join(lines)
     except Exception as e:

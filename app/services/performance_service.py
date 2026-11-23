@@ -188,7 +188,7 @@ class PerformanceService:
             <p>Dear <strong>{scholar.first_name} {scholar.last_name}</strong>,</p>
             <p>We are writing to inform you about your academic performance for your scholarship.</p>
             <p><strong>Current GWA:</strong> {gwa:.2f}</p>
-            <p><strong>Scholarship:</strong> {application.scholarship.title}</p>
+            <p><strong>Scholarship:</strong> {application.scholarship.title if application.scholarship else 'Program removed'}</p>
             <p><strong>Alert(s):</strong></p>
             <ul>
                 {''.join([f'<li>{msg}</li>' for msg in alert_messages])}
@@ -414,8 +414,10 @@ class PerformanceService:
                         'year_level': scholar.year_level
                     },
                     'scholarship_info': {
-                        'title': active_application.scholarship.title,
-                        'award_amount': active_application.scholarship.award_amount,
+                        'title': (active_application.scholarship.title
+                                  if active_application.scholarship else 'Program removed'),
+                        'award_amount': (active_application.scholarship.award_amount
+                                         if active_application.scholarship else None),
                         'status': active_application.scholar_status,
                         'approved_at': active_application.approved_at
                     },

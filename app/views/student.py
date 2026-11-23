@@ -652,6 +652,8 @@ def my_scholarship():
     scholarship_details = []
     for a in approved_apps:
         program = a.scholarship
+        if program is None:
+            continue        # program row deleted; there is nothing left to show for it
         batch   = a.batch
         period  = batch.academic_period if batch else None
         standing_label, standing_color = status_labels.get(
