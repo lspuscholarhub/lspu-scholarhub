@@ -6,6 +6,12 @@ This is completely FREE and uses built-in Python libraries.
 
 import secrets
 import string
+import sys
+
+try:  # Windows consoles default to cp1252; don't crash on ₱/emoji output
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+except AttributeError:
+    pass
 
 def generate_secret_key(length=32):
     """Generate a secure random secret key"""

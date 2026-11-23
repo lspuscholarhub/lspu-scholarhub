@@ -3,6 +3,11 @@ Seed the database with the scholarship programs from the Excel reference file.
 Run once: py seed_scholarships.py
 """
 import os, sys
+
+try:  # Windows consoles default to cp1252; don't crash on ₱/emoji output
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+except AttributeError:
+    pass
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from dotenv import load_dotenv
 load_dotenv()
