@@ -62,7 +62,10 @@ class User(db.Model):
     data_source       = db.Column(db.String(20), default='self_registered', nullable=False, server_default='self_registered')  # self_registered | portal
     is_archived       = db.Column(db.Boolean, default=False, nullable=False, server_default='0')  # legacy account kept for audit
     campus_id  = db.Column(db.Integer, db.ForeignKey('campuses.id'), nullable=True)   # NULL for university admin
-    user_type = db.Column(db.Enum('student', 'admin', 'staff', 'super_admin', 'admin'), default='student', nullable=False)
+    # Values must be unique: MySQL rejects a duplicate ENUM value outright
+    # (error 1291), while SQLite happily accepts it.
+    user_type = db.Column(db.Enum('student', 'admin', 'staff', 'super_admin'),
+                          default='student', nullable=False)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     is_verified = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
