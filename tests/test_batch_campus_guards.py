@@ -7,7 +7,8 @@ pin what the service refuses and what it must never move.
 import pytest
 
 from app import db
-from app.models import Scholarship, ScholarshipApplication, ScholarshipBatch
+from app.models import (AcademicPeriod, Scholarship, ScholarshipApplication,
+                        ScholarshipBatch)
 from app.models.scholarship import ApplicationStatus
 from app.services.batch_service import assign_applications_to_batch, auto_assign_to_batch
 
@@ -151,10 +152,24 @@ def test_settled_batch_is_refused_by_the_service_too(open_batch, seed, approve):
     assert db.session.get(ScholarshipApplication, scholar.id).batch_id is None
 
 
-def test_manual_assignment_stamps_the_batch_period(open_batch, seed, approve):
-    """A manually assigned scholar joins the batch's period, not a null one."""
+@pytest.mark.parametrize('prior_period', ['none', 'earlier'])
+def test_manual_assignment_moves_the_scholar_into_the_batch_period(prior_period, open_batch,
+                                                                   seed, approve):
+    """The batch's period wins: a blank period is filled, an earlier one is replaced.
+
+    Pinned decision — the application's period follows the payout it is part of.
+    Filling only blank periods would leave a scholar batched under period B but
+    counted under period A, which is the mismatch this stamping exists to fix.
+    """
     scholar = approve(seed.student, seed.program)
-    assert scholar.academic_period_id is None
+    if prior_period == 'earlier':
+        earlier = AcademicPeriod(academic_year='2025-2026', semester='2nd Semester',
+                                 is_current=False)
+        db.session.add(earlier)
+        db.session.commit()
+        scholar.academic_period_id = earlier.id
+        db.session.commit()
+    assert scholar.academic_period_id != seed.period.id
 
     assigned, skipped = assign_applications_to_batch(open_batch, [str(scholar.id)])
     db.session.commit()

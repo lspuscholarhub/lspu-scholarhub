@@ -179,8 +179,11 @@ def assign_applications_to_batch(batch, app_ids):
         application.batch_id = batch.id
         application.amount_received = batch.amount_per_scholar
         if batch.academic_period_id:
-            # The batch's period is the payout's period; a manually assigned
-            # scholar must show up in it, not only in the batches page.
+            # The batch's period is the payout's period, so the application moves
+            # to it even when the scholar applied under an earlier one: the
+            # alternative leaves a period that contradicts the batch, and the
+            # scholar missing from that period's counts and exports. This is the
+            # same rule auto_assign_to_batch() applies with the current period.
             application.academic_period_id = batch.academic_period_id
         assigned.append(application)
 
