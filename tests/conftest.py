@@ -11,7 +11,8 @@ import pytest
 from config.config import TestingConfig, config as config_map
 
 from app import create_app, db
-from app.models import AcademicPeriod, Campus, Scholarship, ScholarshipApplication, User
+from app.models import (AcademicPeriod, Campus, Scholarship, ScholarshipApplication,
+                        ScholarshipBatch, User)
 from app.models.scholarship import ApplicationStatus, ScholarshipStatus
 
 
@@ -68,6 +69,19 @@ def seed(app):
     return SimpleNamespace(campus=campus, other_campus=other, period=period,
                            admin=admin, staff=staff, student=student,
                            other_student=other_student, program=program)
+
+
+@pytest.fixture()
+def open_batch(seed):
+    """An open batch for the campus-1 program, pinned to campus 1."""
+    row = ScholarshipBatch(scholarship_id=seed.program.id,
+                           academic_period_id=seed.period.id,
+                           batch_name='Batch 1', batch_number=1,
+                           amount_per_scholar=10000, status='open',
+                           campus_id=seed.campus.id)
+    db.session.add(row)
+    db.session.commit()
+    return row
 
 
 @pytest.fixture()

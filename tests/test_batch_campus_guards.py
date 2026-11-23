@@ -13,19 +13,6 @@ from app.services.batch_service import assign_applications_to_batch, auto_assign
 
 
 @pytest.fixture()
-def batch(seed):
-    """An open batch for the campus-1 program, pinned to campus 1."""
-    row = ScholarshipBatch(scholarship_id=seed.program.id,
-                           academic_period_id=seed.period.id,
-                           batch_name='Batch 1', batch_number=1,
-                           amount_per_scholar=10000, status='open',
-                           campus_id=seed.campus.id)
-    db.session.add(row)
-    db.session.commit()
-    return row
-
-
-@pytest.fixture()
 def other_program(seed):
     program = Scholarship(title='Other Grant', description='d',
                           eligibility_criteria='e', benefits='b',
@@ -36,7 +23,7 @@ def other_program(seed):
     return program
 
 
-def test_assign_route_only_takes_approved_apps_from_its_own_program(batch, other_program,
+def test_assign_route_only_takes_approved_apps_from_its_own_program(open_batch, other_program,
                                                                      seed, approve, sign_in):
     """Sections 1-3: junk, pending and foreign-program ids are refused, a real one lands."""
     pending = approve(seed.student, seed.program, status=ApplicationStatus.PENDING)
@@ -44,7 +31,7 @@ def test_assign_route_only_takes_approved_apps_from_its_own_program(batch, other
     good = approve(seed.student, seed.program)
 
     client = sign_in(seed.admin)
-    response = client.post(f'/admin/batches/{batch.id}/assign',
+    response = client.post(f'/admin/batches/{open_batch.id}/assign',
                            data={'app_ids': ['abc', str(pending.id), str(foreign.id)]})
     assert response.status_code == 302
 
@@ -52,15 +39,15 @@ def test_assign_route_only_takes_approved_apps_from_its_own_program(batch, other
     assert db.session.get(ScholarshipApplication, pending.id).batch_id is None
     assert db.session.get(ScholarshipApplication, foreign.id).batch_id is None
 
-    response = client.post(f'/admin/batches/{batch.id}/assign',
+    response = client.post(f'/admin/batches/{open_batch.id}/assign',
                            data={'app_ids': [str(good.id)]})
     assert response.status_code == 302
 
     db.session.expire_all()
     assigned = db.session.get(ScholarshipApplication, good.id)
-    assert assigned.batch_id == batch.id
+    assert assigned.batch_id == open_batch.id
     assert float(assigned.amount_received) == 10000
-    refreshed = db.session.get(ScholarshipBatch, batch.id)
+    refreshed = db.session.get(ScholarshipBatch, open_batch.id)
     assert (refreshed.total_scholars, float(refreshed.total_amount)) == (1, 10000.0)
 
 
