@@ -1,5 +1,7 @@
 from datetime import datetime
 from sqlalchemy.dialects.mysql import DECIMAL
+from sqlalchemy import case, event, func, select, update
+from sqlalchemy import inspect as sa_inspect
 from app import db
 from enum import Enum
 
@@ -149,3 +151,85 @@ class ScholarshipApplication(db.Model):
     def __repr__(self):
         return f'<ScholarshipApplication {self.id}>'
 
+
+
+# ── Batch totals follow every application change ───────────────────────────────
+# total_scholars / total_amount are denormalised copies of a batch's approved
+# applications (the dashboards read the columns, they do not re-sum), and the old
+# duplicates are still the source of confusion in real deployments. These are
+# per-model events, not session-wide hooks: any ORM insert, status edit, re-batch
+# or delete refreshes the affected batch rows inside the same flush/transaction,
+# including the batch an application just left. The SQL is written with the
+# mapper's own connection because dirtying another instance during a flush is
+# discarded by SQLAlchemy, and it mirrors ScholarshipBatch.recalculate_totals().
+def _refresh_batch_totals_on(connection, batch_ids):
+    """Recalculate the named batches using the connection of the running flush."""
+    from app.models.scholarship_batch import ScholarshipBatch
+    from app.models.user import User
+
+    ids = {int(i) for i in batch_ids if i}
+    if not ids:
+        return
+    apps = ScholarshipApplication.__table__
+    batches = ScholarshipBatch.__table__
+    users = User.__table__
+
+    for batch_id in ids:
+        row = connection.execute(
+            select(batches.c.id, batches.c.amount_per_scholar)
+            .where(batches.c.id == batch_id)
+        ).first()
+        if row is None:                       # the batch itself is gone
+            continue
+        amount_per_scholar = row[1]
+        count, male, female, received = connection.execute(
+            select(func.count(apps.c.id),
+                   func.coalesce(func.sum(case((users.c.gender == 'Male', 1), else_=0)), 0),
+                   func.coalesce(func.sum(case((users.c.gender == 'Female', 1), else_=0)), 0),
+                   func.coalesce(func.sum(apps.c.amount_received), 0))
+            .select_from(apps.join(users, apps.c.applicant_id == users.c.id))
+            .where(apps.c.batch_id == batch_id,
+                   apps.c.status == ApplicationStatus.APPROVED)
+        ).one()
+        count, male, female = int(count), int(male), int(female)
+        total = float(amount_per_scholar) * count if amount_per_scholar else float(received or 0)
+        connection.execute(
+            update(batches).where(batches.c.id == batch_id).values(
+                total_scholars=count, total_male=male,
+                total_female=female, total_amount=total,
+            )
+        )
+
+
+@event.listens_for(ScholarshipApplication, 'before_update')
+def _remember_previous_batch(mapper, connection, target):
+    """Stash what the update is about to change; mapper events see the pre-flush values."""
+    state = sa_inspect(target)
+    batch_hist = state.attrs.batch_id.history
+    target._totals_previous_batch_id = next((v for v in batch_hist.deleted if v), target.batch_id)
+    target._totals_touched = (batch_hist.has_changes()
+                              or state.attrs.status.history.has_changes())
+
+
+@event.listens_for(ScholarshipApplication, 'before_delete')
+def _remember_deleted_batch(mapper, connection, target):
+    target._totals_previous_batch_id = target.batch_id
+
+
+@event.listens_for(ScholarshipApplication, 'after_insert')
+def _totals_after_insert(mapper, connection, target):
+    if target.batch_id:
+        _refresh_batch_totals_on(connection, {target.batch_id})
+
+
+@event.listens_for(ScholarshipApplication, 'after_update')
+def _totals_after_update(mapper, connection, target):
+    if not getattr(target, '_totals_touched', False):
+        return
+    _refresh_batch_totals_on(connection, {target.batch_id,
+                                          getattr(target, '_totals_previous_batch_id', None)})
+
+
+@event.listens_for(ScholarshipApplication, 'after_delete')
+def _totals_after_delete(mapper, connection, target):
+    _refresh_batch_totals_on(connection, {getattr(target, '_totals_previous_batch_id', target.batch_id)})
