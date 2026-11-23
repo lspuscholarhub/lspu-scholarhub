@@ -44,3 +44,29 @@ def test_deleted_program_falls_back_to_a_label(applications):
     context = chatbot_service._user_context(_student().id)
     assert 'Application Summary' in context
     assert 'removed program' in context
+
+
+def test_alert_email_names_a_removed_program(monkeypatch):
+    """The performance alert must not dereference a scholarship row that is gone."""
+    from types import SimpleNamespace
+
+    import app.services.performance_service as perf_module
+
+    mail = {}
+
+    class _StubNotifier:
+        def send_email(self, to, subject, message):
+            mail['body'] = message
+
+        def create_in_app_notification(self, *args, **kwargs):
+            pass
+
+    monkeypatch.setattr(perf_module, 'notification_service', _StubNotifier())
+
+    performance_service._send_performance_notifications(
+        SimpleNamespace(first_name='Ana', last_name='Cruz', email='ana@example.test'),
+        SimpleNamespace(scholarship=None),
+        [{'message': 'GWA dropped below the retention mark'}], 2.10)
+
+    assert mail.get('body'), 'the alert email was not sent'
+    assert 'Program removed' in mail['body']

@@ -119,3 +119,21 @@ def test_university_wide_program_batches_per_campus(seed, approve):
     assert assigned == []
     assert [reason for _, reason in skipped] == ['different campus']
     assert db.session.get(ScholarshipApplication, campus_two.id).batch_id == own_batch.id
+
+
+def test_failed_auto_assignment_leaves_the_approval_commitable(seed, approve):
+    """A broken auto-assignment returns None, keeps the session usable and keeps
+    the approval row, so the caller's own commit still lands."""
+    orphan = approve(seed.student, scholarship_id=9999, campus_id=None)
+    batches_before = ScholarshipBatch.query.count()
+
+    assert auto_assign_to_batch(orphan) is None        # its program row does not exist
+    assert db.session.is_active
+
+    db.session.commit()                                # what the caller does next
+
+    saved = db.session.get(ScholarshipApplication, orphan.id)
+    assert saved is not None
+    assert saved.status == ApplicationStatus.APPROVED
+    assert saved.batch_id is None
+    assert ScholarshipBatch.query.count() == batches_before
