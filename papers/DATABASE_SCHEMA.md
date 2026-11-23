@@ -82,7 +82,7 @@ ScholarshipApplication ──N:1── ScholarshipBatch (optional until batching
 ## 5. Schema Sources of Truth
 
 1. **Models** — `app/models/*.py` (authoritative, used by Alembic migrations)
-2. **Dump** — `database/lspu_scholarhub_dump.sql` (full schema + data snapshot)
+2. **Dump** — `database/lspu_scholarhub_dump.sql` (structure-only snapshot of all 18 tables — no accounts or student data)
 3. **Migrations** — applied programmatically at startup for additive changes
    (e.g., the multi-campus columns, M&E deadline), documented in
    `app/__init__.py`

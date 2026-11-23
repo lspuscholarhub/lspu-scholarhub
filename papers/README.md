@@ -29,7 +29,7 @@ Related material already in the repository:
 
 - `docs/flowcharts/` — generated flowchart images (end-to-end, student
   application, staff review/batching, monitoring) usable as thesis figures.
-- `docs/generate_process_doc.py` — script that builds the process workflow
+- `scripts/dev/docs/generate_process_doc.py` — script that builds the process workflow
   DOCX (produces the workflow/flowchart document).
-- `database/lspu_scholarhub_dump.sql` — full database dump (schema + seed),
+- `database/lspu_scholarhub_dump.sql` — structure-only schema snapshot (no data; seed with `python scripts/dev/seed_database.py`),
   usable for the appendix and for restoring a demo database.
