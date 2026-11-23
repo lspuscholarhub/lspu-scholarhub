@@ -22,7 +22,6 @@ app = create_app()
 with app.app_context():
     from app.services.notification_service import notification_service
 
-    test_number = '09683652615'
 
     print(f"\nSending test SMS to {test_number}...")
     result = notification_service.send_sms(
