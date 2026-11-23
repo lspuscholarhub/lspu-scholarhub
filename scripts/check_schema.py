@@ -14,6 +14,10 @@ import argparse
 import os
 import sys
 
+# Running "python scripts/check_schema.py" puts scripts/ (not the repo root) on
+# sys.path, so make the app package importable before anything below imports it.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
