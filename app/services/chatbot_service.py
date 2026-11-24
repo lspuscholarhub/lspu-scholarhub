@@ -17,6 +17,7 @@ import json
 import logging
 from datetime import datetime
 from app import db
+from app.utils.contact import contact_email
 
 logger = logging.getLogger(__name__)
 
@@ -219,7 +220,7 @@ def _build_system_prompt(user_id=None):
 - **University**: Laguna State Polytechnic University (LSPU), Sta. Cruz, Laguna, Philippines
 - **Scholarship Office**: Student Affairs Building, 2nd Floor
 - **Hours**: Monday–Friday, 8:00 AM – 5:00 PM
-- **Email**: lspu.scholarhub@gmail.com
+- **Email**: {contact_email()}
 - **Phone**: 0968-365-2615
 
 ## How LSPU ScholarHub Works (describe THIS process — not generic scholarship advice)
@@ -402,7 +403,7 @@ def _rule_based_response(user_message, user_id=None):
     if intent == 'verification_inquiry':
         return ("Accounts are verified automatically with a **One-Time PIN (OTP)** sent to "
                 "your email when you register. Didn't get it? Use the resend option, or "
-                "contact the office at **lspu.scholarhub@gmail.com** / 0968-365-2615.")
+                f"contact the office at **{contact_email()}** / 0968-365-2615.")
 
     # Eligibility
     if intent == 'eligibility_inquiry':
@@ -437,7 +438,7 @@ def _rule_based_response(user_message, user_id=None):
     if intent == 'contact_inquiry':
         return ("**Scholarship Office Contact:**\n"
                 "- 📍 Student Affairs Building, 2nd Floor, LSPU Sta. Cruz Campus\n"
-                "- 📧 lspu.scholarhub@gmail.com\n"
+                f"- 📧 {contact_email()}\n"
                 "- 📞 0968-365-2615\n"
                 "- 🕐 Monday–Friday, 8:00 AM – 5:00 PM")
 

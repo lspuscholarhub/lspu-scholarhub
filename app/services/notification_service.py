@@ -11,6 +11,8 @@ from datetime import datetime, timedelta
 from flask import current_app
 import logging
 
+from app.utils.contact import sender_email, sender_name
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -90,7 +92,8 @@ class NotificationService:
                 return {'success': False, 'message': 'Email not configured'}
 
             msg = MIMEMultipart()
-            msg['From']    = "LSPU ScholarHub <lspu.scholarhub@gmail.com>"
+            from_email = sender_email() or self.email_config['username']
+            msg['From']    = f'{sender_name()} <{from_email}>'
             msg['To']      = to_email
             msg['Subject'] = subject
             msg.attach(MIMEText(html_content, 'html'))
@@ -116,8 +119,13 @@ class NotificationService:
         import json
         import base64
 
+        from_email = sender_email()
         body = {
-            'from':    'LSPU ScholarHub <onboarding@resend.dev>',
+            # onboarding@resend.dev is Resend's sandbox sender: it only reaches
+            # the account owner until a domain is verified and MAIL_FROM_EMAIL
+            # names an address on it.
+            'from':    (f'{sender_name()} <{from_email}>' if from_email
+                        else 'LSPU ScholarHub <onboarding@resend.dev>'),
             'to':      [to_email],
             'subject': subject,
             'html':    html_content,
@@ -165,8 +173,14 @@ class NotificationService:
         import urllib.error
         import json
 
+        from_email = sender_email()
+        if not from_email:
+            return {'success': False,
+                    'message': 'Brevo needs MAIL_FROM_EMAIL set to a sender address '
+                               'verified in your Brevo account.'}
+
         body = {
-            'sender':   {'name': 'LSPU ScholarHub', 'email': 'lspu.scholarhub@gmail.com'},
+            'sender':   {'name': sender_name(), 'email': from_email},
             'to':       [{'email': to_email}],
             'subject':  subject,
             'htmlContent': html_content,

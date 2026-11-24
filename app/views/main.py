@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, session, request, flash, redirect, url_for, jsonify
 from app import db, limiter
+from app.utils.contact import contact_email
 
 main_bp = Blueprint('main', __name__)
 
@@ -88,7 +89,7 @@ def contact():
             <p style="color:#888;font-size:.85rem;">Sent via LSPU ScholarHub Contact Form</p>
             """
             notification_service.send_email(
-                'lspu.scholarhub@gmail.com',
+                contact_email(),
                 f'[ScholarHub Contact] {subject} — {name}',
                 html,
             )

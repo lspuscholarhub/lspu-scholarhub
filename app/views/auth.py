@@ -21,6 +21,7 @@ from flask import (Blueprint, render_template, request, flash,
 from flask_jwt_extended import create_access_token
 from app import db, limiter
 from app.models import User
+from app.utils.contact import contact_email
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -171,7 +172,7 @@ def _send_credentials_email(user, temp_password):
         </table>
         <p style="color:#dc3545;"><strong>⚠️ Important:</strong> When you first log in, the system will ask you to create your own personal password before you can continue.</p>
         <p>You can log in at: <a href="{login_url}">{login_url}</a></p>
-        <p>If you have any questions, contact us at <a href="mailto:lspu.scholarhub@gmail.com">lspu.scholarhub@gmail.com</a> or call 0968-365-2615.</p>
+        <p>If you have any questions, contact us at <a href="mailto:{contact_email()}">{contact_email()}</a> or call 0968-365-2615.</p>
         <p>Best regards,<br><strong>LSPU Scholarship Office</strong></p>
         """
         return notification_service.send_email(user.email, subject, message)
@@ -688,7 +689,7 @@ def register():
             _cleanup_cor_and_grades()
             flash(f'We could not send the verification code to {email}. Please try '
                   f'again in a few minutes, or contact the scholarship office at '
-                  f'lspu.scholarhub@gmail.com.', 'error')
+                  f'{contact_email()}.', 'error')
             return render_template('auth/register.html',
                                    form_data=request.form, ocr_errors=None)
 
@@ -872,7 +873,7 @@ def verify_otp():
                 flash(
                     f'Email verified — your account is ready, but we could not send '
                     f'your login credentials to <strong>{new_user.email}</strong>. '
-                    f'Please contact the scholarship office at lspu.scholarhub@gmail.com '
+                  f'Please contact the scholarship office at {contact_email()} '
                     f'or 0968-365-2615 so they can give you your temporary password.',
                     'error'
                 )

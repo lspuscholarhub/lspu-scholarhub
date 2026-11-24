@@ -104,6 +104,7 @@ def create_app(config_name=None):
         try:
             return _render('errors/500.html'), 500
         except Exception:
+            from app.utils.contact import contact_email as _contact_email
             return ('<!doctype html><html lang="en"><head><meta charset="utf-8">'
                     '<title>Something went wrong</title></head><body '
                     'style="font-family:system-ui,sans-serif;max-width:34rem;'
@@ -112,7 +113,7 @@ def create_app(config_name=None):
                     'side</h1><p>Your request could not be completed. Please try '
                     'again in a moment — if it keeps happening, contact the '
                     'scholarship office at 0968-365-2615 or '
-                    'lspu.scholarhub@gmail.com.</p></body></html>'), 500
+                    f'{_contact_email()}.</p></body></html>'), 500
 
     # Friendly handling when a rate limit is hit
     @app.errorhandler(429)
@@ -501,6 +502,7 @@ def create_app(config_name=None):
     @app.context_processor
     def inject_globals():
         from flask import session as _session
+        from app.utils.contact import contact_email as _contact_email
         from app.utils.gwa_utils import get_gwa_label, get_gwa_badge_class, GWA_THRESHOLD
 
         # Real unread notification count for the navbar bell badge
@@ -541,6 +543,7 @@ def create_app(config_name=None):
         return {
             'now': _dt.utcnow(),
             'session': _session,
+            'contact_email': _contact_email(),
             'ApplicationStatus': None,   # imported per-template via model
             'LSPU_COURSES': LSPU_COURSES,
             'get_gwa_label': get_gwa_label,
