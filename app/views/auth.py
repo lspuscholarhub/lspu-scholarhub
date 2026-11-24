@@ -539,6 +539,19 @@ def register():
                  f'grades_path={"url" if str(grades_path).startswith("http") else "local"} '
                  f'cor_pid={"yes" if cor_cloudinary_id else "no"} '
                  f'grades_pid={"yes" if grades_cloudinary_id else "no"}')
+        try:
+            from flask import current_app as _ca
+            _folder = _ca.config.get('UPLOAD_FOLDER')
+            _probe_path = os.path.join(_folder or '', 'registration', '.diag_probe')
+            os.makedirs(os.path.dirname(_probe_path), exist_ok=True)
+            with open(_probe_path, 'wb') as _pf:
+                _pf.write(b'x')
+            _write_check = os.path.exists(_probe_path)
+        except Exception as _probe_err:
+            _write_check = f'ERR {type(_probe_err).__name__}: {_probe_err}'
+        _diag += (f' | folder={_folder} cwd={os.getcwd()} '
+                  f'cor_exists={os.path.exists(str(cor_path))} '
+                  f'probe_write={_write_check} path_tail={str(cor_path)[-50:]}')
 
         verification = None
         if cor_b:
