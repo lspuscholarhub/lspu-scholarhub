@@ -532,6 +532,14 @@ def register():
         cor_b    = _get_bytes(cor_path, cor_cloudinary_id)
         grades_b = _get_bytes(grades_path, grades_cloudinary_id)
 
+        # TEMPORARY DIAGNOSTIC — only echoed when the X-Debug-Verify header is
+        # sent, so no real registrant ever sees it. Remove after diagnosing.
+        _diag = (f'cor={len(cor_b) if cor_b else 0}B grades={len(grades_b) if grades_b else 0}B '
+                 f'cor_path={"url" if str(cor_path).startswith("http") else "local"} '
+                 f'grades_path={"url" if str(grades_path).startswith("http") else "local"} '
+                 f'cor_pid={"yes" if cor_cloudinary_id else "no"} '
+                 f'grades_pid={"yes" if grades_cloudinary_id else "no"}')
+
         verification = None
         if cor_b:
             import concurrent.futures
@@ -557,10 +565,12 @@ def register():
                         verification = future.result(timeout=60)
                     except concurrent.futures.TimeoutError:
                         verification = None
+                        _diag += ' timeout'
             except Exception as verify_err:
                 import logging as _l
                 _l.getLogger(__name__).warning(f'Registration verification error: {verify_err}')
                 verification = None
+                _diag += f' err={type(verify_err).__name__}: {verify_err}'
 
         # Verification unavailable (timeout/service error) — fail closed:
         # an unverified document can NOT create an account. Clean up uploads.
@@ -575,6 +585,8 @@ def register():
                 pass
             flash('Document verification is temporarily unavailable. '
                   'Please try again in a few minutes.', 'error')
+            if request.headers.get('X-Debug-Verify') == 'capstone':
+                flash(_diag, 'error')
             return render_template('auth/register.html',
                                    form_data=request.form, ocr_errors=None)
 
