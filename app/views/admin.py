@@ -1199,11 +1199,21 @@ def manage_users():
              .order_by(User.created_at.desc()).all())
     from app.models import Campus
     all_campuses = Campus.query.filter_by(is_active=True).order_by(Campus.id).all()
+
+    # The create form starts with the admin's own campuses ticked, so the usual
+    # "new staff member" case needs no campus picking at all.
+    creator = db.session.get(User, session.get('user_id'))
+    default_campus_ids = []
+    if creator:
+        default_campus_ids = [c.id for c in creator.assigned_campuses]
+        if not default_campus_ids and creator.campus_id:
+            default_campus_ids = [creator.campus_id]
     return render_template('admin/users.html', users=users, q=q, role_filter=role,
                            stats=stats,
                            current_user_id=session.get('user_id'),
                            all_campuses=all_campuses,
-                           campus_filter=campus_filter)
+                           campus_filter=campus_filter,
+                           default_campus_ids=default_campus_ids)
 
 
 @admin_bp.route('/users/<int:uid>/edit', methods=['POST'])
@@ -2240,27 +2250,52 @@ def _delete_user_related_rows(uid):
     ChatHistory.query.filter_by(user_id=uid).delete()
 
 
+def _unique_username(preferred):
+    """Turn the preferred username into one that no account is using yet."""
+    import re
+    base = re.sub(r'[^a-z0-9._-]', '', (preferred or '').lower()) or 'user'
+    candidate, suffix = base, 1
+    while User.query.filter_by(username=candidate).first():
+        suffix += 1
+        candidate = f'{base}{suffix}'
+    return candidate
+
+
 @admin_bp.route('/users/create', methods=['POST'])
 @role_required('admin')
 def create_user_account():
-    """Create a new staff or admin account (from Manage Users)."""
+    """Create a staff or admin account from Manage Users.
+
+    The short version: a name, an email and a role are enough. The username
+    comes from the email address, a temporary password is generated when none
+    is typed, and the creating admin's own campuses are used when none are
+    ticked. Every new account picks its own password at first sign-in.
+    """
     first_name = request.form.get('first_name', '').strip().title()
     last_name  = request.form.get('last_name',  '').strip().title()
     email      = request.form.get('email',      '').strip().lower()
-    username   = request.form.get('username',   '').strip()
     password   = request.form.get('password',   '').strip()
-    role       = request.form.get('role', 'staff').strip()
+    role       = request.form.get('role', 'staff').strip() or 'staff'
 
     if role not in ('staff', 'admin'):
         flash('New accounts can be created as staff or admin only. '
               'Students register themselves through the registration page.', 'error')
         return redirect(url_for('admin.manage_users'))
-    if not all([first_name, last_name, email, username, password]):
-        flash('All fields are required.', 'error')
+    if not all([first_name, last_name, email]):
+        flash('First name, last name and email are required.', 'error')
         return redirect(url_for('admin.manage_users'))
-    if len(password) < 8:
-        flash('Password must be at least 8 characters.', 'error')
+    if password and len(password) < 8:
+        flash('Password must be at least 8 characters, or leave it blank to '
+              'generate one.', 'error')
         return redirect(url_for('admin.manage_users'))
+
+    generated_password = None
+    if not password:
+        from app.views.auth import _generate_password
+        password = _generate_password(10)
+        generated_password = password
+    username = _unique_username(request.form.get('username', '').strip()
+                                or email.split('@')[0])
 
     # Campus assignment — staff/admin can be assigned to multiple campuses
     from app.models import Campus, UserCampus
@@ -2278,6 +2313,12 @@ def create_user_account():
                 campuses.append(c)
         except (TypeError, ValueError):
             pass
+    if not campuses:
+        # Nothing ticked — give the account the campuses this admin handles.
+        creator = db.session.get(User, session.get('user_id'))
+        if creator:
+            campuses = list(creator.assigned_campuses) or (
+                [creator.campus] if creator.campus else [])
     if not campuses:
         flash('Please select at least one campus for this account.', 'error')
         return redirect(url_for('admin.manage_users'))
@@ -2313,8 +2354,12 @@ def create_user_account():
                    category='user', target_type='user', target_id=account.id,
                    user_id=session.get('user_id'), user_name=session.get('username'),
                    user_role='admin')
-        flash(f'{role.title()} account "{username}" created successfully '
-              f'for {campus_names}.', 'success')
+        flash(f'{role.title()} account "{username}" created for '
+              f'{first_name} {last_name} · {campus_names}.', 'success')
+        if generated_password:
+            flash(f'Temporary password: {generated_password} — give this to '
+                  f'them; they set their own password at first sign-in.',
+                  'warning')
     except Exception as e:
         db.session.rollback()
         flash(f'Error creating account: {e}', 'error')
