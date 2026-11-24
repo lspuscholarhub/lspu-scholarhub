@@ -72,10 +72,11 @@ def _send_otp_email(email, full_name, otp):
         </p>
         <p>Best regards,<br><strong>LSPU Scholarship Office</strong></p>
         """
-        notification_service.send_email(email, subject, message)
+        return notification_service.send_email(email, subject, message)
     except Exception as e:
         import logging
         logging.getLogger(__name__).warning(f'Could not send OTP email: {e}')
+        return {'success': False, 'message': f'Could not send OTP email: {e}'}
 
 
 def _save_registration_file(file, user_student_id, file_type):
@@ -173,10 +174,11 @@ def _send_credentials_email(user, temp_password):
         <p>If you have any questions, contact us at <a href="mailto:lspu.scholarhub@gmail.com">lspu.scholarhub@gmail.com</a> or call 0968-365-2615.</p>
         <p>Best regards,<br><strong>LSPU Scholarship Office</strong></p>
         """
-        notification_service.send_email(user.email, subject, message)
+        return notification_service.send_email(user.email, subject, message)
     except Exception as e:
         import logging
         logging.getLogger(__name__).warning(f'Could not send credentials email: {e}')
+        return {'success': False, 'message': f'Could not send credentials email: {e}'}
 
 
 # ── Login ─────────────────────────────────────────────────────────────────────
@@ -366,8 +368,14 @@ def register():
                 p_year_level = portal_student.year_level or year_level
 
                 otp = _generate_otp()
-                _send_otp_email(portal_email,
-                                f'{p_first.title()} {p_last.title()}', otp)
+                otp_result = _send_otp_email(portal_email,
+                                             f'{p_first.title()} {p_last.title()}', otp)
+                if not (otp_result or {}).get('success'):
+                    flash(f'We could not send the verification code to '
+                          f'<strong>{portal_email}</strong>. Please try again in a '
+                          f'few minutes, or contact the scholarship office.', 'error')
+                    return render_template('auth/register.html', campuses=_campuses,
+                                           form_data=request.form, ocr_errors=None)
 
                 session['pending_registration'] = {
                     'first_name':           p_first.title(),
@@ -673,7 +681,16 @@ def register():
         # ── Generate and send OTP ─────────────────────────────────────────────
         otp = _generate_otp()
         full_name = f"{first_name.title()} {last_name.title()}"
-        _send_otp_email(email, full_name, otp)
+        otp_result = _send_otp_email(email, full_name, otp)
+        if not (otp_result or {}).get('success'):
+            # Without the code the student cannot finish the OTP step — release
+            # the uploaded documents instead of leaving them orphaned.
+            _cleanup_cor_and_grades()
+            flash(f'We could not send the verification code to {email}. Please try '
+                  f'again in a few minutes, or contact the scholarship office at '
+                  f'lspu.scholarhub@gmail.com.', 'error')
+            return render_template('auth/register.html',
+                                   form_data=request.form, ocr_errors=None)
 
         # ── Store pending registration in session ─────────────────────────────
         session['pending_registration'] = {
@@ -829,7 +846,7 @@ def verify_otp():
             session.pop('pending_registration', None)
 
             # Send credentials
-            _send_credentials_email(new_user, temp_password)
+            credentials_sent = _send_credentials_email(new_user, temp_password)
 
             # NOTE: Document verification already ran INLINE during registration
             # (before the OTP was even sent) — mismatched/random PDFs were rejected
@@ -845,11 +862,20 @@ def verify_otp():
             except Exception:
                 pass
 
-            flash(
-                f'Email verified! Your account has been created and your login credentials '
-                f'have been sent to <strong>{new_user.email}</strong>.',
-                'success'
-            )
+            if (credentials_sent or {}).get('success'):
+                flash(
+                    f'Email verified! Your account has been created and your login credentials '
+                    f'have been sent to <strong>{new_user.email}</strong>.',
+                    'success'
+                )
+            else:
+                flash(
+                    f'Email verified — your account is ready, but we could not send '
+                    f'your login credentials to <strong>{new_user.email}</strong>. '
+                    f'Please contact the scholarship office at lspu.scholarhub@gmail.com '
+                    f'or 0968-365-2615 so they can give you your temporary password.',
+                    'error'
+                )
             return redirect(url_for('auth.login'))
 
         except Exception as e:
@@ -878,9 +904,14 @@ def resend_otp():
     session['pending_registration'] = pending
 
     full_name = f"{pending['first_name']} {pending['last_name']}"
-    _send_otp_email(pending['email'], full_name, new_otp)
+    otp_result = _send_otp_email(pending['email'], full_name, new_otp)
 
-    flash(f'A new verification code has been sent to {pending["email"]}.', 'info')
+    if (otp_result or {}).get('success'):
+        flash(f'A new verification code has been sent to {pending["email"]}.', 'info')
+    else:
+        flash(f'We could not send a new verification code to {pending["email"]}. '
+              f'Please try again in a few minutes, or contact the scholarship office.',
+              'error')
     return redirect(url_for('auth.verify_otp'))
 
 

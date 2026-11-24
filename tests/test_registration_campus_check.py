@@ -27,7 +27,8 @@ def registrar(seed, monkeypatch):
 
     monkeypatch.setattr(auth_view, '_save_registration_file',
                         lambda *a, **k: ('/tmp/fake-cor.pdf', None))
-    monkeypatch.setattr(auth_view, '_send_otp_email', lambda *a, **k: None)
+    monkeypatch.setattr(auth_view, '_send_otp_email',
+                        lambda *a, **k: {'success': True, 'message': 'sent'})
     monkeypatch.setattr(storage_service, 'get_file_bytes', lambda *a, **k: b'%PDF-1.4')
 
     def fake_verify(**kwargs):
