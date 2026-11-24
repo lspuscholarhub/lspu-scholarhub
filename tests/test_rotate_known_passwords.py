@@ -38,6 +38,24 @@ def test_save_credentials_replaces_same_account_once(tmp_path):
     assert not output.with_name(output.name + '.tmp').exists()
 
 
+def test_save_credentials_rewrites_only_the_marked_block(tmp_path):
+    doc = tmp_path / 'test_accounts.md'
+    doc.write_text(
+        '# Test accounts\n\nnotes to keep\n\n'
+        + rotate.BLOCK_START + '\n'
+        '1\told@example.com\tsuper_admin\told-pass\n'
+        + rotate.BLOCK_END + '\n\nfooter to keep\n',
+        encoding='utf-8')
+
+    rotate.save_credentials(doc, [(1, 'new@example.com', 'super_admin', 'new-pass')])
+
+    text = doc.read_text(encoding='utf-8')
+    assert 'notes to keep' in text and 'footer to keep' in text
+    assert '1\tnew@example.com\tsuper_admin\tnew-pass' in text
+    assert 'old-pass' not in text
+    assert text.index(rotate.BLOCK_START) < text.index(rotate.BLOCK_END)
+
+
 def test_apply_without_output_is_refused(monkeypatch):
     monkeypatch.setattr(sys, 'argv', ['rotate_known_passwords.py', '--apply'])
     with pytest.raises(SystemExit) as exc:

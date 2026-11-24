@@ -18,18 +18,20 @@ Two ways to use it:
 
 Defaults to a dry run. Apply with:
     python scripts/dev/rotate_known_passwords.py --confirm-production \
-        --apply --output _local_private/rotated_accounts.txt
+        --apply --output _local_private/test_accounts.md
 
     # force a reset for one student who is on a weak password
     python scripts/dev/rotate_known_passwords.py --confirm-production \
         --account 56 --apply --force-change \
-        --output _local_private/rotated_accounts.txt
+        --output _local_private/test_accounts.md
 
 New passwords are written to --output before the database commit, so a crash
 or a failed commit can never leave an account with a password nobody recorded.
 The file is merged (not overwritten), so earlier rotated accounts keep their
-credentials. Keep the file out of git -- .gitignore covers _local_private/ and
-backups/. Passwords are never printed to the terminal.
+credentials. With _local_private/test_accounts.md only the credential block
+between the markers is rewritten, so the notes in that file survive a rotation.
+Keep the file out of git -- .gitignore covers _local_private/ and backups/.
+Passwords are never printed to the terminal.
 """
 import argparse
 import os
@@ -47,6 +49,11 @@ CREDENTIALS_HEADER = (
     '# Accounts whose password was reset by scripts/dev/rotate_known_passwords.py\n'
     '# id\temail\ttype\tnew password\n'
 )
+
+# A hand-written doc keeps its credential rows between these markers; only that
+# block is replaced when a rotation is saved into it.
+BLOCK_START = '<!-- rotate_known_passwords:start -->'
+BLOCK_END = '<!-- rotate_known_passwords:end -->'
 
 
 def mask_email(email):
@@ -97,16 +104,28 @@ def save_credentials(path, changed):
     touching the database; if the commit fails, the file already holds the
     passwords so nothing is lost (a stale line is harmless, an unrecorded
     password locks a real student out).
+
+    The destination is normally the hand-written
+    _local_private/test_accounts.md. When it carries the block markers only the
+    rows between them are replaced, so the notes around them survive; a plain
+    file with no markers keeps the old header-plus-rows format.
     """
     entries = _read_existing(path)
     for uid, email, utype, new_password in changed:
         entries[uid] = f'{uid}\t{email}\t{utype}\t{new_password}'
+    rows = [entries[uid] for uid in sorted(entries)]
+
+    existing = path.read_text(encoding='utf-8').splitlines() if path.exists() else []
+    if BLOCK_START in existing and BLOCK_END in existing:
+        start = existing.index(BLOCK_START)
+        end = existing.index(BLOCK_END)
+        lines = existing[:start + 1] + rows + existing[end:]
+    else:
+        lines = CREDENTIALS_HEADER.splitlines() + rows
 
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_name(path.name + '.tmp')
-    tmp.write_text(
-        CREDENTIALS_HEADER + ''.join(f'{entries[uid]}\n' for uid in sorted(entries)),
-        encoding='utf-8')
+    tmp.write_text('\n'.join(lines) + '\n', encoding='utf-8')
     try:
         os.chmod(tmp, 0o600)
     except OSError:
