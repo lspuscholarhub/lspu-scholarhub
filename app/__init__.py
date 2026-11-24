@@ -400,6 +400,18 @@ def create_app(config_name=None):
             except Exception as report_error:
                 _migrate_log.error(f'Could not list duplicate batches: {report_error}')
 
+    # Migration 9: contact form messages. Stored so a submission survives a
+    # mail provider that is not configured or refuses the send.
+    with app.app_context():
+        import logging
+        _migrate_log = logging.getLogger('migrate')
+        try:
+            from app.models.contact_message import ContactMessage
+            ContactMessage.__table__.create(db.engine, checkfirst=True)
+            _migrate_log.info('OK: contact messages table ready.')
+        except Exception as e:
+            _migrate_log.error(f'MIGRATION FAILED (contact messages): {e}')
+
     # ── Inactivity timeout ────────────────────────────────────────────────
     # Log out users who have been inactive for more than 30 minutes.
     # Checked on every request — if last_active is older than timeout, clear session.

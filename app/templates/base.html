@@ -81,6 +81,7 @@
   {% endif %}
   {% set nav.items = nav.items + [
     {'label':'Audit Log',   'short':'Audit','group':'Manage', 'icon':'bi-journal-text',    'url':url_for('admin.audit_log'),            'eps':['admin.audit_log'],           'bottom':False},
+    {'label':'Messages',    'short':'Inbox','group':'Manage', 'icon':'bi-envelope',        'url':url_for('admin.contact_messages'),     'eps':['admin.contact_messages'],    'bottom':False},
     {'label':'Directory',   'short':'Students','group':'Students', 'icon':'bi-person-lines-fill','url':url_for('admin.student_directory'),'eps':['admin.student_directory','admin.student_profile'], 'bottom':True},
     {'label':'Bulk Import', 'short':'Import','group':'Students','icon':'bi-cloud-upload','url':url_for('admin.import_page'), 'eps':['admin.import_page'],         'bottom':False},
     {'label':'Monitoring',  'short':'Monitor','icon':'bi-activity',       'url':url_for('admin.monitoring'),           'eps':['admin.monitoring'],                  'bottom':False},

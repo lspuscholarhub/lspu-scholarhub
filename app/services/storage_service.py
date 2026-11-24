@@ -4,7 +4,11 @@ Uses Cloudinary for permanent file storage that survives Railway redeploys.
 
 Priority:
   1. Cloudinary — if CLOUDINARY_CLOUD_NAME/API_KEY/API_SECRET are set
-  2. Local filesystem — fallback for development
+  2. Local filesystem — only where that disk survives (a developer's machine)
+
+When neither is available the upload is refused with success=False instead of
+writing the file somewhere the next deploy wipes, which used to lose a
+student's requirement while telling them it had been submitted.
 """
 
 import os
@@ -19,6 +23,44 @@ def _cloudinary_configured():
         os.environ.get('CLOUDINARY_API_KEY', '').strip(),
         os.environ.get('CLOUDINARY_API_SECRET', '').strip(),
     ])
+
+
+def _local_uploads_allowed():
+    """Whether a local write actually keeps the file.
+
+    A deployed container's disk is replaced on the next deploy, so writing there
+    is a silent loss. Set ALLOW_LOCAL_UPLOADS=true to opt back in deliberately
+    (e.g. a host with a mounted volume).
+    """
+    override = os.environ.get('ALLOW_LOCAL_UPLOADS', '').strip().lower()
+    if override in ('1', 'true', 'yes'):
+        return True
+    if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('RAILWAY_PROJECT_ID'):
+        return False
+    return os.environ.get('FLASK_ENV', '').strip().lower() != 'production'
+
+
+def storage_ready():
+    """True when an upload would be kept: Cloudinary, or a durable local disk."""
+    return _cloudinary_configured() or _local_uploads_allowed()
+
+
+def _storage_unavailable():
+    """The refusal returned when there is nowhere durable to put the file."""
+    where = ''
+    try:
+        from app.utils.contact import contact_email
+        where = f' at {contact_email()}'
+    except Exception:
+        pass
+    return {
+        'success':   False,
+        'url':       '',
+        'public_id': None,
+        'provider':  'none',
+        'error':     ('Document storage is not available right now, so the file '
+                      f'was not saved. Please contact the scholarship office{where}.'),
+    }
 
 
 def _init_cloudinary():
@@ -62,7 +104,11 @@ def upload_file(file_bytes: bytes, filename: str, folder: str,
 
     if _cloudinary_configured():
         return _upload_to_cloudinary(file_bytes, filename, folder, resource_type)
-    return _upload_local(file_bytes, filename, folder)
+    if _local_uploads_allowed():
+        return _upload_local(file_bytes, filename, folder)
+    logger.error('Upload refused: Cloudinary is not configured and the local '
+                 'disk would not keep the file (%s).', filename)
+    return _storage_unavailable()
 
 
 def delete_file(public_id: str = None, file_path: str = None,

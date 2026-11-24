@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% block title %}Messages - Admin{% endblock %}
+
+{% block head %}
+<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261220a" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+{% set message_word = 'message' if messages.total == 1 else 'messages' %}
+
+<div class="ad-page">
+  <header class="ad-board">
+    <div class="ad-board-inner">
+      <p class="ad-kicker">Messages</p>
+      <h1 class="ad-title">Contact form messages</h1>
+      <p class="ad-sub">
+        Everything sent through the public contact form &mdash; including
+        messages whose email notification could not be delivered.
+      </p>
+      <div class="ad-kpis">
+        <div class="ad-kpi">
+          <span class="ad-kpi-label">Unread</span>
+          <span class="ad-kpi-value">{{ "{:,}".format(unread) }}</span>
+        </div>
+        <div class="ad-kpi">
+          <span class="ad-kpi-label">{{ message_word|capitalize }}</span>
+          <span class="ad-kpi-value">{{ "{:,}".format(messages.total) }}</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="ad-body">
+    <p class="ad-crumbs">
+      <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
+      <span aria-hidden="true">&middot;</span> <span class="is-here">Messages</span>
+    </p>
+
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <a class="btn btn-sm {% if show == 'unread' %}btn-dark{% else %}btn-outline-secondary{% endif %}"
+         href="{{ url_for('admin.contact_messages', show='unread') }}">
+        Unread{% if unread %} ({{ unread }}){% endif %}
+      </a>
+      <a class="btn btn-sm {% if show != 'unread' %}btn-dark{% else %}btn-outline-secondary{% endif %}"
+         href="{{ url_for('admin.contact_messages', show='all') }}">All</a>
+    </div>
+
+    {% if messages.items %}
+    <div class="table-responsive">
+      <table class="table ad-table align-middle mb-0">
+        <thead>
+          <tr>
+            <th style="width:9rem;">When</th>
+            <th style="width:15rem;">From</th>
+            <th>Message</th>
+            <th class="text-end" style="width:8rem;">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for m in messages.items %}
+          <tr>
+            <td data-label="When">
+              <div class="ad-who">
+                {{ m.created_campus.strftime('%b %d, %Y') }}
+                <span>{{ m.created_campus.strftime('%I:%M %p').lstrip('0') }}</span>
+              </div>
+            </td>
+            <td data-label="From">
+              <div class="ad-who">{{ m.name }}</div>
+              <a href="mailto:{{ m.email }}">{{ m.email }}</a>
+              {% if m.student_id %}
+              <div class="ad-pill is-mute">{{ m.student_id }}</div>
+              {% endif %}
+            </td>
+            <td data-label="Message">
+              <div class="ad-a-event-head">
+                <span class="ad-a-action">{{ m.subject }}</span>
+                {% if not m.emailed %}
+                <span class="ad-pill is-rejected">email not delivered</span>
+                {% endif %}
+              </div>
+              <p class="ad-a-desc" style="white-space:pre-line;">{{ m.message }}</p>
+            </td>
+            <td class="text-end" data-label="Status">
+              <form method="POST"
+                    action="{{ url_for('admin.mark_contact_message', msg_id=m.id, show=show) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit"
+                        class="btn btn-sm {% if m.is_read %}btn-outline-secondary{% else %}btn-dark{% endif %}">
+                  {% if m.is_read %}Mark unread{% else %}Mark read{% endif %}
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if messages.pages > 1 %}
+    <div class="ad-pager">
+      <span class="ad-pager-count">
+        Showing {{ ((messages.page-1)*messages.per_page)+1 }}&ndash;{{ [messages.page*messages.per_page, messages.total]|min }}
+        of {{ messages.total }} {{ message_word }}
+      </span>
+      <nav aria-label="Contact message pages">
+        <ul class="pagination pagination-sm mb-0">
+          {% if messages.has_prev %}
+          <li class="page-item">
+            <a class="page-link"
+               href="{{ url_for('admin.contact_messages', page=messages.prev_num, show=show) }}">&laquo; Prev</a>
+          </li>
+          {% endif %}
+          {% for p in messages.iter_pages(left_edge=1, right_edge=1, left_current=2, right_current=2) %}
+            {% if p %}
+            <li class="page-item {% if p == messages.page %}active{% endif %}">
+              <a class="page-link"
+                 href="{{ url_for('admin.contact_messages', page=p, show=show) }}"
+                 {% if p == messages.page %}aria-current="page"{% endif %}>{{ p }}</a>
+            </li>
+            {% endif %}
+          {% endfor %}
+          {% if messages.has_next %}
+          <li class="page-item">
+            <a class="page-link"
+               href="{{ url_for('admin.contact_messages', page=messages.next_num, show=show) }}">Next &raquo;</a>
+          </li>
+          {% endif %}
+        </ul>
+      </nav>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <p class="text-muted mb-0">
+      {% if show == 'unread' %}
+      No unread messages. <a href="{{ url_for('admin.contact_messages', show='all') }}">See all messages</a>.
+      {% else %}
+      No messages from the contact form yet.
+      {% endif %}
+    </p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

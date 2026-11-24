@@ -2864,7 +2864,6 @@ def upload_student_document(uid):
     import os
     import uuid
     from datetime import datetime as _dt
-    from flask import current_app
     from werkzeug.utils import secure_filename
     from app.models.document import Document
 
@@ -2903,18 +2902,12 @@ def upload_student_document(uid):
     from app.services.storage_service import upload_file as _cloud_upload
     cloud_result = _cloud_upload(file_bytes, unique_name,
                                  f"documents/{uid}", resource_type='auto')
-    if cloud_result['success']:
-        file_path      = cloud_result['url']
-        cloudinary_url = cloud_result['url']
-        cloudinary_pid = cloud_result.get('public_id')
-    else:
-        upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'documents', str(uid))
-        os.makedirs(upload_dir, exist_ok=True)
-        file_path = os.path.join(upload_dir, unique_name)
-        with open(file_path, 'wb') as f:
-            f.write(file_bytes)
-        cloudinary_url = None
-        cloudinary_pid = None
+    if not cloud_result['success']:
+        flash(cloud_result.get('error') or 'Could not store the file.', 'error')
+        return redirect(url_for('admin.student_profile', uid=uid))
+    file_path      = cloud_result['url']
+    cloudinary_url = cloud_result['url']
+    cloudinary_pid = cloud_result.get('public_id')
 
     doc = Document(
         user_id              = uid,
@@ -2979,7 +2972,6 @@ def replace_reg_document(uid):
     import os
     import uuid
     from datetime import datetime as _dt
-    from flask import current_app
     from werkzeug.utils import secure_filename
 
     student  = User.query.get_or_404(uid)
@@ -3016,22 +3008,17 @@ def replace_reg_document(uid):
 
     # Upload to Cloudinary or local
     from app.services.storage_service import upload_file as _cloud_upload
-    upload_dir  = os.path.join(current_app.config['UPLOAD_FOLDER'], 'registration')
-    os.makedirs(upload_dir, exist_ok=True)
-    label       = 'cor' if doc_type == 'cor' else 'grades'
+    label = 'cor' if doc_type == 'cor' else 'grades'
     unique_name = secure_filename(
         f"{label}_{student.student_id}_{_dt.utcnow().strftime('%Y%m%d%H%M%S')}.{ext}"
     )
     cloud_result = _cloud_upload(file_bytes, unique_name,
                                  f"registration/{student.id}", resource_type='auto')
-    if cloud_result['success']:
-        new_path = cloud_result['url']
-        new_cid  = cloud_result.get('public_id')
-    else:
-        new_path = os.path.join(upload_dir, unique_name)
-        with open(new_path, 'wb') as f:
-            f.write(file_bytes)
-        new_cid = None
+    if not cloud_result['success']:
+        flash(cloud_result.get('error') or 'Could not store the file.', 'error')
+        return redirect(url_for('admin.student_profile', uid=uid))
+    new_path = cloud_result['url']
+    new_cid  = cloud_result.get('public_id')
 
     if doc_type == 'cor':
         student.cor_file_path    = new_path
@@ -4247,3 +4234,38 @@ def set_me_deadline():
     log_action('settings.me_deadline_set', f'M&E form deadline set to {raw}')
     flash('M&E form deadline saved.', 'success')
     return redirect(url_for('admin.settings'))
+
+
+# ── Contact form messages ────────────────────────────────────────────────────
+# Every submission is stored when it arrives, so the office can read it here
+# even when the mail provider was not configured or refused the send.
+
+@admin_bp.route('/contact-messages')
+@role_required('admin')
+def contact_messages():
+    """Messages sent through the public contact form, newest first."""
+    from app.models import ContactMessage
+
+    page = request.args.get('page', 1, type=int)
+    show = request.args.get('show', 'all')
+    query = ContactMessage.query
+    if show == 'unread':
+        query = query.filter_by(is_read=False)
+    rows = (query.order_by(ContactMessage.created_at.desc(), ContactMessage.id.desc())
+            .paginate(page=page, per_page=25, error_out=False))
+    unread = ContactMessage.query.filter_by(is_read=False).count()
+    return render_template('admin/contact_messages.html', messages=rows,
+                           show=show, unread=unread)
+
+
+@admin_bp.route('/contact-messages/<int:msg_id>/read', methods=['POST'])
+@role_required('admin')
+def mark_contact_message(msg_id):
+    """Toggle whether a stored message has been dealt with."""
+    from app.models import ContactMessage
+
+    message = ContactMessage.query.get_or_404(msg_id)
+    message.is_read = not message.is_read
+    db.session.commit()
+    return redirect(url_for('admin.contact_messages',
+                            show=request.args.get('show', 'all')))

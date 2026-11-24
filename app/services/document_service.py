@@ -127,16 +127,11 @@ class DocumentService:
                 cloudinary_pid    = cloud_result.get('public_id')
                 stored_filename   = unique_filename
             else:
-                # Local fallback
-                from flask import current_app
-                upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'documents', str(user_id))
-                os.makedirs(upload_dir, exist_ok=True)
-                file_path = os.path.join(upload_dir, unique_filename)
-                with open(file_path, 'wb') as f:
-                    f.write(file_bytes)
-                cloudinary_url  = None
-                cloudinary_pid  = None
-                stored_filename = unique_filename
+                # No durable store: report it rather than writing to a disk the
+                # next deploy replaces, which would lose the document silently.
+                return {'success': False,
+                        'message': cloud_result.get('error')
+                                   or 'Document storage is unavailable right now.'}
 
             file_info = {
                 'original_filename': original_filename,

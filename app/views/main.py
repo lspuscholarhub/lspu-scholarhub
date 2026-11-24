@@ -71,33 +71,57 @@ def contact():
             flash('Please fill in all required fields.', 'error')
             return redirect(url_for('main.contact'))
 
-        # Send email to the scholarship office
+        from app.models import ContactMessage
+
+        # Store the message first. Delivery depends on mail configuration the
+        # office may not have finished, but a message a visitor sends must never
+        # be lost — admins read these under Messages either way.
+        record = ContactMessage(
+            name=name[:120],
+            email=email[:255],
+            student_id=student_id[:20] or None,
+            subject=subject[:200],
+            message=message,
+        )
+        db.session.add(record)
+        db.session.commit()
+
+        emailed = False
         try:
+            from markupsafe import escape
             from app.services.notification_service import notification_service
-            sid_line = f'<br><strong>Student ID:</strong> {student_id}' if student_id else ''
+            sid_line = (f'<br><strong>Student ID:</strong> {escape(student_id)}'
+                        if student_id else '')
             html = f"""
             <h2>📩 New Contact Form Message</h2>
             <table style="border-collapse:collapse;">
-              <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">From:</td><td>{name}</td></tr>
-              <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Email:</td><td><a href="mailto:{email}">{email}</a></td></tr>
+              <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">From:</td><td>{escape(name)}</td></tr>
+              <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Email:</td><td><a href="mailto:{escape(email)}">{escape(email)}</a></td></tr>
               {sid_line}
-              <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Subject:</td><td>{subject}</td></tr>
+              <tr><td style="padding:4px 12px 4px 0;font-weight:bold;">Subject:</td><td>{escape(subject)}</td></tr>
             </table>
             <hr>
-            <p>{message}</p>
+            <p>{escape(message)}</p>
             <hr>
             <p style="color:#888;font-size:.85rem;">Sent via LSPU ScholarHub Contact Form</p>
             """
-            notification_service.send_email(
+            result = notification_service.send_email(
                 contact_email(),
                 f'[ScholarHub Contact] {subject} — {name}',
                 html,
             )
-            flash('Your message has been sent! We will get back to you soon.', 'success')
+            emailed = bool(result.get('success'))
         except Exception as e:
             import logging
             logging.getLogger(__name__).warning(f'Contact form email failed: {e}')
-            flash('Your message was received. We will get back to you soon.', 'success')
+
+        if emailed:
+            record.emailed = True
+            db.session.commit()
+            flash('Your message has been sent! We will get back to you soon.', 'success')
+        else:
+            flash('Your message has been saved for the scholarship office. '
+                  'We will get back to you soon.', 'success')
 
         return redirect(url_for('main.contact'))
 

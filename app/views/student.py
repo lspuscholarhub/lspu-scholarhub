@@ -1227,17 +1227,11 @@ def upload_gwa():
             f"{doc_type}_{user.student_id}_{datetime.utcnow().strftime('%Y%m%d%H%M%S')}.{ext}"
         )
         upload_result = _upload(file_bytes, filename, f"registration/{user.id}")
-        if upload_result['success']:
-            file_path  = upload_result['url']
-            cloud_id   = upload_result.get('public_id')
-        else:
-            # Local fallback
-            upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'registration')
-            os.makedirs(upload_dir, exist_ok=True)
-            file_path = os.path.join(upload_dir, filename)
-            with open(file_path, 'wb') as f:
-                f.write(file_bytes)
-            cloud_id = None
+        if not upload_result['success']:
+            flash(upload_result.get('error') or 'Could not store the file.', 'error')
+            return redirect(url_for('student.upload_gwa'))
+        file_path = upload_result['url']
+        cloud_id  = upload_result.get('public_id')
 
         # ── Ownership verification — same gate as registration ────────────────
         # The document must be readable and belong to THIS student (ID + name).

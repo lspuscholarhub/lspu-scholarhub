@@ -13,9 +13,10 @@ from .campus_form import CampusForm, CampusFormSubmission
 from .campus import Campus
 from .user_campus import UserCampus
 from .portal_sync import PortalSyncRun
+from .contact_message import ContactMessage
 
 __all__ = ['User', 'Scholarship', 'ScholarshipApplication', 'Notification',
            'Document', 'AuditLog', 'GwaHistory', 'AcademicPeriod', 'ScholarshipBatch',
            'ChatHistory', 'MonitoringSubmission', 'Campus', 'UserCampus',
            'PortalSyncRun', 'ScholarshipRequirement', 'RequirementSubmission',
-           'CampusForm', 'CampusFormSubmission']
+           'CampusForm', 'CampusFormSubmission', 'ContactMessage']

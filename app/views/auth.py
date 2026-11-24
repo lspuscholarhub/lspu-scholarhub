@@ -122,26 +122,14 @@ def _save_registration_file(file, user_student_id, file_type):
             f'Cloudinary upload attempt {attempt+1} failed: {result.get("error")}'
         )
 
-    # Both Cloudinary attempts failed
-    # Only fall back to local if Cloudinary is NOT configured
-    # (i.e. local dev environment) — on Railway we return None to block registration
-    from app.services.storage_service import _cloudinary_configured
-    if _cloudinary_configured():
-        # On Railway — Cloudinary failed, don't save broken path
-        _log.getLogger(__name__).error(
-            f'Cloudinary upload failed after 2 attempts for {filename}. '
-            f'Returning None to prevent broken file reference.'
-        )
-        return None, None
-
-    # Local dev fallback
-    from flask import current_app
-    upload_dir = os.path.join(current_app.config['UPLOAD_FOLDER'], 'registration')
-    os.makedirs(upload_dir, exist_ok=True)
-    file_path = os.path.join(upload_dir, filename)
-    with open(file_path, 'wb') as f:
-        f.write(file_bytes)
-    return file_path, None
+    # Nothing durable to fall back to. A local path here would be wiped by the
+    # next deploy while the pending registration kept pointing at it, so refuse
+    # and let the caller tell the student.
+    _log.getLogger(__name__).error(
+        f'Upload failed after 2 attempts for {filename}; no durable storage is '
+        f'available, refusing a local path.'
+    )
+    return None, None
 
 
 def _send_credentials_email(user, temp_password):
@@ -498,7 +486,9 @@ def register():
 
             cor_path, cor_cloudinary_id = _save_registration_file(cor_file, student_id, 'cor')
             if not cor_path:
-                flash('COR file could not be uploaded to cloud storage. Please try again.', 'error')
+                flash('Your COR could not be stored — document storage is not '
+                      f'available right now. Please try again later or contact the '
+                      f'scholarship office at {contact_email()}.', 'error')
                 return render_template('auth/register.html', campuses=_campuses, form_data=request.form, ocr_errors=None)
 
         if year_level in NEEDS_GRADES:
@@ -526,7 +516,9 @@ def register():
 
             grades_path, grades_cloudinary_id = _save_registration_file(grades_file, student_id, 'grades')
             if not grades_path:
-                flash('Grades file could not be uploaded to cloud storage. Please try again.', 'error')
+                flash('Your Copy of Grades could not be stored — document storage '
+                      f'is not available right now. Please try again later or contact '
+                      f'the scholarship office at {contact_email()}.', 'error')
                 return render_template('auth/register.html', campuses=_campuses, form_data=request.form, ocr_errors=None)
 
         # ── Document verification — INLINE GATE (before account creation) ─────
