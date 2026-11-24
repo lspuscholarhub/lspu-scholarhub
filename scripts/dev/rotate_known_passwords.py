@@ -1,20 +1,37 @@
 #!/usr/bin/env python3
-"""Rotate any account still using a password that is published in this repo.
+"""Reset accounts whose current password is known.
 
-The seed scripts set admin123 / student123 / staff123 / password. Those values
-are in git forever, so an account that still accepts one of them is a
-known-password login even if the account itself is legitimate. This script
-finds those accounts and replaces the password with a fresh random one,
-without deleting the account or its applications/documents.
+Two ways to use it:
+
+1. Sweep (default): find every account that still accepts a password published
+   in this repo (the seed scripts used admin123 / student123 / staff123 /
+   password) and give it a fresh random one. Those values are in git forever,
+   so an account that still accepts one of them is a known-password login even
+   if the account itself is legitimate.
+
+2. Named reset: ``--account 56`` (id, email, username or student id) resets
+   exactly that account, for a weak password that is not in the repo list,
+   combined with ``--force-change`` so the owner must choose their own
+   password at the next login. The account stays active and keeps its
+   applications/documents -- they are not locked out, they just cannot keep
+   using the old password.
 
 Defaults to a dry run. Apply with:
     python scripts/dev/rotate_known_passwords.py --confirm-production \
+        --apply --output _local_private/rotated_accounts.txt
+
+    # force a reset for one student who is on a weak password
+    python scripts/dev/rotate_known_passwords.py --confirm-production \
+        --account 56 --apply --force-change \
         --output _local_private/rotated_accounts.txt
 
-New passwords are written to --output (never printed) so they can be handed
-to the account owners. The output file must stay out of git (.gitignore
-already covers _local_private/ and backups/).
+New passwords are written to --output before the database commit, so a crash
+or a failed commit can never leave an account with a password nobody recorded.
+The file is merged (not overwritten), so earlier rotated accounts keep their
+credentials. Keep the file out of git -- .gitignore covers _local_private/ and
+backups/. Passwords are never printed to the terminal.
 """
+import argparse
 import os
 import secrets
 import sys
@@ -26,6 +43,11 @@ from _guard import CONFIRM_FLAG, require_confirmation  # noqa: E402
 
 KNOWN_PASSWORDS = ('admin123', 'student123', 'staff123', 'password')
 
+CREDENTIALS_HEADER = (
+    '# Accounts whose password was reset by scripts/dev/rotate_known_passwords.py\n'
+    '# id\temail\ttype\tnew password\n'
+)
+
 
 def mask_email(email):
     if not email or '@' not in email:
@@ -34,20 +56,98 @@ def mask_email(email):
     return f'{local[:2]}***@{domain}'
 
 
-def main():
-    require_confirmation('rotate accounts that use a repo-known password')
-    # Two separate switches: --confirm-production lets the guard through, and
-    # --apply is what actually writes. Without --apply the run is read-only.
-    apply = '--apply' in sys.argv
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description='Rotate accounts that accept a known password.')
+    parser.add_argument('--apply', action='store_true',
+                        help='write the changes (default is a dry run)')
+    parser.add_argument('--output', type=Path,
+                        help='credentials file; required with --apply')
+    parser.add_argument('--account', action='append', default=[],
+                        metavar='ID_OR_EMAIL',
+                        help='reset exactly this account even if its password '
+                             'is not in the repo list (repeatable)')
+    parser.add_argument('--force-change', action='store_true',
+                        help='require the owner to choose a new password at next '
+                             'login (the app blocks every page until they do)')
+    parser.add_argument(CONFIRM_FLAG, dest='confirm_production',
+                        action='store_true',
+                        help='allow a non-local / production-like database')
+    args = parser.parse_args()
+    if args.apply and args.output is None:
+        parser.error('--apply needs --output: the new passwords would be lost.')
+    return args
 
-    output = None
-    if '--output' in sys.argv:
-        index = sys.argv.index('--output')
-        if index + 1 >= len(sys.argv):
-            sys.exit('--output needs a file path')
-        output = Path(sys.argv[index + 1])
-    if apply and output is None:
-        sys.exit('Refusing to apply without --output: the new passwords would be lost.')
+
+def _read_existing(path):
+    """Existing credentials, keyed by account id, so a rerun never drops one."""
+    entries = {}
+    if path and path.exists():
+        for line in path.read_text(encoding='utf-8').splitlines():
+            parts = line.split('\t')
+            if len(parts) >= 4 and parts[0].strip().isdigit():
+                entries[int(parts[0])] = line.rstrip('\n')
+    return entries
+
+
+def save_credentials(path, changed):
+    """Persist the new passwords atomically, keeping every earlier entry.
+
+    Called BEFORE db.session.commit(): if the write fails we abort without
+    touching the database; if the commit fails, the file already holds the
+    passwords so nothing is lost (a stale line is harmless, an unrecorded
+    password locks a real student out).
+    """
+    entries = _read_existing(path)
+    for uid, email, utype, new_password in changed:
+        entries[uid] = f'{uid}\t{email}\t{utype}\t{new_password}'
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + '.tmp')
+    tmp.write_text(
+        CREDENTIALS_HEADER + ''.join(f'{entries[uid]}\n' for uid in sorted(entries)),
+        encoding='utf-8')
+    try:
+        os.chmod(tmp, 0o600)
+    except OSError:
+        pass
+    os.replace(tmp, path)
+
+
+def select_targets(accounts):
+    """Accounts to reset: the named ones, or every known-password match."""
+    from werkzeug.security import check_password_hash
+    from app import db
+    from app.models import User
+
+    def matched_passwords(user):
+        return [pw for pw in KNOWN_PASSWORDS
+                if user.password_hash and check_password_hash(user.password_hash, pw)]
+
+    if not accounts:
+        targets = []
+        for user in User.query.order_by(User.id).all():
+            matched = matched_passwords(user)
+            if matched:
+                targets.append((user, matched))
+        return targets
+
+    targets = []
+    for spec in accounts:
+        user = db.session.get(User, int(spec)) if spec.isdigit() else None
+        if user is None:
+            user = (User.query.filter_by(email=spec).first()
+                    or User.query.filter_by(username=spec).first()
+                    or User.query.filter_by(student_id=spec).first())
+        if user is None:
+            sys.exit(f'No account matches --account {spec!r}.')
+        targets.append((user, matched_passwords(user)))
+    return targets
+
+
+def main():
+    args = parse_args()
+    require_confirmation('rotate accounts that use a known password')
 
     from werkzeug.security import check_password_hash
     from app import create_app, db
@@ -56,42 +156,64 @@ def main():
     app = create_app()
     changed = []
     with app.app_context():
-        users = User.query.order_by(User.id).all()
-        for user in users:
-            matched = [pw for pw in KNOWN_PASSWORDS
-                       if user.password_hash and check_password_hash(user.password_hash, pw)]
-            if not matched:
+        targets = select_targets(args.account)
+        if not targets:
+            print('No account still accepts a password published in this repo.')
+            return 0
+
+        for user, matched in targets:
+            reason = ('password is published in this repo' if matched
+                      else 'named explicitly, password not in the repo list')
+            if not user.is_active:
+                reason += ', account is DISABLED'
+            print(f"  {'ROTATE' if args.apply else 'would rotate'}: id={user.id} "
+                  f"type={user.user_type} email={mask_email(user.email)} ({reason})")
+            if not args.apply:
                 continue
-            print(f"  {'ROTATE' if apply else 'would rotate'}: id={user.id} "
-                  f"type={user.user_type} email={mask_email(user.email)}")
-            if not apply:
-                continue
+
             new_password = secrets.token_urlsafe(12)
             user.set_password(new_password)
-            if hasattr(user, 'must_change_password'):
-                user.must_change_password = False
+            if args.force_change:
+                user.must_change_password = True
             changed.append((user.id, user.email, user.user_type, new_password))
 
         if changed:
-            db.session.commit()
-            output.parent.mkdir(parents=True, exist_ok=True)
-            output.write_text(
-                '# Accounts whose repo-known password was rotated\n'
-                '# id\temail\ttype\tnew password\n'
-                + ''.join(f'{uid}\t{email}\t{utype}\t{pw}\n'
-                          for uid, email, utype, pw in changed),
-                encoding='utf-8')
             try:
-                os.chmod(output, 0o600)
-            except OSError:
-                pass
+                save_credentials(args.output, changed)
+            except OSError as exc:
+                db.session.rollback()
+                sys.exit(f'Could not write {args.output} ({exc.__class__.__name__}). '
+                         f'Nothing was committed, so no password changed.')
 
-    if apply:
-        print(f'\nRotated {len(changed)} account(s).')
-    else:
+            try:
+                db.session.commit()
+            except Exception as exc:  # noqa: BLE001 - never echo the DB URL
+                db.session.rollback()
+                sys.exit(f'Database write failed ({exc.__class__.__name__}); nothing '
+                         f'was committed. The new passwords are already in '
+                         f'{args.output} but are NOT active -- re-run to retry, or '
+                         f'delete those lines before handing the file out.')
+
+            # Confirm the stored hashes accept the passwords we recorded.
+            db.session.expire_all()
+            for uid, _, _, new_password in changed:
+                user = db.session.get(User, uid)
+                ok = bool(user and check_password_hash(user.password_hash, new_password))
+                print(f'  verified: id={uid} {"accepts the new password" if ok else "FAILED"}')
+                if not ok:
+                    return 2
+
+    if not args.apply:
         print('\nDry run: nothing was changed.')
-    if apply:
-        print(f'New passwords written to {output} (keep it out of git).')
+        return 0
+
+    print(f'\nReset {len(changed)} account(s).')
+    print(f'New passwords are in {args.output} (keep it out of git).')
+    if args.force_change:
+        print('Each account must choose its own password at the next login; the '
+              'old password no longer works.')
+    print('Owners who never receive the temporary password can still use '
+          'Auth > Forgot password (Student ID + registered email) to set one.')
     return 0
 
 
