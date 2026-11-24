@@ -4141,32 +4141,43 @@ def batch_detail(batch_id):
                            batch=batch, applications=applications)
 
 
-# ── Temporary email test route (admin only) ───────────────────────────────────
+# ── Mail configuration check (super admin, POST only) ───────────────────────────────────
 
-@admin_bp.route('/test-email')
-@role_required('admin')
+@admin_bp.route('/test-email', methods=['POST'])
+@role_required('super_admin')
 def test_email():
-    """Test email configuration — visit /admin/test-email to check."""
-    import os
-    from flask import jsonify
-    from app.services.notification_service import notification_service
+    """Send one test email to the signed-in super admin.
 
-    admin_user = User.query.filter_by(user_type='admin').first()
-    test_to = admin_user.email if admin_user else 'test@example.com'
+    Kept so mail can be verified after a provider change. POST only, so a link
+    click or a page prefetch cannot trigger a send. The recipient is always the
+    caller's own address and never a request field, so it cannot be aimed at
+    someone else. It reports the provider's answer instead of echoing the
+    server's mail configuration, and every send is audited.
+    """
+    from app.services.audit_service import log_action
+
+    me = db.session.get(User, session.get('user_id'))
+    if not me or not me.email:
+        flash('Your account has no email address to send the test to.', 'error')
+        return redirect(url_for('admin.settings'))
 
     result = notification_service.send_email(
-        test_to,
+        me.email,
         'LSPU ScholarHub — Test Email',
-        '<h2>Test email works!</h2><p>Email configuration is correct.</p>',
+        '<h2>Test email works!</h2><p>The mail provider accepted this message.</p>',
     )
+    if result.get('success'):
+        flash(f'Test email sent to {me.email} — check that inbox and its spam folder.',
+              'success')
+    else:
+        flash(f'Test email failed: {result.get("message", "unknown error")}', 'error')
 
-    return jsonify({
-        'sent_to':      test_to,
-        'result':       result,
-        'BREVO_API_KEY': 'SET' if os.environ.get('BREVO_API_KEY') else 'NOT SET',
-        'MAIL_SERVER':   os.environ.get('MAIL_SERVER', 'NOT SET'),
-        'MAIL_USERNAME': os.environ.get('MAIL_USERNAME', 'NOT SET'),
-    })
+    log_action('notification.test_email',
+               f'Super admin {me.username} sent a mail test to {me.email}. Provider '
+               f'answer: {"accepted" if result.get("success") else result.get("message")}.',
+               category='notification', target_type='user', target_id=me.id,
+               user_id=me.id, user_name=me.username, user_role=me.user_type)
+    return redirect(url_for('admin.settings'))
 
 
 # ── Monitoring & Evaluation form submissions ────────────────────────────────
