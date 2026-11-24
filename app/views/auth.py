@@ -597,6 +597,7 @@ def register():
         # ── Year level validation against COR ──────────────────────────────────
         # Skip for Irregular/Graduate — these don't appear as a year number in CORs.
         cor_data = verification.get('cor_data') or {}
+        grades_data = verification.get('grades_data') or {}
         detected_year = cor_data.get('year_level')
         from app.services.storage_service import delete_file as _delete_file
         def _cleanup_cor_and_grades():
@@ -640,7 +641,6 @@ def register():
 
         # ── Birthday validation against Report of Grades ──────────────────────
         # The birthday the student entered must match their grades document.
-        grades_data = verification.get('grades_data') or {}
         detected_dob = grades_data.get('date_of_birth')
         if detected_dob and birthday_date:
             # Parse the detected DOB (format: MM/DD/YYYY or M/D/YYYY)
@@ -663,8 +663,6 @@ def register():
         # The COR's "Total Units" is the authoritative semester load; the grades
         # document is only a fallback for edge cases where the COR omits it.
         auto_units = None
-        cor_data = verification.get('cor_data') or {}
-        grades_data = verification.get('grades_data') or {}
         units_source = cor_data.get('units_enrolled') or grades_data.get('units_enrolled')
         if units_source:
             try:
