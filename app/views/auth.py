@@ -1142,7 +1142,7 @@ def profile():
         return redirect(url_for('auth.login'))
 
     role = session.get('user_type')
-    if role == 'admin':
+    if role in ('admin', 'super_admin'):
         return redirect(url_for('admin.profile'))
     elif role == 'staff':
         return redirect(url_for('staff.profile'))

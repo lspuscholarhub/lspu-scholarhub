@@ -778,6 +778,11 @@ textarea.form-control {
 }
 .app-topbar .navbar-nav { flex-direction: row; flex-wrap: nowrap; margin: 0; }
 .app-topbar .navbar-nav .nav-link { white-space: nowrap; }
+/* Bootstrap positions a navbar's dropdown menus statically for the collapsed
+   mobile navbar. The topbar is a fixed rail, so a static menu joined the 56px
+   header's flex flow, grew its <li> to the menu's height and pushed the menu
+   above the top of the screen. Popper positions the menu once it is absolute. */
+.app-topbar .navbar-nav .dropdown-menu { position: absolute; }
 /* Keep long pill labels from pushing controls off-screen */
 .app-topbar .pill-label {
   max-width: 150px;
