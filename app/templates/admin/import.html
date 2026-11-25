@@ -3,7 +3,7 @@
 
 {% block head %}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261220a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261125a" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -20,66 +20,66 @@
                   ('town', 'Optional', 'Santa Cruz'),
                   ('province', 'Optional', 'Laguna')] %}
 {% set required = columns|selectattr(1, 'equalto', 'Yes')|list|length %}
-<div class="ad-page">
-  <header class="ad-board">
-    <div class="ad-board-inner">
-      <p class="ad-kicker">Students</p>
-      <h1 class="ad-title">Bulk student import</h1>
-      <p class="ad-sub">
+<div class="shb-page">
+  <header class="shb-board">
+    <div class="shb-board-inner">
+      <p class="shb-kicker">Students</p>
+      <h1 class="shb-title">Bulk student import</h1>
+      <p class="shb-sub">
         <b>{{ campus_name or 'All campuses' }}</b>
         &middot; Excel or CSV &middot; credentials emailed as each row is created
       </p>
-      <div class="ad-kpis">
-        <div class="ad-kpi">
-          <span class="ad-kpi-label">Columns</span>
-          <span class="ad-kpi-value">{{ columns|length }}</span>
+      <div class="shb-kpis">
+        <div class="shb-kpi">
+          <span class="shb-kpi-label">Columns</span>
+          <span class="shb-kpi-value">{{ columns|length }}</span>
         </div>
-        <div class="ad-kpi">
-          <span class="ad-kpi-label">Required</span>
-          <span class="ad-kpi-value">{{ required }}</span>
+        <div class="shb-kpi">
+          <span class="shb-kpi-label">Required</span>
+          <span class="shb-kpi-value">{{ required }}</span>
         </div>
-        <div class="ad-kpi">
-          <span class="ad-kpi-label">Optional</span>
-          <span class="ad-kpi-value">{{ columns|length - required }}</span>
+        <div class="shb-kpi">
+          <span class="shb-kpi-label">Optional</span>
+          <span class="shb-kpi-value">{{ columns|length - required }}</span>
         </div>
-        <div class="ad-kpi">
-          <span class="ad-kpi-label">File types</span>
-          <span class="ad-kpi-value">3</span>
+        <div class="shb-kpi">
+          <span class="shb-kpi-label">File types</span>
+          <span class="shb-kpi-value">3</span>
         </div>
       </div>
     </div>
   </header>
 
-  <div class="ad-body">
-    <p class="ad-crumbs">
+  <div class="shb-body">
+    <p class="shb-crumbs">
       <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
       <span aria-hidden="true">&middot;</span> <span class="is-here">Bulk import</span>
     </p>
 
-    <div class="ad-cols ad-cols--split ad-cols--top">
-      <div class="ad-cols">
-        <section class="ad-panel" aria-labelledby="ad-upload-title">
-          <div class="ad-panel-toolbar">
-            <h2 id="ad-upload-title" class="ad-panel-title">Upload file</h2>
-            <span class="ad-panel-count">One sheet &middot; header row required</span>
+    <div class="shb-cols shb-cols--split shb-cols--top">
+      <div class="shb-cols">
+        <section class="shb-panel" aria-labelledby="shb-upload-title">
+          <div class="shb-panel-toolbar">
+            <h2 id="shb-upload-title" class="shb-panel-title">Upload file</h2>
+            <span class="shb-panel-count">One sheet &middot; header row required</span>
           </div>
-          <div class="ad-panel-body">
+          <div class="shb-panel-body">
             <form method="POST" action="{{ url_for('admin.import_students') }}"
                   enctype="multipart/form-data" id="importForm">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <div id="dropZone" class="ad-drop">
+              <div id="dropZone" class="shb-drop">
                 <i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i>
-                <p class="ad-drop-title">Drag &amp; drop your file here</p>
-                <p class="ad-drop-sub">or click to browse &middot; .xlsx, .xls or .csv</p>
+                <p class="shb-drop-title">Drag &amp; drop your file here</p>
+                <p class="shb-drop-sub">or click to browse &middot; .xlsx, .xls or .csv</p>
                 <input type="file" id="import_file" name="import_file"
                        accept=".xlsx,.xls,.csv" class="d-none" required>
-                <button type="button" class="btn ad-ghost-btn"
+                <button type="button" class="btn shb-ghost-btn"
                         onclick="document.getElementById('import_file').click()">
                   <i class="bi bi-folder2-open" aria-hidden="true"></i> Choose file
                 </button>
-                <p id="fileName" class="ad-drop-file d-none"></p>
+                <p id="fileName" class="shb-drop-file d-none"></p>
               </div>
-              <button type="submit" class="btn ad-primary-btn ad-drop-go" id="importBtn" disabled>
+              <button type="submit" class="btn shb-primary-btn shb-drop-go" id="importBtn" disabled>
                 <i class="bi bi-upload" aria-hidden="true"></i> Import &amp; send credentials
               </button>
             </form>
@@ -87,24 +87,24 @@
         </section>
 
         {% if inserted is defined %}
-        <section class="ad-panel" aria-labelledby="ad-results-title">
-          <div class="ad-panel-toolbar">
-            <h2 id="ad-results-title" class="ad-panel-title">Import results</h2>
-            <span class="ad-panel-count">{{ inserted }} imported &middot; {{ skipped }} skipped</span>
+        <section class="shb-panel" aria-labelledby="shb-results-title">
+          <div class="shb-panel-toolbar">
+            <h2 id="shb-results-title" class="shb-panel-title">Import results</h2>
+            <span class="shb-panel-count">{{ inserted }} imported &middot; {{ skipped }} skipped</span>
           </div>
-          <div class="ad-panel-body">
-            <div class="ad-tiles">
-              <div class="ad-tile">
+          <div class="shb-panel-body">
+            <div class="shb-tiles">
+              <div class="shb-tile">
                 <i class="bi bi-check2-circle" aria-hidden="true"></i> {{ inserted }} imported
               </div>
-              <div class="ad-tile">
+              <div class="shb-tile">
                 <i class="bi bi-exclamation-triangle" aria-hidden="true"></i> {{ skipped }} skipped
               </div>
             </div>
             {% if import_errors %}
-            <div class="ad-note mt-3">
-              <p class="ad-note-title">Issues found</p>
-              <ul class="ad-note-list">
+            <div class="shb-note mt-3">
+              <p class="shb-note-title">Issues found</p>
+              <ul class="shb-note-list">
                 {% for err in import_errors %}
                 <li>{{ err }}</li>
                 {% endfor %}
@@ -116,13 +116,13 @@
         {% endif %}
       </div>
 
-      <div class="ad-cols">
-        <section class="ad-panel ad-panel--hug" aria-labelledby="ad-how-title">
-          <div class="ad-panel-toolbar">
-            <h2 id="ad-how-title" class="ad-panel-title">How it works</h2>
+      <div class="shb-cols">
+        <section class="shb-panel shb-panel--hug" aria-labelledby="shb-how-title">
+          <div class="shb-panel-toolbar">
+            <h2 id="shb-how-title" class="shb-panel-title">How it works</h2>
           </div>
-          <div class="ad-panel-body">
-            <ol class="ad-steps">
+          <div class="shb-panel-body">
+            <ol class="shb-steps">
               <li>Prepare your Excel or CSV file with the required columns.</li>
               <li>Upload the file using the form.</li>
               <li>The system validates each row for duplicates and format errors.</li>
@@ -132,25 +132,25 @@
           </div>
         </section>
 
-        <section class="ad-panel ad-panel--hug" aria-labelledby="ad-cols-title">
-          <div class="ad-panel-toolbar">
-            <h2 id="ad-cols-title" class="ad-panel-title">Required columns</h2>
-            <span class="ad-panel-count">{{ required }} of {{ columns|length }} required</span>
+        <section class="shb-panel shb-panel--hug" aria-labelledby="shb-cols-title">
+          <div class="shb-panel-toolbar">
+            <h2 id="shb-cols-title" class="shb-panel-title">Required columns</h2>
+            <span class="shb-panel-count">{{ required }} of {{ columns|length }} required</span>
           </div>
           <div class="table-responsive">
-            <table class="table ad-table ad-table--cols align-middle mb-0">
+            <table class="table shb-table shb-table--cols align-middle mb-0">
               <thead>
                 <tr><th>Column Name</th><th>Required</th><th>Example</th></tr>
               </thead>
               <tbody>
                 {% for name, need, example in columns %}
                 <tr>
-                  <td class="ad-c-col" data-label="Column"><code>{{ name }}</code></td>
-                  <td class="ad-c-req" data-label="Required">
-                    {% if need == 'Yes' %}<span class="ad-pill is-approved">Yes</span>
-                    {% else %}<span class="ad-pill is-mute">Optional</span>{% endif %}
+                  <td class="shb-c-col" data-label="Column"><code>{{ name }}</code></td>
+                  <td class="shb-c-req" data-label="Required">
+                    {% if need == 'Yes' %}<span class="shb-pill is-approved">Yes</span>
+                    {% else %}<span class="shb-pill is-mute">Optional</span>{% endif %}
                   </td>
-                  <td class="ad-c-eg" data-label="Example">{{ example }}</td>
+                  <td class="shb-c-eg" data-label="Example">{{ example }}</td>
                 </tr>
                 {% endfor %}
               </tbody>
@@ -158,14 +158,14 @@
           </div>
         </section>
 
-        <section class="ad-panel ad-panel--hug" aria-labelledby="ad-template-title">
-          <div class="ad-panel-toolbar">
-            <h2 id="ad-template-title" class="ad-panel-title">Template</h2>
-            <span class="ad-panel-count">.xlsx</span>
+        <section class="shb-panel shb-panel--hug" aria-labelledby="shb-template-title">
+          <div class="shb-panel-toolbar">
+            <h2 id="shb-template-title" class="shb-panel-title">Template</h2>
+            <span class="shb-panel-count">.xlsx</span>
           </div>
-          <div class="ad-panel-body">
-            <p class="ad-sub mb-3">Download the template file to ensure your data is formatted correctly.</p>
-            <a href="{{ url_for('admin.download_import_template') }}" class="btn ad-primary-btn">
+          <div class="shb-panel-body">
+            <p class="shb-sub mb-3">Download the template file to ensure your data is formatted correctly.</p>
+            <a href="{{ url_for('admin.download_import_template') }}" class="btn shb-primary-btn">
               <i class="bi bi-download" aria-hidden="true"></i> Download template (.xlsx)
             </a>
           </div>

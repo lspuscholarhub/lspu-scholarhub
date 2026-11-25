@@ -3,7 +3,7 @@
 
 {% block head %}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261220a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261125a" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -13,42 +13,42 @@
                        'rejected': 'Rejected', 'withdrawn': 'Withdrawn'} %}
 {% set campus_name = session.get('campus_context_name') or session.get('campus_name') %}
 
-<div class="ad-page">
-  <header class="ad-board">
-    <div class="ad-board-inner">
-      <p class="ad-kicker">Admin overview</p>
-      <h1 class="ad-title">Dashboard</h1>
-      <p class="ad-sub">
+<div class="shb-page">
+  <header class="shb-board">
+    <div class="shb-board-inner">
+      <p class="shb-kicker">Admin overview</p>
+      <h1 class="shb-title">Dashboard</h1>
+      <p class="shb-sub">
         <b>{{ campus_name or 'All Campuses' }}</b>
         {%- if current_period %} · {{ current_period.display_name }}{% endif %}
         <span style="color:#8494a8;">· {{ session.get('username') }}</span>
       </p>
-      <div class="ad-kpis">
+      <div class="shb-kpis">
         {% for label, val, tone in [('Scholars', total_students, ''),
                                     ('Applications', total_applications, ''),
                                     ('Pending review', pending_review, 'is-warn'),
                                     ('At risk', at_risk_count, 'is-bad')] %}
-        <div class="ad-kpi {{ tone }}">
-          <span class="ad-kpi-label">{{ label }}</span>
-          <span class="ad-kpi-value">{{ val }}</span>
+        <div class="shb-kpi {{ tone }}">
+          <span class="shb-kpi-label">{{ label }}</span>
+          <span class="shb-kpi-value">{{ val }}</span>
         </div>
         {% endfor %}
       </div>
     </div>
   </header>
 
-  <div class="ad-body">
+  <div class="shb-body">
     <!-- scholars + funds + system -->
-    <div class="ad-cols ad-cols--three">
-      <section class="card ad-panel" aria-labelledby="ad-scholars-title">
-        <div class="ad-panel-head">
-          <h2 id="ad-scholars-title">Scholars</h2>
-          <a class="ad-go" href="{{ url_for('admin.student_directory') }}">Directory</a>
+    <div class="shb-cols shb-cols--three">
+      <section class="card shb-panel" aria-labelledby="shb-scholars-title">
+        <div class="shb-panel-head">
+          <h2 id="shb-scholars-title">Scholars</h2>
+          <a class="shb-go" href="{{ url_for('admin.student_directory') }}">Directory</a>
         </div>
-        <div class="ad-panel-body">
-          <div class="ad-figure">{{ total_students }}</div>
-          <div class="ad-figure-sub">{{ active_scholarships }} active scholarship program{{ '' if active_scholarships == 1 else 's' }}</div>
-          <ul class="ad-facts">
+        <div class="shb-panel-body">
+          <div class="shb-figure">{{ total_students }}</div>
+          <div class="shb-figure-sub">{{ active_scholarships }} active scholarship program{{ '' if active_scholarships == 1 else 's' }}</div>
+          <ul class="shb-facts">
             <li><span><i class="bi bi-gender-male"></i>Male</span><b>{{ male_students }}</b></li>
             <li><span><i class="bi bi-gender-female"></i>Female</span><b>{{ female_students }}</b></li>
             <li><span><i class="bi bi-check2-all"></i>Approved</span><b class="is-ok">{{ approved_count }}</b></li>
@@ -56,28 +56,28 @@
         </div>
       </section>
 
-      <section class="card ad-panel" aria-labelledby="ad-funds-title">
-        <div class="ad-panel-head">
-          <h2 id="ad-funds-title">Funds disbursed</h2>
-          <a class="ad-go" href="{{ url_for('admin.manage_batches') }}">Batches</a>
+      <section class="card shb-panel" aria-labelledby="shb-funds-title">
+        <div class="shb-panel-head">
+          <h2 id="shb-funds-title">Funds disbursed</h2>
+          <a class="shb-go" href="{{ url_for('admin.manage_batches') }}">Batches</a>
         </div>
-        <div class="ad-panel-body">
-          <div class="ad-figure">₱{{ "{:,.0f}".format(total_funds) }}</div>
-          <div class="ad-figure-sub">Across {{ active_batches }} active batch{{ '' if active_batches == 1 else 'es' }}</div>
-          <ul class="ad-facts">
+        <div class="shb-panel-body">
+          <div class="shb-figure">₱{{ "{:,.0f}".format(total_funds) }}</div>
+          <div class="shb-figure-sub">Across {{ active_batches }} active batch{{ '' if active_batches == 1 else 'es' }}</div>
+          <ul class="shb-facts">
             <li><span><i class="bi bi-check2-all"></i>Approved scholars</span><b class="is-ok">{{ approved_count }}</b></li>
             <li><span><i class="bi bi-collection"></i>Active batches</span><b>{{ active_batches }}</b></li>
           </ul>
         </div>
       </section>
 
-      <section class="card ad-panel" aria-labelledby="ad-system-title">
-        <div class="ad-panel-head">
-          <h2 id="ad-system-title">System</h2>
-          <a class="ad-go" href="{{ url_for('admin.manage_users') }}">Users</a>
+      <section class="card shb-panel" aria-labelledby="shb-system-title">
+        <div class="shb-panel-head">
+          <h2 id="shb-system-title">System</h2>
+          <a class="shb-go" href="{{ url_for('admin.manage_users') }}">Users</a>
         </div>
-        <div class="ad-panel-body">
-          <ul class="ad-facts">
+        <div class="shb-panel-body">
+          <ul class="shb-facts">
             <li><span><i class="bi bi-people"></i>Total users</span><b>{{ total_users }}</b></li>
             {% if all_staff_count %}
             <li><span><i class="bi bi-person-badge"></i>Staff &amp; admins</span><b>{{ all_staff_count }}</b></li>
@@ -91,13 +91,13 @@
     </div>
 
     <!-- actions + recent -->
-    <div class="ad-cols ad-cols--split">
-      <section class="card ad-panel ad-panel--hug" aria-labelledby="ad-actions-title">
-        <div class="ad-panel-head">
-          <h2 id="ad-actions-title">Quick actions</h2>
+    <div class="shb-cols shb-cols--split">
+      <section class="card shb-panel shb-panel--hug" aria-labelledby="shb-actions-title">
+        <div class="shb-panel-head">
+          <h2 id="shb-actions-title">Quick actions</h2>
         </div>
-        <div class="ad-panel-body">
-          <div class="ad-tiles">
+        <div class="shb-panel-body">
+          <div class="shb-tiles">
             {% for href, icon, label in [
               (url_for('admin.manage_applications'), 'bi-file-earmark-check', 'Review applications'),
               (url_for('admin.manage_batches'),      'bi-collection',         'Manage batches'),
@@ -106,47 +106,47 @@
               (url_for('admin.student_directory'),   'bi-person-lines-fill',  'Student directory'),
               (url_for('admin.reports'),             'bi-graph-up',           'Reports & export'),
             ] %}
-            <a class="ad-tile" href="{{ href }}"><i class="bi {{ icon }}" aria-hidden="true"></i>{{ label }}</a>
+            <a class="shb-tile" href="{{ href }}"><i class="bi {{ icon }}" aria-hidden="true"></i>{{ label }}</a>
             {% endfor %}
           </div>
         </div>
       </section>
 
-      <section class="card ad-panel" aria-labelledby="ad-recent-title">
-        <div class="ad-panel-head">
-          <h2 id="ad-recent-title">Recent applications</h2>
-          <a class="ad-go" href="{{ url_for('admin.manage_applications') }}">View all</a>
+      <section class="card shb-panel" aria-labelledby="shb-recent-title">
+        <div class="shb-panel-head">
+          <h2 id="shb-recent-title">Recent applications</h2>
+          <a class="shb-go" href="{{ url_for('admin.manage_applications') }}">View all</a>
         </div>
-        <div class="ad-panel-body">
+        <div class="shb-panel-body">
           {% if recent_apps %}
-          <ul class="ad-list">
+          <ul class="shb-list">
             {% for app in recent_apps %}
             {% set sv = app.status.value %}
             <li>
-              <div class="ad-who">
+              <div class="shb-who">
                 {{ app.applicant.get_full_name() }}
                 <span>{{ app.scholarship.title[:38] if app.scholarship else 'Program removed' }} · {{ app.submitted_at.strftime('%b %d, %Y') if app.submitted_at else 'No date' }}</span>
               </div>
-              <span class="ad-pill {{ status_pill.get(sv, 'is-mute') }}">{{ status_label.get(sv, sv|title) }}</span>
+              <span class="shb-pill {{ status_pill.get(sv, 'is-mute') }}">{{ status_label.get(sv, sv|title) }}</span>
             </li>
             {% endfor %}
           </ul>
           {% else %}
-          <p class="ad-figure-sub">No recent applications.</p>
+          <p class="shb-figure-sub">No recent applications.</p>
           {% endif %}
         </div>
       </section>
     </div>
 
     <!-- top performers -->
-    <section class="card ad-panel" aria-labelledby="ad-performers-title">
-      <div class="ad-panel-head">
-        <h2 id="ad-performers-title">Top performing students</h2>
-        <a class="ad-go" href="{{ url_for('admin.student_directory') }}">View all</a>
+    <section class="card shb-panel" aria-labelledby="shb-performers-title">
+      <div class="shb-panel-head">
+        <h2 id="shb-performers-title">Top performing students</h2>
+        <a class="shb-go" href="{{ url_for('admin.student_directory') }}">View all</a>
       </div>
       {% if top_performers %}
       <div class="table-responsive">
-        <table class="table ad-table ad-table--performers align-middle mb-0">
+        <table class="table shb-table shb-table--performers align-middle mb-0">
           <thead>
             <tr>
               <th style="width:44px;">#</th>
@@ -161,19 +161,19 @@
           <tbody>
             {% for student in top_performers %}
             <tr>
-              <td class="ad-app-id">{{ loop.index }}</td>
-              <td><div class="ad-who">{{ student.get_full_name() }}</div></td>
+              <td class="shb-app-id">{{ loop.index }}</td>
+              <td><div class="shb-who">{{ student.get_full_name() }}</div></td>
               <td>{{ student.student_id or '—' }}</td>
-              <td class="ad-prog">{{ student.course[:34] if student.course else '—' }}</td>
+              <td class="shb-prog">{{ student.course[:34] if student.course else '—' }}</td>
               <td>{{ student.year_level or '—' }}</td>
               <td><strong>{{ "%.2f"|format(student.gwa) }}</strong></td>
               <td>
-                {% if student.gwa <= 1.25 %}<span class="ad-pill is-approved">Excellent</span>
-                {% elif student.gwa <= 1.75 %}<span class="ad-pill is-approved">Very good</span>
-                {% elif student.gwa <= 2.25 %}<span class="ad-pill is-approved">Satisfactory</span>
-                {% elif student.gwa <= 2.75 %}<span class="ad-pill is-mute">Fair</span>
-                {% elif student.gwa <= 3.00 %}<span class="ad-pill is-pending">Passed</span>
-                {% else %}<span class="ad-pill is-rejected">At risk</span>{% endif %}
+                {% if student.gwa <= 1.25 %}<span class="shb-pill is-approved">Excellent</span>
+                {% elif student.gwa <= 1.75 %}<span class="shb-pill is-approved">Very good</span>
+                {% elif student.gwa <= 2.25 %}<span class="shb-pill is-approved">Satisfactory</span>
+                {% elif student.gwa <= 2.75 %}<span class="shb-pill is-mute">Fair</span>
+                {% elif student.gwa <= 3.00 %}<span class="shb-pill is-pending">Passed</span>
+                {% else %}<span class="shb-pill is-rejected">At risk</span>{% endif %}
               </td>
             </tr>
             {% endfor %}
@@ -181,19 +181,19 @@
         </table>
       </div>
       {% else %}
-      <div class="ad-panel-body"><p class="ad-figure-sub">No GWA data available yet.</p></div>
+      <div class="shb-panel-body"><p class="shb-figure-sub">No GWA data available yet.</p></div>
       {% endif %}
     </section>
 
     <!-- charts -->
-    <div class="ad-cols ad-cols--split">
-      <section class="card ad-panel" aria-labelledby="ad-status-title">
-        <div class="ad-panel-head"><h2 id="ad-status-title">Application status</h2></div>
-        <div class="ad-panel-body"><div class="ad-chart"><canvas id="dashStatusChart"></canvas></div></div>
+    <div class="shb-cols shb-cols--split">
+      <section class="card shb-panel" aria-labelledby="shb-status-title">
+        <div class="shb-panel-head"><h2 id="shb-status-title">Application status</h2></div>
+        <div class="shb-panel-body"><div class="shb-chart"><canvas id="dashStatusChart"></canvas></div></div>
       </section>
-      <section class="card ad-panel" aria-labelledby="ad-gwa-title">
-        <div class="ad-panel-head"><h2 id="ad-gwa-title">Scholar GWA distribution</h2></div>
-        <div class="ad-panel-body"><div class="ad-chart"><canvas id="dashGwaChart"></canvas></div></div>
+      <section class="card shb-panel" aria-labelledby="shb-gwa-title">
+        <div class="shb-panel-head"><h2 id="shb-gwa-title">Scholar GWA distribution</h2></div>
+        <div class="shb-panel-body"><div class="shb-chart"><canvas id="dashGwaChart"></canvas></div></div>
       </section>
     </div>
   </div>

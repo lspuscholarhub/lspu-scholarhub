@@ -3,7 +3,7 @@
 
 {% block head %}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261220a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261125a" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -12,49 +12,49 @@
   {% if c.is_active %}{% set ns.active = ns.active + 1 %}{% else %}{% set ns.inactive = ns.inactive + 1 %}{% endif %}
   {% set ns.users = ns.users + (c.users|length) %}
 {% endfor %}
-<div class="ad-page">
-  <header class="ad-board">
-    <div class="ad-board-inner">
-      <p class="ad-kicker">System</p>
-      <h1 class="ad-title">Campuses</h1>
-      <p class="ad-sub">
+<div class="shb-page">
+  <header class="shb-board">
+    <div class="shb-board-inner">
+      <p class="shb-kicker">System</p>
+      <h1 class="shb-title">Campuses</h1>
+      <p class="shb-sub">
         <b>{{ campuses|length }}</b> configured
         &middot; {{ ns.active }} accepting new accounts
         &middot; {{ ns.users }} user{{ '' if ns.users == 1 else 's' }} assigned
       </p>
-      <div class="ad-kpis">
-        <div class="ad-kpi">
-          <span class="ad-kpi-label">Campuses</span>
-          <span class="ad-kpi-value">{{ campuses|length }}</span>
+      <div class="shb-kpis">
+        <div class="shb-kpi">
+          <span class="shb-kpi-label">Campuses</span>
+          <span class="shb-kpi-value">{{ campuses|length }}</span>
         </div>
-        <div class="ad-kpi is-ok">
-          <span class="ad-kpi-label">Active</span>
-          <span class="ad-kpi-value">{{ ns.active }}</span>
+        <div class="shb-kpi is-ok">
+          <span class="shb-kpi-label">Active</span>
+          <span class="shb-kpi-value">{{ ns.active }}</span>
         </div>
-        <div class="ad-kpi{% if ns.inactive %} is-warn{% endif %}">
-          <span class="ad-kpi-label">Inactive</span>
-          <span class="ad-kpi-value">{{ ns.inactive }}</span>
+        <div class="shb-kpi{% if ns.inactive %} is-warn{% endif %}">
+          <span class="shb-kpi-label">Inactive</span>
+          <span class="shb-kpi-value">{{ ns.inactive }}</span>
         </div>
-        <div class="ad-kpi">
-          <span class="ad-kpi-label">Users</span>
-          <span class="ad-kpi-value">{{ ns.users }}</span>
+        <div class="shb-kpi">
+          <span class="shb-kpi-label">Users</span>
+          <span class="shb-kpi-value">{{ ns.users }}</span>
         </div>
       </div>
     </div>
   </header>
 
-  <div class="ad-body">
-    <p class="ad-crumbs">
+  <div class="shb-body">
+    <p class="shb-crumbs">
       <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
       <span aria-hidden="true">&middot;</span> <span class="is-here">Campuses</span>
     </p>
 
-    <section class="ad-panel" aria-labelledby="ad-campus-title">
-      <div class="ad-panel-toolbar">
-        <h2 id="ad-campus-title" class="ad-panel-title">Campus list</h2>
-        <span class="ad-panel-count">{{ campuses|length }} total &middot; short names show in badges</span>
-        <div class="ad-toolbar-acts">
-          <button class="btn ad-primary-btn" data-bs-toggle="modal" data-bs-target="#createCampusModal">
+    <section class="shb-panel" aria-labelledby="shb-campus-title">
+      <div class="shb-panel-toolbar">
+        <h2 id="shb-campus-title" class="shb-panel-title">Campus list</h2>
+        <span class="shb-panel-count">{{ campuses|length }} total &middot; short names show in badges</span>
+        <div class="shb-toolbar-acts">
+          <button class="btn shb-primary-btn" data-bs-toggle="modal" data-bs-target="#createCampusModal">
             <i class="bi bi-plus-circle" aria-hidden="true"></i> Add Campus
           </button>
         </div>
@@ -62,7 +62,7 @@
 
       {% if campuses %}
       <div class="table-responsive">
-        <table class="table ad-table ad-table--campus align-middle mb-0">
+        <table class="table shb-table shb-table--campus align-middle mb-0">
           <thead>
             <tr>
               <th>Campus name</th>
@@ -75,26 +75,26 @@
           <tbody>
             {% for c in campuses %}
             <tr>
-              <td class="ad-c-name" data-label="Campus name">
-                <div class="ad-who">{{ c.name }}</div>
+              <td class="shb-c-name" data-label="Campus name">
+                <div class="shb-who">{{ c.name }}</div>
               </td>
-              <td class="ad-c-short" data-label="Short name">
+              <td class="shb-c-short" data-label="Short name">
                 {% if c.short_name %}
-                <span class="ad-pill is-info">{{ c.short_name }}</span>
+                <span class="shb-pill is-info">{{ c.short_name }}</span>
                 {% else %}
                 <span class="text-muted">&mdash;</span>
                 {% endif %}
               </td>
-              <td class="ad-c-status" data-label="Status">
+              <td class="shb-c-status" data-label="Status">
                 {% if c.is_active %}
-                <span class="ad-pill is-approved">Active</span>
+                <span class="shb-pill is-approved">Active</span>
                 {% else %}
-                <span class="ad-pill is-mute">Inactive</span>
+                <span class="shb-pill is-mute">Inactive</span>
                 {% endif %}
               </td>
-              <td class="ad-c-users" data-label="Users">{{ c.users|length }} user(s)</td>
-              <td class="ad-c-acts text-end" data-label="Actions">
-                <div class="ad-acts">
+              <td class="shb-c-users" data-label="Users">{{ c.users|length }} user(s)</td>
+              <td class="shb-c-acts text-end" data-label="Actions">
+                <div class="shb-acts">
                   <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal"
                           data-bs-target="#editCampusModal{{ c.id }}"
                           aria-label="Edit {{ c.name }}" title="Edit campus">
@@ -123,11 +123,11 @@
         </table>
       </div>
       {% else %}
-      <div class="ad-empty">
+      <div class="shb-empty">
         <i class="bi bi-geo-alt" aria-hidden="true"></i>
         <h2>No campuses configured yet</h2>
         <p>Campuses scope every account, application and report in the system.</p>
-        <button class="btn ad-primary-btn" data-bs-toggle="modal" data-bs-target="#createCampusModal">
+        <button class="btn shb-primary-btn" data-bs-toggle="modal" data-bs-target="#createCampusModal">
           <i class="bi bi-plus-lg" aria-hidden="true"></i> Add the first campus
         </button>
       </div>
@@ -138,15 +138,15 @@
 
 <!-- Edit sheet for each campus -->
 {% for c in campuses %}
-<div class="modal fade ad-modal" id="editCampusModal{{ c.id }}" tabindex="-1">
+<div class="modal fade shb-modal" id="editCampusModal{{ c.id }}" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
         <div>
           <h5 class="modal-title">Edit campus</h5>
-          <div class="ad-modal-sub">
+          <div class="shb-modal-sub">
             <span>{{ c.name }}</span>
-            <span class="ad-pill {{ 'is-approved' if c.is_active else 'is-mute' }}">{{ 'Active' if c.is_active else 'Inactive' }}</span>
+            <span class="shb-pill {{ 'is-approved' if c.is_active else 'is-mute' }}">{{ 'Active' if c.is_active else 'Inactive' }}</span>
           </div>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -166,8 +166,8 @@
           </div>
         </div>
         <div class="modal-footer modal-footer--row">
-          <button type="button" class="btn ad-ghost-btn" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn ad-primary-btn">Save Changes</button>
+          <button type="button" class="btn shb-ghost-btn" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn shb-primary-btn">Save Changes</button>
         </div>
       </form>
     </div>
@@ -176,13 +176,13 @@
 {% endfor %}
 
 <!-- Create Campus Modal -->
-<div class="modal fade ad-modal" id="createCampusModal" tabindex="-1">
+<div class="modal fade shb-modal" id="createCampusModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
         <div>
           <h5 class="modal-title">Add campus</h5>
-          <div class="ad-modal-sub"><span>Appears in sign-up, filters and badges straight away</span></div>
+          <div class="shb-modal-sub"><span>Appears in sign-up, filters and badges straight away</span></div>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
@@ -202,8 +202,8 @@
           </div>
         </div>
         <div class="modal-footer modal-footer--row">
-          <button type="button" class="btn ad-ghost-btn" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn ad-primary-btn">Create Campus</button>
+          <button type="button" class="btn shb-ghost-btn" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn shb-primary-btn">Create Campus</button>
         </div>
       </form>
     </div>

@@ -3,133 +3,133 @@
 
 {% block head %}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261220a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261125a" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
 {% set campus_name = session.get('campus_context_name') or session.get('campus_name') %}
 
-<div class="ad-page">
-  <header class="ad-board">
-    <div class="ad-board-inner">
-      <p class="ad-kicker">Reports</p>
-      <h1 class="ad-title">Reports &amp; analytics</h1>
-      <p class="ad-sub">
+<div class="shb-page">
+  <header class="shb-board">
+    <div class="shb-board-inner">
+      <p class="shb-kicker">Reports</p>
+      <h1 class="shb-title">Reports &amp; analytics</h1>
+      <p class="shb-sub">
         <b>{{ campus_name or 'My campus' }}</b>
         &middot; {{ total_apps }} application{{ '' if total_apps == 1 else 's' }}
         &middot; {{ approval_rate }}% approved
       </p>
-      <div class="ad-kpis">
-        <div class="ad-kpi">
-          <span class="ad-kpi-label">Applications</span>
-          <span class="ad-kpi-value">{{ total_apps }}</span>
+      <div class="shb-kpis">
+        <div class="shb-kpi">
+          <span class="shb-kpi-label">Applications</span>
+          <span class="shb-kpi-value">{{ total_apps }}</span>
         </div>
-        <div class="ad-kpi is-ok">
-          <span class="ad-kpi-label">Approved</span>
-          <span class="ad-kpi-value">{{ approved }}</span>
+        <div class="shb-kpi is-ok">
+          <span class="shb-kpi-label">Approved</span>
+          <span class="shb-kpi-value">{{ approved }}</span>
         </div>
-        <div class="ad-kpi is-warn">
-          <span class="ad-kpi-label">Pending review</span>
-          <span class="ad-kpi-value">{{ pending }}</span>
+        <div class="shb-kpi is-warn">
+          <span class="shb-kpi-label">Pending review</span>
+          <span class="shb-kpi-value">{{ pending }}</span>
         </div>
-        <div class="ad-kpi {% if rejected %}is-bad{% endif %}">
-          <span class="ad-kpi-label">Rejected</span>
-          <span class="ad-kpi-value">{{ rejected }}</span>
+        <div class="shb-kpi {% if rejected %}is-bad{% endif %}">
+          <span class="shb-kpi-label">Rejected</span>
+          <span class="shb-kpi-value">{{ rejected }}</span>
         </div>
       </div>
     </div>
   </header>
 
-  <div class="ad-body">
-    <p class="ad-crumbs">
+  <div class="shb-body">
+    <p class="shb-crumbs">
       <a href="{{ url_for('staff.dashboard') }}">Dashboard</a>
       <span aria-hidden="true">&middot;</span> <span class="is-here">Reports &amp; Analytics</span>
     </p>
 
-    <section class="ad-panel" aria-labelledby="ad-status-title">
-      <div class="ad-panel-toolbar">
-        <h2 id="ad-status-title" class="ad-panel-title">Application status</h2>
-        <span class="ad-panel-count">
+    <section class="shb-panel" aria-labelledby="shb-status-title">
+      <div class="shb-panel-toolbar">
+        <h2 id="shb-status-title" class="shb-panel-title">Application status</h2>
+        <span class="shb-panel-count">
           {{ approved }} approved &middot; {{ pending }} pending &middot; {{ rejected }} rejected
         </span>
       </div>
-      <div class="ad-panel-body">
-        <div class="ad-chart ad-chart--tall">
+      <div class="shb-panel-body">
+        <div class="shb-chart shb-chart--tall">
           <canvas id="statusChart" aria-label="Applications by status" role="img"></canvas>
         </div>
       </div>
     </section>
 
-    <div class="ad-cols ad-cols--split">
-      <section class="ad-panel" aria-labelledby="ad-approval-title">
-        <div class="ad-panel-toolbar">
-          <h2 id="ad-approval-title" class="ad-panel-title">Approval rate</h2>
-          <span class="ad-panel-count">{{ approval_rate }}%</span>
+    <div class="shb-cols shb-cols--split">
+      <section class="shb-panel" aria-labelledby="shb-approval-title">
+        <div class="shb-panel-toolbar">
+          <h2 id="shb-approval-title" class="shb-panel-title">Approval rate</h2>
+          <span class="shb-panel-count">{{ approval_rate }}%</span>
         </div>
-        <div class="ad-panel-body">
-          <div class="ad-chart">
+        <div class="shb-panel-body">
+          <div class="shb-chart">
             <canvas id="approvalChart" aria-label="Approval rate" role="img"></canvas>
           </div>
-          <p class="ad-figure-cap">{{ approved }} / {{ total_apps }} approved</p>
+          <p class="shb-figure-cap">{{ approved }} / {{ total_apps }} approved</p>
         </div>
       </section>
 
-      <section class="ad-panel" aria-labelledby="ad-standing-title">
-        <div class="ad-panel-toolbar">
-          <h2 id="ad-standing-title" class="ad-panel-title">Scholar standing</h2>
-          <span class="ad-panel-count">{{ total_graduated }} graduated &middot; {{ total_dropped }} dropped out</span>
+      <section class="shb-panel" aria-labelledby="shb-standing-title">
+        <div class="shb-panel-toolbar">
+          <h2 id="shb-standing-title" class="shb-panel-title">Scholar standing</h2>
+          <span class="shb-panel-count">{{ total_graduated }} graduated &middot; {{ total_dropped }} dropped out</span>
         </div>
-        <div class="ad-panel-body">
-          <div class="ad-chart">
+        <div class="shb-panel-body">
+          <div class="shb-chart">
             <canvas id="scholarStatusChart" aria-label="Scholars by standing" role="img"></canvas>
           </div>
-          <p class="ad-figure-cap">Among approved scholars</p>
+          <p class="shb-figure-cap">Among approved scholars</p>
         </div>
       </section>
     </div>
 
-    <div class="ad-cols ad-cols--split">
-      <section class="ad-panel" aria-labelledby="ad-gwa-title">
-        <div class="ad-panel-toolbar">
-          <h2 id="ad-gwa-title" class="ad-panel-title">GWA distribution</h2>
-          <span class="ad-panel-count">Students with a grade on file</span>
+    <div class="shb-cols shb-cols--split">
+      <section class="shb-panel" aria-labelledby="shb-gwa-title">
+        <div class="shb-panel-toolbar">
+          <h2 id="shb-gwa-title" class="shb-panel-title">GWA distribution</h2>
+          <span class="shb-panel-count">Students with a grade on file</span>
         </div>
-        <div class="ad-panel-body">
-          <div class="ad-chart">
+        <div class="shb-panel-body">
+          <div class="shb-chart">
             <canvas id="gwaChart" aria-label="Students per GWA bracket" role="img"></canvas>
           </div>
         </div>
       </section>
 
-      <section class="ad-panel" aria-labelledby="ad-per-sch-title">
-        <div class="ad-panel-toolbar">
-          <h2 id="ad-per-sch-title" class="ad-panel-title">Applications per scholarship</h2>
-          <span class="ad-panel-count">{{ scholarship_stats|length }} programme{{ '' if scholarship_stats|length == 1 else 's' }}</span>
+      <section class="shb-panel" aria-labelledby="shb-per-sch-title">
+        <div class="shb-panel-toolbar">
+          <h2 id="shb-per-sch-title" class="shb-panel-title">Applications per scholarship</h2>
+          <span class="shb-panel-count">{{ scholarship_stats|length }} programme{{ '' if scholarship_stats|length == 1 else 's' }}</span>
         </div>
-        <div class="ad-panel-body">
+        <div class="shb-panel-body">
           {% if scholarship_stats %}
-          <div class="ad-chart">
+          <div class="shb-chart">
             <canvas id="schChart" aria-label="Applications per scholarship by status" role="img"></canvas>
           </div>
           {% else %}
-          <p class="ad-note mb-0">No scholarship programmes in scope for this period.</p>
+          <p class="shb-note mb-0">No scholarship programmes in scope for this period.</p>
           {% endif %}
         </div>
       </section>
     </div>
 
-    <section class="ad-panel" aria-labelledby="ad-years-title">
-      <div class="ad-panel-toolbar">
-        <h2 id="ad-years-title" class="ad-panel-title">Multi-year comparison</h2>
-        <span class="ad-panel-count">
+    <section class="shb-panel" aria-labelledby="shb-years-title">
+      <div class="shb-panel-toolbar">
+        <h2 id="shb-years-title" class="shb-panel-title">Multi-year comparison</h2>
+        <span class="shb-panel-count">
           {{ comparison.years|length }} academic year{{ '' if comparison.years|length == 1 else 's' }}
         </span>
-        <div class="ad-toolbar-acts">
-          <a class="btn ad-ghost-btn"
+        <div class="shb-toolbar-acts">
+          <a class="btn shb-ghost-btn"
              href="{{ url_for('staff.export_annual_report', format='pdf') }}" target="_blank">
             <i class="bi bi-file-earmark-pdf" aria-hidden="true"></i> Annual report PDF
           </a>
-          <a class="btn ad-ghost-btn"
+          <a class="btn shb-ghost-btn"
              href="{{ url_for('staff.export_annual_report', format='docx') }}" target="_blank">
             <i class="bi bi-file-earmark-word" aria-hidden="true"></i> DOCX
           </a>
@@ -138,10 +138,10 @@
 
       {% if comparison.years %}
       <div class="table-responsive">
-        <table class="table ad-table ad-table--report-years align-middle mb-0">
+        <table class="table shb-table shb-table--report-years align-middle mb-0">
           <thead>
             <tr>
-              <th class="ad-r-name">Metric</th>
+              <th class="shb-r-name">Metric</th>
               {% for y in comparison.years %}<th>AY {{ y }}</th>{% endfor %}
               <th>vs prior</th>
             </tr>
@@ -149,14 +149,14 @@
           <tbody>
             {% for key, label, fmt in comparison.metrics %}
             <tr>
-              <td class="ad-r-name fw-semibold">{{ label }}</td>
+              <td class="shb-r-name fw-semibold">{{ label }}</td>
               {% for v in comparison.rows[key] %}
               <td>{% if v is none %}—{% elif fmt == 'pct' %}{{ '%.1f'|format(v) }}%{% elif fmt == 'gwa' %}{{ '%.2f'|format(v) }}{% else %}{{ v }}{% endif %}</td>
               {% endfor %}
               {% set d = comparison.deltas[key] %}
               <td>
                 {% if d.text %}
-                <span class="ad-pill {{ 'is-approved' if d.good else ('is-mute' if d.good is none else 'is-rejected') }}">{{ d.text }}</span>
+                <span class="shb-pill {{ 'is-approved' if d.good else ('is-mute' if d.good is none else 'is-rejected') }}">{{ d.text }}</span>
                 {% else %}<span class="text-muted">—</span>{% endif %}
               </td>
             </tr>
@@ -165,15 +165,15 @@
         </table>
       </div>
       {% if comparison.years|length > 1 %}
-      <div class="ad-panel-body">
-        <div class="ad-chart ad-chart--tall">
+      <div class="shb-panel-body">
+        <div class="shb-chart shb-chart--tall">
           <canvas id="yearlyTrendChart" aria-label="Year-over-year trend" role="img"></canvas>
         </div>
       </div>
       {% endif %}
       {% else %}
-      <div class="ad-panel-body">
-        <p class="ad-note mb-0">
+      <div class="shb-panel-body">
+        <p class="shb-note mb-0">
           No academic periods are configured yet. The comparison and written report
           appear automatically once periods exist.
         </p>
@@ -181,28 +181,28 @@
       {% endif %}
     </section>
 
-    <section class="ad-panel" aria-labelledby="ad-written-title">
-      <div class="ad-panel-toolbar">
-        <h2 id="ad-written-title" class="ad-panel-title">Written report &mdash; {{ scope_label }}</h2>
-        <span class="ad-panel-count">Auto-generated from system data</span>
+    <section class="shb-panel" aria-labelledby="shb-written-title">
+      <div class="shb-panel-toolbar">
+        <h2 id="shb-written-title" class="shb-panel-title">Written report &mdash; {{ scope_label }}</h2>
+        <span class="shb-panel-count">Auto-generated from system data</span>
       </div>
-      <div class="ad-panel-body">
+      <div class="shb-panel-body">
         {% for heading, paras in written.sections %}
-        <h3 class="ad-prose-head">{{ heading }}</h3>
-        {% for p in paras %}<p class="ad-prose">{{ p }}</p>{% endfor %}
+        <h3 class="shb-prose-head">{{ heading }}</h3>
+        {% for p in paras %}<p class="shb-prose">{{ p }}</p>{% endfor %}
         {% endfor %}
       </div>
     </section>
 
-    <section class="ad-panel" aria-labelledby="ad-export-title">
-      <div class="ad-panel-toolbar">
-        <h2 id="ad-export-title" class="ad-panel-title">Export reports</h2>
-        <span class="ad-panel-count">PDF &middot; Excel &middot; CSV &middot; Word</span>
+    <section class="shb-panel" aria-labelledby="shb-export-title">
+      <div class="shb-panel-toolbar">
+        <h2 id="shb-export-title" class="shb-panel-title">Export reports</h2>
+        <span class="shb-panel-count">PDF &middot; Excel &middot; CSV &middot; Word</span>
       </div>
-      <div class="ad-panel-body">
+      <div class="shb-panel-body">
         <form method="GET" action="{{ url_for('staff.export_report') }}" target="_blank" role="search">
-          <div class="ad-filter-row ad-filter-row--export">
-            <div class="ad-field">
+          <div class="shb-filter-row shb-filter-row--export">
+            <div class="shb-field">
               <label for="reportType">Report type</label>
               <select class="form-select" name="type" id="reportType">
                 <option value="applications">All Applications</option>
@@ -211,7 +211,7 @@
                 <option value="students">Student Roster</option>
               </select>
             </div>
-            <div class="ad-field">
+            <div class="shb-field">
               <label for="reportStatus">Status filter</label>
               <select class="form-select" name="status" id="reportStatus">
                 <option value="">All Statuses</option>
@@ -220,7 +220,7 @@
                 <option value="rejected">Rejected</option>
               </select>
             </div>
-            <div class="ad-field">
+            <div class="shb-field">
               <label for="reportScholarship">Scholarship</label>
               <select class="form-select" name="scholarship_id" id="reportScholarship">
                 <option value="">All Scholarships</option>
@@ -229,7 +229,7 @@
                 {% endfor %}
               </select>
             </div>
-            <div class="ad-field">
+            <div class="shb-field">
               <label for="exportFormat">Format</label>
               <select class="form-select" name="format" id="exportFormat">
                 <option value="pdf">PDF</option>
@@ -238,23 +238,23 @@
                 <option value="docx">Word (DOCX)</option>
               </select>
             </div>
-            <div class="ad-field is-reset">
-              <button type="submit" class="btn ad-primary-btn">
+            <div class="shb-field is-reset">
+              <button type="submit" class="btn shb-primary-btn">
                 <i class="bi bi-download" aria-hidden="true"></i> Export
               </button>
             </div>
           </div>
         </form>
 
-        <p class="ad-crumbs mt-3 mb-2"><span class="is-here">Quick exports</span></p>
-        <div class="ad-quick-exports">
+        <p class="shb-crumbs mt-3 mb-2"><span class="is-here">Quick exports</span></p>
+        <div class="shb-quick-exports">
           {% for rtype, label, icon in [
               ('applications','All Applications','bi-file-earmark-text'),
               ('approved',    'Approved Scholars','bi-check-circle'),
               ('scholarships','Scholarships',     'bi-mortarboard'),
               ('students',    'Student Roster',   'bi-people')] %}
           <div class="dropdown">
-            <button class="btn btn-sm ad-ghost-btn dropdown-toggle" data-bs-toggle="dropdown">
+            <button class="btn btn-sm shb-ghost-btn dropdown-toggle" data-bs-toggle="dropdown">
               <i class="bi {{ icon }}" aria-hidden="true"></i> {{ label }}
             </button>
             <ul class="dropdown-menu">
@@ -278,18 +278,18 @@
       </div>
     </section>
 
-    <section class="ad-panel" aria-labelledby="ad-breakdown-title">
-      <div class="ad-panel-toolbar">
-        <h2 id="ad-breakdown-title" class="ad-panel-title">Per-scholarship breakdown</h2>
-        <span class="ad-panel-count">{{ scholarship_stats|length }} programme{{ '' if scholarship_stats|length == 1 else 's' }}</span>
+    <section class="shb-panel" aria-labelledby="shb-breakdown-title">
+      <div class="shb-panel-toolbar">
+        <h2 id="shb-breakdown-title" class="shb-panel-title">Per-scholarship breakdown</h2>
+        <span class="shb-panel-count">{{ scholarship_stats|length }} programme{{ '' if scholarship_stats|length == 1 else 's' }}</span>
       </div>
 
       {% if scholarship_stats %}
       <div class="table-responsive">
-        <table class="table ad-table ad-table--reports align-middle mb-0">
+        <table class="table shb-table shb-table--reports align-middle mb-0">
           <thead>
             <tr>
-              <th class="ad-r-name">Scholarship</th>
+              <th class="shb-r-name">Scholarship</th>
               <th class="text-end">Apps</th>
               <th class="text-end">Approved</th>
               <th class="text-end">Pending</th>
@@ -303,29 +303,29 @@
           <tbody>
             {% for row in scholarship_stats %}
             <tr>
-              <td class="ad-r-name" data-label="Scholarship">
-                <div class="ad-who">{{ row.scholarship.title }}
+              <td class="shb-r-name" data-label="Scholarship">
+                <div class="shb-who">{{ row.scholarship.title }}
                   <span>Deadline {{ row.scholarship.application_deadline.strftime('%b %d, %Y') if row.scholarship.application_deadline else '—' }}</span>
                 </div>
               </td>
-              <td class="ad-r-num" data-label="Apps">{{ row.total }}</td>
-              <td class="ad-r-num" data-label="Approved">{{ row.approved }}</td>
-              <td class="ad-r-num" data-label="Pending">{{ row.pending }}</td>
-              <td class="ad-r-num" data-label="Rejected">{{ row.rejected }}</td>
-              <td class="ad-r-num" data-label="Graduated">{{ row.graduated }}</td>
-              <td class="ad-r-num" data-label="Dropped">{{ row.dropped }}</td>
-              <td class="ad-r-num ad-r-fill" data-label="Fill">
+              <td class="shb-r-num" data-label="Apps">{{ row.total }}</td>
+              <td class="shb-r-num" data-label="Approved">{{ row.approved }}</td>
+              <td class="shb-r-num" data-label="Pending">{{ row.pending }}</td>
+              <td class="shb-r-num" data-label="Rejected">{{ row.rejected }}</td>
+              <td class="shb-r-num" data-label="Graduated">{{ row.graduated }}</td>
+              <td class="shb-r-num" data-label="Dropped">{{ row.dropped }}</td>
+              <td class="shb-r-num shb-r-fill" data-label="Fill">
                 {% if row.scholarship.max_applicants %}
                 {% set pct = ((row.scholarship.current_applicants or 0) / row.scholarship.max_applicants * 100)|int %}
-                <span class="ad-slots">
+                <span class="shb-slots">
                   <span>{{ pct }}%</span>
-                  <span class="ad-slots-bar" aria-hidden="true"><i style="width: {{ [pct, 100]|min }}%"></i></span>
+                  <span class="shb-slots-bar" aria-hidden="true"><i style="width: {{ [pct, 100]|min }}%"></i></span>
                 </span>
                 {% else %}—{% endif %}
               </td>
-              <td class="ad-r-num ad-r-acts">
+              <td class="shb-r-num shb-r-acts">
                 <div class="dropdown">
-                  <button class="btn btn-sm ad-ghost-btn dropdown-toggle" data-bs-toggle="dropdown"
+                  <button class="btn btn-sm shb-ghost-btn dropdown-toggle" data-bs-toggle="dropdown"
                           aria-label="Export {{ row.scholarship.title }}">Export</button>
                   <ul class="dropdown-menu dropdown-menu-end">
                     {% for fmt, flabel, ficon in [
@@ -351,7 +351,7 @@
         </table>
       </div>
       {% else %}
-      <div class="ad-empty">
+      <div class="shb-empty">
         <i class="bi bi-bar-chart" aria-hidden="true"></i>
         <h2>No programmes in scope</h2>
         <p>Scholarship programmes for this campus and period will appear here.</p>

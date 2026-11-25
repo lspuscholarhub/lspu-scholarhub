@@ -3,7 +3,7 @@
 
 {% block head %}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261220a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261125a" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -19,44 +19,44 @@
 {% set is_filtered = q or scholarship_filter or course_filter or year_filter
                      or status_filter not in ('pending', 'all') %}
 
-<div class="ad-page">
-  <header class="ad-board">
-    <div class="ad-board-inner">
-      <p class="ad-kicker">Applications</p>
-      <h1 class="ad-title">Application review</h1>
-      <p class="ad-sub">
+<div class="shb-page">
+  <header class="shb-board">
+    <div class="shb-board-inner">
+      <p class="shb-kicker">Applications</p>
+      <h1 class="shb-title">Application review</h1>
+      <p class="shb-sub">
         <b>{{ campus_name or 'All Campuses' }}</b>
         {%- if current_period %} &middot; {{ current_period.display_name }}{% endif %}
         &middot; {{ stats.total }} in scope &middot; {{ stats.pending }} waiting on a decision
       </p>
-      <div class="ad-kpis">
+      <div class="shb-kpis">
         {% for label, val, tone in [('Total', stats.total, ''),
                                     ('Pending', stats.pending, 'is-warn'),
                                     ('Approved', stats.approved, 'is-ok'),
                                     ('Rejected', stats.rejected, 'is-bad')] %}
-        <div class="ad-kpi {{ tone }}">
-          <span class="ad-kpi-label">{{ label }}</span>
-          <span class="ad-kpi-value">{{ val }}</span>
+        <div class="shb-kpi {{ tone }}">
+          <span class="shb-kpi-label">{{ label }}</span>
+          <span class="shb-kpi-value">{{ val }}</span>
         </div>
         {% endfor %}
       </div>
     </div>
   </header>
 
-  <div class="ad-body">
-    <p class="ad-crumbs">
+  <div class="shb-body">
+    <p class="shb-crumbs">
       <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
       <span aria-hidden="true">&middot;</span> <span class="is-here">Applications</span>
     </p>
 
-    <form method="GET" class="ad-filter auto-filter" role="search">
-      <div class="ad-filter-row">
-        <div class="ad-field">
+    <form method="GET" class="shb-filter auto-filter" role="search">
+      <div class="shb-filter-row">
+        <div class="shb-field">
           <label for="f-q">Search</label>
           <input id="f-q" type="text" name="q" value="{{ q }}" class="form-control"
                  placeholder="Name or Student ID">
         </div>
-        <div class="ad-field">
+        <div class="shb-field">
           <label for="f-status">Status</label>
           <select id="f-status" name="status" class="form-select">
             <option value="all" {% if status_filter=='all' %}selected{% endif %}>All Status</option>
@@ -65,7 +65,7 @@
             {% endfor %}
           </select>
         </div>
-        <div class="ad-field">
+        <div class="shb-field">
           <label for="f-scholarship">Scholarship</label>
           <select id="f-scholarship" name="scholarship_id" class="form-select">
             <option value="">All Scholarships</option>
@@ -74,7 +74,7 @@
             {% endfor %}
           </select>
         </div>
-        <div class="ad-field">
+        <div class="shb-field">
           <label for="f-course">Course / Program</label>
           <select id="f-course" name="course" class="form-select">
             <option value="">All Courses</option>
@@ -83,7 +83,7 @@
             {% endfor %}
           </select>
         </div>
-        <div class="ad-field">
+        <div class="shb-field">
           <label for="f-year">Year</label>
           <select id="f-year" name="year" class="form-select">
             <option value="">All</option>
@@ -92,7 +92,7 @@
             {% endfor %}
           </select>
         </div>
-        <div class="ad-field is-reset">
+        <div class="shb-field is-reset">
           <a href="{{ url_for('admin.manage_applications') }}" class="btn btn-sm btn-outline-secondary">
             <i class="bi bi-x-circle me-1" aria-hidden="true"></i>Reset
           </a>
@@ -104,18 +104,18 @@
     <form method="POST" action="{{ url_for('admin.batch_review') }}" id="batchForm">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-      <section class="ad-panel" aria-labelledby="ad-queue-title">
-        <div class="ad-panel-toolbar">
-          <h2 id="ad-queue-title" class="ad-panel-title">Review queue</h2>
-          <span class="ad-panel-count">{{ applications|length }} on this page &middot; oldest first</span>
+      <section class="shb-panel" aria-labelledby="shb-queue-title">
+        <div class="shb-panel-toolbar">
+          <h2 id="shb-queue-title" class="shb-panel-title">Review queue</h2>
+          <span class="shb-panel-count">{{ applications|length }} on this page &middot; oldest first</span>
           {% if applications %}
-          <div class="ad-toolbar-acts">
-            <label class="ad-bulk-check" for="selectAll">
+          <div class="shb-toolbar-acts">
+            <label class="shb-bulk-check" for="selectAll">
               <input type="checkbox" id="selectAll" class="form-check-input"> Select all
             </label>
             <textarea name="review_notes" rows="1" placeholder="Batch notes"
                       aria-label="Batch notes"></textarea>
-            <button type="submit" name="action" value="approve" class="btn ad-primary-btn">
+            <button type="submit" name="action" value="approve" class="btn shb-primary-btn">
               <i class="bi bi-check2-all" aria-hidden="true"></i> Batch approve
             </button>
             <button type="submit" name="action" value="reject" class="btn btn-sm btn-outline-danger">
@@ -128,7 +128,7 @@
         <div class="card-body p-0">
           {% if applications %}
           <div class="table-responsive">
-            <table class="table ad-table ad-table--apps align-middle mb-0">
+            <table class="table shb-table shb-table--apps align-middle mb-0">
               <thead>
                 <tr>
                   <th style="width:2.6rem;" aria-label="Select"></th>
@@ -143,33 +143,33 @@
                 {% for app in applications %}
                 {% set sv = app.status.value %}
                 <tr>
-                  <td class="ad-q-check">
+                  <td class="shb-q-check">
                     <input type="checkbox" name="app_ids" value="{{ app.id }}"
                            class="form-check-input row-check"
                            aria-label="Select application #{{ app.id }}">
                   </td>
-                  <td class="ad-q-applicant">
-                    <div class="ad-who">
+                  <td class="shb-q-applicant">
+                    <div class="shb-who">
                       {{ app.applicant.get_full_name() }}
                       <span>#{{ app.id }} &middot; {{ app.applicant.email }}</span>
                     </div>
                   </td>
-                  <td class="ad-q-scholarship ad-prog">{{ app.scholarship.title if app.scholarship else 'Program removed' }}</td>
-                  <td class="ad-q-when">
-                    <div class="ad-who">
+                  <td class="shb-q-scholarship shb-prog">{{ app.scholarship.title if app.scholarship else 'Program removed' }}</td>
+                  <td class="shb-q-when">
+                    <div class="shb-who">
                       {{ app.submitted_pht.strftime('%b %d, %Y') }}
                       <span>{{ app.submitted_pht.strftime('%I:%M %p').lstrip('0') }}</span>
                     </div>
                   </td>
-                  <td class="ad-q-status">
-                    <span class="ad-pill {{ status_pill.get(sv, 'is-mute') }}">{{ status_label.get(sv, sv|title) }}</span>
+                  <td class="shb-q-status">
+                    <span class="shb-pill {{ status_pill.get(sv, 'is-mute') }}">{{ status_label.get(sv, sv|title) }}</span>
                     {% if app.scholar_status %}
                     {% set look = tag_look.get(app.scholar_status) %}
-                    <span class="ad-pill {{ look[0] if look else 'is-mute' }}">{{ look[1] if look else 'Inactive' }}</span>
+                    <span class="shb-pill {{ look[0] if look else 'is-mute' }}">{{ look[1] if look else 'Inactive' }}</span>
                     {% endif %}
                   </td>
-                  <td class="ad-q-acts">
-                    <button type="button" class="ad-go"
+                  <td class="shb-q-acts">
+                    <button type="button" class="shb-go"
                             data-bs-toggle="modal"
                             data-bs-target="#reviewModal{{ app.id }}">Review</button>
                   </td>
@@ -180,8 +180,8 @@
           </div>
 
           {% if pagination.pages > 1 %}
-          <div class="ad-pager">
-            <span class="ad-pager-count">
+          <div class="shb-pager">
+            <span class="shb-pager-count">
               Showing {{ ((pagination.page-1)*pagination.per_page)+1 }}–{{ [pagination.page*pagination.per_page, pagination.total]|min }}
               of {{ pagination.total }} applications
             </span>
@@ -214,7 +214,7 @@
           {% endif %}
 
           {% else %}
-          <div class="ad-empty">
+          <div class="shb-empty">
             <i class="bi bi-inbox" aria-hidden="true"></i>
             <h2>{% if is_filtered %}No applications match{% else %}Nothing in the queue{% endif %}</h2>
             <p>
@@ -222,7 +222,7 @@
               {% else %}Applications appear here as soon as students submit them.{% endif %}
             </p>
             {% if is_filtered %}
-            <a href="{{ url_for('admin.manage_applications') }}" class="btn ad-ghost-btn">
+            <a href="{{ url_for('admin.manage_applications') }}" class="btn shb-ghost-btn">
               <i class="bi bi-x-circle" aria-hidden="true"></i> Clear filters
             </a>
             {% endif %}
@@ -237,22 +237,22 @@
 <!-- Per-application review modals -->
 {% for app in applications %}
 {% set sv2 = app.status.value %}
-<div class="modal fade ad-modal" id="reviewModal{{ app.id }}" tabindex="-1">
+<div class="modal fade shb-modal" id="reviewModal{{ app.id }}" tabindex="-1">
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
       <div class="modal-header">
         <div>
           <h5 class="modal-title">{{ app.applicant.get_full_name() }}</h5>
-          <div class="ad-modal-sub">
+          <div class="shb-modal-sub">
             <span>{{ app.scholarship.title if app.scholarship else 'Program removed' }} · #{{ app.id }}</span>
-            <span class="ad-pill {{ status_pill.get(sv2, 'is-mute') }}">{{ status_label.get(sv2, sv2|title) }}</span>
+            <span class="shb-pill {{ status_pill.get(sv2, 'is-mute') }}">{{ status_label.get(sv2, sv2|title) }}</span>
           </div>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
       </div>
 
       <div class="modal-body">
-        <dl class="ad-ledger">
+        <dl class="shb-ledger">
           <div><dt>Email</dt><dd>{{ app.applicant.email }}</dd></div>
           <div><dt>Phone</dt><dd>{{ app.applicant.phone_number or '—' }}</dd></div>
           {% if app.application_data %}
@@ -265,30 +265,30 @@
         </dl>
 
         {% if app.uploaded_documents %}
-        <h6 class="ad-section-title">Documents</h6>
-        <ul class="ad-docs">
+        <h6 class="shb-section-title">Documents</h6>
+        <ul class="shb-docs">
           {% for doc in app.uploaded_documents %}
           <li>
             <i class="{{ doc.icon_class }}"></i>
-            <span class="ad-doc-name">{{ doc.original_filename }}</span>
+            <span class="shb-doc-name">{{ doc.original_filename }}</span>
             {% if doc.category == 'transcript' %}
               {% if doc.ctc_detected == true %}
-                <span class="ad-pill is-approved" title="AI detected a Certified True Copy stamp">CTC detected</span>
+                <span class="shb-pill is-approved" title="AI detected a Certified True Copy stamp">CTC detected</span>
               {% elif doc.ctc_detected == false %}
-                <span class="ad-pill is-rejected" title="AI did not detect a CTC stamp — verify manually">No CTC found</span>
+                <span class="shb-pill is-rejected" title="AI did not detect a CTC stamp — verify manually">No CTC found</span>
               {% else %}
-                <span class="ad-pill is-mute" title="CTC check not available — verify manually">CTC unverified</span>
+                <span class="shb-pill is-mute" title="CTC check not available — verify manually">CTC unverified</span>
               {% endif %}
               <form method="POST" action="{{ url_for('admin.override_ctc', doc_id=doc.id, value=1) }}" class="d-inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="ad-ctc-btn" title="Mark CTC as present">CTC ✓</button>
+                <button type="submit" class="shb-ctc-btn" title="Mark CTC as present">CTC ✓</button>
               </form>
               <form method="POST" action="{{ url_for('admin.override_ctc', doc_id=doc.id, value=0) }}" class="d-inline">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="ad-ctc-btn is-no" title="Mark CTC as absent">No CTC</button>
+                <button type="submit" class="shb-ctc-btn is-no" title="Mark CTC as absent">No CTC</button>
               </form>
             {% endif %}
-            <div class="ad-doc-acts">
+            <div class="shb-doc-acts">
               <a href="{{ url_for('admin.view_document', doc_id=doc.id) }}" target="_blank">View</a>
               <a href="{{ url_for('admin.download_document', doc_id=doc.id) }}">Download</a>
             </div>
@@ -298,8 +298,8 @@
         {% endif %}
 
         {% if app.application_data and app.application_data.custom_fields %}
-        <h6 class="ad-section-title">Custom form responses</h6>
-        <div class="ad-note">
+        <h6 class="shb-section-title">Custom form responses</h6>
+        <div class="shb-note">
           {% for cf in app.application_data.custom_fields %}
           <div class="{{ 'mb-2' if not loop.last else '' }}">
             <strong>{{ cf.label }}:</strong> {{ cf.value or '—' }}
@@ -309,8 +309,8 @@
         {% endif %}
 
         {% if app.review_notes %}
-        <h6 class="ad-section-title">Previous notes</h6>
-        <p class="ad-note">{{ app.review_notes }}</p>
+        <h6 class="shb-section-title">Previous notes</h6>
+        <p class="shb-note">{{ app.review_notes }}</p>
         {% endif %}
       </div>
 
@@ -319,12 +319,12 @@
            name and value into a hidden field before disabling it, so the
            action still arrives with JavaScript, and native submit buttons
            carry it with JavaScript unavailable. #}
-        <form class="ad-sheet-form" method="POST"
+        <form class="shb-sheet-form" method="POST"
               action="{{ url_for('admin.review_application', app_id=app.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <textarea name="review_notes" rows="1" placeholder="Review notes (optional)"
                     aria-label="Review notes"></textarea>
-          <div class="ad-sheet-row">
+          <div class="shb-sheet-row">
             <!-- Leaving the tag alone approves as Good Standing and leaves a
                  rejected scholar's standing untouched. -->
             <select name="tag" aria-label="Scholar tag">
@@ -337,7 +337,7 @@
             <button type="submit" name="action" value="approve" class="btn btn-success">Approve</button>
           </div>
         </form>
-        <div class="ad-sheet-close">
+        <div class="shb-sheet-close">
           <button type="button" class="btn" data-bs-dismiss="modal">Close</button>
         </div>
       </div>

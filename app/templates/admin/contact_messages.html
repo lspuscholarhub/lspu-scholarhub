@@ -3,36 +3,36 @@
 
 {% block head %}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261220a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261125a" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
 {% set message_word = 'message' if messages.total == 1 else 'messages' %}
 
-<div class="ad-page">
-  <header class="ad-board">
-    <div class="ad-board-inner">
-      <p class="ad-kicker">Messages</p>
-      <h1 class="ad-title">Contact form messages</h1>
-      <p class="ad-sub">
+<div class="shb-page">
+  <header class="shb-board">
+    <div class="shb-board-inner">
+      <p class="shb-kicker">Messages</p>
+      <h1 class="shb-title">Contact form messages</h1>
+      <p class="shb-sub">
         Everything sent through the public contact form &mdash; including
         messages whose email notification could not be delivered.
       </p>
-      <div class="ad-kpis">
-        <div class="ad-kpi">
-          <span class="ad-kpi-label">Unread</span>
-          <span class="ad-kpi-value">{{ "{:,}".format(unread) }}</span>
+      <div class="shb-kpis">
+        <div class="shb-kpi">
+          <span class="shb-kpi-label">Unread</span>
+          <span class="shb-kpi-value">{{ "{:,}".format(unread) }}</span>
         </div>
-        <div class="ad-kpi">
-          <span class="ad-kpi-label">{{ message_word|capitalize }}</span>
-          <span class="ad-kpi-value">{{ "{:,}".format(messages.total) }}</span>
+        <div class="shb-kpi">
+          <span class="shb-kpi-label">{{ message_word|capitalize }}</span>
+          <span class="shb-kpi-value">{{ "{:,}".format(messages.total) }}</span>
         </div>
       </div>
     </div>
   </header>
 
-  <div class="ad-body">
-    <p class="ad-crumbs">
+  <div class="shb-body">
+    <p class="shb-crumbs">
       <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
       <span aria-hidden="true">&middot;</span> <span class="is-here">Messages</span>
     </p>
@@ -48,7 +48,7 @@
 
     {% if messages.items %}
     <div class="table-responsive">
-      <table class="table ad-table align-middle mb-0">
+      <table class="table shb-table align-middle mb-0">
         <thead>
           <tr>
             <th style="width:9rem;">When</th>
@@ -61,26 +61,26 @@
           {% for m in messages.items %}
           <tr>
             <td data-label="When">
-              <div class="ad-who">
+              <div class="shb-who">
                 {{ m.created_campus.strftime('%b %d, %Y') }}
                 <span>{{ m.created_campus.strftime('%I:%M %p').lstrip('0') }}</span>
               </div>
             </td>
             <td data-label="From">
-              <div class="ad-who">{{ m.name }}</div>
+              <div class="shb-who">{{ m.name }}</div>
               <a href="mailto:{{ m.email }}">{{ m.email }}</a>
               {% if m.student_id %}
-              <div class="ad-pill is-mute">{{ m.student_id }}</div>
+              <div class="shb-pill is-mute">{{ m.student_id }}</div>
               {% endif %}
             </td>
             <td data-label="Message">
-              <div class="ad-a-event-head">
-                <span class="ad-a-action">{{ m.subject }}</span>
+              <div class="shb-a-event-head">
+                <span class="shb-a-action">{{ m.subject }}</span>
                 {% if not m.emailed %}
-                <span class="ad-pill is-rejected">email not delivered</span>
+                <span class="shb-pill is-rejected">email not delivered</span>
                 {% endif %}
               </div>
-              <p class="ad-a-desc" style="white-space:pre-line;">{{ m.message }}</p>
+              <p class="shb-a-desc" style="white-space:pre-line;">{{ m.message }}</p>
             </td>
             <td class="text-end" data-label="Status">
               <form method="POST"
@@ -99,8 +99,8 @@
     </div>
 
     {% if messages.pages > 1 %}
-    <div class="ad-pager">
-      <span class="ad-pager-count">
+    <div class="shb-pager">
+      <span class="shb-pager-count">
         Showing {{ ((messages.page-1)*messages.per_page)+1 }}&ndash;{{ [messages.page*messages.per_page, messages.total]|min }}
         of {{ messages.total }} {{ message_word }}
       </span>

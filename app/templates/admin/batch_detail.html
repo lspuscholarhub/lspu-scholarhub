@@ -3,7 +3,7 @@
 
 {% block head %}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261220a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261125a" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -18,61 +18,61 @@
   {% elif s.gender == 'Female' %}{% set ns.female = ns.female + 1 %}{% endif %}
   {% set ns.funds = ns.funds + (app.amount_received or batch.amount_per_scholar or 0) %}
 {% endfor %}
-<div class="ad-page">
-  <header class="ad-board">
-    <div class="ad-board-inner">
-      <p class="ad-kicker">Batch</p>
-      <h1 class="ad-title">{{ batch.batch_name }}</h1>
-      <p class="ad-sub">
+<div class="shb-page">
+  <header class="shb-board">
+    <div class="shb-board-inner">
+      <p class="shb-kicker">Batch</p>
+      <h1 class="shb-title">{{ batch.batch_name }}</h1>
+      <p class="shb-sub">
         <b>{{ batch.scholarship.title }}</b>
-        &middot; <span class="ad-pill {{ sp[0] }}">{{ sp[1] }}</span>
+        &middot; <span class="shb-pill {{ sp[0] }}">{{ sp[1] }}</span>
         {%- if batch.academic_period %} &middot; {{ batch.academic_period.display_name }}{% endif %}
       </p>
-      <div class="ad-kpis">
-        <div class="ad-kpi">
-          <span class="ad-kpi-label">Scholars</span>
-          <span class="ad-kpi-value">{{ applications|length }}</span>
+      <div class="shb-kpis">
+        <div class="shb-kpi">
+          <span class="shb-kpi-label">Scholars</span>
+          <span class="shb-kpi-value">{{ applications|length }}</span>
         </div>
-        <div class="ad-kpi">
-          <span class="ad-kpi-label">Male &middot; Female</span>
-          <span class="ad-kpi-value">{{ ns.male }} &middot; {{ ns.female }}</span>
+        <div class="shb-kpi">
+          <span class="shb-kpi-label">Male &middot; Female</span>
+          <span class="shb-kpi-value">{{ ns.male }} &middot; {{ ns.female }}</span>
         </div>
-        <div class="ad-kpi">
-          <span class="ad-kpi-label">Per scholar</span>
-          <span class="ad-kpi-value">{% if batch.amount_per_scholar %}&#8369;{{ "{:,.0f}".format(batch.amount_per_scholar) }}{% else %}—{% endif %}</span>
+        <div class="shb-kpi">
+          <span class="shb-kpi-label">Per scholar</span>
+          <span class="shb-kpi-value">{% if batch.amount_per_scholar %}&#8369;{{ "{:,.0f}".format(batch.amount_per_scholar) }}{% else %}—{% endif %}</span>
         </div>
-        <div class="ad-kpi is-ok">
-          <span class="ad-kpi-label">Funds</span>
-          <span class="ad-kpi-value">&#8369;{{ "{:,.0f}".format(ns.funds) }}</span>
+        <div class="shb-kpi is-ok">
+          <span class="shb-kpi-label">Funds</span>
+          <span class="shb-kpi-value">&#8369;{{ "{:,.0f}".format(ns.funds) }}</span>
         </div>
       </div>
     </div>
   </header>
 
-  <div class="ad-body">
-    <p class="ad-crumbs">
+  <div class="shb-body">
+    <p class="shb-crumbs">
       <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
       <span aria-hidden="true">&middot;</span>
       <a href="{{ url_for('admin.manage_batches') }}">Batches</a>
       <span aria-hidden="true">&middot;</span> <span class="is-here">{{ batch.batch_name }}</span>
     </p>
 
-    <section class="ad-panel" aria-labelledby="ad-batch-title">
-      <div class="ad-panel-toolbar">
-        <h2 id="ad-batch-title" class="ad-panel-title">Batch details</h2>
-        <span class="ad-panel-count">{{ batch.scholarship.title }}</span>
-        <div class="ad-toolbar-acts">
+    <section class="shb-panel" aria-labelledby="shb-batch-title">
+      <div class="shb-panel-toolbar">
+        <h2 id="shb-batch-title" class="shb-panel-title">Batch details</h2>
+        <span class="shb-panel-count">{{ batch.scholarship.title }}</span>
+        <div class="shb-toolbar-acts">
           <a href="{{ url_for('admin.manage_batches', scholarship_id=batch.scholarship_id) }}"
-             class="btn ad-ghost-btn">
+             class="btn shb-ghost-btn">
             <i class="bi bi-arrow-left" aria-hidden="true"></i> Back to batches
           </a>
         </div>
       </div>
-      <div class="ad-panel-body">
-        <dl class="ad-ledger">
+      <div class="shb-panel-body">
+        <dl class="shb-ledger">
           <div>
             <dt>Status</dt>
-            <dd><span class="ad-pill {{ sp[0] }}">{{ sp[1] }}</span></dd>
+            <dd><span class="shb-pill {{ sp[0] }}">{{ sp[1] }}</span></dd>
           </div>
           <div>
             <dt>Academic period</dt>
@@ -96,16 +96,16 @@
       </div>
     </section>
 
-    <section class="ad-panel" aria-labelledby="ad-roster-title">
-      <div class="ad-panel-toolbar">
-        <h2 id="ad-roster-title" class="ad-panel-title">Scholars</h2>
-        <span class="ad-panel-count">
+    <section class="shb-panel" aria-labelledby="shb-roster-title">
+      <div class="shb-panel-toolbar">
+        <h2 id="shb-roster-title" class="shb-panel-title">Scholars</h2>
+        <span class="shb-panel-count">
           {{ applications|length }} approved
           {%- if ns.male or ns.female %} &middot; {{ ns.male }}M &middot; {{ ns.female }}F{% endif %}
         </span>
-        <div class="ad-toolbar-acts">
+        <div class="shb-toolbar-acts">
           {% if applications %}
-          <a href="{{ url_for('admin.export_batch', batch_id=batch.id) }}" class="btn ad-primary-btn">
+          <a href="{{ url_for('admin.export_batch', batch_id=batch.id) }}" class="btn shb-primary-btn">
             <i class="bi bi-download" aria-hidden="true"></i> Export Excel
           </a>
           {% endif %}
@@ -114,7 +114,7 @@
 
       {% if applications %}
       <div class="table-responsive">
-        <table class="table ad-table ad-table--batch align-middle mb-0">
+        <table class="table shb-table shb-table--batch align-middle mb-0">
           <thead>
             <tr>
               <th>#</th>
@@ -132,32 +132,32 @@
             {% for app in applications %}
             {% set student = app.applicant %}
             <tr>
-              <td class="ad-bt-num">{{ loop.index }}</td>
-              <td class="ad-bt-seq" data-label="Seq.">
-                <span class="ad-pill is-mute">{{ app.seq_number or '—' }}</span>
+              <td class="shb-bt-num">{{ loop.index }}</td>
+              <td class="shb-bt-seq" data-label="Seq.">
+                <span class="shb-pill is-mute">{{ app.seq_number or '—' }}</span>
               </td>
-              <td class="ad-bt-student" data-label="Student">
-                <div class="ad-who">
+              <td class="shb-bt-student" data-label="Student">
+                <div class="shb-who">
                   <a href="{{ url_for('admin.student_profile', uid=student.id) }}">{{ student.last_name }}, {{ student.first_name }}</a>
                   {% if student.middle_name %}<span>{{ student.middle_name }}</span>{% endif %}
                 </div>
               </td>
-              <td class="ad-bt-sid" data-label="Student ID">{{ student.student_id or '—' }}</td>
-              <td class="ad-bt-course" data-label="Course">{{ student.course or '—' }}</td>
-              <td class="ad-bt-year" data-label="Year">{{ student.year_level or '—' }}</td>
-              <td class="ad-bt-gwa" data-label="GWA">
+              <td class="shb-bt-sid" data-label="Student ID">{{ student.student_id or '—' }}</td>
+              <td class="shb-bt-course" data-label="Course">{{ student.course or '—' }}</td>
+              <td class="shb-bt-year" data-label="Year">{{ student.year_level or '—' }}</td>
+              <td class="shb-bt-gwa" data-label="GWA">
                 {% if student.gwa %}
-                <span class="ad-gwa">{{ "%.2f"|format(student.gwa) }}</span>
+                <span class="shb-gwa">{{ "%.2f"|format(student.gwa) }}</span>
                 {% else %}—{% endif %}
               </td>
-              <td class="ad-bt-gender" data-label="Gender">
-                {% if student.gender == 'Male' %}<span class="ad-pill is-info">M</span>
-                {% elif student.gender == 'Female' %}<span class="ad-pill is-pending">F</span>
+              <td class="shb-bt-gender" data-label="Gender">
+                {% if student.gender == 'Male' %}<span class="shb-pill is-info">M</span>
+                {% elif student.gender == 'Female' %}<span class="shb-pill is-pending">F</span>
                 {% else %}—{% endif %}
               </td>
-              <td class="ad-bt-amount" data-label="Amount">
-                {% if app.amount_received %}<span class="ad-gwa">&#8369;{{ "{:,.0f}".format(app.amount_received) }}</span>
-                {% elif batch.amount_per_scholar %}<span class="ad-gwa">&#8369;{{ "{:,.0f}".format(batch.amount_per_scholar) }}</span>
+              <td class="shb-bt-amount" data-label="Amount">
+                {% if app.amount_received %}<span class="shb-gwa">&#8369;{{ "{:,.0f}".format(app.amount_received) }}</span>
+                {% elif batch.amount_per_scholar %}<span class="shb-gwa">&#8369;{{ "{:,.0f}".format(batch.amount_per_scholar) }}</span>
                 {% else %}—{% endif %}
               </td>
             </tr>
@@ -166,11 +166,11 @@
         </table>
       </div>
       {% else %}
-      <div class="ad-empty">
+      <div class="shb-empty">
         <i class="bi bi-people" aria-hidden="true"></i>
         <h2>No scholars in this batch yet</h2>
         <p>Approve applications to fill it, or assign approved scholars from the batch list.</p>
-        <a href="{{ url_for('admin.manage_batches', scholarship_id=batch.scholarship_id) }}" class="btn ad-primary-btn">
+        <a href="{{ url_for('admin.manage_batches', scholarship_id=batch.scholarship_id) }}" class="btn shb-primary-btn">
           <i class="bi bi-person-plus" aria-hidden="true"></i> Assign scholars
         </a>
       </div>

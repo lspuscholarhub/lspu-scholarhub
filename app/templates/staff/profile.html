@@ -3,40 +3,40 @@
 
 {% block head %}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261220a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261125a" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
 {% set campus_name = session.get('campus_context_name') or session.get('campus_name') %}
-<div class="ad-page">
-  <header class="ad-board">
-    <div class="ad-board-inner">
-      <p class="ad-kicker">Account</p>
-      <h1 class="ad-title">My profile</h1>
-      <p class="ad-sub">
+<div class="shb-page">
+  <header class="shb-board">
+    <div class="shb-board-inner">
+      <p class="shb-kicker">Account</p>
+      <h1 class="shb-title">My profile</h1>
+      <p class="shb-sub">
         <b>{{ user.get_full_name() }}</b>
-        &middot; <span class="ad-pill is-info">{{ user.user_type|title }}</span>
+        &middot; <span class="shb-pill is-info">{{ user.user_type|title }}</span>
         {%- if campus_name %} &middot; {{ campus_name }}{% endif %}
       </p>
     </div>
   </header>
 
-  <div class="ad-body">
-    <p class="ad-crumbs">
+  <div class="shb-body">
+    <p class="shb-crumbs">
       <a href="{{ url_for('staff.dashboard') }}">Dashboard</a>
       <span aria-hidden="true">&middot;</span> <span class="is-here">My profile</span>
     </p>
 
-    <div class="ad-cols ad-cols--split ad-cols--top">
-      <div class="ad-cols">
-        <section class="ad-panel ad-panel--hug" aria-labelledby="ad-id-title">
-          <div class="ad-me">
-            <span class="ad-me-avatar" aria-hidden="true">{{ (user.first_name or '?')[0]|upper }}{{ (user.last_name or '')[0]|upper }}</span>
-            <h2 id="ad-id-title">{{ user.get_full_name() }}</h2>
+    <div class="shb-cols shb-cols--split shb-cols--top">
+      <div class="shb-cols">
+        <section class="shb-panel shb-panel--hug" aria-labelledby="shb-id-title">
+          <div class="shb-me">
+            <span class="shb-me-avatar" aria-hidden="true">{{ (user.first_name or '?')[0]|upper }}{{ (user.last_name or '')[0]|upper }}</span>
+            <h2 id="shb-id-title">{{ user.get_full_name() }}</h2>
             <p>{{ user.email }}</p>
             {% if user.phone_number %}<p>{{ user.phone_number }}</p>{% endif %}
           </div>
-          <dl class="ad-ledger ad-ledger--inset">
+          <dl class="shb-ledger shb-ledger--inset">
             <div><dt>Username</dt><dd>{{ user.username }}</dd></div>
             <div><dt>Role</dt><dd>{{ user.user_type|title }}</dd></div>
             <div><dt>Email</dt><dd>{{ user.email }}</dd></div>
@@ -45,94 +45,94 @@
           </dl>
         </section>
 
-        <section class="ad-panel ad-panel--hug" aria-labelledby="ad-quick-title">
-          <div class="ad-panel-toolbar">
-            <h2 id="ad-quick-title" class="ad-panel-title">Quick actions</h2>
+        <section class="shb-panel shb-panel--hug" aria-labelledby="shb-quick-title">
+          <div class="shb-panel-toolbar">
+            <h2 id="shb-quick-title" class="shb-panel-title">Quick actions</h2>
           </div>
-          <div class="ad-panel-body">
-            <div class="ad-tiles">
-              <a href="{{ url_for('staff.dashboard') }}" class="ad-tile"><i class="bi bi-speedometer2" aria-hidden="true"></i> Dashboard</a>
-              <a href="{{ url_for('staff.review_applications') }}" class="ad-tile"><i class="bi bi-file-earmark-check" aria-hidden="true"></i> Review applications</a>
-              <a href="{{ url_for('staff.students') }}" class="ad-tile"><i class="bi bi-people" aria-hidden="true"></i> View students</a>
-              <a href="{{ url_for('staff.reports') }}" class="ad-tile"><i class="bi bi-graph-up" aria-hidden="true"></i> Reports</a>
+          <div class="shb-panel-body">
+            <div class="shb-tiles">
+              <a href="{{ url_for('staff.dashboard') }}" class="shb-tile"><i class="bi bi-speedometer2" aria-hidden="true"></i> Dashboard</a>
+              <a href="{{ url_for('staff.review_applications') }}" class="shb-tile"><i class="bi bi-file-earmark-check" aria-hidden="true"></i> Review applications</a>
+              <a href="{{ url_for('staff.students') }}" class="shb-tile"><i class="bi bi-people" aria-hidden="true"></i> View students</a>
+              <a href="{{ url_for('staff.reports') }}" class="shb-tile"><i class="bi bi-graph-up" aria-hidden="true"></i> Reports</a>
             </div>
           </div>
         </section>
       </div>
 
-      <div class="ad-cols">
-        <section class="ad-panel ad-panel--hug" aria-labelledby="ad-info-title">
-          <div class="ad-panel-toolbar">
-            <h2 id="ad-info-title" class="ad-panel-title">Profile information</h2>
-            <span class="ad-panel-count">Username and email are fixed</span>
+      <div class="shb-cols">
+        <section class="shb-panel shb-panel--hug" aria-labelledby="shb-info-title">
+          <div class="shb-panel-toolbar">
+            <h2 id="shb-info-title" class="shb-panel-title">Profile information</h2>
+            <span class="shb-panel-count">Username and email are fixed</span>
           </div>
-          <div class="ad-panel-body">
+          <div class="shb-panel-body">
             <form method="POST" action="{{ url_for('staff.update_profile') }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <div class="ad-form">
-                <div class="ad-field">
+              <div class="shb-form">
+                <div class="shb-field">
                   <label for="pf-first">First name</label>
                   <input type="text" class="form-control" id="pf-first" name="first_name"
                          value="{{ user.first_name }}" required>
                 </div>
-                <div class="ad-field">
+                <div class="shb-field">
                   <label for="pf-last">Last name</label>
                   <input type="text" class="form-control" id="pf-last" name="last_name"
                          value="{{ user.last_name }}" required>
                 </div>
-                <div class="ad-field">
+                <div class="shb-field">
                   <label for="pf-username">Username</label>
                   <input type="text" class="form-control" id="pf-username" value="{{ user.username }}" readonly>
                 </div>
-                <div class="ad-field">
+                <div class="shb-field">
                   <label for="pf-email">Email</label>
                   <input type="email" class="form-control" id="pf-email" value="{{ user.email }}" readonly>
                 </div>
-                <div class="ad-field">
+                <div class="shb-field">
                   <label for="pf-phone">Phone number</label>
                   <input type="tel" class="form-control" id="pf-phone" name="phone_number"
                          value="{{ user.phone_number or '' }}">
                 </div>
-                <div class="ad-field">
+                <div class="shb-field">
                   <label for="pf-address">Address</label>
                   <input type="text" class="form-control" id="pf-address" name="address"
                          value="{{ user.address or '' }}">
                 </div>
               </div>
-              <div class="ad-form-actions">
-                <button type="submit" class="btn ad-primary-btn">Save Profile</button>
+              <div class="shb-form-actions">
+                <button type="submit" class="btn shb-primary-btn">Save Profile</button>
               </div>
             </form>
           </div>
         </section>
 
-        <section class="ad-panel ad-panel--hug" aria-labelledby="ad-pw-title">
-          <div class="ad-panel-toolbar">
-            <h2 id="ad-pw-title" class="ad-panel-title">Change password</h2>
-            <span class="ad-panel-count">At least 8 characters</span>
+        <section class="shb-panel shb-panel--hug" aria-labelledby="shb-pw-title">
+          <div class="shb-panel-toolbar">
+            <h2 id="shb-pw-title" class="shb-panel-title">Change password</h2>
+            <span class="shb-panel-count">At least 8 characters</span>
           </div>
-          <div class="ad-panel-body">
+          <div class="shb-panel-body">
             <form method="POST" action="{{ url_for('staff.update_profile') }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <div class="ad-form">
-                <div class="ad-field is-wide">
+              <div class="shb-form">
+                <div class="shb-field is-wide">
                   <label for="pf-currentpw">Current password</label>
                   <input type="password" class="form-control" id="pf-currentpw" name="current_password"
                          placeholder="Required to change your password" autocomplete="current-password">
                 </div>
-                <div class="ad-field">
+                <div class="shb-field">
                   <label for="pf-newpw">New password</label>
                   <input type="password" class="form-control" id="pf-newpw" name="new_password"
                          placeholder="Leave blank to keep current" minlength="8">
                 </div>
-                <div class="ad-field">
+                <div class="shb-field">
                   <label for="pf-confirmpw">Confirm new password</label>
                   <input type="password" class="form-control"
                          placeholder="Repeat new password">
                 </div>
               </div>
-              <div class="ad-form-actions">
-                <button type="submit" class="btn ad-ghost-btn">Update Password</button>
+              <div class="shb-form-actions">
+                <button type="submit" class="btn shb-ghost-btn">Update Password</button>
               </div>
             </form>
           </div>

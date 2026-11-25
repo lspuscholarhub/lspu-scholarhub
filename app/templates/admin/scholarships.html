@@ -3,7 +3,7 @@
 
 {% block head %}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261220a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261125a" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -16,55 +16,55 @@
 {% endfor %}
 {% set campus_name = session.get('campus_context_name') or session.get('campus_name') %}
 
-<div class="ad-page">
-  <header class="ad-board">
-    <div class="ad-board-inner">
-      <p class="ad-kicker">Programs</p>
-      <h1 class="ad-title">Scholarship programs</h1>
-      <p class="ad-sub">
+<div class="shb-page">
+  <header class="shb-board">
+    <div class="shb-board-inner">
+      <p class="shb-kicker">Programs</p>
+      <h1 class="shb-title">Scholarship programs</h1>
+      <p class="shb-sub">
         <b>{{ campus_name or 'All Campuses' }}</b>
         {%- if current_period %} &middot; {{ current_period.display_name }}{% endif %}
         &middot; {{ scholarships|length }} program{{ '' if scholarships|length == 1 else 's' }}
       </p>
-      <div class="ad-kpis">
-        <div class="ad-kpi">
-          <span class="ad-kpi-label">Programs</span>
-          <span class="ad-kpi-value">{{ scholarships|length }}</span>
+      <div class="shb-kpis">
+        <div class="shb-kpi">
+          <span class="shb-kpi-label">Programs</span>
+          <span class="shb-kpi-value">{{ scholarships|length }}</span>
         </div>
-        <div class="ad-kpi is-ok">
-          <span class="ad-kpi-label">Open</span>
-          <span class="ad-kpi-value">{{ ns.open }}</span>
+        <div class="shb-kpi is-ok">
+          <span class="shb-kpi-label">Open</span>
+          <span class="shb-kpi-value">{{ ns.open }}</span>
         </div>
-        <div class="ad-kpi">
-          <span class="ad-kpi-label">Closed</span>
-          <span class="ad-kpi-value">{{ ns.closed }}</span>
+        <div class="shb-kpi">
+          <span class="shb-kpi-label">Closed</span>
+          <span class="shb-kpi-value">{{ ns.closed }}</span>
         </div>
-        <div class="ad-kpi">
-          <span class="ad-kpi-label">Applicants</span>
-          <span class="ad-kpi-value">{{ ns.applicants }}</span>
+        <div class="shb-kpi">
+          <span class="shb-kpi-label">Applicants</span>
+          <span class="shb-kpi-value">{{ ns.applicants }}</span>
         </div>
       </div>
     </div>
   </header>
 
-  <div class="ad-body">
-    <p class="ad-crumbs">
+  <div class="shb-body">
+    <p class="shb-crumbs">
       <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
       <span aria-hidden="true">&middot;</span> <span class="is-here">Scholarship programs</span>
     </p>
 
-    <section class="ad-panel" aria-labelledby="ad-programs-title">
-      <div class="ad-panel-toolbar">
-        <h2 id="ad-programs-title" class="ad-panel-title">All programs</h2>
-        <span class="ad-panel-count">{{ scholarships|length }} total{% if ns.hidden %} &middot; {{ ns.hidden }} hidden{% endif %}</span>
-        <button class="btn ad-primary-btn" data-bs-toggle="modal" data-bs-target="#addModal">
+    <section class="shb-panel" aria-labelledby="shb-programs-title">
+      <div class="shb-panel-toolbar">
+        <h2 id="shb-programs-title" class="shb-panel-title">All programs</h2>
+        <span class="shb-panel-count">{{ scholarships|length }} total{% if ns.hidden %} &middot; {{ ns.hidden }} hidden{% endif %}</span>
+        <button class="btn shb-primary-btn" data-bs-toggle="modal" data-bs-target="#addModal">
           <i class="bi bi-plus-lg" aria-hidden="true"></i> Add program
         </button>
       </div>
 
       {% if scholarships %}
       <div class="table-responsive">
-        <table class="table ad-table ad-table--programs align-middle mb-0">
+        <table class="table shb-table shb-table--programs align-middle mb-0">
           <thead>
             <tr>
               <th>Program</th>
@@ -79,57 +79,57 @@
           <tbody>
             {% for s in scholarships %}
             <tr>
-              <td class="ad-c-name" data-label="Program">
-                <div class="ad-prog-name">{{ s.title }}</div>
-                <div class="ad-prog-meta">
-                  {% if s.is_hidden %}<span class="ad-pill is-mute">Hidden</span>{% endif %}
+              <td class="shb-c-name" data-label="Program">
+                <div class="shb-prog-name">{{ s.title }}</div>
+                <div class="shb-prog-meta">
+                  {% if s.is_hidden %}<span class="shb-pill is-mute">Hidden</span>{% endif %}
                   {% if s.academic_period %}
-                  <span class="ad-pill is-mute"><i class="bi bi-calendar3" aria-hidden="true"></i>{{ s.academic_period.display_name }}</span>
+                  <span class="shb-pill is-mute"><i class="bi bi-calendar3" aria-hidden="true"></i>{{ s.academic_period.display_name }}</span>
                   {% else %}
-                  <span class="ad-pill is-approved"><i class="bi bi-infinity" aria-hidden="true"></i>Permanent</span>
+                  <span class="shb-pill is-approved"><i class="bi bi-infinity" aria-hidden="true"></i>Permanent</span>
                   {% endif %}
                 </div>
               </td>
-              <td class="ad-c-scope" data-label="Scope">
+              <td class="shb-c-scope" data-label="Scope">
                 {% if s.scope == 'university' %}
-                <span class="ad-pill is-mute"><i class="bi bi-globe" aria-hidden="true"></i>All campuses</span>
+                <span class="shb-pill is-mute"><i class="bi bi-globe" aria-hidden="true"></i>All campuses</span>
                 {% elif s.campus %}
                 {{ s.campus.name }}
                 {% else %}&mdash;{% endif %}
               </td>
-              <td class="ad-c-award" data-label="Award">
-                {% if s.award_amount %}<span class="ad-prog-award">&#8369;{{ "{:,.0f}".format(s.award_amount) }}</span>
+              <td class="shb-c-award" data-label="Award">
+                {% if s.award_amount %}<span class="shb-prog-award">&#8369;{{ "{:,.0f}".format(s.award_amount) }}</span>
                 {% else %}&mdash;{% endif %}
               </td>
-              <td class="ad-c-slots" data-label="Applicants">
-                <span class="ad-slots">
+              <td class="shb-c-slots" data-label="Applicants">
+                <span class="shb-slots">
                   {% if s.max_applicants %}
-                  <span class="ad-slots-bar" aria-hidden="true"><i style="width: {{ [((s.current_applicants or 0) * 100 / s.max_applicants), 100]|min|round(0, 'floor')|int }}%"></i></span>
+                  <span class="shb-slots-bar" aria-hidden="true"><i style="width: {{ [((s.current_applicants or 0) * 100 / s.max_applicants), 100]|min|round(0, 'floor')|int }}%"></i></span>
                   <span>{{ s.current_applicants or 0 }}/{{ s.max_applicants }}</span>
                   {% else %}
                   <span>{{ s.current_applicants or 0 }}</span>
                   {% endif %}
                 </span>
               </td>
-              <td class="ad-c-deadline" data-label="Deadline">
+              <td class="shb-c-deadline" data-label="Deadline">
                 {% if s.application_deadline %}
                 {{ s.application_deadline.strftime('%b %d, %Y') }}
-                {% if s.application_deadline < now %}<span class="ad-pill is-rejected">Passed</span>{% endif %}
+                {% if s.application_deadline < now %}<span class="shb-pill is-rejected">Passed</span>{% endif %}
                 {% else %}&mdash;{% endif %}
               </td>
-              <td class="ad-c-status" data-label="Status">
+              <td class="shb-c-status" data-label="Status">
                 {% if s.status and s.status.value == 'active' %}
-                <span class="ad-pill is-approved">Open</span>
+                <span class="shb-pill is-approved">Open</span>
                 {% elif s.status and s.status.value == 'closed' %}
-                <span class="ad-pill is-mute">Closed</span>
+                <span class="shb-pill is-mute">Closed</span>
                 {% elif s.status %}
-                <span class="ad-pill is-pending">{{ s.status.value|title }}</span>
+                <span class="shb-pill is-pending">{{ s.status.value|title }}</span>
                 {% else %}
-                <span class="ad-pill is-mute">Unknown</span>
+                <span class="shb-pill is-mute">Unknown</span>
                 {% endif %}
               </td>
-              <td class="ad-c-acts" data-label="Actions">
-                <div class="ad-acts">
+              <td class="shb-c-acts" data-label="Actions">
+                <div class="shb-acts">
                   <form method="POST" action="{{ url_for('admin.edit_scholarship', sid=s.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="status" value="{% if s.status and s.status.value == 'active' %}closed{% else %}active{% endif %}">
@@ -162,11 +162,11 @@
         </table>
       </div>
       {% else %}
-      <div class="ad-empty">
+      <div class="shb-empty">
         <i class="bi bi-mortarboard" aria-hidden="true"></i>
         <h2>No scholarship programs yet</h2>
         <p>Create your first program to start accepting applications.</p>
-        <button class="btn ad-primary-btn" data-bs-toggle="modal" data-bs-target="#addModal">
+        <button class="btn shb-primary-btn" data-bs-toggle="modal" data-bs-target="#addModal">
           <i class="bi bi-plus-lg" aria-hidden="true"></i> Add program
         </button>
       </div>
@@ -176,13 +176,13 @@
 </div>
 
 <!-- ══ Add Modal ══════════════════════════════════════════════════════════════ -->
-<div class="modal fade ad-modal" id="addModal" tabindex="-1">
+<div class="modal fade shb-modal" id="addModal" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
         <div>
           <h5 class="modal-title">New scholarship program</h5>
-          <div class="ad-modal-sub">
+          <div class="shb-modal-sub">
             <span>{{ campus_name or 'All campuses' }}</span>
           </div>
         </div>
@@ -268,7 +268,7 @@
           <!-- Custom Form Builder -->
           <div class="border rounded p-3 mb-3" style="background:#f8f9fa;">
             <div class="d-flex justify-content-between align-items-center mb-3">
-              <h6 class="ad-section-title"><i class="bi bi-ui-checks me-2" aria-hidden="true"></i>Application form fields</h6>
+              <h6 class="shb-section-title"><i class="bi bi-ui-checks me-2" aria-hidden="true"></i>Application form fields</h6>
               <button type="button" class="btn btn-sm btn-outline-primary" onclick="addFormField('add')">
                 <i class="bi bi-plus me-1"></i>Add Field
               </button>
@@ -324,8 +324,8 @@
           </div>
         </div>
         <div class="modal-footer modal-footer--row">
-          <button type="button" class="btn ad-ghost-btn" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn ad-primary-btn">Create program</button>
+          <button type="button" class="btn shb-ghost-btn" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn shb-primary-btn">Create program</button>
         </div>
       </form>
     </div>
@@ -334,21 +334,21 @@
 
 <!-- ══ Edit Modals ════════════════════════════════════════════════════════════ -->
 {% for s in scholarships %}
-<div class="modal fade ad-modal" id="editModal{{ s.id }}" tabindex="-1">
+<div class="modal fade shb-modal" id="editModal{{ s.id }}" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
         <div>
           <h5 class="modal-title">{{ s.title }}</h5>
-          <div class="ad-modal-sub">
+          <div class="shb-modal-sub">
             <span>#{{ s.id }} &middot;
               {%- if s.scope == 'university' %} All campuses
               {%- elif s.campus %} {{ s.campus.name }}
               {%- else %} No campus scope{% endif %}</span>
             {% if s.status and s.status.value == 'active' %}
-            <span class="ad-pill is-approved">Open</span>
+            <span class="shb-pill is-approved">Open</span>
             {% elif s.status %}
-            <span class="ad-pill is-mute">Closed</span>
+            <span class="shb-pill is-mute">Closed</span>
             {% endif %}
           </div>
         </div>
@@ -416,7 +416,7 @@
           <!-- Custom Form Builder (Edit) -->
           <div class="border rounded p-3 mb-3" style="background:#f8f9fa;">
             <div class="d-flex justify-content-between align-items-center mb-3">
-              <h6 class="ad-section-title"><i class="bi bi-ui-checks me-2" aria-hidden="true"></i>Application form fields</h6>
+              <h6 class="shb-section-title"><i class="bi bi-ui-checks me-2" aria-hidden="true"></i>Application form fields</h6>
               <button type="button" class="btn btn-sm btn-outline-primary" onclick="addFormField('edit{{ s.id }}')">
                 <i class="bi bi-plus me-1"></i>Add Field
               </button>
@@ -478,8 +478,8 @@
           </div>
         </div>
         <div class="modal-footer modal-footer--row">
-          <button type="button" class="btn ad-ghost-btn" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn ad-primary-btn">Save changes</button>
+          <button type="button" class="btn shb-ghost-btn" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn shb-primary-btn">Save changes</button>
         </div>
       </form>
     </div>

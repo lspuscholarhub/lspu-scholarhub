@@ -3,7 +3,7 @@
 
 {% block head %}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261220a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261125a" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -13,51 +13,51 @@
   {% if n.is_read %}{% set ns.read = ns.read + 1 %}{% else %}{% set ns.unread = ns.unread + 1 %}{% endif %}
   {% if n.recipient_id not in ns.recips %}{% if ns.recips.append(n.recipient_id) %}{% endif %}{% endif %}
 {% endfor %}
-<div class="ad-page">
-  <header class="ad-board">
-    <div class="ad-board-inner">
-      <p class="ad-kicker">Announcements</p>
-      <h1 class="ad-title">Announcements</h1>
-      <p class="ad-sub">
+<div class="shb-page">
+  <header class="shb-board">
+    <div class="shb-board-inner">
+      <p class="shb-kicker">Announcements</p>
+      <h1 class="shb-title">Announcements</h1>
+      <p class="shb-sub">
         <b>{{ campus_name or 'All campuses' }}</b>
         {%- if current_period %} &middot; {{ current_period.display_name }}{% endif %}
         &middot; {{ recent|length }} sent recently
       </p>
-      <div class="ad-kpis">
-        <div class="ad-kpi">
-          <span class="ad-kpi-label">Sent</span>
-          <span class="ad-kpi-value">{{ recent|length }}</span>
+      <div class="shb-kpis">
+        <div class="shb-kpi">
+          <span class="shb-kpi-label">Sent</span>
+          <span class="shb-kpi-value">{{ recent|length }}</span>
         </div>
-        <div class="ad-kpi">
-          <span class="ad-kpi-label">Recipients</span>
-          <span class="ad-kpi-value">{{ ns.recips|length }}</span>
+        <div class="shb-kpi">
+          <span class="shb-kpi-label">Recipients</span>
+          <span class="shb-kpi-value">{{ ns.recips|length }}</span>
         </div>
-        <div class="ad-kpi is-ok">
-          <span class="ad-kpi-label">Read</span>
-          <span class="ad-kpi-value">{{ ns.read }}</span>
+        <div class="shb-kpi is-ok">
+          <span class="shb-kpi-label">Read</span>
+          <span class="shb-kpi-value">{{ ns.read }}</span>
         </div>
-        <div class="ad-kpi{% if ns.unread %} is-warn{% endif %}">
-          <span class="ad-kpi-label">Unread</span>
-          <span class="ad-kpi-value">{{ ns.unread }}</span>
+        <div class="shb-kpi{% if ns.unread %} is-warn{% endif %}">
+          <span class="shb-kpi-label">Unread</span>
+          <span class="shb-kpi-value">{{ ns.unread }}</span>
         </div>
       </div>
     </div>
   </header>
 
-  <div class="ad-body">
-    <p class="ad-crumbs">
+  <div class="shb-body">
+    <p class="shb-crumbs">
       <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
       <span aria-hidden="true">&middot;</span> <span class="is-here">Announcements</span>
     </p>
 
-    <section class="ad-panel" aria-labelledby="ad-notes-title">
-      <div class="ad-panel-toolbar">
-        <h2 id="ad-notes-title" class="ad-panel-title">Recent announcements</h2>
-        <span class="ad-panel-count">
+    <section class="shb-panel" aria-labelledby="shb-notes-title">
+      <div class="shb-panel-toolbar">
+        <h2 id="shb-notes-title" class="shb-panel-title">Recent announcements</h2>
+        <span class="shb-panel-count">
           {{ recent|length }} sent{% if ns.unread %} &middot; {{ ns.unread }} unread{% endif %}
         </span>
-        <div class="ad-toolbar-acts">
-          <button class="btn ad-primary-btn"
+        <div class="shb-toolbar-acts">
+          <button class="btn shb-primary-btn"
             {% if is_past_period %}
             onclick="if(!confirm('You are viewing a past academic period ({{ viewing_period.display_name }}). Announcements sent now will go to students in this past period. Continue?')) return false;"
             {% endif %}
@@ -69,7 +69,7 @@
 
       {% if recent %}
       <div class="table-responsive">
-        <table class="table ad-table ad-table--notes align-middle mb-0">
+        <table class="table shb-table shb-table--notes align-middle mb-0">
           <thead>
             <tr>
               <th>Announcement</th>
@@ -82,17 +82,17 @@
           <tbody>
             {% for n in recent %}
             <tr>
-              <td class="ad-n-title" data-label="Announcement">
-                <div class="ad-who">{{ n.title }}<span>{{ n.message[:60] }}…</span></div>
+              <td class="shb-n-title" data-label="Announcement">
+                <div class="shb-who">{{ n.title }}<span>{{ n.message[:60] }}…</span></div>
               </td>
-              <td class="ad-n-who" data-label="Recipient">{{ n.recipient.get_full_name() }}</td>
-              <td class="ad-n-type" data-label="Type">
-                <span class="ad-pill is-mute">{{ n.notification_type.value.replace('_',' ')|title }}</span>
+              <td class="shb-n-who" data-label="Recipient">{{ n.recipient.get_full_name() }}</td>
+              <td class="shb-n-type" data-label="Type">
+                <span class="shb-pill is-mute">{{ n.notification_type.value.replace('_',' ')|title }}</span>
               </td>
-              <td class="ad-n-when" data-label="Sent">{{ n.sent_at.strftime('%b %d, %Y %H:%M') }}</td>
-              <td class="ad-n-read" data-label="Read">
-                {% if n.is_read %}<span class="ad-pill is-approved">Read</span>
-                {% else %}<span class="ad-pill is-pending">Unread</span>{% endif %}
+              <td class="shb-n-when" data-label="Sent">{{ n.sent_at.strftime('%b %d, %Y %H:%M') }}</td>
+              <td class="shb-n-read" data-label="Read">
+                {% if n.is_read %}<span class="shb-pill is-approved">Read</span>
+                {% else %}<span class="shb-pill is-pending">Unread</span>{% endif %}
               </td>
             </tr>
             {% endfor %}
@@ -100,11 +100,11 @@
         </table>
       </div>
       {% else %}
-      <div class="ad-empty">
+      <div class="shb-empty">
         <i class="bi bi-megaphone" aria-hidden="true"></i>
         <h2>No announcements sent yet</h2>
         <p>Send your first announcement to notify students.</p>
-        <button class="btn ad-primary-btn"
+        <button class="btn shb-primary-btn"
           {% if is_past_period %}
           onclick="if(!confirm('You are viewing a past academic period ({{ viewing_period.display_name }}). Announcements sent now will go to students in this past period. Continue?')) return false;"
           {% endif %}
@@ -118,15 +118,15 @@
 </div>
 
 <!-- Send Announcement Sheet -->
-<div class="modal fade ad-modal" id="sendModal" tabindex="-1">
+<div class="modal fade shb-modal" id="sendModal" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
         <div>
           <h5 class="modal-title">Send announcement</h5>
-          <div class="ad-modal-sub">
+          <div class="shb-modal-sub">
             <span>Pick who receives it, then write the message</span>
-            {% if is_past_period %}<span class="ad-pill is-pending">{{ viewing_period.display_name }}</span>{% endif %}
+            {% if is_past_period %}<span class="shb-pill is-pending">{{ viewing_period.display_name }}</span>{% endif %}
           </div>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -135,8 +135,8 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="modal-body">
 
-          <h6 class="ad-section-title">Who receives it</h6>
-          <div class="ad-field mb-2">
+          <h6 class="shb-section-title">Who receives it</h6>
+          <div class="shb-field mb-2">
             <label class="form-label fw-semibold" for="recipientType">Send to <span class="text-danger">*</span></label>
             <select class="form-select" name="recipient_type" id="recipientType" onchange="handleGroupChange(this.value)">
               <option value="multiple">Select Students</option>
@@ -150,7 +150,7 @@
 
           <div class="d-none" id="groupSubFilter">
             <div class="d-none" id="sub_course">
-              <div class="ad-field mb-2">
+              <div class="shb-field mb-2">
                 <label class="form-label small fw-semibold" for="sel_course">Course / Program</label>
                 <select class="form-select" name="group_course" id="sel_course" onchange="filterByGroup('course',this.value)">
                   <option value="">— choose —</option>
@@ -159,7 +159,7 @@
               </div>
             </div>
             <div class="d-none" id="sub_year">
-              <div class="ad-field mb-2">
+              <div class="shb-field mb-2">
                 <label class="form-label small fw-semibold" for="sel_year">Year Level</label>
                 <select class="form-select" name="group_year" id="sel_year" onchange="filterByGroup('year',this.value)">
                   <option value="">— choose —</option>
@@ -168,7 +168,7 @@
               </div>
             </div>
             <div class="d-none" id="sub_gender">
-              <div class="ad-field mb-2">
+              <div class="shb-field mb-2">
                 <label class="form-label small fw-semibold" for="sel_gender">Gender</label>
                 <select class="form-select" name="group_gender" id="sel_gender" onchange="filterByGroup('gender',this.value)">
                   <option value="">— choose —</option>
@@ -178,7 +178,7 @@
               </div>
             </div>
             <div class="d-none" id="sub_scholarship">
-              <div class="ad-field mb-2">
+              <div class="shb-field mb-2">
                 <label class="form-label small fw-semibold" for="sel_scholarship">Scholarship Program</label>
                 <select class="form-select" name="group_scholarship" id="sel_scholarship"
                         onchange="onScholarshipChange(this.value)">
@@ -189,7 +189,7 @@
                 </select>
               </div>
               <div id="batchFilterRow" class="d-none mt-2">
-                <div class="ad-field mb-2">
+                <div class="shb-field mb-2">
                   <label class="form-label small fw-semibold" for="sel_batch">
                     Filter by Batch
                     <span class="text-muted fw-normal">(optional — leave blank for all batches)</span>
@@ -204,16 +204,16 @@
           </div>
 
           <div class="mb-3" id="studentListPanel">
-            <div class="ad-notif-head">
-              <span class="ad-notif-count">
-                Students <span class="ad-pill is-info" id="selectedCount">0 selected</span>
+            <div class="shb-notif-head">
+              <span class="shb-notif-count">
+                Students <span class="shb-pill is-info" id="selectedCount">0 selected</span>
               </span>
-              <div class="ad-notif-actions">
-                <button type="button" class="ad-go" onclick="selectAllVisible()">Select all</button>
-                <button type="button" class="ad-go is-mute" onclick="clearAll()">Clear</button>
+              <div class="shb-notif-actions">
+                <button type="button" class="shb-go" onclick="selectAllVisible()">Select all</button>
+                <button type="button" class="shb-go is-mute" onclick="clearAll()">Clear</button>
               </div>
             </div>
-            <div class="ad-notif-search" id="searchRow">
+            <div class="shb-notif-search" id="searchRow">
               <label class="visually-hidden" for="studentSearchBox">Search students</label>
               <input type="text" class="form-control form-control-sm"
                      id="studentSearchBox"
@@ -221,17 +221,17 @@
                      autocomplete="off"
                      oninput="notifSearch(this.value)"
                      onkeydown="if(event.key==='Enter'){event.preventDefault();}">
-              <button type="button" class="btn ad-ghost-btn btn-sm"
+              <button type="button" class="btn shb-ghost-btn btn-sm"
                       aria-label="Clear search"
                       onclick="document.getElementById('studentSearchBox').value='';notifSearch('');">
                 <i class="bi bi-x" aria-hidden="true"></i>
               </button>
             </div>
-            <div class="ad-notif-scroll">
-              <p class="ad-notif-countbar"><span id="listCountLabel">{{ students|length }} students</span></p>
-              <div id="studentCheckboxList" class="ad-notif-list">
+            <div class="shb-notif-scroll">
+              <p class="shb-notif-countbar"><span id="listCountLabel">{{ students|length }} students</span></p>
+              <div id="studentCheckboxList" class="shb-notif-list">
                 {% for s in students %}
-                <div class="student-item ad-notif-item"
+                <div class="student-item shb-notif-item"
                      data-name="{{ s.get_full_name()|lower }}"
                      data-id="{{ s.student_id|lower }}"
                      data-course="{{ s.course|lower if s.course else '' }}"
@@ -255,7 +255,7 @@
             </div>
           </div>
 
-          <h6 class="ad-section-title">Message</h6>
+          <h6 class="shb-section-title">Message</h6>
           <div class="mb-3">
             <label class="form-label fw-semibold" for="notifTitle">Title <span class="text-danger">*</span></label>
             <input type="text" class="form-control" name="title" id="notifTitle"
@@ -275,7 +275,7 @@
             <div class="form-text">Up to 3 files, 5MB each. PDF, Word, Excel, or images. Attachments go out by email only — students without email on file will not receive them.</div>
           </div>
 
-          <h6 class="ad-section-title">Delivery</h6>
+          <h6 class="shb-section-title">Delivery</h6>
           <div class="form-check">
             <input class="form-check-input" type="checkbox" name="send_email" id="sendEmail">
             <label class="form-check-label" for="sendEmail">Also send as email</label>
@@ -289,8 +289,8 @@
           </div>
         </div>
         <div class="modal-footer modal-footer--row">
-          <button type="button" class="btn ad-ghost-btn" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn ad-primary-btn"><i class="bi bi-send me-1" aria-hidden="true"></i>Send</button>
+          <button type="button" class="btn shb-ghost-btn" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn shb-primary-btn"><i class="bi bi-send me-1" aria-hidden="true"></i>Send</button>
         </div>
       </form>
     </div>

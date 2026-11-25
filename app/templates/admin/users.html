@@ -3,7 +3,7 @@
 
 {% block head %}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261220a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261125a" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -13,43 +13,43 @@
                     'staff': ('is-approved', 'Staff'),
                     'student': ('is-mute', 'Student')} %}
 
-<div class="ad-page">
-  <header class="ad-board">
-    <div class="ad-board-inner">
-      <p class="ad-kicker">Accounts</p>
-      <h1 class="ad-title">User accounts</h1>
-      <p class="ad-sub">
+<div class="shb-page">
+  <header class="shb-board">
+    <div class="shb-board-inner">
+      <p class="shb-kicker">Accounts</p>
+      <h1 class="shb-title">User accounts</h1>
+      <p class="shb-sub">
         <b>{{ campus_name or 'All Campuses' }}</b> &middot;
         {{ stats.total }} account{{ '' if stats.total == 1 else 's' }} in scope
       </p>
-      <div class="ad-kpis">
+      <div class="shb-kpis">
         {% for label, val, tone in [('Total', stats.total, ''),
                                     ('Students', stats.students, ''),
                                     ('Staff', stats.staff, 'is-ok'),
                                     ('Admins', stats.admins, 'is-warn')] %}
-        <div class="ad-kpi {{ tone }}">
-          <span class="ad-kpi-label">{{ label }}</span>
-          <span class="ad-kpi-value">{{ val }}</span>
+        <div class="shb-kpi {{ tone }}">
+          <span class="shb-kpi-label">{{ label }}</span>
+          <span class="shb-kpi-value">{{ val }}</span>
         </div>
         {% endfor %}
       </div>
     </div>
   </header>
 
-  <div class="ad-body">
-    <p class="ad-crumbs">
+  <div class="shb-body">
+    <p class="shb-crumbs">
       <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
       <span aria-hidden="true">&middot;</span> <span class="is-here">User accounts</span>
     </p>
 
-    <form method="GET" class="ad-filter auto-filter" role="search">
-      <div class="ad-filter-row ad-filter-row--accounts">
-        <div class="ad-field">
+    <form method="GET" class="shb-filter auto-filter" role="search">
+      <div class="shb-filter-row shb-filter-row--accounts">
+        <div class="shb-field">
           <label for="u-q">Search</label>
           <input id="u-q" type="text" name="q" value="{{ q }}" class="form-control"
                  placeholder="Name, username or email…">
         </div>
-        <div class="ad-field">
+        <div class="shb-field">
           <label for="u-role">Role</label>
           <select id="u-role" name="role" class="form-select">
             <option value="">All Roles</option>
@@ -59,7 +59,7 @@
             <option value="super_admin" {% if role_filter=='super_admin' %}selected{% endif %}>Super Admin</option>
           </select>
         </div>
-        <div class="ad-field">
+        <div class="shb-field">
           <label for="u-campus">Campus</label>
           <select id="u-campus" name="campus" class="form-select">
             <option value="">All Campuses</option>
@@ -68,7 +68,7 @@
             {% endfor %}
           </select>
         </div>
-        <div class="ad-field is-reset">
+        <div class="shb-field is-reset">
           <a href="{{ url_for('admin.manage_users') }}" class="btn btn-sm btn-outline-secondary">
             <i class="bi bi-x-circle me-1" aria-hidden="true"></i>Reset
           </a>
@@ -76,19 +76,19 @@
       </div>
     </form>
 
-    <section class="ad-panel" aria-labelledby="ad-users-title">
-      <div class="ad-panel-toolbar">
-        <h2 id="ad-users-title" class="ad-panel-title">All accounts</h2>
-        <span class="ad-panel-count">
+    <section class="shb-panel" aria-labelledby="shb-users-title">
+      <div class="shb-panel-toolbar">
+        <h2 id="shb-users-title" class="shb-panel-title">All accounts</h2>
+        <span class="shb-panel-count">
           {{ users|length }} shown{% if stats.disabled %} &middot; {{ stats.disabled }} disabled{% endif %}
         </span>
-        <div class="ad-toolbar-acts">
+        <div class="shb-toolbar-acts">
           {% if session.get('user_type') == 'super_admin' %}
-          <button class="btn ad-ghost-btn" data-bs-toggle="modal" data-bs-target="#addStudentModal">
+          <button class="btn shb-ghost-btn" data-bs-toggle="modal" data-bs-target="#addStudentModal">
             <i class="bi bi-person-plus" aria-hidden="true"></i> Add student
           </button>
           {% endif %}
-          <button class="btn ad-primary-btn" data-bs-toggle="modal" data-bs-target="#createAccountModal">
+          <button class="btn shb-primary-btn" data-bs-toggle="modal" data-bs-target="#createAccountModal">
             <i class="bi bi-person-plus" aria-hidden="true"></i> New staff / admin
           </button>
         </div>
@@ -96,7 +96,7 @@
 
       {% if users %}
       <div class="table-responsive">
-        <table class="table ad-table ad-table--users align-middle mb-0">
+        <table class="table shb-table shb-table--users align-middle mb-0">
           <thead>
             <tr>
               <th>Account</th>
@@ -111,28 +111,28 @@
             {% for u in users %}
             {% set rp = role_pill.get(u.user_type, ('is-mute', u.user_type|title)) %}
             <tr>
-              <td class="ad-u-user" data-label="Account">
-                <div class="ad-who">{{ u.get_full_name() }}
+              <td class="shb-u-user" data-label="Account">
+                <div class="shb-who">{{ u.get_full_name() }}
                   <span>{{ u.username }}{% if u.email %} &middot; {{ u.email }}{% endif %}</span>
                 </div>
                 {% if u.user_type == 'student' and (not u.student_id or not u.course) %}
-                <span class="ad-pill is-pending">
+                <span class="shb-pill is-pending">
                   <i class="bi bi-exclamation-triangle" aria-hidden="true"></i>Incomplete profile
                 </span>
                 {% endif %}
               </td>
-              <td class="ad-u-campus" data-label="Campus">
+              <td class="shb-u-campus" data-label="Campus">
                 {% if u.assigned_campuses %}
-                  {% for c in u.assigned_campuses %}{{ c.name }}{% if not loop.last %}<span class="ad-sep" aria-hidden="true"> &middot; </span>{% endif %}{% endfor %}
+                  {% for c in u.assigned_campuses %}{{ c.name }}{% if not loop.last %}<span class="shb-sep" aria-hidden="true"> &middot; </span>{% endif %}{% endfor %}
                 {% elif u.campus %}{{ u.campus.name }}
                 {% else %}&mdash;{% endif %}
               </td>
-              <td class="ad-u-role" data-label="Role">
-                <span class="ad-pill {{ rp[0] }}">{{ rp[1] }}</span>
+              <td class="shb-u-role" data-label="Role">
+                <span class="shb-pill {{ rp[0] }}">{{ rp[1] }}</span>
                 {% if u.id != current_user_id %}
                 <form method="POST"
                       action="{{ url_for('admin.change_user_role', uid=u.id) }}"
-                      class="ad-role-set"
+                      class="shb-role-set"
                       onsubmit="return confirm('Change role of {{ u.username }} from {{ u.user_type|title }} to the selected role?')">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <select name="role" class="form-select form-select-sm" aria-label="Change role for {{ u.username }}">
@@ -146,16 +146,16 @@
                 </form>
                 {% endif %}
               </td>
-              <td class="ad-u-state" data-label="State">
-                {% if u.is_active %}<span class="ad-pill is-approved">Active</span>
-                {% else %}<span class="ad-pill is-mute">Disabled</span>{% endif %}
+              <td class="shb-u-state" data-label="State">
+                {% if u.is_active %}<span class="shb-pill is-approved">Active</span>
+                {% else %}<span class="shb-pill is-mute">Disabled</span>{% endif %}
                 {% if u.is_verified %}
-                <span class="ad-pill is-approved"><i class="bi bi-patch-check" aria-hidden="true"></i>Verified</span>
-                {% else %}<span class="ad-pill is-pending">Unverified</span>{% endif %}
+                <span class="shb-pill is-approved"><i class="bi bi-patch-check" aria-hidden="true"></i>Verified</span>
+                {% else %}<span class="shb-pill is-pending">Unverified</span>{% endif %}
               </td>
-              <td class="ad-u-since" data-label="Registered">{{ u.created_at.strftime('%b %d, %Y') }}</td>
-              <td class="ad-u-acts" data-label="Actions">
-                <div class="ad-acts">
+              <td class="shb-u-since" data-label="Registered">{{ u.created_at.strftime('%b %d, %Y') }}</td>
+              <td class="shb-u-acts" data-label="Actions">
+                <div class="shb-acts">
                   <button class="btn btn-sm btn-outline-primary"
                           data-bs-toggle="modal" data-bs-target="#editModal{{ u.id }}"
                           aria-label="Edit {{ u.username }}" title="Edit account">
@@ -196,11 +196,11 @@
         </table>
       </div>
       {% else %}
-      <div class="ad-empty">
+      <div class="shb-empty">
         <i class="bi bi-people" aria-hidden="true"></i>
         <h2>No accounts found</h2>
         <p>{% if q %}Nothing matches “{{ q }}”.{% else %}No accounts are registered in this campus yet.{% endif %}</p>
-        <a href="{{ url_for('admin.manage_users') }}" class="btn ad-primary-btn">Clear filters</a>
+        <a href="{{ url_for('admin.manage_users') }}" class="btn shb-primary-btn">Clear filters</a>
       </div>
       {% endif %}
     </section>
@@ -210,19 +210,19 @@
 <!-- Edit modals — one per user -->
 {% for u in users %}
 {% set rp = role_pill.get(u.user_type, ('is-mute', u.user_type|title)) %}
-<div class="modal fade ad-modal" id="editModal{{ u.id }}" tabindex="-1">
+<div class="modal fade shb-modal" id="editModal{{ u.id }}" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
         <div>
           <h5 class="modal-title">{{ u.get_full_name() }}</h5>
-          <div class="ad-modal-sub">
+          <div class="shb-modal-sub">
             <span>@{{ u.username }}{% if u.email %} &middot; {{ u.email }}{% endif %}</span>
-            <span class="ad-pill {{ rp[0] }}">{{ rp[1] }}</span>
-            {% if u.is_active %}<span class="ad-pill is-approved">Active</span>
-            {% else %}<span class="ad-pill is-mute">Disabled</span>{% endif %}
-            {% if u.is_verified %}<span class="ad-pill is-approved">Verified</span>
-            {% else %}<span class="ad-pill is-pending">Unverified</span>{% endif %}
+            <span class="shb-pill {{ rp[0] }}">{{ rp[1] }}</span>
+            {% if u.is_active %}<span class="shb-pill is-approved">Active</span>
+            {% else %}<span class="shb-pill is-mute">Disabled</span>{% endif %}
+            {% if u.is_verified %}<span class="shb-pill is-approved">Verified</span>
+            {% else %}<span class="shb-pill is-pending">Unverified</span>{% endif %}
           </div>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -254,7 +254,7 @@
             </div>
 
             {% if u.user_type == 'student' %}
-            <div class="col-12"><h6 class="ad-section-title mb-0">Student fields</h6></div>
+            <div class="col-12"><h6 class="shb-section-title mb-0">Student fields</h6></div>
             <div class="col-md-4">
               <label class="form-label fw-semibold">Student ID</label>
               <input type="text" class="form-control" name="student_id"
@@ -335,7 +335,7 @@
                      value="{{ u.address or '' }}">
             </div>
 
-            <div class="col-12"><h6 class="ad-section-title mb-0">Sign in</h6></div>
+            <div class="col-12"><h6 class="shb-section-title mb-0">Sign in</h6></div>
             <div class="col-md-6">
               <label class="form-label fw-semibold">New Password</label>
               <div class="input-group">
@@ -356,9 +356,9 @@
             {% endif %}
 
             {% if u.user_type in ('staff', 'admin', 'super_admin') %}
-            <div class="col-12"><h6 class="ad-section-title mb-0">Campus access</h6></div>
+            <div class="col-12"><h6 class="shb-section-title mb-0">Campus access</h6></div>
             <div class="col-12">
-              <div class="ad-checks">
+              <div class="shb-checks">
                 {% for c in all_campuses %}
                 <div class="form-check">
                   <input class="form-check-input" type="checkbox" name="campus_ids" value="{{ c.id }}"
@@ -374,8 +374,8 @@
           </div>
         </div>
         <div class="modal-footer modal-footer--row">
-          <button type="button" class="btn ad-ghost-btn" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn ad-primary-btn">Save changes</button>
+          <button type="button" class="btn shb-ghost-btn" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn shb-primary-btn">Save changes</button>
         </div>
       </form>
     </div>
@@ -384,13 +384,13 @@
 {% endfor %}
 
 <!-- Create Staff/Admin Account Modal -->
-<div class="modal fade ad-modal" id="createAccountModal" tabindex="-1">
+<div class="modal fade shb-modal" id="createAccountModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
         <div>
           <h5 class="modal-title">New staff or admin</h5>
-          <div class="ad-modal-sub"><span>A name, an email and a role are all it takes</span></div>
+          <div class="shb-modal-sub"><span>A name, an email and a role are all it takes</span></div>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
@@ -427,7 +427,7 @@
             </div>
             <div class="col-12">
               <label class="form-label fw-semibold">Campus *</label>
-              <div class="ad-checks">
+              <div class="shb-checks">
                 {% for c in all_campuses %}
                 <div class="form-check">
                   <input class="form-check-input" type="checkbox" name="campus_ids" value="{{ c.id }}" id="campus_{{ c.id }}"
@@ -441,8 +441,8 @@
           </div>
         </div>
         <div class="modal-footer modal-footer--row">
-          <button type="button" class="btn ad-ghost-btn" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn ad-primary-btn">Create account</button>
+          <button type="button" class="btn shb-ghost-btn" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn shb-primary-btn">Create account</button>
         </div>
       </form>
     </div>
@@ -450,13 +450,13 @@
 </div>
 
 <!-- Add Student Account Modal (Super Admin only) -->
-<div class="modal fade ad-modal" id="addStudentModal" tabindex="-1">
+<div class="modal fade shb-modal" id="addStudentModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
         <div>
           <h5 class="modal-title">New student account</h5>
-          <div class="ad-modal-sub"><span>They finish their own profile after signing in</span></div>
+          <div class="shb-modal-sub"><span>They finish their own profile after signing in</span></div>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
@@ -495,15 +495,15 @@
               </select>
             </div>
           </div>
-          <p class="ad-note mt-3 mb-0">
+          <p class="shb-note mt-3 mb-0">
             <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
             The student can sign in immediately and complete their profile (student ID, course,
             year level) and upload their documents afterwards.
           </p>
         </div>
         <div class="modal-footer modal-footer--row">
-          <button type="button" class="btn ad-ghost-btn" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn ad-primary-btn">Create student account</button>
+          <button type="button" class="btn shb-ghost-btn" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn shb-primary-btn">Create student account</button>
         </div>
       </form>
     </div>

@@ -4,7 +4,7 @@
 
 {% block head %}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261220a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261125a" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -18,65 +18,65 @@
   {% if app.id in me_forms %}{% set tally.me = tally.me + 1 %}{% endif %}
 {% endfor %}
 
-<div class="ad-page">
-  <header class="ad-board">
-    <div class="ad-board-inner">
-      <p class="ad-kicker">Monitoring</p>
-      <h1 class="ad-title">Scholar monitoring</h1>
-      <p class="ad-sub">
+<div class="shb-page">
+  <header class="shb-board">
+    <div class="shb-board-inner">
+      <p class="shb-kicker">Monitoring</p>
+      <h1 class="shb-title">Scholar monitoring</h1>
+      <p class="shb-sub">
         <b>{{ campus_name or 'My campus' }}</b>
         &middot; {{ stats.total }} approved scholar{{ '' if stats.total == 1 else 's' }}
       </p>
-      <div class="ad-kpis">
-        <div class="ad-kpi">
-          <span class="ad-kpi-label">Scholars</span>
-          <span class="ad-kpi-value">{{ stats.total }}</span>
+      <div class="shb-kpis">
+        <div class="shb-kpi">
+          <span class="shb-kpi-label">Scholars</span>
+          <span class="shb-kpi-value">{{ stats.total }}</span>
         </div>
-        <div class="ad-kpi is-ok">
-          <span class="ad-kpi-label">Good standing</span>
-          <span class="ad-kpi-value">{{ stats.active }}</span>
+        <div class="shb-kpi is-ok">
+          <span class="shb-kpi-label">Good standing</span>
+          <span class="shb-kpi-value">{{ stats.active }}</span>
         </div>
-        <div class="ad-kpi is-warn">
-          <span class="ad-kpi-label">At risk</span>
-          <span class="ad-kpi-value">{{ stats.at_risk }}</span>
+        <div class="shb-kpi is-warn">
+          <span class="shb-kpi-label">At risk</span>
+          <span class="shb-kpi-value">{{ stats.at_risk }}</span>
         </div>
-        <div class="ad-kpi {% if me_overdue_count %}is-bad{% endif %}">
-          <span class="ad-kpi-label">M&amp;E overdue</span>
-          <span class="ad-kpi-value">{{ me_overdue_count or 0 }}</span>
+        <div class="shb-kpi {% if me_overdue_count %}is-bad{% endif %}">
+          <span class="shb-kpi-label">M&amp;E overdue</span>
+          <span class="shb-kpi-value">{{ me_overdue_count or 0 }}</span>
         </div>
       </div>
     </div>
   </header>
 
-  <div class="ad-body">
-    <p class="ad-crumbs">
+  <div class="shb-body">
+    <p class="shb-crumbs">
       <a href="{{ url_for('staff.dashboard') }}">Dashboard</a>
       <span aria-hidden="true">&middot;</span> <span class="is-here">Monitoring &amp; Tracking</span>
     </p>
 
     {% if renewal_alerts %}
-    <section class="ad-panel ad-panel--alert" aria-labelledby="ad-alerts-title">
-      <div class="ad-panel-toolbar">
-        <h2 id="ad-alerts-title" class="ad-panel-title">
+    <section class="shb-panel shb-panel--alert" aria-labelledby="shb-alerts-title">
+      <div class="shb-panel-toolbar">
+        <h2 id="shb-alerts-title" class="shb-panel-title">
           <i class="bi bi-bell" aria-hidden="true"></i> Renewal alerts
         </h2>
-        <span class="ad-panel-count">{{ renewal_alerts|length }} due within 30 days</span>
+        <span class="shb-panel-count">{{ renewal_alerts|length }} due within 30 days</span>
       </div>
-      <ul class="ad-alerts">
+      <ul class="shb-alerts">
         {% for alert in renewal_alerts %}
-        <li class="ad-alert">
-          <div class="ad-alert-main ad-who">
+        <li class="shb-alert">
+          <div class="shb-alert-main shb-who">
             {{ alert.app.applicant.get_full_name() }}
             <span>{{ alert.app.applicant.student_id or alert.app.applicant.email }} &middot; {{ alert.app.scholarship.title if alert.app.scholarship else 'Program removed' }}</span>
           </div>
-          <div class="ad-alert-when">
-            <span class="ad-pill {% if alert.days_left <= 7 %}is-rejected{% elif alert.days_left <= 14 %}is-pending{% else %}is-mute{% endif %}">
+          <div class="shb-alert-when">
+            <span class="shb-pill {% if alert.days_left <= 7 %}is-rejected{% elif alert.days_left <= 14 %}is-pending{% else %}is-mute{% endif %}">
               {{ alert.days_left }}d left
             </span>
-            <span class="ad-alert-due">Due {{ alert.due.strftime('%b %d, %Y') }}</span>
+            <span class="shb-alert-due">Due {{ alert.due.strftime('%b %d, %Y') }}</span>
           </div>
           <form method="POST" action="{{ url_for('staff.send_renewal_reminder', app_id=alert.app.id) }}"
-                class="ad-acts ad-alert-act">
+                class="shb-acts shb-alert-act">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button class="btn btn-sm btn-outline-warning"
                     aria-label="Send renewal reminder to {{ alert.app.applicant.get_full_name() }}"
@@ -90,9 +90,9 @@
     </section>
     {% endif %}
 
-    <form method="GET" class="ad-filter auto-filter" role="search">
-      <div class="ad-filter-row ad-filter-row--scholars">
-        <div class="ad-field">
+    <form method="GET" class="shb-filter auto-filter" role="search">
+      <div class="shb-filter-row shb-filter-row--scholars">
+        <div class="shb-field">
           <label for="mon-status">Scholar status</label>
           <select id="mon-status" name="scholar_status" class="form-select">
             <option value="">All Statuses</option>
@@ -101,7 +101,7 @@
             {% endfor %}
           </select>
         </div>
-        <div class="ad-field">
+        <div class="shb-field">
           <label for="mon-course">Course / Program</label>
           <select id="mon-course" name="course" class="form-select">
             <option value="">All Courses</option>
@@ -110,7 +110,7 @@
             {% endfor %}
           </select>
         </div>
-        <div class="ad-field is-reset">
+        <div class="shb-field is-reset">
           <a href="{{ url_for('staff.monitoring') }}" class="btn btn-sm btn-outline-secondary">
             <i class="bi bi-x-circle me-1" aria-hidden="true"></i>Reset
           </a>
@@ -118,10 +118,10 @@
       </div>
     </form>
 
-    <section class="ad-panel" aria-labelledby="ad-scholars-title">
-      <div class="ad-panel-toolbar">
-        <h2 id="ad-scholars-title" class="ad-panel-title">Approved scholars</h2>
-        <span class="ad-panel-count">
+    <section class="shb-panel" aria-labelledby="shb-scholars-title">
+      <div class="shb-panel-toolbar">
+        <h2 id="shb-scholars-title" class="shb-panel-title">Approved scholars</h2>
+        <span class="shb-panel-count">
           {{ scholars|length }} shown &middot; {{ tally.me }} M&amp;E on file
           {%- if me_deadline %} &middot; form due {{ me_deadline.strftime('%b %d, %Y') }}{% endif %}
         </span>
@@ -129,7 +129,7 @@
 
       {% if scholars %}
       <div class="table-responsive">
-        <table class="table ad-table ad-table--scholars align-middle mb-0">
+        <table class="table shb-table shb-table--scholars align-middle mb-0">
           <thead>
             <tr>
               <th>Scholar</th>
@@ -149,47 +149,47 @@
             {% set me_sub = me_forms.get(app.id) %}
             {% set me_late = (me_deadline and (not me_sub) and (me_deadline < now_local)) %}
             <tr>
-              <td class="ad-s-scholar" data-label="Scholar">
-                <div class="ad-who">{{ student.get_full_name() }}
+              <td class="shb-s-scholar" data-label="Scholar">
+                <div class="shb-who">{{ student.get_full_name() }}
                   <span>
                     {{ student.student_id or student.email }}
                     {%- if student.course %} &middot; {{ student.course[:38] }}{% if student.year_level %} &middot; {{ student.year_level }}{% endif %}{% endif %}
                   </span>
                 </div>
               </td>
-              <td class="ad-s-program" data-label="Scholarship">{{ app.scholarship.title if app.scholarship else 'Program removed' }}</td>
-              <td class="ad-s-gwa" data-label="GWA">
+              <td class="shb-s-program" data-label="Scholarship">{{ app.scholarship.title if app.scholarship else 'Program removed' }}</td>
+              <td class="shb-s-gwa" data-label="GWA">
                 {% if student.gwa %}
-                <span class="ad-gwa">{{ "%.2f"|format(student.gwa) }}</span>
-                <span class="ad-gwa-label {{ gwa[1] }}">{{ gwa[0] }}</span>
+                <span class="shb-gwa">{{ "%.2f"|format(student.gwa) }}</span>
+                <span class="shb-gwa-label {{ gwa[1] }}">{{ gwa[0] }}</span>
                 {% else %}
-                <span class="ad-pill is-mute">Not set</span>
+                <span class="shb-pill is-mute">Not set</span>
                 {% endif %}
               </td>
-              <td class="ad-s-standing" data-label="Standing">
-                <span class="ad-pill {{ st[0] }}">{{ st[1] }}</span>
+              <td class="shb-s-standing" data-label="Standing">
+                <span class="shb-pill {{ st[0] }}">{{ st[1] }}</span>
               </td>
-              <td class="ad-s-me" data-label="M&amp;E form">
+              <td class="shb-s-me" data-label="M&amp;E form">
                 {% if me_sub %}
                 <a href="{{ url_for('staff.view_me_form', app_id=app.id) }}" target="_blank"
-                   class="ad-pill is-approved"
+                   class="shb-pill is-approved"
                    title="View {{ me_sub.original_filename }} (uploaded {{ me_sub.uploaded_at.strftime('%b %d, %Y') }})">
                   <i class="bi bi-file-earmark-check" aria-hidden="true"></i>Submitted
                 </a>
-                <span class="ad-me-date">{{ me_sub.uploaded_at.strftime('%b %d, %Y') }}</span>
+                <span class="shb-me-date">{{ me_sub.uploaded_at.strftime('%b %d, %Y') }}</span>
                 {% elif me_late %}
-                <span class="ad-pill is-rejected" title="Deadline was {{ me_deadline.strftime('%b %d, %Y') }} — not submitted">
+                <span class="shb-pill is-rejected" title="Deadline was {{ me_deadline.strftime('%b %d, %Y') }} — not submitted">
                   <i class="bi bi-exclamation-octagon" aria-hidden="true"></i>Overdue
                 </span>
                 {% else %}
-                <span class="ad-pill is-mute"><i class="bi bi-file-earmark-x" aria-hidden="true"></i>Not submitted</span>
+                <span class="shb-pill is-mute"><i class="bi bi-file-earmark-x" aria-hidden="true"></i>Not submitted</span>
                 {% endif %}
               </td>
-              <td class="ad-s-approved" data-label="Approved">
+              <td class="shb-s-approved" data-label="Approved">
                 {{ app.approved_at.strftime('%b %d, %Y') if app.approved_at else '—' }}
               </td>
-              <td class="ad-s-acts" data-label="Actions">
-                <div class="ad-acts">
+              <td class="shb-s-acts" data-label="Actions">
+                <div class="shb-acts">
                   <button class="btn btn-sm btn-outline-primary"
                           data-bs-toggle="modal" data-bs-target="#updateModal{{ app.id }}"
                           aria-label="Update {{ student.get_full_name() }}" title="Update scholar">
@@ -203,44 +203,44 @@
         </table>
       </div>
       {% else %}
-      <div class="ad-empty">
+      <div class="shb-empty">
         <i class="bi bi-people" aria-hidden="true"></i>
         <h2>No approved scholars</h2>
         <p>{% if status_filter or course_filter %}Nothing matches the current filters.{% else %}Approved applications will appear here for monitoring.{% endif %}</p>
-        <a href="{{ url_for('staff.monitoring') }}" class="btn ad-primary-btn">Clear filters</a>
+        <a href="{{ url_for('staff.monitoring') }}" class="btn shb-primary-btn">Clear filters</a>
       </div>
       {% endif %}
     </section>
 
-    <section class="ad-panel" aria-labelledby="ad-forms-title">
-      <div class="ad-panel-toolbar">
-        <h2 id="ad-forms-title" class="ad-panel-title">Semester forms</h2>
-        <span class="ad-panel-count">
+    <section class="shb-panel" aria-labelledby="shb-forms-title">
+      <div class="shb-panel-toolbar">
+        <h2 id="shb-forms-title" class="shb-panel-title">Semester forms</h2>
+        <span class="shb-panel-count">
           {{ form_rows|length }} form{{ '' if form_rows|length == 1 else 's' }}
           &middot; extra forms every scholar submits, like the M&amp;E form
         </span>
-        <div class="ad-toolbar-acts">
+        <div class="shb-toolbar-acts">
           {% if form_campuses %}
-          <button class="btn ad-primary-btn" data-bs-toggle="modal" data-bs-target="#addFormModal">
+          <button class="btn shb-primary-btn" data-bs-toggle="modal" data-bs-target="#addFormModal">
             <i class="bi bi-plus-lg" aria-hidden="true"></i> Add form
           </button>
           {% else %}
-          <button class="btn ad-primary-btn" disabled title="No campus is assigned to your account">
+          <button class="btn shb-primary-btn" disabled title="No campus is assigned to your account">
             <i class="bi bi-plus-lg" aria-hidden="true"></i> Add form
           </button>
           {% endif %}
         </div>
       </div>
-      <div class="ad-panel-body">
+      <div class="shb-panel-body">
         {% if form_rows %}
-        <ul class="ad-docs ad-docs--files">
+        <ul class="shb-docs shb-docs--files">
           {% for row in form_rows %}
           {% set f = row.form %}
           <li>
             <i class="bi bi-clipboard2-check" aria-hidden="true"></i>
-            <div class="ad-docx-main">
-              <div class="ad-doc-name">{{ f.title }}</div>
-              <div class="ad-figure-sub">
+            <div class="shb-docx-main">
+              <div class="shb-doc-name">{{ f.title }}</div>
+              <div class="shb-figure-sub">
                 {% if form_campuses|length > 1 and f.campus %}{{ f.campus.name }} &middot; {% endif %}
                 {{ 'Required' if f.is_required else 'Optional' }} &middot;
                 {% if f.due_date %}due {{ f.due_date.strftime('%b %d, %Y') }}{% else %}no deadline{% endif %} &middot;
@@ -250,21 +250,21 @@
                 {%- if f.instructions %}<br>{{ f.instructions }}{% endif %}
               </div>
             </div>
-            <span class="ad-doc-acts">
-              {% if f.is_overdue %}<span class="ad-pill is-rejected">Overdue</span>{% endif %}
-              <button class="ad-go" data-bs-toggle="modal" data-bs-target="#formSubs{{ f.id }}">Submissions</button>
-              <button class="ad-go" data-bs-toggle="modal" data-bs-target="#formTpl{{ f.id }}">{{ 'Replace blank copy' if f.has_template else 'Attach blank copy' }}</button>
+            <span class="shb-doc-acts">
+              {% if f.is_overdue %}<span class="shb-pill is-rejected">Overdue</span>{% endif %}
+              <button class="shb-go" data-bs-toggle="modal" data-bs-target="#formSubs{{ f.id }}">Submissions</button>
+              <button class="shb-go" data-bs-toggle="modal" data-bs-target="#formTpl{{ f.id }}">{{ 'Replace blank copy' if f.has_template else 'Attach blank copy' }}</button>
               <form method="POST" action="{{ url_for('staff.delete_campus_form', fid=f.id) }}"
                     onsubmit="return confirm('Remove this form and all scholar uploads for it?');">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button class="ad-go is-danger" type="submit">Remove</button>
+                <button class="shb-go is-danger" type="submit">Remove</button>
               </form>
             </span>
           </li>
           {% endfor %}
         </ul>
         {% else %}
-        <p class="ad-note">
+        <p class="shb-note">
           No extra forms yet. Add one when the campus needs something beyond the M&amp;E form.
         </p>
         {% endif %}
@@ -277,21 +277,21 @@
 {% for app in scholars %}
 {% set student = app.applicant %}
 {% set st = standing.get(app.scholar_status, ('is-mute', app.scholar_status|replace('_', ' ')|title or '—')) %}
-<div class="modal fade ad-modal" id="updateModal{{ app.id }}" tabindex="-1" aria-labelledby="updateModalLabel{{ app.id }}">
+<div class="modal fade shb-modal" id="updateModal{{ app.id }}" tabindex="-1" aria-labelledby="updateModalLabel{{ app.id }}">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
         <div>
           <h5 class="modal-title" id="updateModalLabel{{ app.id }}">{{ student.get_full_name() }}</h5>
-          <div class="ad-modal-sub">
+          <div class="shb-modal-sub">
             <span>{{ student.student_id or student.email }}{% if student.course %} &middot; {{ student.course }}{% endif %}</span>
-            <span class="ad-pill {{ st[0] }}">{{ st[1] }}</span>
+            <span class="shb-pill {{ st[0] }}">{{ st[1] }}</span>
           </div>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <dl class="ad-ledger">
+        <dl class="shb-ledger">
           <div><dt>Student ID</dt><dd>{{ student.student_id or '—' }}</dd></div>
           <div><dt>Course</dt><dd>{{ student.course or '—' }}</dd></div>
           <div><dt>Year</dt><dd>{{ student.year_level or '—' }}</dd></div>
@@ -300,9 +300,9 @@
         </dl>
 
         <!-- Update GWA -->
-        <div class="ad-sheet-box mb-3">
+        <div class="shb-sheet-box mb-3">
           <div class="card-body">
-            <h6 class="ad-section-title">Update GWA</h6>
+            <h6 class="shb-section-title">Update GWA</h6>
             <form method="POST" action="{{ url_for('staff.update_scholar_gwa', app_id=app.id) }}" class="d-flex gap-2 align-items-end">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <div class="flex-grow-1">
@@ -310,16 +310,16 @@
                 <input type="number" step="0.01" min="1.00" max="5.00" class="form-control"
                        name="gwa" value="{{ student.gwa or '' }}" placeholder="e.g. 1.75" required>
               </div>
-              <button type="submit" class="btn ad-primary-btn mb-0">Update GWA</button>
+              <button type="submit" class="btn shb-primary-btn mb-0">Update GWA</button>
             </form>
             <div class="form-text mt-2">Status will be auto-updated based on GWA.</div>
           </div>
         </div>
 
         <!-- Manual status override -->
-        <div class="ad-sheet-box">
+        <div class="shb-sheet-box">
           <div class="card-body">
-            <h6 class="ad-section-title">Manual status override</h6>
+            <h6 class="shb-section-title">Manual status override</h6>
             <form method="POST" action="{{ url_for('staff.update_scholar_status', app_id=app.id) }}">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <div class="row g-3">
@@ -337,8 +337,8 @@
                 </div>
               </div>
               <div class="mt-3 d-flex justify-content-end gap-2">
-                <button type="button" class="btn ad-ghost-btn btn-sm" data-bs-dismiss="modal">Close</button>
-                <button type="submit" class="btn ad-primary-btn btn-sm">Save Status</button>
+                <button type="button" class="btn shb-ghost-btn btn-sm" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn shb-primary-btn btn-sm">Save Status</button>
               </div>
             </form>
           </div>
@@ -350,13 +350,13 @@
 {% endfor %}
 
 <!-- Add campus form modal -->
-<div class="modal fade ad-modal" id="addFormModal" tabindex="-1">
+<div class="modal fade shb-modal" id="addFormModal" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
         <div>
           <h5 class="modal-title">New semester form</h5>
-          <div class="ad-modal-sub"><span>Scholars of the chosen campus see it with the M&amp;E form</span></div>
+          <div class="shb-modal-sub"><span>Scholars of the chosen campus see it with the M&amp;E form</span></div>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
@@ -411,8 +411,8 @@
           </div>
         </div>
         <div class="modal-footer modal-footer--row">
-          <button type="button" class="btn ad-ghost-btn" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn ad-primary-btn"><i class="bi bi-plus-lg me-1"></i>Add Form</button>
+          <button type="button" class="btn shb-ghost-btn" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn shb-primary-btn"><i class="bi bi-plus-lg me-1"></i>Add Form</button>
         </div>
       </form>
     </div>
@@ -422,13 +422,13 @@
 <!-- Per-form submission lists -->
 {% for row in form_rows %}
 {% set f = row.form %}
-<div class="modal fade ad-modal" id="formSubs{{ f.id }}" tabindex="-1">
+<div class="modal fade shb-modal" id="formSubs{{ f.id }}" tabindex="-1">
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
         <div>
           <h5 class="modal-title">{{ f.title }}</h5>
-          <div class="ad-modal-sub"><span>{{ row.submitted }} of {{ row.total }} submitted &middot; who is still missing</span></div>
+          <div class="shb-modal-sub"><span>{{ row.submitted }} of {{ row.total }} submitted &middot; who is still missing</span></div>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
@@ -489,13 +489,13 @@
 </div>
 
 <!-- Blank copy modal -->
-<div class="modal fade ad-modal" id="formTpl{{ f.id }}" tabindex="-1">
+<div class="modal fade shb-modal" id="formTpl{{ f.id }}" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
         <div>
           <h5 class="modal-title">Blank copy</h5>
-          <div class="ad-modal-sub"><span>{{ f.title }}</span></div>
+          <div class="shb-modal-sub"><span>{{ f.title }}</span></div>
         </div>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
@@ -530,8 +530,8 @@
           {% endif %}
         </div>
         <div class="modal-footer modal-footer--row">
-          <button type="button" class="btn ad-ghost-btn" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn ad-primary-btn"><i class="bi bi-save me-1"></i>Save blank copy</button>
+          <button type="button" class="btn shb-ghost-btn" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn shb-primary-btn"><i class="bi bi-save me-1"></i>Save blank copy</button>
         </div>
       </form>
     </div>

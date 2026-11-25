@@ -14,36 +14,36 @@
                    tone: warn | ok | bad | money
                    href makes the whole figure a link
 #}
-<header class="ad-board">
-  <div class="ad-board-inner">
-    <p class="ad-kicker">{{ board_kicker }}</p>
-    <h1 class="ad-title">{{ board_title }}</h1>
-    <p class="ad-sub">
+<header class="shb-board">
+  <div class="shb-board-inner">
+    <p class="shb-kicker">{{ board_kicker }}</p>
+    <h1 class="shb-title">{{ board_title }}</h1>
+    <p class="shb-sub">
       <b>{{ board_campus }}</b>{% if board_period %} &middot; {{ board_period }}{% endif %}
       {%- if board_stamp %} &middot; <span style="color:#8494a8;">{{ board_stamp }}</span>{% endif %}
     </p>
     {% if board_actions %}
-    <div class="ad-board-actions">
+    <div class="shb-board-actions">
       {% for a in board_actions %}
-      <a class="btn {{ 'ad-ghost-btn' if a.style == 'ghost' else 'ad-primary-btn' }}" href="{{ a.href }}">
+      <a class="btn {{ 'shb-ghost-btn' if a.style == 'ghost' else 'shb-primary-btn' }}" href="{{ a.href }}">
         <i class="bi {{ a.icon }}" aria-hidden="true"></i>{{ a.label }}
-        {% if a.count %}<span class="ad-btn-count">{{ a.count }}</span>{% endif %}
+        {% if a.count %}<span class="shb-btn-count">{{ a.count }}</span>{% endif %}
       </a>
       {% endfor %}
     </div>
     {% endif %}
 
-    <nav class="ad-kpis{{ ' ad-kpis--five' if board_cells|length == 5 }}"
+    <nav class="shb-kpis{{ ' shb-kpis--five' if board_cells|length == 5 }}"
          aria-label="{{ board_label|default('Campus figures') }}">
       {% for c in board_cells %}
       {% if c.href %}
-      <a class="ad-kpi{{ ' is-' ~ c.tone if c.tone }}" href="{{ c.href }}">
+      <a class="shb-kpi{{ ' is-' ~ c.tone if c.tone }}" href="{{ c.href }}">
       {% else %}
-      <div class="ad-kpi{{ ' is-' ~ c.tone if c.tone }}">
+      <div class="shb-kpi{{ ' is-' ~ c.tone if c.tone }}">
       {% endif %}
-        <span class="ad-kpi-label">{{ c.label }}</span>
-        <span class="ad-kpi-value">{{ c.value }}</span>
-        {% if c.sub %}<span class="ad-kpi-sub">{{ c.sub }}</span>{% endif %}
+        <span class="shb-kpi-label">{{ c.label }}</span>
+        <span class="shb-kpi-value">{{ c.value }}</span>
+        {% if c.sub %}<span class="shb-kpi-sub">{{ c.sub }}</span>{% endif %}
       {% if c.href %}</a>{% else %}</div>{% endif %}
       {% endfor %}
     </nav>

@@ -4,94 +4,94 @@
 
 {% block head %}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261220a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261125a" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
-<div class="ad-page ad-flow">
-  <header class="ad-board">
-    <div class="ad-board-inner">
-      <p class="ad-kicker">Scholarship programs</p>
-      <h1 class="ad-title">Add a student</h1>
-      <p class="ad-sub">
+<div class="shb-page shb-flow">
+  <header class="shb-board">
+    <div class="shb-board-inner">
+      <p class="shb-kicker">Scholarship programs</p>
+      <h1 class="shb-title">Add a student</h1>
+      <p class="shb-sub">
         {{ scholarship.title }}
         &middot; {{ scholarship.funding_type|capitalize }}
         {% if scholarship.campus %}&middot; {{ scholarship.campus.name }}{% else %}&middot; University-wide{% endif %}
       </p>
-      <div class="ad-board-actions">
-        <a class="btn ad-ghost-btn" href="{{ back_url }}">
+      <div class="shb-board-actions">
+        <a class="btn shb-ghost-btn" href="{{ back_url }}">
           <i class="bi bi-arrow-left" aria-hidden="true"></i> Back to programs
         </a>
       </div>
     </div>
   </header>
 
-  <div class="ad-body">
-    <p class="ad-crumbs">
+  <div class="shb-body">
+    <p class="shb-crumbs">
       <a href="{{ back_url }}">Scholarship programs</a>
       <span aria-hidden="true">&middot;</span> <span class="is-here">Add student</span>
     </p>
 
-    <div class="ad-cols ad-cols--split ad-cols--top">
-      <section class="ad-panel" aria-labelledby="ad-student-pick-title">
-        <div class="ad-panel-toolbar">
-          <h2 id="ad-student-pick-title" class="ad-panel-title">Student</h2>
-          <span class="ad-panel-count">
+    <div class="shb-cols shb-cols--split shb-cols--top">
+      <section class="shb-panel" aria-labelledby="shb-student-pick-title">
+        <div class="shb-panel-toolbar">
+          <h2 id="shb-student-pick-title" class="shb-panel-title">Student</h2>
+          <span class="shb-panel-count">
             {{ students|length }} eligible student{{ '' if students|length == 1 else 's' }}
           </span>
         </div>
 
-        <form method="POST" class="ad-panel-body">
+        <form method="POST" class="shb-panel-body">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-          <div class="ad-form">
-            <div class="ad-field is-wide">
+          <div class="shb-form">
+            <div class="shb-field is-wide">
               <label for="studentSearch">Find a student</label>
               <input type="text" class="form-control" id="studentSearch"
                      placeholder="Search by name, student ID, or course…" autocomplete="off">
 
-              <div class="ad-choices mt-2">
+              <div class="shb-choices mt-2">
                 {% if students %}
                 {% for st in students %}
-                <label class="ad-choice student-option mb-0"
+                <label class="shb-choice student-option mb-0"
                        data-search="{{ (st.get_full_name() ~ ' ' ~ (st.student_id or '') ~ ' ' ~ (st.course or ''))|lower }}">
                   <input type="radio" name="student_id" value="{{ st.id }}" required>
-                  <span class="ad-choice-main">
-                    <span class="ad-choice-name">{{ st.get_full_name() }}</span>
-                    <span class="ad-choice-meta">
+                  <span class="shb-choice-main">
+                    <span class="shb-choice-name">{{ st.get_full_name() }}</span>
+                    <span class="shb-choice-meta">
                       {{ st.student_id or 'No ID' }} &middot; {{ st.year_level or '—' }}{% if st.course %} &middot; {{ st.course }}{% endif %}
                     </span>
                   </span>
                   {% if st.is_existing_scholar %}
-                  <span class="ad-pill is-info">Declared scholar</span>
+                  <span class="shb-pill is-info">Declared scholar</span>
                   {% endif %}
                 </label>
                 {% endfor %}
                 {% else %}
-                <p class="ad-choices-empty">
+                <p class="shb-choices-empty">
                   No students available to add — they may already be in this program,
                   or none match this campus.
                 </p>
                 {% endif %}
               </div>
 
-              <p class="ad-hint">
+              <p class="shb-hint">
                 Choosing a student creates an <b>approved application</b> — they appear in
                 batches, monitoring, reports and their My Scholarship page exactly like a
                 normally-approved scholar, and are notified by email/SMS.
               </p>
             </div>
 
-            <div class="ad-field is-wide">
+            <div class="shb-field is-wide">
               <label for="notesInput">Notes (optional)</label>
               <textarea class="form-control" id="notesInput" name="notes" rows="2"
                         placeholder="e.g. Verified against office records — active scholar of this program"></textarea>
             </div>
           </div>
 
-          <div class="ad-note is-warn">
-            <p class="ad-note-title">Before you add</p>
-            <ul class="ad-note-list">
+          <div class="shb-note is-warn">
+            <p class="shb-note-title">Before you add</p>
+            <ul class="shb-note-list">
               <li>
                 The one-public-scholarship-per-period rule still applies — the system will
                 block this if the student already holds a public scholarship this period.
@@ -100,26 +100,26 @@
             </ul>
           </div>
 
-          <div class="ad-form-actions">
-            <a href="{{ back_url }}" class="btn ad-ghost-btn">Cancel</a>
-            <button type="submit" class="btn ad-primary-btn">
+          <div class="shb-form-actions">
+            <a href="{{ back_url }}" class="btn shb-ghost-btn">Cancel</a>
+            <button type="submit" class="btn shb-primary-btn">
               <i class="bi bi-check-lg" aria-hidden="true"></i> Add as approved scholar
             </button>
           </div>
         </form>
       </section>
 
-      <aside class="ad-panel ad-panel--hug" aria-labelledby="ad-program-title">
-        <div class="ad-panel-head">
-          <h2 id="ad-program-title">Program</h2>
-          <span class="ad-pill is-approved">{{ scholarship.funding_type|capitalize }}</span>
+      <aside class="shb-panel shb-panel--hug" aria-labelledby="shb-program-title">
+        <div class="shb-panel-head">
+          <h2 id="shb-program-title">Program</h2>
+          <span class="shb-pill is-approved">{{ scholarship.funding_type|capitalize }}</span>
         </div>
-        <div class="ad-panel-body">
-          <p class="ad-who">{{ scholarship.title }}
+        <div class="shb-panel-body">
+          <p class="shb-who">{{ scholarship.title }}
             <span>{% if scholarship.campus %}{{ scholarship.campus.name }}{% else %}University-wide{% endif %}{% if scholarship.academic_period %} &middot; {{ scholarship.academic_period.display_name }}{% endif %}</span>
           </p>
 
-          <ul class="ad-facts">
+          <ul class="shb-facts">
             {% if scholarship.award_amount %}
             <li>
               <span><i class="bi bi-cash-stack" aria-hidden="true"></i>Award</span>

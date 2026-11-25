@@ -3,7 +3,7 @@
 
 {% block head %}
 <link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120a" rel="stylesheet">
-<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261220a" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/admin-pages.css') }}?v=20261125a" rel="stylesheet">
 {% endblock %}
 
 {% block content %}
@@ -12,54 +12,54 @@
 {% set qs = {'q': q, 'year': year, 'course': course, 'gender': gender, 'sort': sort,
              'gwa_flag': gwa_flag, 'scholar': scholar_filter, 'status': status_f} %}
 
-<div class="ad-page">
-  <header class="ad-board">
-    <div class="ad-board-inner">
-      <p class="ad-kicker">Students</p>
-      <h1 class="ad-title">Student directory</h1>
-      <p class="ad-sub">
+<div class="shb-page">
+  <header class="shb-board">
+    <div class="shb-board-inner">
+      <p class="shb-kicker">Students</p>
+      <h1 class="shb-title">Student directory</h1>
+      <p class="shb-sub">
         <b>{{ campus_name or 'All my campuses' }}</b> &middot;
         {{ total_students }} student{{ '' if total_students == 1 else 's' }}{% if filtered %} after filtering{% else %} on record{% endif %}
       </p>
-      <div class="ad-kpis ad-kpis--five">
-        <div class="ad-kpi">
-          <span class="ad-kpi-label">Students</span>
-          <span class="ad-kpi-value">{{ total_students }}</span>
+      <div class="shb-kpis shb-kpis--five">
+        <div class="shb-kpi">
+          <span class="shb-kpi-label">Students</span>
+          <span class="shb-kpi-value">{{ total_students }}</span>
         </div>
-        <div class="ad-kpi is-ok">
-          <span class="ad-kpi-label">GWA recorded</span>
-          <span class="ad-kpi-value">{{ with_gwa_count }}</span>
+        <div class="shb-kpi is-ok">
+          <span class="shb-kpi-label">GWA recorded</span>
+          <span class="shb-kpi-value">{{ with_gwa_count }}</span>
         </div>
-        <div class="ad-kpi{{ ' is-bad' if at_risk_count else '' }}">
-          <span class="ad-kpi-label">At risk</span>
-          <span class="ad-kpi-value">{{ at_risk_count }}</span>
+        <div class="shb-kpi{{ ' is-bad' if at_risk_count else '' }}">
+          <span class="shb-kpi-label">At risk</span>
+          <span class="shb-kpi-value">{{ at_risk_count }}</span>
         </div>
-        <div class="ad-kpi">
-          <span class="ad-kpi-label">Average GWA</span>
-          <span class="ad-kpi-value">{{ avg_gwa or '—' }}</span>
+        <div class="shb-kpi">
+          <span class="shb-kpi-label">Average GWA</span>
+          <span class="shb-kpi-value">{{ avg_gwa or '—' }}</span>
         </div>
-        <div class="ad-kpi">
-          <span class="ad-kpi-label">Existing scholars</span>
-          <span class="ad-kpi-value">{{ existing_scholars }}</span>
+        <div class="shb-kpi">
+          <span class="shb-kpi-label">Existing scholars</span>
+          <span class="shb-kpi-value">{{ existing_scholars }}</span>
         </div>
       </div>
     </div>
   </header>
 
-  <div class="ad-body">
-    <p class="ad-crumbs">
+  <div class="shb-body">
+    <p class="shb-crumbs">
       <a href="{{ url_for('staff.dashboard') }}">Dashboard</a>
       <span aria-hidden="true">&middot;</span> <span class="is-here">Student directory</span>
     </p>
 
-    <form method="GET" class="ad-filter auto-filter" role="search">
-      <div class="ad-filter-row ad-filter-row--dir">
-        <div class="ad-field">
+    <form method="GET" class="shb-filter auto-filter" role="search">
+      <div class="shb-filter-row shb-filter-row--dir">
+        <div class="shb-field">
           <label for="d-q">Search</label>
           <input id="d-q" type="text" name="q" value="{{ q }}" class="form-control"
                  placeholder="Name, student ID or email…">
         </div>
-        <div class="ad-field">
+        <div class="shb-field">
           <label for="d-year">Year level</label>
           <select id="d-year" name="year" class="form-select">
             <option value="">All years</option>
@@ -68,7 +68,7 @@
             {% endfor %}
           </select>
         </div>
-        <div class="ad-field">
+        <div class="shb-field">
           <label for="d-course">Course</label>
           <select id="d-course" name="course" class="form-select">
             <option value="">All courses</option>
@@ -77,7 +77,7 @@
             {% endfor %}
           </select>
         </div>
-        <div class="ad-field">
+        <div class="shb-field">
           <label for="d-gender">Gender</label>
           <select id="d-gender" name="gender" class="form-select">
             <option value="">All genders</option>
@@ -86,8 +86,8 @@
           </select>
         </div>
       </div>
-      <div class="ad-filter-row ad-filter-row--dir2">
-        <div class="ad-field">
+      <div class="shb-filter-row shb-filter-row--dir2">
+        <div class="shb-field">
           <label for="d-sort">Sort by</label>
           <select id="d-sort" name="sort" class="form-select">
             <option value="name"     {% if sort=='name'     %}selected{% endif %}>Name (A–Z)</option>
@@ -95,14 +95,14 @@
             <option value="gwa_asc"  {% if sort=='gwa_asc'  %}selected{% endif %}>GWA low → high</option>
           </select>
         </div>
-        <div class="ad-field">
+        <div class="shb-field">
           <label for="d-gwa">GWA status</label>
           <select id="d-gwa" name="gwa_flag" class="form-select">
             <option value=""        {% if gwa_flag==''        %}selected{% endif %}>All</option>
             <option value="at_risk" {% if gwa_flag=='at_risk' %}selected{% endif %}>At risk</option>
           </select>
         </div>
-        <div class="ad-field">
+        <div class="shb-field">
           <label for="d-scholar">Scholar declaration</label>
           <select id="d-scholar" name="scholar" class="form-select">
             <option value=""         {% if scholar_filter==''         %}selected{% endif %}>All students</option>
@@ -110,7 +110,7 @@
             <option value="none"     {% if scholar_filter=='none'     %}selected{% endif %}>No declaration</option>
           </select>
         </div>
-        <div class="ad-field">
+        <div class="shb-field">
           <label for="d-status">Student status</label>
           <select id="d-status" name="status" class="form-select">
             <option value=""           {% if status_f==''           %}selected{% endif %}>All statuses</option>
@@ -119,7 +119,7 @@
             <option value="dropped_out" {% if status_f=='dropped_out' %}selected{% endif %}>Dropped out</option>
           </select>
         </div>
-        <div class="ad-field is-reset">
+        <div class="shb-field is-reset">
           <a href="{{ url_for('staff.student_directory') }}" class="btn btn-sm btn-outline-secondary">
             <i class="bi bi-x-circle me-1" aria-hidden="true"></i>Reset
           </a>
@@ -127,7 +127,7 @@
       </div>
     </form>
 
-    <p class="ad-legend">
+    <p class="shb-legend">
       <span><i class="is-ok" aria-hidden="true"></i>1.00–2.25 excellent</span>
       <span><i class="is-info" aria-hidden="true"></i>2.26–2.75 fair</span>
       <span><i class="is-warn" aria-hidden="true"></i>2.76–3.00 passed</span>
@@ -135,17 +135,17 @@
       <span><i aria-hidden="true"></i>not set</span>
     </p>
 
-    <section class="ad-panel" aria-labelledby="ad-dir-title">
-      <div class="ad-panel-toolbar">
-        <h2 id="ad-dir-title" class="ad-panel-title">Students in scope</h2>
-        <span class="ad-panel-count">
+    <section class="shb-panel" aria-labelledby="shb-dir-title">
+      <div class="shb-panel-toolbar">
+        <h2 id="shb-dir-title" class="shb-panel-title">Students in scope</h2>
+        <span class="shb-panel-count">
           {{ students.total }} match{{ '' if students.total == 1 else 'es' }}{% if students.pages > 1 %} &middot; page {{ students.page }} of {{ students.pages }}{% endif %}
         </span>
       </div>
 
       {% if students.items %}
       <div class="table-responsive">
-        <table class="table ad-table ad-table--directory align-middle mb-0">
+        <table class="table shb-table shb-table--directory align-middle mb-0">
           <thead>
             <tr>
               <th>Student</th>
@@ -159,45 +159,45 @@
           <tbody>
             {% for s in students.items %}
             <tr>
-              <td class="ad-d-name" data-label="Student">
-                <div class="ad-who">{{ s.get_full_name() }}
+              <td class="shb-d-name" data-label="Student">
+                <div class="shb-who">{{ s.get_full_name() }}
                   <span>{{ s.student_id or 'No student ID' }}{% if s.gender %} &middot; {{ s.gender }}{% endif %}{% if s.town %} &middot; {{ s.town }}{% endif %}{% if s.email %} &middot; {{ s.email }}{% endif %}</span>
                 </div>
                 {% if s.is_existing_scholar or s.student_status in ('graduated', 'dropped_out') %}
-                <div class="ad-d-flags">
+                <div class="shb-d-flags">
                   {% if s.is_existing_scholar %}
-                  <span class="ad-pill is-info" title="Self-declared existing scholar: {{ s.existing_scholarship_name or 'program not specified' }}">
+                  <span class="shb-pill is-info" title="Self-declared existing scholar: {{ s.existing_scholarship_name or 'program not specified' }}">
                     <i class="bi bi-award" aria-hidden="true"></i>Existing scholar
                   </span>
                   {% endif %}
                   {% if s.student_status == 'graduated' %}
-                  <span class="ad-pill is-approved"><i class="bi bi-mortarboard" aria-hidden="true"></i>Graduated</span>
+                  <span class="shb-pill is-approved"><i class="bi bi-mortarboard" aria-hidden="true"></i>Graduated</span>
                   {% elif s.student_status == 'dropped_out' %}
-                  <span class="ad-pill is-rejected"><i class="bi bi-exclamation-octagon" aria-hidden="true"></i>Dropped out</span>
+                  <span class="shb-pill is-rejected"><i class="bi bi-exclamation-octagon" aria-hidden="true"></i>Dropped out</span>
                   {% endif %}
                 </div>
                 {% endif %}
               </td>
-              <td class="ad-d-year" data-label="Year &amp; course">
-                <div class="ad-strong">{{ s.year_level or '—' }}</div>
-                {% if s.course %}<div class="ad-soft">{{ s.course }}</div>{% endif %}
+              <td class="shb-d-year" data-label="Year &amp; course">
+                <div class="shb-strong">{{ s.year_level or '—' }}</div>
+                {% if s.course %}<div class="shb-soft">{{ s.course }}</div>{% endif %}
               </td>
-              <td class="ad-d-gwa" data-label="GWA">
-                <span class="ad-d-gwa-label" aria-hidden="true">GWA</span>
+              <td class="shb-d-gwa" data-label="GWA">
+                <span class="shb-d-gwa-label" aria-hidden="true">GWA</span>
                 {% if s.gwa is not none %}
-                  {% if s.gwa <= 2.25 %}<span class="ad-pill is-approved">{{ '%.2f'|format(s.gwa) }}</span>
-                  {% elif s.gwa <= 2.75 %}<span class="ad-pill is-info">{{ '%.2f'|format(s.gwa) }}</span>
-                  {% elif s.gwa <= 3.00 %}<span class="ad-pill is-pending">{{ '%.2f'|format(s.gwa) }}</span>
-                  {% else %}<span class="ad-pill is-rejected">{{ '%.2f'|format(s.gwa) }}</span>{% endif %}
+                  {% if s.gwa <= 2.25 %}<span class="shb-pill is-approved">{{ '%.2f'|format(s.gwa) }}</span>
+                  {% elif s.gwa <= 2.75 %}<span class="shb-pill is-info">{{ '%.2f'|format(s.gwa) }}</span>
+                  {% elif s.gwa <= 3.00 %}<span class="shb-pill is-pending">{{ '%.2f'|format(s.gwa) }}</span>
+                  {% else %}<span class="shb-pill is-rejected">{{ '%.2f'|format(s.gwa) }}</span>{% endif %}
                 {% else %}
-                  <span class="ad-pill is-mute">Not set</span>
+                  <span class="shb-pill is-mute">Not set</span>
                 {% endif %}
               </td>
-              <td class="ad-d-units" data-label="Units">
-                {% if s.units_enrolled %}{{ s.units_enrolled }}<span class="ad-soft"> units</span>{% else %}<span class="ad-soft">—</span>{% endif %}
+              <td class="shb-d-units" data-label="Units">
+                {% if s.units_enrolled %}{{ s.units_enrolled }}<span class="shb-soft"> units</span>{% else %}<span class="shb-soft">—</span>{% endif %}
               </td>
-              <td class="ad-d-docs" data-label="Documents">
-                <span class="ad-docx">
+              <td class="shb-d-docs" data-label="Documents">
+                <span class="shb-docx">
                   {% if s.cor_file_path %}
                   <a href="{{ url_for('staff.view_reg_document', uid=s.id, doc_type='cor') }}" target="_blank" rel="noopener">COR</a>
                   {% else %}<span class="is-off" title="No Certificate of Registration on file">COR</span>{% endif %}
@@ -206,8 +206,8 @@
                   {% else %}<span class="is-off" title="No Copy of Grades on file">Grades</span>{% endif %}
                 </span>
               </td>
-              <td class="ad-d-go" data-label="Profile">
-                <a class="ad-d-link" href="{{ url_for('staff.student_profile', uid=s.id) }}">
+              <td class="shb-d-go" data-label="Profile">
+                <a class="shb-d-link" href="{{ url_for('staff.student_profile', uid=s.id) }}">
                   View <i class="bi bi-arrow-right" aria-hidden="true"></i>
                 </a>
               </td>
@@ -218,8 +218,8 @@
       </div>
 
       {% if students.pages > 1 %}
-      <div class="ad-pager">
-        <span class="ad-pager-count">Showing {{ students.first }}–{{ students.last }} of {{ students.total }}</span>
+      <div class="shb-pager">
+        <span class="shb-pager-count">Showing {{ students.first }}–{{ students.last }} of {{ students.total }}</span>
         <ul class="pagination">
           <li class="page-item {% if not students.has_prev %}disabled{% endif %}">
             <a class="page-link" href="{{ url_for('staff.student_directory', page=students.prev_num or 1, **qs) }}" aria-label="Previous page">&laquo;</a>
@@ -241,12 +241,12 @@
       {% endif %}
 
       {% else %}
-      <div class="ad-empty">
+      <div class="shb-empty">
         <i class="bi bi-people" aria-hidden="true"></i>
         {% if students.page > 1 and students.total %}
         <h2>That page is past the end</h2>
         <p>There {{ 'is' if students.pages == 1 else 'are' }} {{ students.pages }} page{{ '' if students.pages == 1 else 's' }} of students.</p>
-        <a class="btn ad-ghost-btn" href="{{ url_for('staff.student_directory', page=1, **qs) }}">
+        <a class="btn shb-ghost-btn" href="{{ url_for('staff.student_directory', page=1, **qs) }}">
           <i class="bi bi-arrow-left" aria-hidden="true"></i>First page
         </a>
         {% else %}
@@ -256,7 +256,7 @@
           {% if filtered %}Try a different year, course, GWA or status.{% else %}Students appear here once they register.{% endif %}
         </p>
         {% if filtered %}
-        <a class="btn ad-ghost-btn" href="{{ url_for('staff.student_directory') }}">
+        <a class="btn shb-ghost-btn" href="{{ url_for('staff.student_directory') }}">
           <i class="bi bi-x-circle" aria-hidden="true"></i>Clear filters
         </a>
         {% endif %}
