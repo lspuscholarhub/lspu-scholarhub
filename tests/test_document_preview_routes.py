@@ -44,6 +44,14 @@ def test_student_viewer_renders_the_shared_page_for_a_word_document(app, seed, s
     assert f'/documents/{doc.id}/preview/' in body, 'the preview must use a session-free link'
 
 
+def test_the_my_documents_page_opens_each_uploaded_file_in_the_viewer(app, seed, sign_in, tmp_path):
+    doc = _document(seed.student, tmp_path, file_type='pdf')
+    body = sign_in(seed.student).get('/student/upload-gwa').get_data(as_text=True)
+
+    assert f'/student/documents/{doc.id}/view' in body, \
+        'a file on the student record must have a View action that opens the viewer'
+
+
 def test_admin_and_staff_see_the_viewer_page_instead_of_a_raw_redirect(app, seed, sign_in, tmp_path):
     doc = _document(seed.student, tmp_path)
 

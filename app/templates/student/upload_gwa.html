@@ -2,7 +2,7 @@
 {% block title %}My Documents — LSPU ScholarHub{% endblock %}
 
 {% block head %}
-<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261120" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/student-pages.css') }}?v=20261125" rel="stylesheet">
 <style>main { padding: 0 !important; margin: 0 !important; }</style>
 {% endblock %}
 
@@ -180,6 +180,36 @@
             </form>
           </div>
         </details>
+
+        {% if documents %}
+        <!-- ── other files on the record ────────────────────────────────── -->
+        <div class="sdoc-files">
+          <div class="sdoc-files-head">
+            <b>Uploaded documents</b>
+            <span class="st-chip st-chip--muted">{{ documents|length }} file{{ '' if documents|length == 1 else 's' }}</span>
+          </div>
+          <ul class="sdoc-files-list">
+            {% for doc in documents %}
+            <li class="sdoc-file">
+              <i class="{{ doc.icon_class }}" aria-hidden="true"></i>
+              <div class="sdoc-file-main">
+                <b title="{{ doc.original_filename }}">{{ doc.original_filename }}</b>
+                <span>
+                  {{ doc.description or 'Uploaded document' }} ·
+                  {{ doc.uploaded_at.strftime('%b %d, %Y') }} · {{ doc.file_size_display }}
+                </span>
+              </div>
+              <a class="st-btn st-btn--ghost st-btn--sm"
+                 href="{{ url_for('student.view_document', doc_id=doc.id) }}"
+                 target="_blank" rel="noopener"
+                 aria-label="View {{ doc.original_filename }}">
+                <i class="bi bi-eye" aria-hidden="true"></i><span class="sdoc-btn-txt">View</span>
+              </a>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+        {% endif %}
       </section>
 
       <!-- ═══════════ lower band: what we read + tips ═══════════ -->

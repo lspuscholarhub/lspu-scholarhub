@@ -1295,6 +1295,35 @@
 .sdoc-docs { padding: .45rem .5rem .55rem; }
 .sdoc-docs-k { padding: .5rem .55rem .1rem; }
 
+/* ── files the office put on the record (each opens in the viewer) ── */
+.sdoc-files {
+  margin-top: .3rem; padding: .65rem .55rem .35rem;
+  border-top: 1px solid #eef2f8;
+}
+.sdoc-files-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: .5rem; padding-bottom: .2rem;
+}
+.sdoc-files-head b { font-size: .8rem; font-weight: 800; color: var(--st-navy); }
+.sdoc-files-list { list-style: none; margin: 0; padding: 0; }
+.sdoc-file {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center; gap: .55rem;
+  padding: .55rem 0;
+  border-top: 1px solid #f2f5fa;
+}
+.sdoc-file:first-child { border-top: 0; }
+.sdoc-file > i { font-size: 1rem; }
+.sdoc-file-main { min-width: 0; }
+.sdoc-file-main b {
+  display: block; font-size: .82rem; font-weight: 700; color: var(--st-navy);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sdoc-file-main span {
+  display: block; font-size: .72rem; line-height: 1.4; color: var(--st-muted);
+}
+
 /* ── rows ── */
 .sdoc-row { border-top: 1px solid #eef2f8; }
 .sdoc-row:first-of-type { border-top: 0; }

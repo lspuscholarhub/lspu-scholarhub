@@ -1416,7 +1416,8 @@ def upload_gwa():
 
         return redirect(url_for('student.upload_gwa'))
 
-    return render_template('student/upload_gwa.html', user=user)
+    return render_template('student/upload_gwa.html', user=user,
+                           documents=user.documents)
 
 
 # ── Monitoring & Evaluation Form ─────────────────────────────────────────────
