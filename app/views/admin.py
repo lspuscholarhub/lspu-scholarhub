@@ -2954,12 +2954,19 @@ def delete_student_document(doc_id):
     fname   = doc.original_filename
     student = User.query.get(uid)
 
-    # Delete physical file
-    try:
-        if doc.file_path and os.path.exists(doc.file_path):
+    # Delete the stored file: the Cloudinary object when the document lives
+    # there, otherwise the file on disk. Deleting only the row left the student's
+    # document downloadable by its public URL forever.
+    from app.services.storage_service import delete_file as _del
+    if doc.cloudinary_public_id:
+        ext = (doc.file_type or '').lower()
+        _del(public_id=doc.cloudinary_public_id,
+             resource_type='image' if ext in ('jpg', 'jpeg', 'png', 'gif', 'webp') else 'raw')
+    elif doc.file_path and os.path.exists(doc.file_path):
+        try:
             os.remove(doc.file_path)
-    except Exception:
-        pass
+        except Exception:
+            pass
 
     db.session.delete(doc)
     db.session.commit()

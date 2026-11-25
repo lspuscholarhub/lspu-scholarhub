@@ -830,7 +830,21 @@ def delete_document(doc_id):
         flash('Access denied.', 'error')
         return redirect(url_for('student.profile'))
 
-    document_service.delete_file(doc.file_path)
+    # Remove the stored file as well as the row: uploaded documents live on
+    # Cloudinary, and dropping only the row left the file reachable by its
+    # public URL.
+    import os
+    from app.services.storage_service import delete_file as _del
+    if doc.cloudinary_public_id:
+        ext = (doc.file_type or '').lower()
+        _del(public_id=doc.cloudinary_public_id,
+             resource_type='image' if ext in ('jpg', 'jpeg', 'png', 'gif', 'webp') else 'raw')
+    elif doc.file_path and os.path.exists(doc.file_path):
+        try:
+            os.remove(doc.file_path)
+        except Exception:
+            pass
+
     db.session.delete(doc)
     db.session.commit()
     flash('Document deleted.', 'success')
