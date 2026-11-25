@@ -1108,9 +1108,45 @@ html {
   .modal-footer .btn { flex: 0 1 auto; }
 }
 
-/* Campus badge in the navbar — keep the brand readable on phones */
-.sh-campus-chip { font-size: .68rem; }
+/* Campus chip — the same quiet glass pill as the academic-period selector.
+   It used to be a Bootstrap .badge sitting on a .nav-link, so the link's 36px
+   tap target stretched the pill while the label stayed on its first line; the
+   compound selector also outranks the navbar-dark link colour and the shared
+   .navbar .nav-link padding, which is what keeps the text centred here. */
+.app-topbar.navbar .navbar-nav .sh-campus-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  max-width: 240px;
+  min-height: 0;
+  padding: .3rem .55rem;
+  border: 1px solid rgba(255,255,255,.3);
+  border-radius: 999px;
+  background: rgba(255,255,255,.16);
+  color: #fff;
+  font-size: .68rem;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-decoration: none;
+  vertical-align: middle;
+  cursor: pointer;
+}
+.app-topbar.navbar .navbar-nav .sh-campus-chip:hover,
+.app-topbar.navbar .navbar-nav .sh-campus-chip:focus-visible {
+  background: rgba(255,255,255,.28);
+  color: #fff;
+}
+.app-topbar.navbar .navbar-nav .sh-campus-chip > i { font-size: .8rem; opacity: .9; }
+.app-topbar.navbar .navbar-nav .sh-campus-chip .pill-label { max-width: 190px; }
+.sh-campus-chip.dropdown-toggle::after { margin-left: .1rem; }
+
 @media (max-width: 575.98px) {
-  .sh-campus-chip { font-size: .56rem; padding: .22rem .4rem !important; }
+  .app-topbar.navbar .navbar-nav .sh-campus-chip {
+    max-width: 150px;
+    padding: .22rem .4rem;
+    font-size: .56rem;
+  }
   .navbar-brand { font-size: 1rem; }
 }
