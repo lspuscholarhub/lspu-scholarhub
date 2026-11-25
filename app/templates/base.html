@@ -4,11 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}LSPU ScholarHub{% endblock %}</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+  <link href="{{ url_for('static', filename='vendor/inter/inter.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='vendor/bootstrap/bootstrap.min.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='vendor/bootstrap-icons/bootstrap-icons.css') }}" rel="stylesheet">
   <link href="{{ url_for('static', filename='css/style.css') }}?v=20261125c" rel="stylesheet">
   <meta name="csrf-token" content="{{ csrf_token() }}">
   {% block head %}{% endblock %}
@@ -459,8 +457,39 @@
   <i class="bi bi-arrow-up"></i>
 </button>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="{{ url_for('static', filename='vendor/bootstrap/bootstrap.bundle.min.js') }}"></script>
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+<!-- ── Content guard ─────────────────────────────────────────────────────────
+     Ad blockers and "clean up the page" extensions hide elements by class name
+     through an injected stylesheet. The admin board lost its whole working
+     area that way once (see LICENSES.md next to the vendored assets), so the
+     shell the app is built on is checked here and put back if a filter list
+     guesses wrong. `revert` rolls the display back to the browser default,
+     which keeps the page readable even where the intended layout differs. -->
+<script>
+(function () {
+  var shell = ['#main-content', '.app-topbar', '.shb-page', '.shb-body', '.shb-panel'];
+  function restore() {
+    shell.forEach(function (selector) {
+      var nodes = document.querySelectorAll(selector);
+      Array.prototype.forEach.call(nodes, function (el) {
+        var cs = window.getComputedStyle(el);
+        if (cs.display === 'none' || cs.visibility === 'hidden') {
+          el.style.setProperty('display', 'revert', 'important');
+          el.style.setProperty('visibility', 'visible', 'important');
+        }
+      });
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', restore);
+  } else {
+    restore();
+  }
+  window.addEventListener('load', restore);
+})();
+</script>
 
 <!-- ── Global auto-filter with proper debounce ─────────────────────────────── -->
 <script>
