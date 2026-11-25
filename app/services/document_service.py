@@ -304,3 +304,70 @@ class DocumentService:
 
 # Global document service instance
 document_service = DocumentService()
+
+
+# ── Preview link for Google's document viewer ────────────────────────────────
+# The viewer fetches the file from Google's own servers, where none of our
+# session cookies exist — our normal raw routes answer it with a login page, so
+# it could never preview anything. A preview link therefore carries a signed
+# token that authorises one document for a few minutes and nothing else.
+
+PREVIEW_TOKEN_MAX_AGE = 15 * 60
+
+WORD_TYPES = ('doc', 'docx')
+
+PREVIEW_MIME_TYPES = {
+    'pdf':  'application/pdf',
+    'doc':  'application/msword',
+    'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'jpg':  'image/jpeg',
+    'jpeg': 'image/jpeg',
+    'png':  'image/png',
+}
+
+
+def _preview_serializer():
+    from itsdangerous import URLSafeTimedSerializer
+    return URLSafeTimedSerializer(current_app.secret_key, salt='document-preview')
+
+
+def preview_token(doc_id):
+    """A signed token naming one document."""
+    return _preview_serializer().dumps({'doc': int(doc_id)})
+
+
+def read_preview_token(doc_id, token):
+    """True when the token is ours, unexpired and names this document."""
+    from itsdangerous import BadSignature, SignatureExpired
+    try:
+        data = _preview_serializer().loads(token, max_age=PREVIEW_TOKEN_MAX_AGE)
+    except (BadSignature, SignatureExpired):
+        return False
+    return isinstance(data, dict) and data.get('doc') == int(doc_id)
+
+
+def preview_source_url(doc):
+    """Absolute, session-free URL for Word documents; None for everything else."""
+    if (doc.file_type or '').lower() not in WORD_TYPES:
+        return None
+    from flask import url_for
+    return url_for('main.document_preview_source', doc_id=doc.id,
+                   token=preview_token(doc.id), _external=True)
+
+
+def preview_mime(file_type):
+    return PREVIEW_MIME_TYPES.get((file_type or '').lower(), 'application/octet-stream')
+
+
+def document_bytes(doc):
+    """The stored file's bytes, from Cloudinary or from the local disk."""
+    from app.services.storage_service import get_file_bytes
+    path = doc.file_path or ''
+    if path and not path.startswith(('http://', 'https://')) and not os.path.isabs(path):
+        path = os.path.normpath(os.path.join(current_app.root_path, '..', path))
+    ext = (doc.file_type or '').lower()
+    return get_file_bytes(
+        file_path=path or None,
+        public_id=getattr(doc, 'cloudinary_public_id', None),
+        resource_type='image' if ext in ('jpg', 'jpeg', 'png', 'gif', 'webp') else 'raw',
+    )

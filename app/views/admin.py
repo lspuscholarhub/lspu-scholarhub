@@ -2193,6 +2193,11 @@ def view_document(doc_id):
 
     doc = Document.query.get_or_404(doc_id)
 
+    if (doc.file_type or '').lower() in ('doc', 'docx'):
+        # A browser cannot display Word on its own; the viewer page can preview
+        # it and, when Google is unreachable, still offer the download.
+        return redirect(url_for('admin.view_student_document', doc_id=doc.id))
+
     mime_map = {
         'pdf': 'application/pdf',
         'jpg': 'image/jpeg', 'jpeg': 'image/jpeg', 'png': 'image/png',
@@ -2751,27 +2756,30 @@ def add_student_to_program(sid):
 @admin_bp.route('/documents/<int:doc_id>/view')
 @role_required('admin')
 def view_student_document(doc_id):
-    """Render a viewer page for a student document."""
+    """Render a viewer page for a student document.
+
+    Cloudinary documents come here too — the viewer's raw route already proxies
+    them inline. Sending them to that route directly meant a Word file reached
+    the browser as a download, so Google's preview (and the message shown when
+    it is blocked) never ran at all.
+    """
     import os
     from flask import current_app
     from app.models.document import Document
+    from app.services.document_service import preview_source_url
     doc = Document.query.get_or_404(doc_id)
 
-    # If stored on Cloudinary, go through the raw proxy route so the file
-    # displays INLINE — redirecting straight to Cloudinary makes the browser
-    # download it (Cloudinary serves raw files with Content-Disposition: attachment).
-    if doc.cloudinary_public_id or (doc.file_path and (doc.file_path.startswith('http://') or doc.file_path.startswith('https://'))):
-        return redirect(url_for('admin.serve_student_document_raw', doc_id=doc.id))
-
-    file_path = doc.file_path
-    if not os.path.isabs(file_path):
-        file_path = os.path.join(current_app.root_path, '..', file_path)
-    if not os.path.exists(os.path.normpath(file_path)):
-        flash('File not found.', 'error')
-        return redirect(url_for('admin.student_profile', uid=doc.user_id))
+    file_path = doc.file_path or ''
+    if file_path and not file_path.startswith(('http://', 'https://')):
+        if not os.path.isabs(file_path):
+            file_path = os.path.join(current_app.root_path, '..', file_path)
+        if not os.path.exists(os.path.normpath(file_path)):
+            flash('File not found.', 'error')
+            return redirect(url_for('admin.student_profile', uid=doc.user_id))
     return render_template('shared/document_viewer.html',
                            doc=doc,
                            raw_url=url_for('admin.serve_student_document_raw', doc_id=doc.id),
+                           preview_source=preview_source_url(doc),
                            back_url=url_for('admin.student_profile', uid=doc.user_id))
 
 

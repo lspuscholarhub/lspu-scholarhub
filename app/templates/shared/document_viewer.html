@@ -119,9 +119,13 @@
        offline turns it into a blank frame. It is checked before it is trusted
        and the panel below takes its place, with the download still working. #}
     {% elif ext in ('doc', 'docx') %}
+    {# `preview_source` is a signed, session-free link to this one file: Google
+       fetches it from its own servers, where the raw route's login would stop
+       it. Views that cannot mint one fall back to the raw URL. #}
+    {% set gview_target = preview_source if preview_source is defined and preview_source else request.host_url ~ raw_url[1:] %}
     <div class="docv-frame" id="gviewFrame">
       <iframe
-        src="https://docs.google.com/gview?url={{ (request.host_url ~ raw_url[1:])|urlencode }}&amp;embedded=true"
+        src="https://docs.google.com/gview?url={{ gview_target|urlencode }}&amp;embedded=true"
         title="{{ doc.original_filename }}">
       </iframe>
     </div>

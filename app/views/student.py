@@ -885,25 +885,31 @@ def download_document(doc_id):
 @student_bp.route('/documents/<int:doc_id>/view')
 @role_required('student')
 def view_document(doc_id):
-    """Render a viewer page for any document type."""
+    """Render a viewer page for any document type.
+
+    The page is the shared one admin and staff use: it knows how to preview a
+    Word file through Google and what to say when that preview is unavailable.
+    """
     import os
+    from app.services.document_service import preview_source_url
     doc = Document.query.get_or_404(doc_id)
     if doc.user_id != session['user_id']:
         flash('Access denied.', 'error')
         return redirect(url_for('student.profile'))
 
-    file_path = doc.file_path
-    if not os.path.isabs(file_path):
-        file_path = os.path.join(current_app.root_path, '..', file_path)
-    file_path = os.path.normpath(file_path)
+    file_path = doc.file_path or ''
+    if file_path and not file_path.startswith(('http://', 'https://')):
+        if not os.path.isabs(file_path):
+            file_path = os.path.join(current_app.root_path, '..', file_path)
+        if not os.path.exists(os.path.normpath(file_path)):
+            flash('File not found on server.', 'error')
+            return redirect(url_for('student.profile'))
 
-    if not os.path.exists(file_path):
-        flash('File not found on server.', 'error')
-        return redirect(url_for('student.profile'))
-
-    return render_template('student/document_viewer.html',
+    return render_template('shared/document_viewer.html',
                            doc=doc,
-                           raw_url=url_for('student.serve_document_raw', doc_id=doc.id))
+                           raw_url=url_for('student.serve_document_raw', doc_id=doc.id),
+                           preview_source=preview_source_url(doc),
+                           back_url=url_for('student.profile'))
 
 
 @student_bp.route('/documents/<int:doc_id>/raw')

@@ -1687,25 +1687,29 @@ def add_student_to_program(sid):
 @staff_bp.route('/documents/<int:doc_id>/view')
 @role_required('staff')
 def view_student_document(doc_id):
-    """Render a viewer page for a student document — redirects to raw proxy for Cloudinary files."""
+    """Render a viewer page for a student document.
+
+    Cloudinary documents are rendered here as well: the raw route proxies them
+    inline, and a Word file only gets a preview (or the message saying why it
+    could not be previewed) through this page.
+    """
     import os
-    from flask import current_app, redirect as _redir
+    from flask import current_app
     from app.models.document import Document
+    from app.services.document_service import preview_source_url
     doc = Document.query.get_or_404(doc_id)
 
-    # If stored on Cloudinary, go straight to the raw proxy route
-    if doc.cloudinary_public_id or (doc.file_path and (doc.file_path.startswith('http://') or doc.file_path.startswith('https://'))):
-        return redirect(url_for('staff.serve_student_document_raw', doc_id=doc.id))
-
-    file_path = doc.file_path
-    if not os.path.isabs(file_path):
-        file_path = os.path.join(current_app.root_path, '..', file_path)
-    if not os.path.exists(os.path.normpath(file_path)):
-        flash('File not found.', 'error')
-        return redirect(url_for('staff.student_profile', uid=doc.user_id))
+    file_path = doc.file_path or ''
+    if file_path and not file_path.startswith(('http://', 'https://')):
+        if not os.path.isabs(file_path):
+            file_path = os.path.join(current_app.root_path, '..', file_path)
+        if not os.path.exists(os.path.normpath(file_path)):
+            flash('File not found.', 'error')
+            return redirect(url_for('staff.student_profile', uid=doc.user_id))
     return render_template('shared/document_viewer.html',
                            doc=doc,
                            raw_url=url_for('staff.serve_student_document_raw', doc_id=doc.id),
+                           preview_source=preview_source_url(doc),
                            back_url=url_for('staff.student_profile', uid=doc.user_id))
 
 
@@ -2309,6 +2313,11 @@ def view_document(doc_id):
     from flask import send_file as _send_file, current_app, Response
     from app.models.document import Document
     doc = Document.query.get_or_404(doc_id)
+
+    if (doc.file_type or '').lower() in ('doc', 'docx'):
+        # The browser cannot display Word; the viewer page previews it and says
+        # so when Google cannot be reached.
+        return redirect(url_for('staff.view_student_document', doc_id=doc.id))
 
     mime_map = {'pdf':'application/pdf','jpg':'image/jpeg','jpeg':'image/jpeg',
                 'png':'image/png','doc':'application/msword',

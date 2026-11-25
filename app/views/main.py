@@ -126,3 +126,34 @@ def contact():
         return redirect(url_for('main.contact'))
 
     return render_template('contact.html')
+
+
+@main_bp.route('/documents/<int:doc_id>/preview/<token>')
+def document_preview_source(doc_id, token):
+    """Serve one stored file to Google's document viewer.
+
+    The viewer fetches this URL from Google's servers, without our session, so
+    the route is guarded by the signed token minted when someone opened the
+    viewer page instead of by a login. It answers with the file or nothing: a
+    wrong or expired token is refused, and no other document is reachable.
+    """
+    from flask import Response, abort
+    from app.models.document import Document
+    from app.services.document_service import (document_bytes, preview_mime,
+                                              read_preview_token)
+
+    if not read_preview_token(doc_id, token):
+        abort(403)
+
+    doc = Document.query.get_or_404(doc_id)
+    data = document_bytes(doc)
+    if data is None:
+        abort(404)
+
+    filename = (doc.original_filename or 'document').replace('"', "'")
+    filename = filename.replace('\r', ' ').replace('\n', ' ')
+    return Response(data, mimetype=preview_mime(doc.file_type), headers={
+        'Content-Disposition': f'inline; filename="{filename}"',
+        'Cache-Control': 'private, max-age=300',
+        'X-Robots-Tag': 'noindex, nofollow',
+    })
