@@ -244,7 +244,11 @@ def _delete_from_cloudinary(public_id, resource_type):
     try:
         import cloudinary.uploader
         _init_cloudinary()
-        result = cloudinary.uploader.destroy(public_id, resource_type=resource_type)
+        # invalidate=True also drops Cloudinary's cached copy, so a deleted
+        # document stops being served straight away instead of whenever the
+        # CDN's copy happens to expire.
+        result = cloudinary.uploader.destroy(public_id, resource_type=resource_type,
+                                             invalidate=True)
         ok = result.get('result') == 'ok'
         return {'success': ok, 'error': None if ok else result.get('result')}
     except Exception as e:
