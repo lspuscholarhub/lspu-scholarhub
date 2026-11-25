@@ -52,13 +52,19 @@
   }
   .docv-frame img { object-fit: contain; background: #f7f9fc; }
 
-  #unsupported {
+  /* shown in place of the file when it cannot be previewed at all, and in
+     place of Google's viewer when that cannot be reached */
+  .docv-fallback {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: .9rem; height: 100%; padding: 1.5rem; text-align: center;
     background: #fff; border: 1px solid #e3e8ef; border-radius: 12px;
   }
-  #unsupported i { font-size: 2.6rem; color: #c6d5e6; }
-  #unsupported p { margin: 0; font-size: .86rem; color: #5b6878; }
+  .docv-fallback[hidden],
+  .docv-frame[hidden] { display: none !important; }
+  .docv-fallback i { font-size: 2.6rem; color: #c6d5e6; }
+  .docv-fallback h2 { margin: 0; font-size: .95rem; font-weight: 800; color: #0f2a4d; }
+  .docv-fallback p { margin: 0; max-width: 34rem; font-size: .86rem; color: #5b6878; }
+  .docv-fallback-acts { display: flex; gap: .5rem; flex-wrap: wrap; justify-content: center; }
 
   @media (max-width: 575.98px) {
     /* the file name takes its own row so the two buttons stay side by side */
@@ -109,17 +115,35 @@
     </div>
 
     {# ── Word documents — Google Docs viewer ── #}
+    {# The viewer runs on Google's servers, so a blocker, a firewall or being
+       offline turns it into a blank frame. It is checked before it is trusted
+       and the panel below takes its place, with the download still working. #}
     {% elif ext in ('doc', 'docx') %}
-    <div class="docv-frame">
+    <div class="docv-frame" id="gviewFrame">
       <iframe
-        src="https://docs.google.com/gview?url={{ request.host_url }}{{ raw_url[1:] }}&embedded=true"
+        src="https://docs.google.com/gview?url={{ (request.host_url ~ raw_url[1:])|urlencode }}&amp;embedded=true"
         title="{{ doc.original_filename }}">
       </iframe>
+    </div>
+    <div class="docv-fallback" id="gviewFallback" role="alert" hidden>
+      <i class="bi bi-cloud-slash" aria-hidden="true"></i>
+      <h2>Preview unavailable</h2>
+      <p id="gviewFallbackMsg">
+        Word documents are previewed by Google, and that service did not answer.
+      </p>
+      <div class="docv-fallback-acts">
+        <button type="button" class="btn-viewer btn-back" id="gviewRetry">
+          <i class="bi bi-arrow-clockwise" aria-hidden="true"></i> Try again
+        </button>
+        <a href="{{ raw_url }}?dl=1" class="btn-viewer btn-download">
+          <i class="bi bi-download" aria-hidden="true"></i> Download file
+        </a>
+      </div>
     </div>
 
     {# ── Unsupported ── #}
     {% else %}
-    <div id="unsupported">
+    <div id="unsupported" class="docv-fallback">
       <i class="bi bi-file-earmark" aria-hidden="true"></i>
       <p>This file type ({{ ext|upper }}) cannot be previewed in the browser.</p>
       <a href="{{ raw_url }}?dl=1" class="btn-viewer btn-download">
@@ -129,4 +153,64 @@
     {% endif %}
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+/* Google's viewer is a third-party frame: when a blocker, a firewall or a
+   captive portal refuses it, the browser shows an empty frame and there is no
+   error the page can read. Ask the same URL for itself first; if that request
+   is refused or hangs, keep the frame out of the page and explain instead. */
+(function () {
+  var frame = document.getElementById('gviewFrame');
+  var fallback = document.getElementById('gviewFallback');
+  if (!frame || !fallback) return;
+  var message = document.getElementById('gviewFallbackMsg');
+  var retry = document.getElementById('gviewRetry');
+  var iframe = frame.querySelector('iframe');
+  var url = iframe.getAttribute('src');
+  var timer = null;
+
+  function showFallback(text) {
+    if (timer) { clearTimeout(timer); timer = null; }
+    frame.hidden = true;
+    iframe.removeAttribute('src');
+    message.textContent = text;
+    fallback.hidden = false;
+  }
+
+  function check() {
+    frame.hidden = false;
+    fallback.hidden = true;
+    if (!navigator.onLine) {
+      showFallback('You are offline. Word documents are previewed by Google, which needs a '
+        + 'connection \u2014 download the file to read it.');
+      return;
+    }
+    if (!iframe.getAttribute('src')) iframe.setAttribute('src', url);
+
+    var controller = window.AbortController ? new AbortController() : null;
+    if (timer) clearTimeout(timer);
+    if (controller) {
+      timer = setTimeout(function () { controller.abort(); }, 7000);
+    }
+    fetch(url, {
+      mode: 'no-cors',
+      cache: 'no-store',
+      credentials: 'omit',
+      signal: controller ? controller.signal : undefined
+    }).then(function () {
+      if (timer) { clearTimeout(timer); timer = null; }
+    }).catch(function () {
+      showFallback('Google\u2019s document viewer could not be reached \u2014 a blocker or a '
+        + 'network rule is probably stopping it. Download the file to read it.');
+    });
+  }
+
+  retry.addEventListener('click', check);
+  window.addEventListener('online', check);
+  window.addEventListener('offline', check);
+  check();
+})();
+</script>
 {% endblock %}
